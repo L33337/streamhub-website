@@ -68,9 +68,16 @@ export default function RootLayout({
               name: "StreamHub",
               operatingSystem: "iOS, Android",
               applicationCategory: "EntertainmentApplication",
+              applicationSubCategory: "LiveStreamingApplication",
               description:
                 "Your TV guide for Twitch & YouTube live streams with AI-powered predictions.",
               url: "https://streamhub.sh",
+              screenshot: [
+                "https://streamhub.sh/screenshots/live-feed.jpg",
+                "https://streamhub.sh/screenshots/epg-grid.jpg",
+                "https://streamhub.sh/screenshots/multi-day.jpg",
+                "https://streamhub.sh/screenshots/predictions.jpg",
+              ],
               offers: {
                 "@type": "Offer",
                 price: "0",

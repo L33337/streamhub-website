@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Brain,
   Monitor,
@@ -14,10 +16,13 @@ import {
   Tv,
   Globe,
   Star,
-  Film,
-  Headphones,
+  Sparkles,
+  Bell,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const FEATURES = [
   {
@@ -38,14 +43,14 @@ const FEATURES = [
     icon: LayoutGrid,
     title: "EPG Grid View",
     description:
-      "A classic TV guide layout. See multiple streamers side by side, just like a traditional program guide.",
+      "See your streamers' schedules at a glance — side by side, just like a traditional TV guide. Plan your day around their slots.",
     accent: "cyan" as const,
   },
   {
     icon: Zap,
     title: "Real-Time Updates",
     description:
-      "Instant live status via Twitch EventSub and YouTube WebSub webhooks. Know the moment a stream starts.",
+      "Know the moment your favorite streamer goes live. Instant notifications — no more manual checking.",
     accent: "green" as const,
   },
   {
@@ -73,8 +78,6 @@ const FLOATING_ICONS = [
   { icon: Tv, x: "78%", y: "78%", size: 20, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-reverse", delay: "0.3s" },
   { icon: Globe, x: "25%", y: "25%", size: 14, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-reverse", delay: "1.5s" },
   { icon: Star, x: "70%", y: "12%", size: 14, color: "text-live", bg: "bg-live/10", border: "border-live/30", anim: "animate-float", delay: "0.7s" },
-  { icon: Film, x: "92%", y: "40%", size: 16, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-slow", delay: "1.8s" },
-  { icon: Headphones, x: "3%", y: "35%", size: 16, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float", delay: "2s" },
 ];
 
 const PARTICLES = [
@@ -82,12 +85,8 @@ const PARTICLES = [
   { x: "60%", y: "18%", size: 2, color: "bg-accent-pink", delay: "1s" },
   { x: "75%", y: "65%", size: 3, color: "bg-accent-cyan", delay: "0.5s" },
   { x: "35%", y: "70%", size: 2, color: "bg-text-primary", delay: "1.5s" },
-  { x: "50%", y: "85%", size: 2, color: "bg-accent-pink", delay: "2s" },
   { x: "12%", y: "65%", size: 3, color: "bg-accent-cyan", delay: "0.8s" },
   { x: "88%", y: "30%", size: 2, color: "bg-accent-purple", delay: "1.2s" },
-  { x: "45%", y: "10%", size: 2, color: "bg-text-primary", delay: "0.3s" },
-  { x: "30%", y: "45%", size: 2, color: "bg-accent-pink", delay: "1.8s" },
-  { x: "65%", y: "50%", size: 3, color: "bg-accent-cyan", delay: "0.6s" },
 ];
 
 const ACCENT_STYLES = {
@@ -108,6 +107,111 @@ const ACCENT_STYLES = {
     icon: "text-accent-purple",
   },
 };
+
+const SCREENSHOTS = [
+  {
+    src: "/screenshots/live-feed.jpg",
+    alt: "StreamHub Live Feed showing currently live streamers",
+    label: "Live Feed",
+  },
+  {
+    src: "/screenshots/epg-grid.jpg",
+    alt: "EPG Grid View with AI-predicted stream schedules",
+    label: "EPG Grid View",
+  },
+  {
+    src: "/screenshots/multi-day.jpg",
+    alt: "Multi-day schedule view with multiple streamers",
+    label: "Multi-Day Schedule",
+  },
+  {
+    src: "/screenshots/predictions.jpg",
+    alt: "Streamer detail page with AI predictions",
+    label: "AI Predictions",
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    question: "Is StreamHub really free?",
+    answer:
+      "Yes! StreamHub is completely free to use with no ads. All core features — AI predictions, live notifications, EPG grid view — are included at no cost.",
+  },
+  {
+    question: "How accurate are the AI predictions?",
+    answer:
+      "Our AI analyzes each streamer's past broadcasting patterns to predict future streams. Accuracy depends on how consistently a streamer keeps their schedule — regular streamers see high prediction accuracy.",
+  },
+  {
+    question: "Do I need an account?",
+    answer:
+      "No account required to get started. StreamHub works right away with anonymous access. You can optionally create an account to sync your favorites across devices.",
+  },
+  {
+    question: "Which streamers can I track?",
+    answer:
+      "Any streamer on Twitch or YouTube! Just search for their name and add them to your guide. StreamHub automatically detects if they stream on both platforms.",
+  },
+  {
+    question: "Does it work on both iOS and Android?",
+    answer:
+      "Yes, StreamHub is available as a native app on both iOS (App Store) and Android (Google Play).",
+  },
+];
+
+function StickyHeader() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-background/85 shadow-[0_1px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+          : "bg-transparent"
+      }`}
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <Link href="/" className="glow-text-white text-lg font-bold text-text-primary">
+          StreamHub
+        </Link>
+
+        <nav className="hidden items-center gap-8 sm:flex">
+          <a
+            href="#features"
+            className="text-sm text-text-secondary transition-colors hover:text-accent-cyan"
+          >
+            Features
+          </a>
+          <a
+            href="#how-it-works"
+            className="text-sm text-text-secondary transition-colors hover:text-accent-cyan"
+          >
+            How It Works
+          </a>
+          <a
+            href="#screenshots"
+            className="text-sm text-text-secondary transition-colors hover:text-accent-cyan"
+          >
+            Screenshots
+          </a>
+        </nav>
+
+        <a
+          href="#download"
+          className="inline-flex items-center gap-2 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-4 py-2 text-sm font-medium text-accent-cyan transition-all hover:bg-accent-cyan/20 hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]"
+        >
+          Download
+        </a>
+      </div>
+    </header>
+  );
+}
 
 function FeatureCard({
   icon: Icon,
@@ -134,12 +238,12 @@ function FeatureCard({
   );
 }
 
-function StoreBadges() {
+function StoreBadges({ fullWidth = false }: { fullWidth?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row">
+    <div className={`flex flex-col items-center gap-4 sm:flex-row ${fullWidth ? "sm:justify-center" : ""}`}>
       <a
         href="#"
-        className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
+        className={`inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)] ${fullWidth ? "w-full justify-center sm:w-auto" : ""}`}
         aria-label="Download on the App Store"
       >
         <svg viewBox="0 0 24 24" className="h-7 w-7 fill-text-primary">
@@ -157,7 +261,7 @@ function StoreBadges() {
 
       <a
         href="#"
-        className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
+        className={`inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)] ${fullWidth ? "w-full justify-center sm:w-auto" : ""}`}
         aria-label="Get it on Google Play"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-text-primary">
@@ -176,23 +280,62 @@ function StoreBadges() {
   );
 }
 
+function PhoneMockup({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+  return (
+    <div className={`relative ${className}`}>
+      {/* Phone frame */}
+      <div className="relative mx-auto overflow-hidden rounded-[2.5rem] border-[3px] border-border-default/60 bg-background-elevated shadow-[0_0_40px_rgba(0,240,255,0.08)]">
+        {/* Notch */}
+        <div className="absolute top-0 left-1/2 z-10 h-6 w-28 -translate-x-1/2 rounded-b-2xl bg-background-elevated" />
+        <Image
+          src={src}
+          alt={alt}
+          width={280}
+          height={607}
+          className="block w-full"
+          priority
+        />
+      </div>
+    </div>
+  );
+}
+
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  return (
+    <details className="group border-b border-divider">
+      <summary className="flex cursor-pointer items-center justify-between py-5 text-left text-text-primary transition-colors hover:text-accent-cyan">
+        <span className="pr-4 font-medium">{question}</span>
+        <ChevronDown
+          size={18}
+          className="shrink-0 text-text-muted transition-transform duration-200 group-open:rotate-180"
+        />
+      </summary>
+      <p className="pb-5 text-sm leading-relaxed text-text-secondary">
+        {answer}
+      </p>
+    </details>
+  );
+}
+
 export default function Home() {
   return (
     <main>
-      {/* Hero Section — Splash Screen Style */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
+      <StickyHeader />
+
+      {/* Hero Section */}
+      <section className="relative flex min-h-screen items-center overflow-hidden px-6 pt-20">
         {/* Background gradient */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-surface to-background" />
         {/* Radial glow behind title */}
         <div className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-cyan/5 blur-[120px]" />
 
-        {/* Floating Icons (Circular Badges) */}
+        {/* Floating Icons */}
         {FLOATING_ICONS.map((item, i) => {
           const Icon = item.icon;
           return (
             <div
               key={i}
-              className={`pointer-events-none absolute hidden sm:flex items-center justify-center rounded-full border ${item.border} ${item.bg} ${item.anim}`}
+              className={`pointer-events-none absolute hidden lg:flex items-center justify-center rounded-full border ${item.border} ${item.bg} ${item.anim}`}
               style={{
                 left: item.x,
                 top: item.y,
@@ -206,7 +349,7 @@ export default function Home() {
           );
         })}
 
-        {/* Particles / Glowing Dots */}
+        {/* Particles */}
         {PARTICLES.map((p, i) => (
           <div
             key={`p-${i}`}
@@ -222,34 +365,66 @@ export default function Home() {
           />
         ))}
 
-        {/* Center content with bracket frame */}
-        <div className="relative z-10 max-w-3xl">
-          {/* Bracket Frame */}
-          <div className="bracket-frame relative inline-block px-8 py-6">
-            <div className="bracket-frame-inner absolute inset-0" />
-            <h1 className="glow-text-white text-5xl font-bold tracking-tight text-text-primary sm:text-7xl">
-              StreamHub
-            </h1>
+        {/* Hero content — two columns on desktop */}
+        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
+          {/* Left: Text */}
+          <div className="text-center lg:text-left">
+            {/* Bracket Frame */}
+            <div className="bracket-frame relative inline-block px-8 py-6">
+              <div className="bracket-frame-inner absolute inset-0" />
+              <h1 className="glow-text-white text-5xl font-bold tracking-tight text-text-primary sm:text-7xl">
+                StreamHub
+              </h1>
+            </div>
+
+            <p className="mt-6 mb-4 text-xl font-medium text-text-secondary sm:text-2xl">
+              Know when your streamers go live — before they do
+            </p>
+
+            {/* Feature pills */}
+            <div className="mb-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-cyan/20 bg-accent-cyan/5 px-3 py-1.5 text-xs font-medium text-accent-cyan">
+                <Sparkles size={13} />
+                AI Predictions
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-live/20 bg-live/5 px-3 py-1.5 text-xs font-medium text-live">
+                <Bell size={13} />
+                Real-Time Alerts
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-purple/20 bg-accent-purple/5 px-3 py-1.5 text-xs font-medium text-accent-purple">
+                <Monitor size={13} />
+                Twitch + YouTube
+              </span>
+            </div>
+
+            {/* Trust badge */}
+            <div className="mb-6 flex items-center justify-center gap-2 lg:justify-start">
+              <Shield size={14} className="text-live" />
+              <span className="text-sm text-text-secondary">
+                Free &middot; No ads &middot; No account required
+              </span>
+            </div>
+
+            <StoreBadges fullWidth />
           </div>
 
-          <p className="mt-6 mb-2 text-xl font-medium text-text-secondary sm:text-2xl">
-            Your TV Guide for Live Streams
-          </p>
+          {/* Right: Phone mockup (desktop) */}
+          <div className="hidden lg:flex justify-center">
+            <PhoneMockup
+              src="/screenshots/live-feed.jpg"
+              alt="StreamHub Live Feed"
+              className="w-[280px]"
+            />
+          </div>
 
-          <p className="mx-auto mb-10 max-w-lg text-base text-text-muted">
-            AI-powered predictions. Real-time notifications. Twitch &amp; YouTube
-            in one app. Never miss a stream again.
-          </p>
-
-          <StoreBadges />
-
-          <a
-            href="#features"
-            className="mt-16 inline-block animate-bounce text-text-muted"
-            aria-label="Scroll to features"
-          >
-            <ChevronDown size={28} strokeWidth={1.5} />
-          </a>
+          {/* Phone mockup (mobile — below text) */}
+          <div className="flex justify-center lg:hidden">
+            <PhoneMockup
+              src="/screenshots/live-feed.jpg"
+              alt="StreamHub Live Feed"
+              className="w-[220px]"
+            />
+          </div>
         </div>
       </section>
 
@@ -273,8 +448,42 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Screenshots Gallery — replaces old Platform Section */}
+      <section id="screenshots" className="border-t border-divider px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="mb-4 text-center text-3xl font-bold text-text-primary sm:text-4xl">
+            See it in{" "}
+            <span className="gradient-text-pink">action</span>
+          </h2>
+          <p className="mx-auto mb-16 max-w-2xl text-center text-text-secondary">
+            A TV guide designed for the streaming era. Track live streams,
+            browse schedules, and get AI-powered predictions — all in one app.
+          </p>
+
+          {/* Screenshot grid */}
+          <div className="grid grid-cols-2 gap-6 sm:gap-8 lg:grid-cols-4">
+            {SCREENSHOTS.map((screenshot) => (
+              <div key={screenshot.label} className="text-center">
+                <div className="relative mx-auto overflow-hidden rounded-[1.5rem] border-[2px] border-border-default/50 bg-background-elevated shadow-[0_0_25px_rgba(0,240,255,0.06)] transition-all duration-300 hover:border-accent-cyan/30 hover:shadow-[0_0_30px_rgba(0,240,255,0.12)]">
+                  <Image
+                    src={screenshot.src}
+                    alt={screenshot.alt}
+                    width={280}
+                    height={607}
+                    className="block w-full"
+                  />
+                </div>
+                <p className="mt-3 text-sm font-medium text-text-secondary">
+                  {screenshot.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
-      <section className="border-t border-divider px-6 py-24">
+      <section id="how-it-works" className="border-t border-divider px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <h2 className="mb-16 text-center text-3xl font-bold text-text-primary sm:text-4xl">
             How it <span className="text-accent-cyan glow-text">works</span>
@@ -295,7 +504,7 @@ export default function Home() {
               {
                 step: "3",
                 title: "Never Miss a Stream",
-                desc: "Real-time webhooks notify you the instant your favorites go live. Plan your day around their schedule.",
+                desc: "Get notified the instant your favorites go live. Plan your day around their schedule.",
               },
             ].map((item) => (
               <div key={item.step} className="text-center">
@@ -312,38 +521,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Platform Section */}
-      <section className="border-t border-divider px-6 py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-8 flex items-center justify-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-twitch shadow-[0_0_8px_rgba(145,70,255,0.5)]" />
-              <span className="text-sm font-semibold tracking-wider uppercase text-twitch">
-                Twitch
-              </span>
-            </div>
-            <span className="text-text-muted">+</span>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-youtube shadow-[0_0_8px_rgba(255,0,51,0.5)]" />
-              <span className="text-sm font-semibold tracking-wider uppercase text-youtube">
-                YouTube
-              </span>
-            </div>
+      {/* Social Proof / Trust */}
+      <section className="border-t border-divider px-6 py-16">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-8">
+          <div className="flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 py-3">
+            <div className="h-3 w-3 rounded-full bg-twitch shadow-[0_0_8px_rgba(145,70,255,0.5)]" />
+            <span className="text-sm font-medium text-text-secondary">
+              Works with <span className="text-twitch">Twitch</span>
+            </span>
           </div>
+          <div className="flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 py-3">
+            <div className="h-3 w-3 rounded-full bg-youtube shadow-[0_0_8px_rgba(255,0,51,0.5)]" />
+            <span className="text-sm font-medium text-text-secondary">
+              Works with <span className="text-youtube">YouTube</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 py-3">
+            <Shield size={16} className="text-live" />
+            <span className="text-sm font-medium text-text-secondary">
+              No tracking &middot; No ads
+            </span>
+          </div>
+        </div>
+      </section>
 
-          <h2 className="mb-4 text-3xl font-bold text-text-primary sm:text-4xl">
-            Two platforms.{" "}
-            <span className="gradient-text-pink">One guide.</span>
+      {/* FAQ */}
+      <section className="border-t border-divider px-6 py-24">
+        <div className="mx-auto max-w-2xl">
+          <h2 className="mb-12 text-center text-3xl font-bold text-text-primary sm:text-4xl">
+            Frequently asked{" "}
+            <span className="gradient-text">questions</span>
           </h2>
-          <p className="text-text-secondary">
-            StreamHub automatically detects streamers who broadcast on both
-            platforms and merges their schedules into a single view.
-          </p>
+          <div className="rounded-xl border border-border-default bg-background-elevated p-6">
+            {FAQ_ITEMS.map((item) => (
+              <FAQItem key={item.question} {...item} />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Download CTA */}
-      <section className="border-t border-divider px-6 py-24">
+      <section id="download" className="border-t border-divider px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="glow-text mb-4 text-3xl font-bold text-accent-cyan sm:text-4xl">
             Download StreamHub

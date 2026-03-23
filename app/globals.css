@@ -17,7 +17,7 @@
 
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #A0A0B0;
-  --color-text-muted: #5A5A6E;
+  --color-text-muted: #7A7A90;
   --color-text-accent: #00F0FF;
 
   --color-border-default: #2A2A3A;
@@ -238,4 +238,32 @@ body {
     0 0 15px rgba(0, 240, 255, 0.4),
     0 0 30px rgba(0, 240, 255, 0.2),
     0 0 60px rgba(0, 240, 255, 0.1);
+}
+
+/* Accessibility: reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-reverse,
+  .animate-twinkle,
+  .animate-pulse-glow {
+    animation: none !important;
+  }
+
+  /* Tailwind's animate-bounce */
+  .animate-bounce {
+    animation: none !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Performance: promote animated elements to compositor layer */
+.animate-float,
+.animate-float-slow,
+.animate-float-reverse,
+.animate-twinkle {
+  will-change: transform, opacity;
 }
