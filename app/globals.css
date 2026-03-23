@@ -193,9 +193,8 @@ body {
 .bracket-frame::after {
   bottom: -16px;
   right: -16px;
-  border-bottom: 2px solid;
-  border-right: 2px solid;
-  border-color: rgba(0, 240, 255, 0.4);
+  border-bottom: 2px solid rgba(255, 0, 170, 0.4);
+  border-right: 2px solid rgba(255, 0, 170, 0.4);
 }
 
 /* Additional bracket corners (via inner spans) */
@@ -218,8 +217,8 @@ body {
 .bracket-frame-inner::after {
   bottom: -16px;
   left: -16px;
-  border-bottom: 2px solid rgba(0, 240, 255, 0.4);
-  border-left: 2px solid rgba(0, 240, 255, 0.4);
+  border-bottom: 2px solid rgba(255, 0, 170, 0.4);
+  border-left: 2px solid rgba(255, 0, 170, 0.4);
 }
 
 /* Particle dots */

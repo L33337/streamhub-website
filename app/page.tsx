@@ -230,12 +230,12 @@ function FeatureCard({
   );
 }
 
-function StoreBadges({ fullWidth = false }: { fullWidth?: boolean }) {
+function StoreBadges() {
   return (
-    <div className={`flex flex-col items-center gap-4 sm:flex-row ${fullWidth ? "sm:justify-center" : ""}`}>
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
       <a
         href="#"
-        className={`inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)] ${fullWidth ? "w-full justify-center sm:w-auto" : ""}`}
+        className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
         aria-label="Download on the App Store"
       >
         <svg viewBox="0 0 24 24" className="h-7 w-7 fill-text-primary">
@@ -253,7 +253,7 @@ function StoreBadges({ fullWidth = false }: { fullWidth?: boolean }) {
 
       <a
         href="#"
-        className={`inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)] ${fullWidth ? "w-full justify-center sm:w-auto" : ""}`}
+        className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
         aria-label="Get it on Google Play"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-text-primary">
@@ -412,7 +412,7 @@ export default function Home() {
               </span>
             </div>
 
-            <StoreBadges fullWidth />
+            <StoreBadges />
           </div>
 
           {/* Right: Phone mockup (desktop) */}
