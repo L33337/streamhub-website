@@ -70,14 +70,14 @@ const FEATURES = [
 ];
 
 const FLOATING_ICONS = [
-  { icon: Gamepad2, x: "8%", y: "15%", size: 22, color: "text-text-secondary", bg: "bg-text-secondary/10", border: "border-text-secondary/30", anim: "animate-float", delay: "0s", live: false },
-  { icon: Camera, x: "85%", y: "20%", size: 18, color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30", anim: "animate-float-slow", delay: "0.5s", live: true },
-  { icon: Music, x: "90%", y: "55%", size: 16, color: "text-text-primary", bg: "bg-text-primary/10", border: "border-text-primary/20", anim: "animate-float-reverse", delay: "1s", live: false },
-  { icon: Mic, x: "5%", y: "50%", size: 20, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", anim: "animate-float-slow", delay: "0.8s", live: false },
-  { icon: Radio, x: "15%", y: "80%", size: 16, color: "text-text-secondary", bg: "bg-text-secondary/10", border: "border-text-secondary/30", anim: "animate-float", delay: "1.2s", live: true },
-  { icon: Tv, x: "78%", y: "78%", size: 20, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30", anim: "animate-float-reverse", delay: "0.3s", live: false },
-  { icon: Globe, x: "25%", y: "25%", size: 14, color: "text-text-primary", bg: "bg-text-primary/10", border: "border-text-primary/20", anim: "animate-float-reverse", delay: "1.5s", live: false },
-  { icon: Star, x: "70%", y: "12%", size: 14, color: "text-amber-300", bg: "bg-amber-300/10", border: "border-amber-300/30", anim: "animate-float", delay: "0.7s", live: true },
+  { icon: Gamepad2, x: "8%", y: "15%", size: 22, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float", delay: "0s", live: false },
+  { icon: Camera, x: "85%", y: "20%", size: 18, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-slow", delay: "0.5s", live: true },
+  { icon: Music, x: "90%", y: "55%", size: 16, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-reverse", delay: "1s", live: false },
+  { icon: Mic, x: "5%", y: "50%", size: 20, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-slow", delay: "0.8s", live: false },
+  { icon: Radio, x: "15%", y: "80%", size: 16, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float", delay: "1.2s", live: true },
+  { icon: Tv, x: "78%", y: "78%", size: 20, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-reverse", delay: "0.3s", live: false },
+  { icon: Globe, x: "25%", y: "25%", size: 14, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-reverse", delay: "1.5s", live: false },
+  { icon: Star, x: "70%", y: "12%", size: 14, color: "text-live", bg: "bg-live/10", border: "border-live/30", anim: "animate-float", delay: "0.7s", live: true },
 ];
 
 const PARTICLES = [
@@ -348,14 +348,13 @@ export default function Home() {
               <Icon size={item.size} strokeWidth={1.5} className={`${item.color} opacity-80`} />
               {item.live && (
                 <span
-                  className="animate-pulse-glow absolute -bottom-1 -right-1 rounded-sm px-1 py-px text-[7px] font-bold uppercase leading-none text-white"
-                  style={{
-                    backgroundColor: item.border.includes("red")
-                      ? "#f87171"
-                      : item.border.includes("text-secondary")
-                        ? "#A0A0B0"
-                        : "#fcd34d",
-                  }}
+                  className={`animate-pulse-glow absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-sm px-1 py-px text-[7px] font-bold uppercase leading-none text-white ${
+                    item.border.includes("pink")
+                      ? "bg-accent-pink"
+                      : item.border.includes("live")
+                        ? "bg-live"
+                        : "bg-accent-cyan"
+                  }`}
                 >
                   LIVE
                 </span>
