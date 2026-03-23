@@ -1,26 +1,140 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: #0A0A0F;
+  --color-background-elevated: #12121A;
+  --color-background-highlight: #1A1A25;
+  --color-surface: #0E0E14;
+
+  --color-accent-cyan: #00F0FF;
+  --color-accent-cyan-muted: #00B8C4;
+  --color-accent-pink: #FF00AA;
+  --color-accent-purple: #9146FF;
+
+  --color-live: #00FF88;
+  --color-twitch: #9146FF;
+  --color-youtube: #FF0033;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #A0A0B0;
+  --color-text-muted: #5A5A6E;
+  --color-text-accent: #00F0FF;
+
+  --color-border-default: #2A2A3A;
+  --color-border-accent: #00F0FF;
+  --color-divider: #1F1F2A;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+/* Cyberpunk Glow Effects */
+.glow-cyan {
+  box-shadow:
+    0 0 5px rgba(0, 240, 255, 0.3),
+    0 0 10px rgba(0, 240, 255, 0.2),
+    0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.glow-cyan-strong {
+  box-shadow:
+    0 0 10px rgba(0, 240, 255, 0.4),
+    0 0 20px rgba(0, 240, 255, 0.3),
+    0 0 40px rgba(0, 240, 255, 0.15);
+}
+
+.glow-text {
+  text-shadow:
+    0 0 10px rgba(0, 240, 255, 0.5),
+    0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.glow-text-pink {
+  text-shadow:
+    0 0 10px rgba(255, 0, 170, 0.5),
+    0 0 20px rgba(255, 0, 170, 0.3);
+}
+
+.glow-green {
+  box-shadow:
+    0 0 5px rgba(0, 255, 136, 0.3),
+    0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+/* Gradient border effect */
+.gradient-border {
+  position: relative;
+  background: var(--color-background-elevated);
+  border-radius: 12px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(145, 70, 255, 0.3));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Scan lines overlay */
+.scan-lines::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 50;
+}
+
+/* Pulse animation for live badges */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, #00F0FF, #9146FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-pink {
+  background: linear-gradient(90deg, #00F0FF, #FF00AA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
