@@ -8,14 +8,6 @@ import {
   Heart,
   Search,
   ChevronDown,
-  Gamepad2,
-  Camera,
-  Music,
-  Mic,
-  Radio,
-  Tv,
-  Globe,
-  Star,
   Sparkles,
   Bell,
   Shield,
@@ -70,14 +62,14 @@ const FEATURES = [
 ];
 
 const FLOATING_ICONS = [
-  { icon: Gamepad2, x: "8%", y: "15%", size: 22, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float", delay: "0s", live: false },
-  { icon: Camera, x: "85%", y: "20%", size: 18, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-slow", delay: "0.5s", live: true },
-  { icon: Music, x: "90%", y: "55%", size: 16, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-reverse", delay: "1s", live: false },
-  { icon: Mic, x: "5%", y: "50%", size: 20, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-slow", delay: "0.8s", live: false },
-  { icon: Radio, x: "15%", y: "80%", size: 16, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float", delay: "1.2s", live: true },
-  { icon: Tv, x: "78%", y: "78%", size: 20, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-reverse", delay: "0.3s", live: false },
-  { icon: Globe, x: "25%", y: "25%", size: 14, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-reverse", delay: "1.5s", live: false },
-  { icon: Star, x: "70%", y: "12%", size: 14, color: "text-live", bg: "bg-live/10", border: "border-live/30", anim: "animate-float", delay: "0.7s", live: true },
+  { emoji: "🎮", x: "8%", y: "15%", size: 22, bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float", delay: "0s", live: false },
+  { emoji: "🎥", x: "85%", y: "20%", size: 18, bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-slow", delay: "0.5s", live: true },
+  { emoji: "🎵", x: "90%", y: "55%", size: 16, bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-reverse", delay: "1s", live: false },
+  { emoji: "🎙️", x: "5%", y: "50%", size: 20, bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-slow", delay: "0.8s", live: false },
+  { emoji: "📻", x: "15%", y: "80%", size: 16, bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float", delay: "1.2s", live: true },
+  { emoji: "📺", x: "78%", y: "78%", size: 20, bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-reverse", delay: "0.3s", live: false },
+  { emoji: "🌍", x: "25%", y: "25%", size: 14, bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-reverse", delay: "1.5s", live: false },
+  { emoji: "⭐", x: "70%", y: "12%", size: 14, bg: "bg-live/10", border: "border-live/30", anim: "animate-float", delay: "0.7s", live: true },
 ];
 
 const PARTICLES = [
@@ -331,7 +323,6 @@ export default function Home() {
 
         {/* Floating Icons */}
         {FLOATING_ICONS.map((item, i) => {
-          const Icon = item.icon;
           const badgeSize = item.size * 2.4;
           return (
             <div
@@ -343,9 +334,11 @@ export default function Home() {
                 width: badgeSize,
                 height: badgeSize,
                 animationDelay: item.delay,
+                fontSize: item.size,
+                lineHeight: 1,
               }}
             >
-              <Icon size={item.size} strokeWidth={1.5} className={`${item.color} opacity-80`} />
+              <span role="img">{item.emoji}</span>
               {item.live && (
                 <span
                   className={`animate-pulse-glow absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-sm px-1 py-px text-[7px] font-bold uppercase leading-none text-white ${
