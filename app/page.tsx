@@ -107,6 +107,11 @@ const SCREENSHOTS = [
     label: "Live Feed",
   },
   {
+    src: "/screenshots/predictions.jpg",
+    alt: "Streamer detail page with AI predictions",
+    label: "AI Predictions",
+  },
+  {
     src: "/screenshots/epg-grid.jpg",
     alt: "EPG Grid View with AI-predicted stream schedules",
     label: "EPG Grid View",
@@ -115,11 +120,6 @@ const SCREENSHOTS = [
     src: "/screenshots/multi-day.jpg",
     alt: "Multi-day schedule view with multiple streamers",
     label: "Multi-Day Schedule",
-  },
-  {
-    src: "/screenshots/predictions.jpg",
-    alt: "Streamer detail page with AI predictions",
-    label: "AI Predictions",
   },
 ];
 
