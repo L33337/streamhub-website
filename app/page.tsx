@@ -6,6 +6,16 @@ import {
   Heart,
   Search,
   ChevronDown,
+  Gamepad2,
+  Camera,
+  Music,
+  Mic,
+  Radio,
+  Tv,
+  Globe,
+  Star,
+  Film,
+  Headphones,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,6 +62,32 @@ const FEATURES = [
       "Search and add any streamer. Auto-detects cross-platform creators who stream on both Twitch and YouTube.",
     accent: "cyan" as const,
   },
+];
+
+const FLOATING_ICONS = [
+  { icon: Gamepad2, x: "8%", y: "15%", size: 22, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float", delay: "0s" },
+  { icon: Camera, x: "85%", y: "20%", size: 18, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-slow", delay: "0.5s" },
+  { icon: Music, x: "90%", y: "55%", size: 16, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float-reverse", delay: "1s" },
+  { icon: Mic, x: "5%", y: "50%", size: 20, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-slow", delay: "0.8s" },
+  { icon: Radio, x: "15%", y: "80%", size: 16, color: "text-accent-pink", bg: "bg-accent-pink/10", border: "border-accent-pink/30", anim: "animate-float", delay: "1.2s" },
+  { icon: Tv, x: "78%", y: "78%", size: 20, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-reverse", delay: "0.3s" },
+  { icon: Globe, x: "25%", y: "25%", size: 14, color: "text-accent-cyan", bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float-reverse", delay: "1.5s" },
+  { icon: Star, x: "70%", y: "12%", size: 14, color: "text-live", bg: "bg-live/10", border: "border-live/30", anim: "animate-float", delay: "0.7s" },
+  { icon: Film, x: "92%", y: "40%", size: 16, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float-slow", delay: "1.8s" },
+  { icon: Headphones, x: "3%", y: "35%", size: 16, color: "text-accent-purple", bg: "bg-accent-purple/10", border: "border-accent-purple/30", anim: "animate-float", delay: "2s" },
+];
+
+const PARTICLES = [
+  { x: "20%", y: "30%", size: 3, color: "bg-accent-cyan", delay: "0s" },
+  { x: "60%", y: "18%", size: 2, color: "bg-accent-pink", delay: "1s" },
+  { x: "75%", y: "65%", size: 3, color: "bg-accent-cyan", delay: "0.5s" },
+  { x: "35%", y: "70%", size: 2, color: "bg-text-primary", delay: "1.5s" },
+  { x: "50%", y: "85%", size: 2, color: "bg-accent-pink", delay: "2s" },
+  { x: "12%", y: "65%", size: 3, color: "bg-accent-cyan", delay: "0.8s" },
+  { x: "88%", y: "30%", size: 2, color: "bg-accent-purple", delay: "1.2s" },
+  { x: "45%", y: "10%", size: 2, color: "bg-text-primary", delay: "0.3s" },
+  { x: "30%", y: "45%", size: 2, color: "bg-accent-pink", delay: "1.8s" },
+  { x: "65%", y: "50%", size: 3, color: "bg-accent-cyan", delay: "0.6s" },
 ];
 
 const ACCENT_STYLES = {
@@ -143,17 +179,60 @@ function StoreBadges() {
 export default function Home() {
   return (
     <main>
-      {/* Hero Section */}
+      {/* Hero Section — Splash Screen Style */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
+        {/* Background gradient */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-surface to-background" />
-        <div className="pointer-events-none absolute top-1/4 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-cyan/5 blur-[120px]" />
+        {/* Radial glow behind title */}
+        <div className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-cyan/5 blur-[120px]" />
 
+        {/* Floating Icons (Circular Badges) */}
+        {FLOATING_ICONS.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={i}
+              className={`pointer-events-none absolute hidden sm:flex items-center justify-center rounded-full border ${item.border} ${item.bg} ${item.anim}`}
+              style={{
+                left: item.x,
+                top: item.y,
+                width: item.size * 2.4,
+                height: item.size * 2.4,
+                animationDelay: item.delay,
+              }}
+            >
+              <Icon size={item.size} strokeWidth={1.5} className={`${item.color} opacity-70`} />
+            </div>
+          );
+        })}
+
+        {/* Particles / Glowing Dots */}
+        {PARTICLES.map((p, i) => (
+          <div
+            key={`p-${i}`}
+            className={`pointer-events-none absolute rounded-full ${p.color} animate-twinkle`}
+            style={{
+              left: p.x,
+              top: p.y,
+              width: p.size,
+              height: p.size,
+              animationDelay: p.delay,
+              boxShadow: `0 0 ${p.size * 3}px currentColor`,
+            }}
+          />
+        ))}
+
+        {/* Center content with bracket frame */}
         <div className="relative z-10 max-w-3xl">
-          <h1 className="glow-text mb-4 text-5xl font-bold tracking-tight text-accent-cyan sm:text-7xl">
-            Stream<span className="text-text-primary">Hub</span>
-          </h1>
+          {/* Bracket Frame */}
+          <div className="bracket-frame relative inline-block px-8 py-6">
+            <div className="bracket-frame-inner absolute inset-0" />
+            <h1 className="glow-text-white text-5xl font-bold tracking-tight text-text-primary sm:text-7xl">
+              StreamHub
+            </h1>
+          </div>
 
-          <p className="mb-2 text-xl font-medium text-text-secondary sm:text-2xl">
+          <p className="mt-6 mb-2 text-xl font-medium text-text-secondary sm:text-2xl">
             Your TV Guide for Live Streams
           </p>
 
@@ -281,8 +360,8 @@ export default function Home() {
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
             <div>
-              <span className="text-lg font-bold text-accent-cyan">
-                Stream<span className="text-text-primary">Hub</span>
+              <span className="glow-text-white text-lg font-bold text-text-primary">
+                StreamHub
               </span>
               <p className="mt-1 text-sm text-text-muted">
                 Your TV guide for live streams.

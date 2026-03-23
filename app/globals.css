@@ -138,3 +138,104 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* Floating icon animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 4.5s ease-in-out infinite;
+}
+
+/* Bracket corners around title */
+.bracket-frame {
+  position: relative;
+}
+
+.bracket-frame::before,
+.bracket-frame::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: rgba(0, 240, 255, 0.4);
+  pointer-events: none;
+}
+
+.bracket-frame::before {
+  top: -16px;
+  left: -16px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+.bracket-frame::after {
+  bottom: -16px;
+  right: -16px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+  border-color: rgba(0, 240, 255, 0.4);
+}
+
+/* Additional bracket corners (via inner spans) */
+.bracket-frame-inner::before,
+.bracket-frame-inner::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.bracket-frame-inner::before {
+  top: -16px;
+  right: -16px;
+  border-top: 2px solid rgba(0, 240, 255, 0.4);
+  border-right: 2px solid rgba(0, 240, 255, 0.4);
+}
+
+.bracket-frame-inner::after {
+  bottom: -16px;
+  left: -16px;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.4);
+  border-left: 2px solid rgba(0, 240, 255, 0.4);
+}
+
+/* Particle dots */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+/* Glow text white (for splash-style logo) */
+.glow-text-white {
+  text-shadow:
+    0 0 15px rgba(0, 240, 255, 0.4),
+    0 0 30px rgba(0, 240, 255, 0.2),
+    0 0 60px rgba(0, 240, 255, 0.1);
+}
