@@ -127,7 +127,7 @@ const FAQ_ITEMS = [
   {
     question: "Is StreamHub really free?",
     answer:
-      "Yes! StreamHub is completely free to use with no ads. All core features — AI predictions, live notifications, EPG grid view — are included at no cost.",
+      "Yes! StreamHub is completely free to use. All core features — AI predictions, live notifications, EPG grid view — are included at no cost.",
   },
   {
     question: "How accurate are the AI predictions?",
@@ -408,7 +408,7 @@ export default function Home() {
             <div className="mb-6 flex items-center justify-center gap-2 lg:justify-start">
               <Shield size={14} className="text-live" />
               <span className="text-sm text-text-secondary">
-                Free &middot; No ads &middot; No account required
+                Free &middot; No account required
               </span>
             </div>
 
@@ -546,7 +546,7 @@ export default function Home() {
           <div className="flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 py-3">
             <Shield size={16} className="text-live" />
             <span className="text-sm font-medium text-text-secondary">
-              No tracking &middot; No ads
+              No tracking
             </span>
           </div>
         </div>
