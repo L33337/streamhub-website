@@ -11,13 +11,13 @@ const sections = [
   {
     heading: "1. Acceptance of Terms",
     paragraphs: [
-      'By downloading, installing, or using the StreamTV mobile application (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.',
+      'By downloading, installing, or using the StreamHub mobile application (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.',
     ],
   },
   {
     heading: "2. Description of Service",
     paragraphs: [
-      "StreamTV is a mobile TV guide for livestreams. The App aggregates publicly available streaming schedules from platforms such as Twitch and YouTube, and provides AI-powered predictions for when streamers may go live. The App does not host or stream any video content.",
+      "StreamHub is a mobile TV guide for livestreams. The App aggregates publicly available streaming schedules from platforms such as Twitch and YouTube, and provides AI-powered predictions for when streamers may go live. The App does not host or stream any video content.",
     ],
   },
   {
@@ -35,7 +35,7 @@ const sections = [
   {
     heading: "5. Intellectual Property",
     paragraphs: [
-      "The App, including its design, code, and branding, is the intellectual property of the StreamTV team. Streamer names, logos, and content belong to their respective owners. Twitch is a trademark of Twitch Interactive, Inc. YouTube is a trademark of Google LLC.",
+      "The App, including its design, code, and branding, is the intellectual property of the StreamHub team. Streamer names, logos, and content belong to their respective owners. Twitch is a trademark of Twitch Interactive, Inc. YouTube is a trademark of Google LLC.",
     ],
   },
   {

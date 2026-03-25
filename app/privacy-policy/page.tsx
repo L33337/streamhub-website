@@ -11,7 +11,7 @@ const sections = [
   {
     heading: "1. Introduction",
     paragraphs: [
-      'StreamTV ("we", "us", "our") operates the StreamTV mobile application (the "App"). This Privacy Policy explains how we collect, use, and protect your information when you use our App.',
+      'StreamHub ("we", "us", "our") operates the StreamHub mobile application (the "App"). This Privacy Policy explains how we collect, use, and protect your information when you use our App.',
       "By using the App, you agree to the collection and use of information in accordance with this policy.",
     ],
   },
