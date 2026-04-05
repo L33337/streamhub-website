@@ -612,6 +612,12 @@ export default function Home() {
               >
                 Support
               </Link>
+              <Link
+                href="/impressum"
+                className="text-text-secondary transition-colors hover:text-accent-cyan"
+              >
+                Impressum
+              </Link>
             </nav>
           </div>
 
