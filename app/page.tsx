@@ -234,7 +234,9 @@ function StoreBadges() {
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
       <a
-        href="#"
+        href="https://apps.apple.com/us/app/streamhub-livestream-overview/id6760627630"
+        target="_blank"
+        rel="noopener noreferrer"
         className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
         aria-label="Download on the App Store"
       >
