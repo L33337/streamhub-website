@@ -3,15 +3,15 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - StreamHub",
-  description: "StreamHub Privacy Policy. Learn how we collect, use, and protect your information.",
+  title: "Privacy Policy - Streamer Times",
+  description: "Streamer Times Privacy Policy. Learn how we collect, use, and protect your information.",
 };
 
 const sections = [
   {
     heading: "1. Introduction",
     paragraphs: [
-      'StreamHub ("we", "us", "our") operates the StreamHub mobile application (the "App"). This Privacy Policy explains how we collect, use, and protect your information when you use our App.',
+      'Streamer Times ("we", "us", "our") operates the Streamer Times mobile application (the "App"). This Privacy Policy explains how we collect, use, and protect your information when you use our App.',
       "By using the App, you agree to the collection and use of information in accordance with this policy.",
     ],
   },
@@ -92,7 +92,7 @@ export default function PrivacyPolicy() {
         className="mb-8 inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-accent-cyan"
       >
         <ArrowLeft size={16} />
-        Back to StreamHub
+        Back to Streamer Times
       </Link>
 
       <h1 className="mb-2 text-3xl font-bold text-text-primary">
@@ -119,7 +119,7 @@ export default function PrivacyPolicy() {
       ))}
 
       <footer className="mt-16 border-t border-divider pt-8 text-center text-sm text-text-muted">
-        &copy; {new Date().getFullYear()} StreamHub. All rights reserved.
+        &copy; {new Date().getFullYear()} Streamer Times. All rights reserved.
       </footer>
     </main>
   );

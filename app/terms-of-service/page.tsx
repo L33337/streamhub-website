@@ -3,21 +3,21 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - StreamHub",
-  description: "StreamHub Terms of Service. Read our terms and conditions for using the app.",
+  title: "Terms of Service - Streamer Times",
+  description: "Streamer Times Terms of Service. Read our terms and conditions for using the app.",
 };
 
 const sections = [
   {
     heading: "1. Acceptance of Terms",
     paragraphs: [
-      'By downloading, installing, or using the StreamHub mobile application (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.',
+      'By downloading, installing, or using the Streamer Times mobile application (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.',
     ],
   },
   {
     heading: "2. Description of Service",
     paragraphs: [
-      "StreamHub is a mobile TV guide for livestreams. The App aggregates publicly available streaming schedules from platforms such as Twitch and YouTube, and provides AI-powered predictions for when streamers may go live. The App does not host or stream any video content.",
+      "Streamer Times is a mobile TV guide for livestreams. The App aggregates publicly available streaming schedules from platforms such as Twitch and YouTube, and provides AI-powered predictions for when streamers may go live. The App does not host or stream any video content.",
     ],
   },
   {
@@ -35,7 +35,7 @@ const sections = [
   {
     heading: "5. Intellectual Property",
     paragraphs: [
-      "The App, including its design, code, and branding, is the intellectual property of the StreamHub team. Streamer names, logos, and content belong to their respective owners. Twitch is a trademark of Twitch Interactive, Inc. YouTube is a trademark of Google LLC.",
+      "The App, including its design, code, and branding, is the intellectual property of the Streamer Times team. Streamer names, logos, and content belong to their respective owners. Twitch is a trademark of Twitch Interactive, Inc. YouTube is a trademark of Google LLC.",
     ],
   },
   {
@@ -78,7 +78,7 @@ export default function TermsOfService() {
         className="mb-8 inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-accent-cyan"
       >
         <ArrowLeft size={16} />
-        Back to StreamHub
+        Back to Streamer Times
       </Link>
 
       <h1 className="mb-2 text-3xl font-bold text-text-primary">
@@ -105,7 +105,7 @@ export default function TermsOfService() {
       ))}
 
       <footer className="mt-16 border-t border-divider pt-8 text-center text-sm text-text-muted">
-        &copy; {new Date().getFullYear()} StreamHub. All rights reserved.
+        &copy; {new Date().getFullYear()} Streamer Times. All rights reserved.
       </footer>
     </main>
   );

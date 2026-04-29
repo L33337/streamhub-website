@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "StreamHub - Your TV Guide for Live Streams";
+export const alt = "Streamer Times - Your Livestream Guide";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -81,7 +81,7 @@ export default async function Image() {
             display: "flex",
           }}
         >
-          StreamHub
+          StreamerTimes
         </div>
 
         {/* Subtitle */}
@@ -93,7 +93,7 @@ export default async function Image() {
             display: "flex",
           }}
         >
-          Your TV Guide for Live Streams
+          Your Livestream Guide
         </div>
 
         {/* Feature pills */}

@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StreamHub - Your TV Guide for Twitch & YouTube Live Streams",
+  title: "Streamer Times - Your Livestream Guide for Twitch & YouTube",
   description:
-    "Never miss a live stream. AI-powered predictions, EPG grid view, and real-time notifications for Twitch and YouTube streamers. Free for iOS and Android.",
+    "Streamer Times: Your Livestream Guide. AI-powered predictions, EPG grid view, and real-time notifications for Twitch and YouTube streamers. Free for iOS and Android.",
   keywords: [
     "twitch schedule",
     "youtube live guide",
@@ -24,21 +24,22 @@ export const metadata: Metadata = {
     "when is streamer live",
     "twitch tv guide",
     "streaming schedule app",
+    "streamer times",
   ],
-  authors: [{ name: "StreamHub" }],
-  metadataBase: new URL("https://streamhub.sh"),
+  authors: [{ name: "Streamer Times" }],
+  metadataBase: new URL("https://streamertimes.tv"),
   openGraph: {
-    title: "StreamHub - Your TV Guide for Twitch & YouTube Live Streams",
+    title: "Streamer Times - Your Livestream Guide for Twitch & YouTube",
     description:
-      "Never miss a live stream. AI-powered predictions, EPG grid view, and real-time notifications for Twitch and YouTube.",
-    url: "https://streamhub.sh",
-    siteName: "StreamHub",
+      "Streamer Times: Your Livestream Guide. AI-powered predictions, EPG grid view, and real-time notifications for Twitch and YouTube.",
+    url: "https://streamertimes.tv",
+    siteName: "Streamer Times",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "StreamHub - TV Guide for Live Streams",
+    title: "Streamer Times - Your Livestream Guide",
     description:
       "AI-powered predictions for Twitch & YouTube. Never miss a stream.",
   },
@@ -65,18 +66,19 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              name: "StreamHub",
+              name: "Streamer Times",
+              alternateName: "StreamerTimes",
               operatingSystem: "iOS, Android",
               applicationCategory: "EntertainmentApplication",
               applicationSubCategory: "LiveStreamingApplication",
               description:
-                "Your TV guide for Twitch & YouTube live streams with AI-powered predictions.",
-              url: "https://streamhub.sh",
+                "Your Livestream Guide for Twitch & YouTube with AI-powered predictions.",
+              url: "https://streamertimes.tv",
               screenshot: [
-                "https://streamhub.sh/screenshots/live-feed.jpg",
-                "https://streamhub.sh/screenshots/epg-grid.jpg",
-                "https://streamhub.sh/screenshots/multi-day.jpg",
-                "https://streamhub.sh/screenshots/predictions.jpg",
+                "https://streamertimes.tv/screenshots/live-feed.jpg",
+                "https://streamertimes.tv/screenshots/epg-grid.jpg",
+                "https://streamertimes.tv/screenshots/multi-day.jpg",
+                "https://streamertimes.tv/screenshots/predictions.jpg",
               ],
               offers: {
                 "@type": "Offer",

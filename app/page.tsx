@@ -103,7 +103,7 @@ const ACCENT_STYLES = {
 const SCREENSHOTS = [
   {
     src: "/screenshots/live-feed.jpg",
-    alt: "StreamHub Live Feed showing currently live streamers",
+    alt: "Streamer Times Live Feed showing currently live streamers",
     label: "Live Feed",
   },
   {
@@ -125,9 +125,9 @@ const SCREENSHOTS = [
 
 const FAQ_ITEMS = [
   {
-    question: "Is StreamHub really free?",
+    question: "Is Streamer Times really free?",
     answer:
-      "Yes! StreamHub is completely free to use. All core features — AI predictions, live notifications, EPG grid view — are included at no cost.",
+      "Yes! Streamer Times is completely free to use. All core features — AI predictions, live notifications, EPG grid view — are included at no cost.",
   },
   {
     question: "How accurate are the AI predictions?",
@@ -137,17 +137,17 @@ const FAQ_ITEMS = [
   {
     question: "Do I need an account?",
     answer:
-      "No account required to get started. StreamHub works right away with anonymous access. You can optionally create an account to sync your favorites across devices.",
+      "No account required to get started. Streamer Times works right away with anonymous access. You can optionally create an account to sync your favorites across devices.",
   },
   {
     question: "Which streamers can I track?",
     answer:
-      "Any streamer on Twitch or YouTube! Just search for their name and add them to your guide. StreamHub automatically detects if they stream on both platforms.",
+      "Any streamer on Twitch or YouTube! Just search for their name and add them to your guide. Streamer Times automatically detects if they stream on both platforms.",
   },
   {
     question: "Does it work on both iOS and Android?",
     answer:
-      "Yes, StreamHub is available as a native app on both iOS (App Store) and Android (Google Play).",
+      "Yes, Streamer Times is available as a native app on both iOS (App Store) and Android (Google Play).",
   },
 ];
 
@@ -170,7 +170,7 @@ function StickyHeader() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="glow-text-white text-lg font-bold text-text-primary">
-          StreamHub
+          StreamerTimes
         </Link>
 
         <nav className="hidden items-center gap-8 sm:flex">
@@ -234,7 +234,7 @@ function StoreBadges() {
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
       <a
-        href="https://apps.apple.com/us/app/streamhub-livestream-overview/id6760627630"
+        href="https://apps.apple.com/app/id6760627630"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
@@ -382,7 +382,7 @@ export default function Home() {
             <div className="bracket-frame relative inline-block px-8 py-6">
               <div className="bracket-frame-inner absolute inset-0" />
               <h1 className="glow-text-white text-5xl font-bold tracking-tight text-text-primary sm:text-7xl">
-                StreamHub
+                StreamerTimes
               </h1>
             </div>
 
@@ -421,7 +421,7 @@ export default function Home() {
           <div className="hidden lg:flex justify-center">
             <PhoneMockup
               src="/screenshots/live-feed.jpg"
-              alt="StreamHub Live Feed"
+              alt="Streamer Times Live Feed"
               className="w-[280px]"
             />
           </div>
@@ -430,7 +430,7 @@ export default function Home() {
           <div className="flex justify-center lg:hidden">
             <PhoneMockup
               src="/screenshots/live-feed.jpg"
-              alt="StreamHub Live Feed"
+              alt="Streamer Times Live Feed"
               className="w-[220px]"
             />
           </div>
@@ -445,7 +445,7 @@ export default function Home() {
             <span className="gradient-text">Nothing you don&apos;t.</span>
           </h2>
           <p className="mx-auto mb-16 max-w-2xl text-center text-text-secondary">
-            StreamHub combines schedule tracking, AI predictions, and real-time
+            Streamer Times combines schedule tracking, AI predictions, and real-time
             notifications into one beautiful interface.
           </p>
 
@@ -573,7 +573,7 @@ export default function Home() {
       <section id="download" className="border-t border-divider px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="glow-text mb-4 text-3xl font-bold text-accent-cyan sm:text-4xl">
-            Download StreamHub
+            Download Streamer Times
           </h2>
           <p className="mb-10 text-text-secondary">
             Free on iOS and Android. No account required to get started.
@@ -588,10 +588,10 @@ export default function Home() {
           <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
             <div>
               <span className="glow-text-white text-lg font-bold text-text-primary">
-                StreamHub
+                StreamerTimes
               </span>
               <p className="mt-1 text-sm text-text-muted">
-                Your TV guide for live streams.
+                Your Livestream Guide.
               </p>
             </div>
 
@@ -624,7 +624,7 @@ export default function Home() {
           </div>
 
           <div className="mt-8 border-t border-divider pt-8 text-center text-sm text-text-muted">
-            &copy; {new Date().getFullYear()} StreamHub. All rights reserved.
+            &copy; {new Date().getFullYear()} Streamer Times. All rights reserved.
           </div>
         </div>
       </footer>

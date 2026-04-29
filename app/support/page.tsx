@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, Mail, MessageCircle, Shield } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Support - StreamHub",
-  description: "Get help with StreamHub. Contact us for support, bug reports, or feedback.",
+  title: "Support - Streamer Times",
+  description: "Get help with Streamer Times. Contact us for support, bug reports, or feedback.",
 };
 
 export default function Support() {
@@ -15,12 +15,12 @@ export default function Support() {
         className="mb-8 inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-accent-cyan"
       >
         <ArrowLeft size={16} />
-        Back to StreamHub
+        Back to Streamer Times
       </Link>
 
       <h1 className="mb-2 text-3xl font-bold text-text-primary">Support</h1>
       <p className="mb-12 text-text-secondary">
-        Need help with StreamHub? We&apos;re here for you.
+        Need help with Streamer Times? We&apos;re here for you.
       </p>
 
       <div className="grid gap-6 sm:grid-cols-2">
@@ -70,8 +70,8 @@ export default function Support() {
         <div className="space-y-6">
           {[
             {
-              q: "Do I need an account to use StreamHub?",
-              a: "No. StreamHub creates an anonymous session when you first open the app. You can browse all streams and use all features without creating an account. Creating an account lets you sync favorites across devices.",
+              q: "Do I need an account to use Streamer Times?",
+              a: "No. Streamer Times creates an anonymous session when you first open the app. You can browse all streams and use all features without creating an account. Creating an account lets you sync favorites across devices.",
             },
             {
               q: "How accurate are the AI predictions?",
@@ -79,15 +79,15 @@ export default function Support() {
             },
             {
               q: "Which streamers are available?",
-              a: "You can add any Twitch or YouTube streamer to your guide. Use the search feature to find streamers by name. StreamHub will automatically set up real-time notifications for them.",
+              a: "You can add any Twitch or YouTube streamer to your guide. Use the search feature to find streamers by name. Streamer Times will automatically set up real-time notifications for them.",
             },
             {
               q: "How do I delete my account?",
               a: "Open the app, go to Settings, and tap \"Delete Account\". This permanently removes your email, favorites, and all associated data. A new anonymous session will be created automatically.",
             },
             {
-              q: "Is StreamHub free?",
-              a: "Yes, StreamHub is free to download and use. The app includes ad banners to support development.",
+              q: "Is Streamer Times free?",
+              a: "Yes, Streamer Times is free to download and use. The app includes ad banners to support development.",
             },
             {
               q: "The app shows no streams. What should I do?",
@@ -117,7 +117,7 @@ export default function Support() {
       </section>
 
       <footer className="mt-16 border-t border-divider pt-8 text-center text-sm text-text-muted">
-        &copy; {new Date().getFullYear()} StreamHub. All rights reserved.
+        &copy; {new Date().getFullYear()} Streamer Times. All rights reserved.
       </footer>
     </main>
   );
