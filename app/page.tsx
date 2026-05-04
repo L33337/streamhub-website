@@ -387,7 +387,7 @@ export default function Home() {
             </div>
 
             <p className="mt-6 mb-4 text-xl font-medium text-text-secondary sm:text-2xl">
-              Know when your streamers go live — before they do
+              Your Livestream Guide for Twitch & YouTube
             </p>
 
             {/* Feature pills */}
