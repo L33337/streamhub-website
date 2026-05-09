@@ -254,7 +254,9 @@ function StoreBadges() {
       </a>
 
       <a
-        href="#"
+        href="https://play.google.com/store/apps/details?id=com.streamhub.tv.app"
+        target="_blank"
+        rel="noopener noreferrer"
         className="inline-flex h-[52px] items-center gap-3 rounded-xl border border-border-default bg-background-elevated px-5 transition-all duration-200 hover:border-border-accent/40 hover:shadow-[0_0_15px_rgba(0,240,255,0.15)]"
         aria-label="Get it on Google Play"
       >
