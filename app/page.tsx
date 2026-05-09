@@ -381,9 +381,9 @@ export default function Home() {
           {/* Left: Text */}
           <div className="text-center lg:text-left">
             {/* Bracket Frame */}
-            <div className="bracket-frame relative inline-block px-8 py-6">
+            <div className="bracket-frame relative inline-block px-5 py-4 sm:px-8 sm:py-6">
               <div className="bracket-frame-inner absolute inset-0" />
-              <h1 className="glow-text-white text-5xl font-bold tracking-tight text-text-primary sm:text-7xl">
+              <h1 className="glow-text-white text-4xl font-bold tracking-tight text-text-primary sm:text-7xl">
                 StreamerTimes
               </h1>
             </div>
