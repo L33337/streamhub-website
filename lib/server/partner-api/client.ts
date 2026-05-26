@@ -1,0 +1,208 @@
+import 'server-only';
+
+import {
+  PartnerApiAuthError,
+  PartnerApiError,
+  PartnerApiNetworkError,
+  PartnerApiNotFoundError,
+  PartnerApiQuotaError,
+  PartnerApiServerError,
+} from './errors';
+import type {
+  Paginated,
+  PartnerApiErrorBody,
+  Platform,
+  PublicStreamer,
+  PublicStreamSlot,
+} from './types';
+
+const USER_AGENT = 'streamertimes-web/1.0';
+const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_REVALIDATE_SECONDS = 300;
+
+export interface FetchOptions {
+  /** Next.js ISR cache duration in seconds. `false` disables caching (`no-store`). */
+  revalidate?: number | false;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+export interface ListStreamersOptions extends FetchOptions {
+  platform?: Platform[];
+  language?: string;
+  isAlwaysOn?: boolean;
+  search?: string;
+  order?: 'name' | 'popular';
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListSchedulesOptions extends FetchOptions {
+  streamerIds?: string[];
+  from?: string;
+  to?: string;
+  platforms?: Platform[];
+  includePredictions?: boolean;
+  includeAlwaysOn?: boolean;
+  minConfidence?: 'low' | 'medium' | 'high';
+  status?: ('live' | 'upcoming' | 'offline')[];
+  cursor?: string;
+  limit?: number;
+}
+
+class PartnerApiClient {
+  constructor(
+    private readonly baseUrl: string,
+    private readonly apiKey: string,
+  ) {}
+
+  async listStreamers(opts: ListStreamersOptions = {}): Promise<Paginated<PublicStreamer>> {
+    const params = new URLSearchParams();
+    opts.platform?.forEach((p) => params.append('platform', p));
+    if (opts.language) params.set('language', opts.language);
+    if (opts.isAlwaysOn !== undefined) params.set('is_always_on', String(opts.isAlwaysOn));
+    if (opts.search) params.set('search', opts.search);
+    if (opts.order) params.set('order', opts.order);
+    if (opts.cursor) params.set('cursor', opts.cursor);
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    return this.request<Paginated<PublicStreamer>>('GET', `/v1/streamers?${params}`, opts);
+  }
+
+  async getStreamer(id: string, opts: FetchOptions = {}): Promise<PublicStreamer | null> {
+    try {
+      return await this.request<PublicStreamer>(
+        'GET',
+        `/v1/streamers/${encodeURIComponent(id)}`,
+        opts,
+      );
+    } catch (err) {
+      if (err instanceof PartnerApiNotFoundError) return null;
+      throw err;
+    }
+  }
+
+  async getSchedule(id: string, opts: FetchOptions = {}): Promise<PublicStreamSlot | null> {
+    try {
+      return await this.request<PublicStreamSlot>(
+        'GET',
+        `/v1/schedules/${encodeURIComponent(id)}`,
+        opts,
+      );
+    } catch (err) {
+      if (err instanceof PartnerApiNotFoundError) return null;
+      throw err;
+    }
+  }
+
+  async listSchedules(opts: ListSchedulesOptions = {}): Promise<Paginated<PublicStreamSlot>> {
+    const params = new URLSearchParams();
+    opts.streamerIds?.forEach((id) => params.append('streamer_id', id));
+    opts.platforms?.forEach((p) => params.append('platform', p));
+    opts.status?.forEach((s) => params.append('status', s));
+    if (opts.from) params.set('from', opts.from);
+    if (opts.to) params.set('to', opts.to);
+    if (opts.includePredictions !== undefined) {
+      params.set('include_predictions', String(opts.includePredictions));
+    }
+    if (opts.includeAlwaysOn !== undefined) {
+      params.set('include_always_on', String(opts.includeAlwaysOn));
+    }
+    if (opts.minConfidence) params.set('min_confidence', opts.minConfidence);
+    if (opts.cursor) params.set('cursor', opts.cursor);
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    return this.request<Paginated<PublicStreamSlot>>('GET', `/v1/schedules?${params}`, opts);
+  }
+
+  private async request<T>(method: string, path: string, opts: FetchOptions): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+
+    const noCache = opts.revalidate === false;
+
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'User-Agent': USER_AGENT,
+          Accept: 'application/json',
+        },
+        signal: opts.signal ?? controller.signal,
+        ...(noCache
+          ? { cache: 'no-store' as const }
+          : { next: { revalidate: opts.revalidate ?? DEFAULT_REVALIDATE_SECONDS } }),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
+      throw new PartnerApiNetworkError(message, err);
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const text = await res.text();
+    let body: unknown = null;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        // Non-JSON response — leave body as null and fall through to status-based handling.
+      }
+    }
+
+    if (!res.ok) {
+      const errBody = (body ?? {}) as Partial<PartnerApiErrorBody>;
+      const code = errBody.error ?? `http_${res.status}`;
+      const message =
+        errBody.error_description ??
+        `Partner API ${method} ${path} failed with status ${res.status}`;
+      const requestId = errBody.request_id ?? res.headers.get('x-request-id') ?? undefined;
+
+      if (res.status === 401 || res.status === 403) {
+        throw new PartnerApiAuthError(message, res.status, code, requestId);
+      }
+      if (res.status === 404) {
+        throw new PartnerApiNotFoundError(message, res.status, code, requestId);
+      }
+      if (res.status === 429) {
+        const retryAfterRaw = res.headers.get('retry-after');
+        const parsed = retryAfterRaw === null ? NaN : parseInt(retryAfterRaw, 10);
+        const retryAfterSeconds = Number.isFinite(parsed) ? parsed : null;
+        throw new PartnerApiQuotaError(message, res.status, code, requestId, retryAfterSeconds);
+      }
+      if (res.status >= 500) {
+        throw new PartnerApiServerError(message, res.status, code, requestId);
+      }
+      throw new PartnerApiError(message, res.status, code, requestId);
+    }
+
+    return body as T;
+  }
+}
+
+let _singleton: PartnerApiClient | null = null;
+
+/**
+ * Lazy singleton accessor for the Partner API client.
+ *
+ * Throws if `PARTNER_API_KEY` or `PARTNER_API_BASE_URL` is unset, so that
+ * misconfiguration shows up at first call rather than module-load time
+ * (which would break tooling like `next build` and CI).
+ */
+export function getPartnerApi(): PartnerApiClient {
+  if (_singleton) return _singleton;
+  const rawBase = process.env.PARTNER_API_BASE_URL;
+  const apiKey = process.env.PARTNER_API_KEY;
+  if (!rawBase) {
+    throw new Error('PARTNER_API_BASE_URL is not set');
+  }
+  if (!apiKey) {
+    throw new Error('PARTNER_API_KEY is not set');
+  }
+  const baseUrl = rawBase.replace(/\/+$/, '');
+  _singleton = new PartnerApiClient(baseUrl, apiKey);
+  return _singleton;
+}
+
+export type { PartnerApiClient };
