@@ -135,7 +135,7 @@ export function HomeHero() {
         <div className="hero-portrait">
           <figure className="hero-portrait-frame">
             <Image
-              src="/hero-phone.png"
+              src="/hero-phone.webp"
               alt="A streamer browsing tonight's lineup on her phone"
               width={768}
               height={1152}
