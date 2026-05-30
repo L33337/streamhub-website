@@ -55,7 +55,7 @@ export default async function HomePage() {
       includePredictions: true,
       from: now.toISOString(),
       to: twentyFourHoursFromNow.toISOString(),
-      limit: 24,
+      limit: 6,
       revalidate: 60,
     }),
     api.listStreamers({

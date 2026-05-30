@@ -12,7 +12,7 @@ export function EmptyScheduleState({ streamer }: { streamer: PublicStreamer }) {
       className="mt-10 gradient-border p-8 text-center"
       aria-labelledby="empty-heading"
     >
-      <h2 id="empty-heading" className="text-2xl font-bold gradient-text">
+      <h2 id="empty-heading" className="text-2xl font-bold text-white">
         No upcoming streams scheduled
       </h2>
       <p className="mt-3 text-text-secondary max-w-xl mx-auto">

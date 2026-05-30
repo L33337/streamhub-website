@@ -119,9 +119,9 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <PageShell>
-      <h1 className="text-3xl font-bold gradient-text">
+      <h1 className="text-3xl font-bold text-white">
         Search results for{' '}
-        <span className="text-text-primary">&ldquo;{query}&rdquo;</span>
+        <span className="text-white">&ldquo;{query}&rdquo;</span>
       </h1>
       <SearchFilters q={query} platform={activePlatform} live={liveOnly} />
 
@@ -158,7 +158,7 @@ function PageShell({
 }) {
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
-      {title && <h1 className="text-3xl font-bold gradient-text">{title}</h1>}
+      {title && <h1 className="text-3xl font-bold text-white">{title}</h1>}
       {children}
     </main>
   );
@@ -167,7 +167,7 @@ function PageShell({
 function EmptyQueryState() {
   return (
     <div className="mt-12 gradient-border p-8 text-center">
-      <h2 className="text-2xl font-bold gradient-text">Find a streamer</h2>
+      <h2 className="text-2xl font-bold text-white">Find a streamer</h2>
       <p className="mt-3 text-text-secondary max-w-xl mx-auto">
         Start typing in the search bar above to find streamers by name across
         Twitch and YouTube.

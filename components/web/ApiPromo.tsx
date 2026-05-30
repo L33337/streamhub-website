@@ -3,8 +3,9 @@ import Link from 'next/link';
 /**
  * ApiPromo
  *
- * Developer API promo section for the home page. Static content — change the
- * CTA hrefs to wherever your docs and API key request flow live.
+ * Developer API promo section for the home page. Currently a Coming-Soon
+ * teaser — links to the /developers waitlist. Switch back to the full
+ * "Get an API key / Read the docs" CTAs once the public API launches.
  */
 export function ApiPromo() {
   return (
@@ -17,7 +18,7 @@ export function ApiPromo() {
           Developer API
         </h2>
         <span className="whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.14em] text-white/40">
-          Free tier · OpenAPI
+          Coming soon
         </span>
       </div>
 
@@ -29,13 +30,13 @@ export function ApiPromo() {
               For developers
             </span>
             <h3 className="api-h2">
-              Build with the same data,{' '}
-              <span className="api-key">on our API.</span>
+              Build with the same data —{' '}
+              <span className="api-key">soon, on our API.</span>
             </h3>
             <p className="api-sub">
-              Real-time live status, scheduled slots and AI-predicted next
-              streams for Twitch &amp; YouTube — one endpoint, JSON, no
-              scraping.
+              We&apos;re onboarding pilot partners now. Join the waitlist and
+              we&apos;ll email you the moment public access opens — including a
+              free tier for indie builders.
             </p>
             <div className="api-feats">
               <div className="api-feat">
@@ -57,7 +58,7 @@ export function ApiPromo() {
             </div>
             <div className="api-actions">
               <Link href="/developers" className="api-cta-primary">
-                Get an API key
+                Join the waitlist
                 <svg
                   viewBox="0 0 24 24"
                   width="14"
@@ -72,9 +73,6 @@ export function ApiPromo() {
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
-              </Link>
-              <Link href="/developers" className="api-cta-secondary">
-                Read the docs
               </Link>
             </div>
           </div>

@@ -37,7 +37,7 @@ export default async function FavoritesPage() {
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <header className="flex items-baseline justify-between flex-wrap gap-3">
-        <h1 className="text-3xl font-bold gradient-text">My favorites</h1>
+        <h1 className="text-3xl font-bold text-white">My favorites</h1>
         <span className="text-sm text-text-muted">
           {favorites.length} {favorites.length === 1 ? 'streamer' : 'streamers'}
         </span>

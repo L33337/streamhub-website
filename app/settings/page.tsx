@@ -40,7 +40,7 @@ export default async function SettingsPage() {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8">
       <header>
-        <h1 className="text-3xl font-bold gradient-text">Settings</h1>
+        <h1 className="text-3xl font-bold text-white">Settings</h1>
         <p className="mt-2 text-sm text-text-secondary">
           Manage your account, sign-in, and notifications.
         </p>

@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-24 text-center">
       <p className="text-sm uppercase tracking-widest text-text-muted">404</p>
-      <h1 className="mt-4 text-4xl font-bold gradient-text">Streamer not found</h1>
+      <h1 className="mt-4 text-4xl font-bold text-white">Streamer not found</h1>
       <p className="mt-4 text-text-secondary">
         We couldn&apos;t find a streamer with that name. They may not be on
         Streamer Times yet — but you can add them in the mobile app.

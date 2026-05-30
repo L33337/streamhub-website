@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function NotFound() {
   return (
     <main className="container mx-auto max-w-2xl px-6 py-16 text-center">
-      <h1 className="text-3xl font-bold gradient-text mb-3">Stream not found</h1>
+      <h1 className="text-3xl font-bold text-white mb-3">Stream not found</h1>
       <p className="text-text-secondary mb-6">
         This stream slot doesn&apos;t exist or is no longer available.
       </p>

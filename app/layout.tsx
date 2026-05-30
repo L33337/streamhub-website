@@ -5,6 +5,7 @@ import "./globals.css";
 import { SearchBar } from "@/components/web/SearchBar";
 import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
 import { Providers } from "@/components/web/Providers";
+import { FloatingGetAppButton } from "@/components/web/FloatingGetAppButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listFavoriteIds } from "@/lib/supabase/favorites";
 
@@ -127,6 +128,7 @@ export default async function RootLayout({
           </header>
           {children}
           {modal}
+          <FloatingGetAppButton />
         </Providers>
       </body>
     </html>

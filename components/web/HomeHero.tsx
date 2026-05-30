@@ -168,7 +168,7 @@ export function HomeHero() {
         </div>
         <div className="stat-cell">
           <span className="stat-value">Public API</span>
-          <span className="stat-label">Available now · free tier</span>
+          <span className="stat-label">Coming soon · join the waitlist</span>
         </div>
       </div>
     </section>

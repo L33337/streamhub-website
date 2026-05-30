@@ -1,12 +1,13 @@
 'use server';
 
-// Server Action backing the Request-API-Access form on /developers (Story 11).
-// Validates input, runs a honeypot check, and emails the application to the
-// Streamer Times support inbox via Resend. Returns a structured result the
-// client form can render — success state, validation errors, or a graceful
-// "Resend unreachable, please mailto" fallback.
+// Server Actions for /developers:
+// - submitAccessRequest: legacy full Partner-API access form (kept as dead
+//   code for easy re-activation when the public API launches)
+// - joinWaitlist: current Coming-Soon waitlist form — inserts into the
+//   partner_api_waitlist table and fires a notification email to admin
 
 import { sendEmail } from '@/lib/server/email/resend';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 const DEFAULT_RECIPIENT = 'StreamHub.Privacy@icloud.com';
 const FROM_ADDRESS =
@@ -120,6 +121,114 @@ export async function submitAccessRequest(
         ? 'Email service is not configured. Please email us directly at ' + recipient
         : `Could not send your request automatically (${result.message}). Please email us directly at ${recipient}`;
     return { status: 'error', message: reason };
+  }
+
+  return { status: 'success' };
+}
+
+// ─── joinWaitlist ────────────────────────────────────────────────────────────
+// Lean waitlist form for the Coming-Soon /developers page. Persists the signup
+// in public.partner_api_waitlist (via anon role + INSERT-only RLS policy) and
+// fires a fire-and-forget Resend notification to admin. Duplicate signups are
+// treated as success so we don't leak whether an email is already on the list.
+
+const WAITLIST_NAME_MAX = 100;
+const WAITLIST_EMAIL_MAX = 254; // RFC 5321
+
+export interface WaitlistPayload {
+  email: string;
+  name?: string;
+  /** Honeypot — must remain empty. Hidden from real users via CSS. */
+  website?: string;
+}
+
+export type WaitlistState =
+  | { status: 'idle' }
+  | { status: 'success' }
+  | {
+      status: 'error';
+      message: string;
+      fieldErrors?: Partial<Record<keyof WaitlistPayload, string>>;
+    };
+
+export async function joinWaitlist(
+  _prevState: WaitlistState,
+  formData: FormData
+): Promise<WaitlistState> {
+  const recipient =
+    process.env.PARTNER_APPLICATIONS_TO_EMAIL || DEFAULT_RECIPIENT;
+
+  // 1. Honeypot — silent success, no DB write, no email
+  if (readField(formData, 'website').length > 0) {
+    return { status: 'success' };
+  }
+
+  // 2. Read + normalize
+  const emailRaw = readField(formData, 'email');
+  const email = emailRaw.toLowerCase(); // must match DB CHECK constraint
+  const nameRaw = readField(formData, 'name');
+  const name = nameRaw.length > 0 ? nameRaw : null;
+
+  // 3. Validate
+  const fieldErrors: Partial<Record<keyof WaitlistPayload, string>> = {};
+  if (!EMAIL_RE.test(email) || email.length > WAITLIST_EMAIL_MAX) {
+    fieldErrors.email = 'Please enter a valid email address';
+  }
+  if (name !== null && name.length > WAITLIST_NAME_MAX) {
+    fieldErrors.name = `Name must be ${WAITLIST_NAME_MAX} characters or fewer`;
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      status: 'error',
+      message: 'Please fix the highlighted fields and try again.',
+      fieldErrors,
+    };
+  }
+
+  // 4. Insert via anon Supabase client (RLS INSERT policy permits it)
+  const supabase = await createSupabaseServerClient();
+  const { error: insertError } = await supabase
+    .from('partner_api_waitlist')
+    .insert({ email, name, source: 'developers_page' });
+
+  // 5. Unique-violation (23505) = idempotent re-signup → treat as success
+  const isDuplicate = insertError?.code === '23505';
+  if (insertError && !isDuplicate) {
+    console.error(
+      '[joinWaitlist] DB insert failed:',
+      insertError.code,
+      insertError.message
+    );
+    return {
+      status: 'error',
+      message: `Could not save your request automatically. Please email us at ${recipient}.`,
+    };
+  }
+
+  // 6. Fire-and-forget Resend notification (skip on duplicate — admin already knows)
+  if (!isDuplicate) {
+    const result = await sendEmail({
+      to: recipient,
+      from: FROM_ADDRESS,
+      subject: `[Partner API Waitlist] New signup: ${email}`,
+      text: [
+        'New Partner API waitlist signup',
+        '─'.repeat(40),
+        `Email:    ${email}`,
+        `Name:     ${name ?? '(not provided)'}`,
+        `Source:   developers_page`,
+        `Time:     ${new Date().toISOString()}`,
+      ].join('\n'),
+      replyTo: email,
+    });
+    if (!result.ok) {
+      // User is on the list — don't surface the email-send error to them.
+      console.warn(
+        '[joinWaitlist] Notification email failed:',
+        result.reason,
+        result.message
+      );
+    }
   }
 
   return { status: 'success' };

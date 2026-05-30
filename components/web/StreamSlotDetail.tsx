@@ -5,7 +5,6 @@ import {
   ConfidenceBadge,
   LiveBadge,
   PlatformBadge,
-  PredictedBadge,
 } from './Badges';
 import { InitialsAvatar } from './InitialsAvatar';
 import { LocalTime } from './LocalTime';
@@ -19,14 +18,12 @@ function formatDuration(minutes: number): string | null {
 }
 
 export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
-  if (slot.is_predicted) {
-    return <PredictionVariant slot={slot} />;
-  }
-  return <LiveVariant slot={slot} />;
-}
+  const isLive = slot.status === 'live';
+  const isAlwaysOn = slot.is_always_on;
+  const durationLabel = isAlwaysOn ? null : formatDuration(slot.duration_minutes);
+  const startLabel = isLive ? 'Started:' : 'Scheduled:';
+  const durationPrefix = isLive ? '' : '~';
 
-function LiveVariant({ slot }: { slot: PublicStreamSlot }) {
-  const durationLabel = slot.is_always_on ? null : formatDuration(slot.duration_minutes);
   return (
     <article className="p-6 md:p-8">
       <HeroThumbnail slot={slot} />
@@ -35,7 +32,7 @@ function LiveVariant({ slot }: { slot: PublicStreamSlot }) {
 
       <h1
         id="slot-detail-title"
-        className="mt-4 text-2xl md:text-3xl font-bold gradient-text leading-tight"
+        className="mt-4 text-2xl md:text-3xl font-bold text-white leading-tight"
         title={slot.title}
       >
         {slot.title}
@@ -50,7 +47,7 @@ function LiveVariant({ slot }: { slot: PublicStreamSlot }) {
             </dd>
           </div>
         )}
-        {slot.is_always_on ? (
+        {isAlwaysOn ? (
           <div>
             <dt className="sr-only">Schedule</dt>
             <dd>
@@ -63,7 +60,7 @@ function LiveVariant({ slot }: { slot: PublicStreamSlot }) {
             <div>
               <dt className="sr-only">Start time</dt>
               <dd>
-                <span className="text-text-muted">Started:</span>{' '}
+                <span className="text-text-muted">{startLabel}</span>{' '}
                 <LocalTime utcIso={slot.start_time} />
               </dd>
             </div>
@@ -71,7 +68,7 @@ function LiveVariant({ slot }: { slot: PublicStreamSlot }) {
               <div>
                 <dt className="sr-only">Duration</dt>
                 <dd>
-                  <span className="text-text-muted">Duration:</span> {durationLabel}
+                  <span className="text-text-muted">Duration:</span> {durationPrefix}{durationLabel}
                 </dd>
               </div>
             )}
@@ -83,76 +80,11 @@ function LiveVariant({ slot }: { slot: PublicStreamSlot }) {
         {slot.platforms.map((p) => (
           <PlatformBadge key={p} platform={p} />
         ))}
-        {slot.is_always_on && <AlwaysOnBadge />}
+        {isAlwaysOn && <AlwaysOnBadge />}
+        <ConfidenceBadge level={slot.confidence} />
       </div>
 
-      <WatchButtons slot={slot} />
-    </article>
-  );
-}
-
-function PredictionVariant({ slot }: { slot: PublicStreamSlot }) {
-  const durationLabel = formatDuration(slot.duration_minutes);
-  return (
-    <article className="p-6 md:p-8">
-      <div className="flex flex-col items-center">
-        {slot.avatar_url ? (
-          <Image
-            src={slot.avatar_url}
-            alt={`${slot.streamer_name} avatar`}
-            width={96}
-            height={96}
-            unoptimized
-            className="rounded-full border-2 border-accent-cyan/40 glow-cyan"
-          />
-        ) : (
-          <InitialsAvatar name={slot.streamer_name} size={96} />
-        )}
-        <h2 className="mt-4 text-2xl font-bold text-text-primary">{slot.streamer_name}</h2>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <PredictedBadge />
-          <ConfidenceBadge level={slot.confidence} />
-          {slot.platforms.map((p) => (
-            <PlatformBadge key={p} platform={p} />
-          ))}
-        </div>
-      </div>
-
-      <h1
-        id="slot-detail-title"
-        className="mt-6 text-xl md:text-2xl font-bold text-text-primary leading-tight text-center"
-        title={slot.title}
-      >
-        {slot.title}
-      </h1>
-
-      <dl className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-text-secondary">
-        {slot.category && (
-          <div>
-            <dt className="sr-only">Category</dt>
-            <dd>
-              <span className="text-text-muted">Category:</span> {slot.category}
-            </dd>
-          </div>
-        )}
-        <div>
-          <dt className="sr-only">Predicted start</dt>
-          <dd>
-            <span className="text-text-muted">Predicted:</span>{' '}
-            <LocalTime utcIso={slot.start_time} />
-          </dd>
-        </div>
-        {durationLabel && (
-          <div>
-            <dt className="sr-only">Predicted duration</dt>
-            <dd>
-              <span className="text-text-muted">Duration:</span> ~{durationLabel}
-            </dd>
-          </div>
-        )}
-      </dl>
-
-      <ReasoningBox reasoning={slot.reasoning} />
+      {slot.reasoning && <ReasoningBox reasoning={slot.reasoning} />}
 
       <WatchButtons slot={slot} />
     </article>
@@ -233,7 +165,7 @@ function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; classNa
   );
 }
 
-function ReasoningBox({ reasoning }: { reasoning: string | undefined }) {
+function ReasoningBox({ reasoning }: { reasoning: string }) {
   return (
     <section
       aria-labelledby="reasoning-heading"
@@ -245,11 +177,7 @@ function ReasoningBox({ reasoning }: { reasoning: string | undefined }) {
       >
         Why this prediction?
       </h3>
-      {reasoning ? (
-        <p className="text-sm leading-relaxed text-text-secondary">{reasoning}</p>
-      ) : (
-        <p className="text-sm italic text-text-muted">No detailed reasoning available.</p>
-      )}
+      <p className="text-sm leading-relaxed text-text-secondary">{reasoning}</p>
     </section>
   );
 }

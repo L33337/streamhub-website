@@ -16,7 +16,7 @@ export function DaySection({ dateKey, label, slots }: Props) {
     >
       <h2
         id={`heading-${dateKey}`}
-        className="text-2xl font-bold gradient-text mb-4 flex items-baseline gap-3"
+        className="text-2xl font-bold text-white mb-4 flex items-baseline gap-3"
       >
         {label}
         <span className="text-sm font-normal text-text-muted">

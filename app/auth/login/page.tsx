@@ -61,7 +61,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
   return (
     <main className="container mx-auto max-w-md px-4 py-12">
-      <h1 className="text-3xl font-bold gradient-text">Sign in to Streamer Times</h1>
+      <h1 className="text-3xl font-bold text-white">Sign in to Streamer Times</h1>
       <p className="mt-3 text-text-secondary">
         Sync your favorite streamers across web and the mobile app.
       </p>

@@ -32,36 +32,74 @@ export function buildStreamerMetadata(streamer: PublicStreamer, slug: string): M
   };
 }
 
+/**
+ * Stable JSON-LD identifier for the streamer's Person node. Referenced from
+ * BroadcastEvent.broadcaster.@id so Google can resolve them as one graph.
+ */
+function personJsonLdId(slug: string): string {
+  return `${streamerCanonicalUrl(slug)}#person`;
+}
+
 export function buildPersonJsonLd(streamer: PublicStreamer, slug: string): object {
+  const canonicalUrl = streamerCanonicalUrl(slug);
   const ld: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Person',
+    '@id': personJsonLdId(slug),
     name: streamer.name,
-    url: streamerCanonicalUrl(slug),
+    url: canonicalUrl,
   };
   if (streamer.avatar_url) ld.image = streamer.avatar_url;
+  if (streamer.description) ld.description = streamer.description;
+  // schema.org: `inLanguage` is not valid on Person — use `knowsLanguage`
+  // ("a known language for a person"). BCP-47 string is accepted.
+  if (streamer.language) ld.knowsLanguage = streamer.language;
+
+  // sameAs: platform identity verification for Google Knowledge Graph
+  const sameAs: string[] = [];
+  if (streamer.twitch_login) {
+    sameAs.push(`https://twitch.tv/${streamer.twitch_login}`);
+  }
+  if (streamer.youtube_channel_id) {
+    sameAs.push(`https://youtube.com/channel/${streamer.youtube_channel_id}`);
+  }
+  if (sameAs.length > 0) ld.sameAs = sameAs;
+
   return ld;
 }
+
+// Cap the number of BroadcastEvents per page. Some streamers have 15+ predicted
+// upcoming slots in a 7-day window; emitting all of them risks tripping Google's
+// schema-spam quality filter. 10 events ≈ next 3-4 days, plenty for SERP snippets.
+const MAX_BROADCAST_EVENTS = 10;
 
 export function buildBroadcastEventsJsonLd(
   streamer: PublicStreamer,
   slots: PublicStreamSlot[],
+  slug: string,
 ): object[] {
+  const broadcasterRef = { '@id': personJsonLdId(slug) };
   return slots
-    .filter((s) => !s.is_predicted && (s.status === 'live' || s.status === 'upcoming'))
+    .filter((s) => s.status === 'live' || s.status === 'upcoming')
+    .slice(0, MAX_BROADCAST_EVENTS)
     .map((slot) => {
       const start = new Date(slot.start_time);
       const durationMin = slot.duration_minutes > 0 ? slot.duration_minutes : 60;
       const end = new Date(start.getTime() + durationMin * 60_000);
-      return {
+      const event: Record<string, unknown> = {
         '@context': 'https://schema.org',
         '@type': 'BroadcastEvent',
         name: slot.title,
         isLiveBroadcast: true,
         startDate: start.toISOString(),
         endDate: end.toISOString(),
-        videoFormat: 'Live',
-        broadcaster: { '@type': 'Person', name: streamer.name },
+        broadcaster: broadcasterRef,
       };
+      // inLanguage IS valid on Event/BroadcastEvent. Helps non-English fans find the schedule.
+      if (streamer.language) event.inLanguage = streamer.language;
+      // Use the AI's reasoning as the event description when available — meaningful
+      // SEO copy that explains why this slot was predicted.
+      if (slot.reasoning) event.description = slot.reasoning;
+      return event;
     });
 }

@@ -8,8 +8,8 @@ interface Props {
 export function UpcomingGrid({ slots }: Props) {
   return (
     <section aria-labelledby="upcoming-heading" className="mt-12">
-      <h2 id="upcoming-heading" className="text-2xl font-bold gradient-text mb-4">
-        Coming up in the next 24 hours
+      <h2 id="upcoming-heading" className="text-2xl font-bold text-white mb-4">
+        Coming up next
       </h2>
       {slots.length === 0 ? (
         <EmptyUpcoming />
@@ -33,7 +33,7 @@ function EmptyUpcoming() {
   return (
     <div className="gradient-border p-8 text-center">
       <p className="text-text-secondary">
-        Nothing scheduled in the next 24 hours — check back soon.
+        Nothing scheduled right now — check back soon.
       </p>
     </div>
   );

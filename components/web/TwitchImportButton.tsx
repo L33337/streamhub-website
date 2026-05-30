@@ -263,7 +263,7 @@ export function TwitchImportButton() {
           >
             <h3
               id="twitch-import-title"
-              className="text-xl font-bold gradient-text"
+              className="text-xl font-bold text-white"
             >
               Import Twitch follows
             </h3>

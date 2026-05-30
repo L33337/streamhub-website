@@ -99,7 +99,7 @@ export default async function StreamerPage({ params }: Props) {
 
   const heroLiveSlot = liveSlots[0] ?? null;
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
-  const broadcastEvents = buildBroadcastEventsJsonLd(streamer, allSlots);
+  const broadcastEvents = buildBroadcastEventsJsonLd(streamer, allSlots, slug);
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">

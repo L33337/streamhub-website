@@ -21,6 +21,10 @@ export interface PublicStreamer {
   // platform is in `platforms`. Use to build canonical watch URLs.
   twitch_login: string | null;
   youtube_channel_id: string | null;
+  // AI-generated 350-450 char description in the streamer's broadcaster_language
+  // (English when language is null). Used in Person JSON-LD on the streamer page.
+  // null while pending generation for streamers added before this field existed.
+  description: string | null;
 }
 
 export interface PublicStreamSlot {
