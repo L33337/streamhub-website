@@ -38,14 +38,14 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
             : 'gradient-border glow-cyan'
         }`}
       >
-        <div className="relative h-20 w-[120px] flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight">
+        <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
           {slot.thumbnail_url ? (
             <Image
               src={slot.thumbnail_url}
               alt=""
               fill
               unoptimized
-              sizes="120px"
+              sizes="(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px"
               className="object-cover"
             />
           ) : slot.avatar_url ? (
@@ -54,7 +54,7 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
               alt=""
               fill
               unoptimized
-              sizes="120px"
+              sizes="(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px"
               className="object-cover"
             />
           ) : (

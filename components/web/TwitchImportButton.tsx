@@ -224,7 +224,7 @@ export function TwitchImportButton() {
         </p>
         <Link
           href="/auth/login"
-          className="mt-3 inline-flex h-10 items-center rounded-lg border border-twitch/60 bg-twitch/15 px-4 text-sm font-semibold text-twitch-fg hover:bg-twitch/25 transition-colors"
+          className="mt-3 inline-flex h-10 items-center rounded-lg bg-twitch px-4 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] hover:bg-[#A266FF] transition-colors"
         >
           Re-authenticate with Twitch
         </Link>
@@ -240,7 +240,7 @@ export function TwitchImportButton() {
       <button
         type="button"
         onClick={openAndFetch}
-        className="inline-flex h-10 items-center rounded-lg border border-twitch/60 bg-twitch/15 px-4 text-sm font-semibold text-twitch-fg hover:bg-twitch/25 transition-colors"
+        className="inline-flex h-10 items-center rounded-lg bg-twitch px-4 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] hover:bg-[#A266FF] transition-colors"
         aria-haspopup="dialog"
         aria-expanded={phase !== 'idle'}
       >

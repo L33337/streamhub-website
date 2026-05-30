@@ -22,9 +22,9 @@ const CORNER = (props: React.CSSProperties): React.CSSProperties => ({
   ...props,
 });
 
-const PLATFORM_COLORS: Record<string, { fg: string; border: string; bg: string }> = {
-  twitch: { fg: '#B388FF', border: 'rgba(145,70,255,0.5)', bg: 'rgba(145,70,255,0.15)' },
-  youtube: { fg: '#FF6680', border: 'rgba(255,0,51,0.5)', bg: 'rgba(255,0,51,0.15)' },
+const PLATFORM_COLORS: Record<string, { bg: string }> = {
+  twitch: { bg: '#9146FF' },
+  youtube: { bg: '#FF0033' },
 };
 
 export default async function OgImage({ params }: Props) {
@@ -169,11 +169,10 @@ export default async function OgImage({ params }: Props) {
                       display: 'flex',
                       padding: '8px 20px',
                       borderRadius: 999,
-                      border: `1px solid ${c.border}`,
                       backgroundColor: c.bg,
-                      color: c.fg,
+                      color: '#FFFFFF',
                       fontSize: 22,
-                      fontWeight: 600,
+                      fontWeight: 700,
                       textTransform: 'capitalize',
                     }}
                   >

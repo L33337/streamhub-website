@@ -12,6 +12,7 @@ import {
   useTransition,
 } from 'react';
 import type { Platform, PublicStreamer } from '@/lib/server/partner-api';
+import { LiveBadge, PlatformBadge } from './Badges';
 
 interface SearchResultStreamer extends PublicStreamer {
   is_live: boolean;
@@ -310,23 +311,9 @@ function DropdownResult({ streamer }: { streamer: SearchResultStreamer }) {
         {streamer.name}
       </span>
       <div className="flex items-center gap-1.5">
-        {streamer.is_live && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-live/15 border border-live/40 px-1.5 py-0.5 text-[10px] font-bold uppercase text-live">
-            <span className="h-1.5 w-1.5 rounded-full bg-live animate-pulse-glow" />
-            LIVE
-          </span>
-        )}
+        {streamer.is_live && <LiveBadge />}
         {streamer.platforms.map((p: Platform) => (
-          <span
-            key={p}
-            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
-              p === 'twitch'
-                ? 'bg-twitch/15 text-twitch-fg border border-twitch/30'
-                : 'bg-youtube/15 text-youtube-fg border border-youtube/30'
-            }`}
-          >
-            {p === 'twitch' ? 'Twitch' : 'YouTube'}
-          </span>
+          <PlatformBadge key={p} platform={p} />
         ))}
       </div>
     </Link>

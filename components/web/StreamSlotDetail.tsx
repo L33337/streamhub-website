@@ -48,11 +48,11 @@ export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
           </div>
         )}
         {isAlwaysOn ? (
-          <div>
+          <div className="flex items-center gap-1.5">
             <dt className="sr-only">Schedule</dt>
-            <dd>
-              <span className="text-text-muted">Streaming:</span>{' '}
-              <span className="text-accent-cyan font-semibold">24/7</span>
+            <dd className="flex items-center gap-1.5">
+              <span className="text-text-muted">Streaming:</span>
+              <AlwaysOnBadge />
             </dd>
           </div>
         ) : (
@@ -197,7 +197,7 @@ function WatchButtons({ slot }: { slot: PublicStreamSlot }) {
           href={twitchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-twitch/40 bg-twitch/15 px-4 py-3 text-sm font-semibold text-twitch-fg transition-colors hover:bg-twitch/25"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-twitch px-4 py-3 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#A266FF]"
         >
           Watch on Twitch
         </a>
@@ -207,7 +207,7 @@ function WatchButtons({ slot }: { slot: PublicStreamSlot }) {
           href={youtubeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-youtube/40 bg-youtube/15 px-4 py-3 text-sm font-semibold text-youtube-fg transition-colors hover:bg-youtube/25"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-youtube px-4 py-3 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#FF3355]"
         >
           Watch on YouTube
         </a>

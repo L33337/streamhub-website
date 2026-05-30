@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const SUPPORT_EMAIL = 'StreamHub.Privacy@icloud.com';
+const SUPPORT_EMAIL = 'streamertimes@icloud.com';
 
 export default function DevelopersPage() {
   return (

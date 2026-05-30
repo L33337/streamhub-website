@@ -9,7 +9,7 @@
 import { sendEmail } from '@/lib/server/email/resend';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-const DEFAULT_RECIPIENT = 'StreamHub.Privacy@icloud.com';
+const DEFAULT_RECIPIENT = 'streamertimes@icloud.com';
 const FROM_ADDRESS =
   process.env.RESEND_FROM_ADDRESS ?? 'Streamer Times <no-reply@streamertimes.tv>';
 

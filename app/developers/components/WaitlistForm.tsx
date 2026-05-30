@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { joinWaitlist, type WaitlistState } from '../actions';
 
 const INITIAL: WaitlistState = { status: 'idle' };
-const FALLBACK_EMAIL = 'StreamHub.Privacy@icloud.com';
+const FALLBACK_EMAIL = 'streamertimes@icloud.com';
 
 export function WaitlistForm() {
   const [state, formAction, pending] = useActionState(joinWaitlist, INITIAL);

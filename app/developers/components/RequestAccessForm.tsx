@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { submitAccessRequest, type AccessRequestState } from '../actions';
 
 const INITIAL: AccessRequestState = { status: 'idle' };
-const FALLBACK_EMAIL = 'StreamHub.Privacy@icloud.com';
+const FALLBACK_EMAIL = 'streamertimes@icloud.com';
 
 /**
  * Request-API-Access form for the developer portal (Story 11).
