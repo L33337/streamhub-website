@@ -66,9 +66,28 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             </p>
           )}
 
+          {streamer.description && (
+            <StreamerDescription text={streamer.description} />
+          )}
+
           <InstallAppCta />
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Renders the AI-generated streamer description, preserving the \n\n paragraph
+ * breaks the prompt enforces. Falls back to a single block if no break present.
+ */
+function StreamerDescription({ text }: { text: string }) {
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  return (
+    <div className="mt-4 space-y-3 text-sm leading-relaxed text-text-secondary md:text-base">
+      {paragraphs.map((para, i) => (
+        <p key={i}>{para}</p>
+      ))}
+    </div>
   );
 }
