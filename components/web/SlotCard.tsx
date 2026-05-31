@@ -86,18 +86,18 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <div className="flex flex-wrap items-center gap-1">
               {slot.platforms.map((p) => (
-                <PlatformBadge key={p} platform={p} />
+                <PlatformBadge key={p} platform={p} size="sm" />
               ))}
             </div>
             {!isLive && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] uppercase tracking-wider text-text-muted">
                   Confidence:
                 </span>
-                <ConfidenceBadge level={slot.confidence} />
+                <ConfidenceBadge level={slot.confidence} size="sm" />
               </div>
             )}
           </div>

@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   AlwaysOnBadge,
@@ -25,14 +26,14 @@ export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
   const durationPrefix = isLive ? '' : '~';
 
   return (
-    <article className="p-6 md:p-8">
+    <article className="p-4 sm:p-6 md:p-8">
       <HeroThumbnail slot={slot} />
 
-      <StreamerRow slot={slot} className="mt-5" />
+      <StreamerRow slot={slot} className="mt-4 sm:mt-5" />
 
       <h1
         id="slot-detail-title"
-        className="mt-4 text-2xl md:text-3xl font-bold text-white leading-tight"
+        className="mt-3 text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight sm:mt-4"
         title={slot.title}
       >
         {slot.title}
@@ -81,10 +82,10 @@ export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
           <PlatformBadge key={p} platform={p} />
         ))}
         {isAlwaysOn && <AlwaysOnBadge />}
-        <ConfidenceBadge level={slot.confidence} />
+        {!isLive && <ConfidenceBadge level={slot.confidence} />}
       </div>
 
-      {slot.reasoning && <ReasoningBox reasoning={slot.reasoning} />}
+      {!isLive && slot.reasoning && <ReasoningBox reasoning={slot.reasoning} />}
 
       <WatchButtons slot={slot} />
     </article>
@@ -147,7 +148,12 @@ function HeroThumbnail({ slot }: { slot: PublicStreamSlot }) {
 
 function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; className?: string }) {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <Link
+      href={`/streamer/${encodeURIComponent(slot.streamer_id)}`}
+      prefetch={false}
+      aria-label={`Open ${slot.streamer_name}'s page`}
+      className={`group inline-flex items-center gap-3 rounded-lg transition-colors hover:bg-background-highlight focus-visible:bg-background-highlight focus-visible:outline-none ${className}`}
+    >
       {slot.avatar_url ? (
         <Image
           src={slot.avatar_url}
@@ -155,13 +161,15 @@ function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; classNa
           width={48}
           height={48}
           unoptimized
-          className="rounded-full border border-accent-cyan/30"
+          className="rounded-full border border-accent-cyan/30 transition-colors group-hover:border-accent-cyan"
         />
       ) : (
         <InitialsAvatar name={slot.streamer_name} size={48} />
       )}
-      <div className="text-lg font-semibold text-text-primary">{slot.streamer_name}</div>
-    </div>
+      <div className="text-lg font-semibold text-text-primary transition-colors group-hover:text-accent-cyan">
+        {slot.streamer_name}
+      </div>
+    </Link>
   );
 }
 
@@ -177,7 +185,15 @@ function ReasoningBox({ reasoning }: { reasoning: string }) {
       >
         Why this prediction?
       </h3>
-      <p className="text-sm leading-relaxed text-text-secondary">{reasoning}</p>
+      <div className="space-y-3 text-sm leading-relaxed text-text-secondary">
+        {reasoning
+          .split(/\n\s*\n/)
+          .map((para) => para.trim())
+          .filter(Boolean)
+          .map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
+      </div>
     </section>
   );
 }
@@ -191,13 +207,13 @@ function WatchButtons({ slot }: { slot: PublicStreamSlot }) {
   if (!twitchUrl && !youtubeUrl) return null;
 
   return (
-    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+    <div className="mt-4 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3">
       {twitchUrl && (
         <a
           href={twitchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-twitch px-4 py-3 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#A266FF]"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-twitch px-4 py-2.5 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#A266FF] sm:py-3"
         >
           Watch on Twitch
         </a>
@@ -207,7 +223,7 @@ function WatchButtons({ slot }: { slot: PublicStreamSlot }) {
           href={youtubeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-youtube px-4 py-3 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#FF3355]"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-youtube px-4 py-2.5 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#FF3355] sm:py-3"
         >
           Watch on YouTube
         </a>

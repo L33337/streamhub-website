@@ -21,6 +21,18 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.5,
   },
   {
+    url: `${SITE_URL}/streamers`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${SITE_URL}/developers`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.4,
+  },
+  {
     url: `${SITE_URL}/privacy-policy`,
     lastModified: new Date(),
     changeFrequency: 'yearly',

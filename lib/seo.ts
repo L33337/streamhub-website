@@ -7,6 +7,29 @@ export function streamerCanonicalUrl(slug: string): string {
   return `${SITE_URL}/streamer/${encodeURIComponent(slug)}`;
 }
 
+/**
+ * BreadcrumbList JSON-LD. Pass crumbs in order from root to current page.
+ * The final crumb (current page) omits `url` per Google's guidance — the
+ * trailing item should not link to itself.
+ */
+export function buildBreadcrumbJsonLd(
+  items: { name: string; url?: string }[],
+): object {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, i) => {
+      const element: Record<string, unknown> = {
+        '@type': 'ListItem',
+        position: i + 1,
+        name: item.name,
+      };
+      if (item.url) element.item = item.url;
+      return element;
+    }),
+  };
+}
+
 export function buildStreamerMetadata(streamer: PublicStreamer, slug: string): Metadata {
   const platforms =
     streamer.platforms.length > 0

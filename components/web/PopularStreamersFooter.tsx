@@ -12,12 +12,20 @@ export function PopularStreamersFooter({ streamers }: Props) {
       className="mt-20 border-t border-divider pt-8"
       aria-labelledby="popular-heading"
     >
-      <h2
-        id="popular-heading"
-        className="text-sm font-bold uppercase tracking-widest text-text-muted"
-      >
-        Popular streamers
-      </h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2
+          id="popular-heading"
+          className="text-sm font-bold uppercase tracking-widest text-text-muted"
+        >
+          Popular streamers
+        </h2>
+        <Link
+          href="/streamers"
+          className="shrink-0 text-sm font-semibold text-accent-cyan transition-colors hover:text-text-primary"
+        >
+          View all streamers →
+        </Link>
+      </div>
       <nav aria-label="Popular streamers" className="mt-4 flex flex-wrap gap-2">
         {streamers.map((s) => (
           <Link

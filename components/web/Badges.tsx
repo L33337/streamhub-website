@@ -11,12 +11,20 @@ export function LiveBadge({ className = '' }: { className?: string }) {
   );
 }
 
-export function PlatformBadge({ platform }: { platform: Platform }) {
+export function PlatformBadge({
+  platform,
+  size = 'md',
+}: {
+  platform: Platform;
+  size?: 'sm' | 'md';
+}) {
   const bg = platform === 'twitch' ? 'bg-twitch' : 'bg-youtube';
   const label = platform === 'twitch' ? 'Twitch' : 'YouTube';
+  const sizing =
+    size === 'sm' ? 'px-1 py-px text-[9px]' : 'px-1.5 py-0.5 text-[10px]';
   return (
     <span
-      className={`inline-flex items-center rounded-[3px] px-1.5 py-0.5 text-[10px] font-semibold text-white ${bg}`}
+      className={`inline-flex items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`}
     >
       {label}
     </span>
@@ -35,10 +43,20 @@ const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
   low: 'LOW',
 };
 
-export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
+export function ConfidenceBadge({
+  level,
+  size = 'md',
+}: {
+  level: ConfidenceLevel;
+  size?: 'sm' | 'md';
+}) {
+  const sizing =
+    size === 'sm'
+      ? 'px-1.5 py-px text-[9px] tracking-wider'
+      : 'px-2 py-0.5 text-xs tracking-[0.1em]';
   return (
     <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] ${CONFIDENCE_STYLES[level]}`}
+      className={`inline-flex items-center rounded font-bold uppercase ${CONFIDENCE_STYLES[level]} ${sizing}`}
       aria-label={`${level} confidence`}
     >
       {CONFIDENCE_LABELS[level]}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPartnerApi, type PublicStreamSlot } from '@/lib/server/partner-api';
 import {
+  buildBreadcrumbJsonLd,
   buildBroadcastEventsJsonLd,
   buildPersonJsonLd,
   buildStreamerMetadata,
@@ -101,8 +102,18 @@ export default async function StreamerPage({ params }: Props) {
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
   const broadcastEvents = buildBroadcastEventsJsonLd(streamer, allSlots, slug);
 
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Home', url: 'https://streamertimes.tv' },
+    { name: 'Streamers', url: 'https://streamertimes.tv/streamers' },
+    { name: streamer.name },
+  ]);
+
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

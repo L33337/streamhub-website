@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SearchBar } from "@/components/web/SearchBar";
 import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
@@ -54,6 +56,13 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0f",
 };
 
 export default async function RootLayout({
@@ -90,10 +99,10 @@ export default async function RootLayout({
                 "Your Livestream Guide for Twitch & YouTube with AI-powered predictions.",
               url: "https://streamertimes.tv",
               screenshot: [
-                "https://streamertimes.tv/screenshots/live-feed.jpg",
-                "https://streamertimes.tv/screenshots/epg-grid.jpg",
-                "https://streamertimes.tv/screenshots/multi-day.jpg",
-                "https://streamertimes.tv/screenshots/predictions.jpg",
+                "https://streamertimes.tv/screenshots/live-feed.webp",
+                "https://streamertimes.tv/screenshots/epg-grid.webp",
+                "https://streamertimes.tv/screenshots/multi-day.webp",
+                "https://streamertimes.tv/screenshots/predictions.webp",
               ],
               offers: {
                 "@type": "Offer",
@@ -130,6 +139,8 @@ export default async function RootLayout({
           {modal}
           <FloatingGetAppButton />
         </Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

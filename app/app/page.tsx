@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   Brain,
   Monitor,
@@ -12,6 +13,28 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title:
+    "Download Streamer Times — Free Twitch & YouTube Stream Guide App | iOS & Android",
+  description:
+    "Download Streamer Times free for iOS and Android. AI-powered live predictions, EPG grid view, and instant go-live alerts for your favorite Twitch and YouTube streamers.",
+  alternates: { canonical: "https://streamertimes.tv/app" },
+  openGraph: {
+    title: "Download Streamer Times — Free Livestream Guide App",
+    description:
+      "AI-powered Twitch & YouTube stream predictions and go-live alerts. Free on iOS & Android.",
+    url: "https://streamertimes.tv/app",
+    siteName: "Streamer Times",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Download Streamer Times",
+    description:
+      "AI-powered Twitch & YouTube stream predictions. Free on iOS & Android.",
+  },
+};
 
 const FEATURES = [
   {
@@ -99,22 +122,22 @@ const ACCENT_STYLES = {
 
 const SCREENSHOTS = [
   {
-    src: "/screenshots/live-feed.jpg",
+    src: "/screenshots/live-feed.webp",
     alt: "Streamer Times Live Feed showing currently live streamers",
     label: "Live Feed",
   },
   {
-    src: "/screenshots/predictions.jpg",
+    src: "/screenshots/predictions.webp",
     alt: "Streamer detail page with AI predictions",
     label: "AI Predictions",
   },
   {
-    src: "/screenshots/epg-grid.jpg",
+    src: "/screenshots/epg-grid.webp",
     alt: "EPG Grid View with AI-predicted stream schedules",
     label: "EPG Grid View",
   },
   {
-    src: "/screenshots/multi-day.jpg",
+    src: "/screenshots/multi-day.webp",
     alt: "Multi-day schedule view with multiple streamers",
     label: "Multi-Day Schedule",
   },
@@ -147,6 +170,21 @@ const FAQ_ITEMS = [
       "Yes, Streamer Times is available as a native app on both iOS (App Store) and Android (Google Play).",
   },
 ];
+
+function buildFaqJsonLd(): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_ITEMS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
 
 function FeatureCard({
   icon: Icon,
@@ -257,6 +295,13 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 export default function AppPromoPage() {
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(buildFaqJsonLd()),
+        }}
+      />
+
       {/* Hero Section */}
       <section className="relative flex min-h-screen items-center overflow-hidden px-6 pt-8">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-surface to-background" />
@@ -351,7 +396,7 @@ export default function AppPromoPage() {
 
           <div className="hidden lg:flex justify-center">
             <PhoneMockup
-              src="/screenshots/live-feed.jpg"
+              src="/screenshots/live-feed.webp"
               alt="Streamer Times Live Feed"
               className="w-[280px]"
             />
@@ -359,7 +404,7 @@ export default function AppPromoPage() {
 
           <div className="flex justify-center lg:hidden">
             <PhoneMockup
-              src="/screenshots/live-feed.jpg"
+              src="/screenshots/live-feed.webp"
               alt="Streamer Times Live Feed"
               className="w-[220px]"
             />

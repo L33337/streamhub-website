@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPartnerApi } from '@/lib/server/partner-api';
+import { buildBreadcrumbJsonLd, streamerCanonicalUrl } from '@/lib/seo';
 import { StreamSlotDetail } from '@/components/web/StreamSlotDetail';
 import { BackLink } from '@/components/web/BackLink';
 
@@ -33,8 +34,22 @@ export default async function SlotPage({ params }: Props) {
   const slot = await getPartnerApi().getSchedule(id, { revalidate: 60 });
   if (!slot) notFound();
 
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Home', url: 'https://streamertimes.tv' },
+    { name: 'Streamers', url: 'https://streamertimes.tv/streamers' },
+    {
+      name: slot.streamer_name,
+      url: streamerCanonicalUrl(slot.streamer_id),
+    },
+    { name: slot.title },
+  ]);
+
   return (
     <main className="container mx-auto max-w-3xl px-6 pb-16 pt-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
       <BackLink />
       <StreamSlotDetail slot={slot} />
     </main>

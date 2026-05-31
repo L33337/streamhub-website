@@ -23,7 +23,7 @@ export function SlotDetailModal({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-2 py-4 backdrop-blur-sm sm:px-4 sm:py-8"
       onClick={() => router.back()}
       role="dialog"
       aria-modal="true"
@@ -39,7 +39,7 @@ export function SlotDetailModal({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => router.back()}
           aria-label="Close detail view"
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-divider bg-background/80 text-text-secondary backdrop-blur transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-accent-cyan bg-accent-cyan/15 text-accent-cyan backdrop-blur transition-colors glow-cyan hover:bg-accent-cyan hover:text-background"
         >
           <span aria-hidden="true" className="text-lg leading-none">
             ×
