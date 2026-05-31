@@ -1,13 +1,20 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 export function SlotDetailModal({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const containerRef = useRef<HTMLDivElement>(null);
+  // The intercepted route renders this modal while the URL is /schedule/<id>.
+  // If the user navigates away (e.g. clicking the streamer name link) before
+  // Next.js has a chance to unmount the @modal parallel slot, hide the overlay
+  // ourselves based on pathname so the new page is visible immediately.
+  const isOpen = pathname.startsWith('/schedule/');
 
   useEffect(() => {
+    if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') router.back();
     };
@@ -19,7 +26,9 @@ export function SlotDetailModal({ children }: { children: React.ReactNode }) {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [router]);
+  }, [router, isOpen]);
+
+  if (!isOpen) return null;
 
   return (
     <div
