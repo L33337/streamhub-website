@@ -2,37 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-
-const APP_STORE_URL = 'https://apps.apple.com/app/id6760627630';
-const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.streamhub.tv.app';
-const FALLBACK_URL = '/app';
-
-type Target = {
-  href: string;
-  external: boolean;
-};
-
-function detectTarget(): Target {
-  if (typeof navigator === 'undefined') {
-    return { href: FALLBACK_URL, external: false };
-  }
-  const ua = navigator.userAgent;
-  if (/iPhone|iPad|iPod/i.test(ua)) {
-    return { href: APP_STORE_URL, external: true };
-  }
-  if (/Android/i.test(ua)) {
-    return { href: PLAY_STORE_URL, external: true };
-  }
-  return { href: FALLBACK_URL, external: false };
-}
+import { detectGetAppTarget, type GetAppTarget } from '@/lib/get-app-target';
 
 export function FloatingGetAppButton() {
   const pathname = usePathname();
-  const [target, setTarget] = useState<Target | null>(null);
+  const [target, setTarget] = useState<GetAppTarget | null>(null);
 
   useEffect(() => {
-    setTarget(detectTarget());
+    setTarget(detectGetAppTarget());
   }, []);
 
   if (pathname?.startsWith('/auth')) {

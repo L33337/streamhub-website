@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { GetAppLink } from './GetAppLink';
 
 function todayLabel(): string {
   return new Date()
@@ -92,9 +93,7 @@ export function HomeHero() {
           <p className="hero-sub">
             One feed for Twitch and YouTube. Real-time live status, AI-predicted
             next slots, and zero noise. Free, no account required —{' '}
-            <Link href="/app" className="hero-link">
-              get the app
-            </Link>{' '}
+            <GetAppLink className="hero-link">get the app</GetAppLink>{' '}
             for live alerts.
           </p>
 
