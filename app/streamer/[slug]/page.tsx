@@ -1,6 +1,11 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getPartnerApi, type PublicStreamSlot } from '@/lib/server/partner-api';
+import {
+  getPartnerApi,
+  type PublicStreamer,
+  type PublicStreamSlot,
+} from '@/lib/server/partner-api';
 import {
   buildBreadcrumbJsonLd,
   buildBroadcastEventsJsonLd,
@@ -19,23 +24,21 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const streamer = await getPartnerApi().getStreamer(slug);
-  if (!streamer) {
-    return { title: 'Streamer not found — StreamerTimes' };
-  }
-  return buildStreamerMetadata(streamer, slug);
+interface StreamerPageData {
+  streamer: PublicStreamer | null;
+  liveSlots: PublicStreamSlot[];
+  upcomingSlots: PublicStreamSlot[];
+  now: Date;
 }
 
-export default async function StreamerPage({ params }: Props) {
-  const { slug } = await params;
+// Wrapped in React `cache()` so generateMetadata and the page component share a
+// single fetch per request — calling it twice with the same slug is deduped.
+const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> => {
   const api = getPartnerApi();
-
-  const streamer = await api.getStreamer(slug);
-  if (!streamer) notFound();
-
   const now = new Date();
+  const streamer = await api.getStreamer(slug);
+  if (!streamer) return { streamer: null, liveSlots: [], upcomingSlots: [], now };
+
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
@@ -64,8 +67,28 @@ export default async function StreamerPage({ params }: Props) {
     }),
   ]);
 
-  const liveSlots: PublicStreamSlot[] = liveCall.data;
-  const upcomingSlots: PublicStreamSlot[] = upcomingCall.data;
+  return { streamer, liveSlots: liveCall.data, upcomingSlots: upcomingCall.data, now };
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { streamer, liveSlots, upcomingSlots } = await loadStreamerPage(slug);
+  if (!streamer) {
+    return { title: 'Streamer not found — StreamerTimes' };
+  }
+  // Earliest upcoming slot drives the "next stream" meta text.
+  const nextSlot =
+    [...upcomingSlots].sort((a, b) => a.start_time.localeCompare(b.start_time))[0] ?? null;
+  return buildStreamerMetadata(streamer, slug, {
+    liveSlot: liveSlots[0] ?? null,
+    nextSlot,
+  });
+}
+
+export default async function StreamerPage({ params }: Props) {
+  const { slug } = await params;
+  const { streamer, liveSlots, upcomingSlots, now } = await loadStreamerPage(slug);
+  if (!streamer) notFound();
 
   // Live slots show in their own hero callout + in the "Today" day-section
   // when their start_time falls on today's UTC date. Upcoming slots fill the
