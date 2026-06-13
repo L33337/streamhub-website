@@ -87,13 +87,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       pages++;
     } while (cursor && pages < MAX_PAGES);
   } catch (err) {
-    // Don't crash the route if the Partner API is down — return the static
-    // section so robots can at least crawl the canonical pages.
+    // The sitemap is all-or-nothing: NEVER serve a truncated list. A degraded
+    // 200 (static-only) tells Google "these streamer URLs no longer exist" and
+    // it drops them from the index. Instead we rethrow — under ISR
+    // (revalidate=3600) Next keeps serving the last successfully generated
+    // sitemap, and Google retains its previously-discovered URLs. Only a cold
+    // cache during an outage 500s, which Google simply retries.
     if (err instanceof PartnerApiError) {
       console.error('[sitemap] Partner API failed:', err.code, err.message);
     } else {
       console.error('[sitemap] Unexpected error:', err);
     }
+    throw err;
   }
 
   return [...STATIC_URLS, ...streamerUrls];
