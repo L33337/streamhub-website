@@ -7,6 +7,14 @@ const SITE_URL = 'https://streamertimes.tv';
 const MAX_PAGES = 50; // safety cap = 25k streamers
 const PAGE_LIMIT = 500;
 
+/** Later of two ISO timestamps as a Date; ignores null/unparseable inputs. */
+function latestChange(updatedAt: string, lastStatusChangeAt: string | null): Date {
+  const a = Date.parse(updatedAt);
+  const b = lastStatusChangeAt ? Date.parse(lastStatusChangeAt) : NaN;
+  const max = Math.max(Number.isNaN(a) ? 0 : a, Number.isNaN(b) ? 0 : b);
+  return new Date(max || (Number.isNaN(a) ? Date.now() : a));
+}
+
 const STATIC_URLS: MetadataRoute.Sitemap = [
   {
     url: SITE_URL,
@@ -77,7 +85,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       for (const s of resp.data) {
         streamerUrls.push({
           url: `${SITE_URL}/streamer/${encodeURIComponent(s.id)}`,
-          lastModified: new Date(s.updated_at),
+          // Honest <lastmod>: updated_at only moves on metadata writes (avatar,
+          // discovery), so it misses live↔offline flips that change the page's
+          // title/description. last_status_change_at captures those. Take the
+          // later of the two so Google sees a real "changed" signal.
+          lastModified: latestChange(s.updated_at, s.last_status_change_at),
           changeFrequency: 'daily',
           priority: 0.7,
         });

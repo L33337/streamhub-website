@@ -17,6 +17,10 @@ export interface PublicStreamer {
   is_always_on: boolean;
   avg_view_count: number | null;
   updated_at: string;
+  // Last live↔offline transition (null if never changed). The sitemap uses
+  // MAX(updated_at, last_status_change_at) as <lastmod>, since updated_at alone
+  // misses live-status flips — the most frequent streamer-page content change.
+  last_status_change_at: string | null;
   // External channel identifiers — populated only when the corresponding
   // platform is in `platforms`. Use to build canonical watch URLs.
   twitch_login: string | null;
