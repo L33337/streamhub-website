@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 export const metadata: Metadata = {
   title: "Privacy Policy - Streamer Times",
   description: "Streamer Times Privacy Policy. Learn how we collect, use, and protect your information.",
+  alternates: { canonical: "/privacy-policy" },
 };
 
 const sections = [

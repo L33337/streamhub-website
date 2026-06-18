@@ -42,10 +42,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title: `${query} — Search Streamers | StreamerTimes`,
     description: `Search results for "${query}" on Streamer Times. Find livestream schedules and AI predictions across Twitch and YouTube.`,
-    robots: { index: true, follow: true },
-    alternates: {
-      canonical: `https://streamertimes.tv/search?q=${encodeURIComponent(query)}`,
-    },
+    // Internal search result pages are noindex (thin/duplicate content; unbounded
+    // query permutations otherwise become "Crawled - currently not indexed" noise).
+    // follow: true keeps crawl-through to the linked streamer pages alive.
+    robots: { index: false, follow: true },
   };
 }
 

@@ -25,6 +25,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        // Build artifacts (fonts, JS, CSS, statically-imported media). These are
+        // render resources, never search results. noindex keeps them out of the
+        // Google index while still allowing Googlebot to fetch them for page
+        // rendering. Fixes GSC "Crawled - currently not indexed" for
+        // /_next/static/*.woff2 (and the same class of JS/CSS chunks).
+        source: "/_next/static/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

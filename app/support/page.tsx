@@ -5,6 +5,7 @@ import { ArrowLeft, Mail, MessageCircle, Shield } from "lucide-react";
 export const metadata: Metadata = {
   title: "Support - Streamer Times",
   description: "Get help with Streamer Times. Contact us for support, bug reports, or feedback.",
+  alternates: { canonical: "/support" },
 };
 
 export default function Support() {

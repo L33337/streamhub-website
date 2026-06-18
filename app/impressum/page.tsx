@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Legal Notice (Impressum) - Streamer Times",
   description:
     "Streamer Times Legal Notice (Impressum). Information in accordance with § 5 TMG.",
+  alternates: { canonical: "/impressum" },
 };
 
 const sections = [
