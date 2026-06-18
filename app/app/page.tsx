@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { AppQrCode } from "@/components/web/AppQrCode";
 
 export const metadata: Metadata = {
   title:
@@ -392,6 +393,8 @@ export default function AppPromoPage() {
             </div>
 
             <StoreBadges />
+
+            <AppQrCode className="mt-6 hidden lg:flex" />
           </div>
 
           <div className="hidden lg:flex justify-center">
