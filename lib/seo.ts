@@ -8,6 +8,43 @@ export function streamerCanonicalUrl(slug: string): string {
   return `${SITE_URL}/streamer/${encodeURIComponent(slug)}`;
 }
 
+/** ISO-639-1 language prefix, lowercased. 'de-AT' → 'de', null/empty → 'en'. */
+export function langCode(language: string | null | undefined): string {
+  return (language || 'en').split('-')[0].toLowerCase();
+}
+
+// POSIX locale (underscore form) for og:locale. We only store ISO-639-1 codes,
+// so each language maps to one sensible default region. Must match /^[a-z]{2}_[A-Z]{2}$/
+// — Facebook/LinkedIn ignore the hyphen (BCP-47) form.
+const LANGUAGE_TO_LOCALE: Record<string, string> = {
+  en: 'en_US',
+  de: 'de_DE',
+  es: 'es_ES',
+  fr: 'fr_FR',
+  pt: 'pt_BR',
+  it: 'it_IT',
+  ru: 'ru_RU',
+  ja: 'ja_JP',
+  uk: 'uk_UA',
+  ar: 'ar_SA',
+  hu: 'hu_HU',
+};
+
+/** OpenGraph og:locale for a streamer language (e.g. 'de_DE'); defaults to 'en_US'. */
+export function langToLocale(language: string | null | undefined): string {
+  return LANGUAGE_TO_LOCALE[langCode(language)] ?? 'en_US';
+}
+
+// Right-to-left scripts. Used to set `dir` on elements that hold native-language
+// text (e.g. an Arabic streamer bio), so the browser renders it correctly without
+// flipping the surrounding English UI chrome.
+const RTL_LANGS = new Set(['ar', 'he', 'fa', 'ur']);
+
+/** Text direction for a native-language text element: 'rtl' or undefined (LTR). */
+export function dirFor(language: string | null | undefined): 'rtl' | undefined {
+  return RTL_LANGS.has(langCode(language)) ? 'rtl' : undefined;
+}
+
 /**
  * BreadcrumbList JSON-LD. Pass crumbs in order from root to current page.
  * The final crumb (current page) omits `url` per Google's guidance — the
@@ -214,11 +251,121 @@ const META_STRINGS: Record<string, Lex> = {
     twDesc: (n, c, live) =>
       live ? (c ? `${n} in diretta — ${c}.` : `${n} è in diretta.`) : `Calendario stream di ${n}.`,
   },
+  // TODO(i18n): ru/ja/uk/ar/hu strings are AI-authored — have a native speaker
+  // review before the production rollout (esp. ru/ja for reach, ar for RTL/register).
+  ru: {
+    q: ['«', '»'],
+    liveTitle: (n, c) => (c ? `СЕЙЧАС В ЭФИРЕ: ${n} — ${c}` : `СЕЙЧАС В ЭФИРЕ: ${n} стримит`),
+    nextTitle: (n, l) => `${n} — расписание стримов — Следующий стрим ${l}`,
+    fallbackTitle: (n) => `${n} — расписание стримов и статус эфира`,
+    liveBase: (n) => `${n} сейчас в эфире`,
+    livePlaying: (n, c) => `${n} сейчас в эфире — играет в ${c}`,
+    nextLead: (n, l, p) =>
+      p ? `Предполагаемый следующий стрим ${n} ${l}` : `Следующий стрим ${n} ${l}`,
+    fallbackDesc: (n, p) =>
+      `Когда ${n} выходит в эфир на ${p}? Расписание, прогноз следующих стримов на основе ИИ и текущий статус эфира.`,
+    ogTitle: (n, c, live) =>
+      live ? (c ? `СЕЙЧАС В ЭФИРЕ: ${n} — ${c}` : `СЕЙЧАС В ЭФИРЕ: ${n}`) : `${n} — гид по стримам`,
+    ogDesc: (n, p, c, live) =>
+      live
+        ? c
+          ? `${n} сейчас в эфире — играет в ${c}.`
+          : `${n} сейчас в эфире.`
+        : `Расписание стримов и статус эфира для ${n} на ${p}.`,
+    twDesc: (n, c, live) =>
+      live ? (c ? `${n} в эфире — ${c}.` : `${n} сейчас в эфире.`) : `Расписание стримов ${n}.`,
+  },
+  uk: {
+    q: ['«', '»'],
+    liveTitle: (n, c) => (c ? `ЗАРАЗ У ЕФІРІ: ${n} — ${c}` : `ЗАРАЗ У ЕФІРІ: ${n} стрімить`),
+    nextTitle: (n, l) => `${n} — розклад стрімів — Наступний стрім ${l}`,
+    fallbackTitle: (n) => `${n} — розклад стрімів і статус ефіру`,
+    liveBase: (n) => `${n} зараз у ефірі`,
+    livePlaying: (n, c) => `${n} зараз у ефірі — грає в ${c}`,
+    nextLead: (n, l, p) =>
+      p ? `Імовірно наступний стрім ${n} ${l}` : `Наступний стрім ${n} ${l}`,
+    fallbackDesc: (n, p) =>
+      `Коли ${n} виходить у ефір на ${p}? Розклад, прогноз наступних стрімів на основі ШІ та поточний статус ефіру.`,
+    ogTitle: (n, c, live) =>
+      live ? (c ? `ЗАРАЗ У ЕФІРІ: ${n} — ${c}` : `ЗАРАЗ У ЕФІРІ: ${n}`) : `${n} — гід по стрімах`,
+    ogDesc: (n, p, c, live) =>
+      live
+        ? c
+          ? `${n} зараз у ефірі — грає в ${c}.`
+          : `${n} зараз у ефірі.`
+        : `Розклад стрімів і статус ефіру для ${n} на ${p}.`,
+    twDesc: (n, c, live) =>
+      live ? (c ? `${n} у ефірі — ${c}.` : `${n} зараз у ефірі.`) : `Розклад стрімів ${n}.`,
+  },
+  ja: {
+    q: ['「', '」'],
+    liveTitle: (n, c) => (c ? `配信中: ${n} — ${c}` : `配信中: ${n}`),
+    nextTitle: (n, l) => `${n} の配信スケジュール — 次回ライブ ${l}`,
+    fallbackTitle: (n) => `${n} — 配信スケジュールとライブ状況`,
+    liveBase: (n) => `${n} は配信中`,
+    livePlaying: (n, c) => `${n} は ${c} を配信中`,
+    nextLead: (n, l, p) => (p ? `${n} の次回配信予想は ${l}` : `${n} の次回配信は ${l}`),
+    fallbackDesc: (n, p) =>
+      `${n} が ${p} で配信するのはいつ？ 配信スケジュール、AIによる次回配信予想、現在のライブ状況をチェック。`,
+    ogTitle: (n, c, live) =>
+      live ? (c ? `配信中: ${n} — ${c}` : `配信中: ${n}`) : `${n} — 配信ガイド`,
+    ogDesc: (n, p, c, live) =>
+      live
+        ? c
+          ? `${n} は ${c} を配信中。`
+          : `${n} は配信中。`
+        : `${p} での ${n} の配信スケジュールとライブ状況。`,
+    twDesc: (n, c, live) =>
+      live ? (c ? `${n} は配信中 — ${c}。` : `${n} は配信中。`) : `${n} の配信スケジュール。`,
+  },
+  ar: {
+    q: ['«', '»'],
+    liveTitle: (n, c) => (c ? `مباشر الآن: ${n} — ${c}` : `مباشر الآن: ${n} يبث`),
+    nextTitle: (n, l) => `${n} — جدول البث — البث المباشر القادم ${l}`,
+    fallbackTitle: (n) => `${n} — جدول البث وحالة البث المباشر`,
+    liveBase: (n) => `${n} يبث مباشرة الآن`,
+    livePlaying: (n, c) => `${n} يبث الآن ${c}`,
+    nextLead: (n, l, p) =>
+      p ? `البث القادم المتوقع لـ ${n} ${l}` : `البث القادم لـ ${n} ${l}`,
+    fallbackDesc: (n, p) =>
+      `متى يبث ${n} مباشرة على ${p}؟ جدول البث، توقعات البث القادم بالذكاء الاصطناعي، وحالة البث الحالية.`,
+    ogTitle: (n, c, live) =>
+      live ? (c ? `مباشر الآن: ${n} — ${c}` : `مباشر الآن: ${n}`) : `${n} — دليل البث`,
+    ogDesc: (n, p, c, live) =>
+      live
+        ? c
+          ? `${n} يبث الآن ${c}.`
+          : `${n} يبث مباشرة الآن.`
+        : `جدول البث وحالة البث المباشر لـ ${n} على ${p}.`,
+    twDesc: (n, c, live) =>
+      live ? (c ? `${n} يبث الآن — ${c}.` : `${n} يبث مباشرة الآن.`) : `جدول بث ${n}.`,
+  },
+  hu: {
+    q: ['„', '”'],
+    liveTitle: (n, c) => (c ? `ÉLŐ MOST: ${n} — ${c}` : `ÉLŐ MOST: ${n} épp streamel`),
+    nextTitle: (n, l) => `${n} stream-időpontok — Következő élő adás ${l}`,
+    fallbackTitle: (n) => `${n} — stream-időpontok és élő státusz`,
+    liveBase: (n) => `${n} épp élőben van`,
+    livePlaying: (n, c) => `${n} épp élőben — ${c}`,
+    nextLead: (n, l, p) =>
+      p ? `${n} várható következő streamje ${l}` : `${n} következő streamje ${l}`,
+    fallbackDesc: (n, p) =>
+      `Mikor streamel ${n} élőben a ${p} platformon? Műsorrend, MI által előrejelzett következő streamek és aktuális élő státusz.`,
+    ogTitle: (n, c, live) =>
+      live ? (c ? `ÉLŐ MOST: ${n} — ${c}` : `ÉLŐ MOST: ${n}`) : `${n} — stream-útmutató`,
+    ogDesc: (n, p, c, live) =>
+      live
+        ? c
+          ? `${n} épp élőben — ${c}.`
+          : `${n} épp élőben van.`
+        : `${n} stream-időpontjai és élő státusza a ${p} platformon.`,
+    twDesc: (n, c, live) =>
+      live ? (c ? `${n} élőben — ${c}.` : `${n} épp élőben van.`) : `${n} stream-időpontjai.`,
+  },
 };
 
 function lexFor(language: string | null): Lex {
-  const code = (language || 'en').split('-')[0].toLowerCase();
-  return META_STRINGS[code] ?? META_STRINGS.en;
+  return META_STRINGS[langCode(language)] ?? META_STRINGS.en;
 }
 
 /** "{name} is live now playing {game}: "{title}"." — clauses omitted when data is absent. */
@@ -259,7 +406,7 @@ export function buildStreamerMetadata(
       : 'Twitch & YouTube';
   const url = streamerCanonicalUrl(slug);
   const L = lexFor(streamer.language);
-  const lang = (streamer.language || 'en').split('-')[0].toLowerCase();
+  const lang = langCode(streamer.language);
   const name = streamer.name;
 
   const live = opts?.liveSlot ?? null;
@@ -312,6 +459,9 @@ export function buildStreamerMetadata(
       url,
       type: 'profile',
       siteName: 'Streamer Times',
+      // Honest per-streamer locale (e.g. de_DE). With the lexicon now covering
+      // every stored language, the og text and this locale always agree.
+      locale: langToLocale(streamer.language),
     },
     twitter: {
       card: 'summary_large_image',

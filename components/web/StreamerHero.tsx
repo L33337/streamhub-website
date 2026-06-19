@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
+import { langCode, dirFor } from '@/lib/seo';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -13,6 +14,13 @@ interface Props {
 export function StreamerHero({ streamer, liveSlot }: Props) {
   const isLive = liveSlot !== null;
   const isAlwaysOn = liveSlot?.is_always_on === true;
+
+  // Mark broadcaster-language text (bio, stream title) so browsers/screen readers
+  // treat it correctly while the English UI chrome (and <html lang="en">) stays put.
+  // Only set when the language is actually non-English; dir flips only for RTL.
+  const code = langCode(streamer.language); // 'en' when null/unknown
+  const nativeLang = code !== 'en' ? code : undefined;
+  const nativeDir = dirFor(streamer.language);
 
   return (
     <header className="relative gradient-border p-6 md:p-8">
@@ -59,7 +67,9 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
           {isLive && liveSlot && (
             <p className="mt-4 text-text-secondary">
               <span className="text-text-primary font-semibold">Now streaming:</span>{' '}
-              {liveSlot.title}
+              <span lang={nativeLang} dir={nativeDir}>
+                {liveSlot.title}
+              </span>
               {liveSlot.category ? (
                 <span className="text-text-muted"> · {liveSlot.category}</span>
               ) : null}
@@ -67,7 +77,11 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
           )}
 
           {streamer.description && (
-            <StreamerDescription text={streamer.description} />
+            <StreamerDescription
+              text={streamer.description}
+              lang={nativeLang}
+              dir={nativeDir}
+            />
           )}
 
           <InstallAppCta />
@@ -81,10 +95,22 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
  * Renders the AI-generated streamer description, preserving the \n\n paragraph
  * breaks the prompt enforces. Falls back to a single block if no break present.
  */
-function StreamerDescription({ text }: { text: string }) {
+function StreamerDescription({
+  text,
+  lang,
+  dir,
+}: {
+  text: string;
+  lang?: string;
+  dir?: 'rtl';
+}) {
   const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   return (
-    <div className="mt-4 space-y-3 text-sm leading-relaxed text-text-secondary md:text-base">
+    <div
+      lang={lang}
+      dir={dir}
+      className="mt-4 space-y-3 text-sm leading-relaxed text-text-secondary md:text-base"
+    >
       {paragraphs.map((para, i) => (
         <p key={i}>{para}</p>
       ))}
