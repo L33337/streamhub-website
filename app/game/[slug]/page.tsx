@@ -112,7 +112,7 @@ interface GameStreamer {
 
 export default async function GamePage({ params }: Props) {
   const { slug } = await params;
-  const { category, streamerCount, liveSlots, upcomingSlots, now } = await loadGamePage(slug);
+  const { category, liveSlots, upcomingSlots, now } = await loadGamePage(slug);
   if (!category) notFound();
 
   // Dedupe streamers across live + upcoming; live first, then alphabetical.
@@ -161,10 +161,15 @@ export default async function GamePage({ params }: Props) {
     })),
   };
 
+  // Headline numbers are derived from exactly what's rendered below (the live +
+  // upcoming streamers/slots), so they always match the list. We deliberately do
+  // NOT use the games-endpoint streamer_count here: that counts a 28-day catalog
+  // window, which would overstate how many streamers are actually shown.
+  const shown = streamers.length;
   const intro =
-    `${streamerCount} streamer${streamerCount === 1 ? '' : 's'} stream ${category} on Twitch and YouTube. ` +
+    `${shown} streamer${shown === 1 ? '' : 's'} ${shown === 1 ? 'has' : 'have'} ${category} streams live or scheduled this week on Twitch and YouTube. ` +
     (liveCount > 0
-      ? `${liveCount} ${liveCount === 1 ? 'is' : 'are'} live now`
+      ? `${liveCount} ${liveCount === 1 ? 'is' : 'are'} live right now`
       : 'None are live right now') +
     (upcomingSlots.length > 0
       ? `, with ${upcomingSlots.length} upcoming stream${upcomingSlots.length === 1 ? '' : 's'} in the next 7 days.`
