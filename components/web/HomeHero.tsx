@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { GetAppLink } from './GetAppLink';
+import { AppQrCode } from './AppQrCode';
 
 function todayLabel(): string {
   return new Date()
@@ -97,7 +98,8 @@ export function HomeHero() {
             for live alerts.
           </p>
 
-          <div className="hero-stores">
+          <div className="hero-get">
+            <div className="hero-stores">
             <a
               href="https://apps.apple.com/app/id6760627630"
               target="_blank"
@@ -128,6 +130,9 @@ export function HomeHero() {
                 <span className="store-badge-main">Google Play</span>
               </span>
             </a>
+            </div>
+
+            <AppQrCode className="hero-qr-card" />
           </div>
         </div>
 

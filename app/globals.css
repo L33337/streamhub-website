@@ -345,6 +345,11 @@ body {
 .store-badge-sub  { font: 400 10px/1.1 var(--font-sans); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .04em; }
 .store-badge-main { font: 600 15px/1.1 var(--font-sans); color: #fff; }
 
+/* Store badges + scan-to-download QR side by side (desktop only). */
+.hero-get { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin-bottom: 20px; }
+.hero-get .hero-stores { margin-bottom: 0; }
+.hero-qr-card { display: flex; align-items: center; gap: 16px; }
+
 .hero-or {
   display: inline-flex; align-items: center; gap: 10px;
   font: 400 13px/1 var(--font-sans); color: var(--color-text-muted);
@@ -717,6 +722,8 @@ body {
   }
   .hero-launch-badge { display: none; }
   .hero-h1 { font-size: 40px; }
+  .hero-get { justify-content: center; }
+  .hero-qr-card { display: none; }
   .hero-stores { justify-content: center; }
   .stat-strip { grid-template-columns: 1fr; }
   .stat-cell { border-left: 0; border-top: 1px solid rgba(255,255,255,.06); padding: 14px 0; }

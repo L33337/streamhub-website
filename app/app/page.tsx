@@ -394,7 +394,7 @@ export default function AppPromoPage() {
 
             <StoreBadges />
 
-            <AppQrCode className="mt-6 hidden lg:flex" />
+            <AppQrCode className="mt-6 hidden items-center gap-4 lg:flex" />
           </div>
 
           <div className="hidden lg:flex justify-center">
