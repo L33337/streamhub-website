@@ -71,7 +71,7 @@ export function FavoriteButton({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          router.push('/app');
+          router.push('/app?from=favorite');
         }}
         className={`inline-flex items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-muted hover:border-accent-pink/40 hover:text-accent-pink transition-colors ${sizeClasses.button} ${className}`}
       >

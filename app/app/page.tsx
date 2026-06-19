@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { AppQrCode } from "@/components/web/AppQrCode";
+import { GetAppLink } from "@/components/web/GetAppLink";
 
 export const metadata: Metadata = {
   title:
@@ -81,6 +82,37 @@ const FEATURES = [
     accent: "cyan" as const,
   },
 ];
+
+const ACCENT_TEXT = {
+  cyan: "text-accent-cyan",
+  pink: "text-accent-pink",
+  green: "text-live",
+  purple: "text-accent-purple",
+} as const;
+
+// The four things you can ONLY do in the app. The first two are the exact
+// actions that most often redirect people here (add a streamer, save a favorite).
+const APP_ONLY = [
+  { icon: Search, title: "Add any streamer", desc: "Track any Twitch or YouTube creator.", accent: "cyan" as const },
+  { icon: Heart, title: "Save favorites", desc: "Build your personal guide, synced.", accent: "pink" as const },
+  { icon: Bell, title: "Go-live alerts", desc: "Get notified the instant they're live.", accent: "green" as const },
+  { icon: Sparkles, title: "AI predictions", desc: "Know when they'll stream next.", accent: "purple" as const },
+];
+
+// Context-aware banner shown when we know why the visitor was sent here
+// (via ?from= on the redirecting link). Class strings are static lookups so
+// Tailwind can see them — do NOT interpolate token names into class strings.
+const BANNER_CLASS = {
+  cyan: "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan",
+  pink: "border-accent-pink/40 bg-accent-pink/10 text-accent-pink",
+  green: "border-live/40 bg-live/10 text-live",
+} as const;
+
+const INTENT_BANNERS = {
+  add: { icon: Search, text: "Want to add a streamer? That's in the app →", accent: "cyan" as const },
+  favorite: { icon: Heart, text: "Saving a favorite? Do it in the app →", accent: "pink" as const },
+  alerts: { icon: Bell, text: "Want go-live alerts? Turn them on in the app →", accent: "green" as const },
+};
 
 const FLOATING_ICONS = [
   { emoji: "🎮", x: "8%", y: "15%", size: 22, bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float", delay: "0s", live: false },
@@ -293,7 +325,17 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-export default function AppPromoPage() {
+export default async function AppPromoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const { from } = await searchParams;
+  const intent =
+    from && from in INTENT_BANNERS
+      ? INTENT_BANNERS[from as keyof typeof INTENT_BANNERS]
+      : null;
+
   return (
     <main>
       <script
@@ -359,6 +401,19 @@ export default function AppPromoPage() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
           <div className="text-center lg:text-left">
+            {intent && (
+              <div
+                className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${BANNER_CLASS[intent.accent]}`}
+              >
+                <intent.icon size={15} />
+                {intent.text}
+              </div>
+            )}
+
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-cyan">
+              Get the app to add streamers &amp; save favorites
+            </p>
+
             <div className="bracket-frame relative inline-block px-5 py-4 sm:px-8 sm:py-6">
               <div className="bracket-frame-inner absolute inset-0" />
               <h1 className="glow-text-white text-4xl font-bold tracking-tight text-text-primary sm:text-7xl">
@@ -366,23 +421,34 @@ export default function AppPromoPage() {
               </h1>
             </div>
 
-            <p className="mt-6 mb-4 text-xl font-medium text-text-secondary sm:text-2xl">
-              Your Livestream Guide for Twitch & YouTube
+            <p className="mx-auto mt-6 mb-8 max-w-xl text-lg font-medium text-text-secondary sm:text-xl lg:mx-0">
+              Add any Twitch or YouTube streamer, save your favorites, and get
+              go-live alerts &mdash; all in the free app.
             </p>
 
-            <div className="mb-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-cyan/20 bg-accent-cyan/5 px-3 py-1.5 text-xs font-medium text-accent-cyan">
-                <Sparkles size={13} />
-                AI Predictions
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-live/20 bg-live/5 px-3 py-1.5 text-xs font-medium text-live">
-                <Bell size={13} />
-                Real-Time Alerts
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-purple/20 bg-accent-purple/5 px-3 py-1.5 text-xs font-medium text-accent-purple">
-                <Monitor size={13} />
-                Twitch + YouTube
-              </span>
+            <div className="mb-8 rounded-2xl border border-border-default bg-background-elevated/60 p-4 sm:p-5">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+                Only in the app
+              </p>
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {APP_ONLY.map(({ icon: Icon, title, desc, accent }) => (
+                  <li key={title} className="flex items-start gap-3 text-left">
+                    <span
+                      className={`inline-flex shrink-0 rounded-lg bg-background-highlight p-2 ${ACCENT_TEXT[accent]}`}
+                    >
+                      <Icon size={18} strokeWidth={1.5} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-text-primary">
+                        {title}
+                      </span>
+                      <span className="block text-xs leading-snug text-text-secondary">
+                        {desc}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <div className="mb-6 flex items-center justify-center gap-2 lg:justify-start">
@@ -392,7 +458,12 @@ export default function AppPromoPage() {
               </span>
             </div>
 
-            <StoreBadges />
+            <div className="flex flex-col items-center gap-4 lg:items-start">
+              <GetAppLink className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl bg-accent-cyan px-7 text-base font-semibold text-background shadow-[0_0_28px_-6px_rgba(0,240,255,0.7)] transition-colors hover:bg-[#4dfaff]">
+                Get the free app
+              </GetAppLink>
+              <StoreBadges />
+            </div>
 
             <AppQrCode className="mt-6 hidden items-center gap-4 lg:flex" />
           </div>

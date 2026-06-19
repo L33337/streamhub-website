@@ -17,7 +17,7 @@ export default function NotFound() {
           Browse streamers
         </Link>
         <Link
-          href="/app"
+          href="/app?from=add"
           className="inline-flex items-center rounded-lg border border-border-default bg-background-elevated px-4 py-2 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
         >
           Get the app
