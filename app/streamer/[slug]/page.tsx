@@ -17,6 +17,7 @@ import { StreamerHero } from '@/components/web/StreamerHero';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
+import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
 
 export const revalidate = 300;
 
@@ -170,6 +171,12 @@ export default async function StreamerPage({ params }: Props) {
               />
             );
           })}
+
+          <StreamerFaqBlock
+            streamer={streamer}
+            liveSlots={liveSlots}
+            upcomingSlots={upcomingSlots}
+          />
         </>
       )}
     </main>
