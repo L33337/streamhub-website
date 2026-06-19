@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
+import { gameSlug } from '@/lib/game-slug';
 
 export const revalidate = 3600;
 
@@ -30,6 +31,12 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
   },
   {
     url: `${SITE_URL}/streamers`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${SITE_URL}/games`,
     lastModified: new Date(),
     changeFrequency: 'daily',
     priority: 0.6,
@@ -68,6 +75,7 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const streamerUrls: MetadataRoute.Sitemap = [];
+  const gameUrls: MetadataRoute.Sitemap = [];
 
   try {
     const api = getPartnerApi();
@@ -98,6 +106,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       cursor = resp.pagination.next_cursor ?? undefined;
       pages++;
     } while (cursor && pages < MAX_PAGES);
+
+    // Game/category hub pages (≥3 streamers). Small set — one page.
+    const gamesResp = await api.listGames({ limit: PAGE_LIMIT, revalidate: 3600 });
+    for (const g of gamesResp.data) {
+      const slug = gameSlug(g.category);
+      if (!slug) continue;
+      gameUrls.push({
+        url: `${SITE_URL}/game/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.6,
+      });
+    }
   } catch (err) {
     // The sitemap is all-or-nothing: NEVER serve a truncated list. A degraded
     // 200 (static-only) tells Google "these streamer URLs no longer exist" and
@@ -113,5 +134,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     throw err;
   }
 
-  return [...STATIC_URLS, ...streamerUrls];
+  return [...STATIC_URLS, ...streamerUrls, ...gameUrls];
 }

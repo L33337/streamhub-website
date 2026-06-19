@@ -12,6 +12,7 @@ import type {
   Paginated,
   PartnerApiErrorBody,
   Platform,
+  PublicGame,
   PublicStreamer,
   PublicStreamSlot,
 } from './types';
@@ -46,7 +47,13 @@ export interface ListSchedulesOptions extends FetchOptions {
   includeAlwaysOn?: boolean;
   minConfidence?: 'low' | 'medium' | 'high';
   status?: ('live' | 'upcoming' | 'offline')[];
+  /** Exact-match category filter (e.g. "League of Legends"). */
+  category?: string;
   cursor?: string;
+  limit?: number;
+}
+
+export interface ListGamesOptions extends FetchOptions {
   limit?: number;
 }
 
@@ -66,6 +73,14 @@ class PartnerApiClient {
     if (opts.cursor) params.set('cursor', opts.cursor);
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
     return this.request<Paginated<PublicStreamer>>('GET', `/v1/streamers?${params}`, opts);
+  }
+
+  /** Categories that qualify for a hub page (>= 3 active streamers), most popular first. */
+  async listGames(opts: ListGamesOptions = {}): Promise<Paginated<PublicGame>> {
+    const params = new URLSearchParams();
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    const qs = params.toString();
+    return this.request<Paginated<PublicGame>>('GET', `/v1/games${qs ? `?${qs}` : ''}`, opts);
   }
 
   async getStreamer(id: string, opts: FetchOptions = {}): Promise<PublicStreamer | null> {
@@ -108,6 +123,7 @@ class PartnerApiClient {
       params.set('include_always_on', String(opts.includeAlwaysOn));
     }
     if (opts.minConfidence) params.set('min_confidence', opts.minConfidence);
+    if (opts.category) params.set('category', opts.category);
     if (opts.cursor) params.set('cursor', opts.cursor);
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
     return this.request<Paginated<PublicStreamSlot>>('GET', `/v1/schedules?${params}`, opts);

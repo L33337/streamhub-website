@@ -55,6 +55,13 @@ export interface PublicStreamSlot {
   reasoning?: string;
 }
 
+// A game/category that qualifies for a hub page (>= 3 active streamers).
+// Returned by GET /v1/games; `category` is the canonical category name.
+export interface PublicGame {
+  category: string;
+  streamer_count: number;
+}
+
 export interface PaginationInfo {
   next_cursor: string | null;
   has_more: boolean;

@@ -4,6 +4,7 @@ export type {
   FetchOptions,
   ListStreamersOptions,
   ListSchedulesOptions,
+  ListGamesOptions,
 } from './client';
 export {
   PartnerApiError,
@@ -19,6 +20,7 @@ export type {
   ConfidenceLevel,
   PublicStreamer,
   PublicStreamSlot,
+  PublicGame,
   Paginated,
   PaginationInfo,
 } from './types';
