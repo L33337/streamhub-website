@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { LEGAL_LAST_UPDATED, formatLegalDate } from "@/lib/legal-dates";
 
 export const metadata: Metadata = {
   title: "Legal Notice (Impressum) - Streamer Times",
@@ -70,7 +71,7 @@ export default function Impressum() {
         Legal Notice (Impressum)
       </h1>
       <p className="mb-12 text-sm text-text-muted">
-        Last updated: April 5, 2026
+        Last updated: {formatLegalDate(LEGAL_LAST_UPDATED.impressum)}
       </p>
 
       {sections.map((section) => (

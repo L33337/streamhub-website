@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { LEGAL_LAST_UPDATED, formatLegalDate } from "@/lib/legal-dates";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - Streamer Times",
@@ -100,7 +101,7 @@ export default function PrivacyPolicy() {
         Privacy Policy
       </h1>
       <p className="mb-12 text-sm text-text-muted">
-        Last updated: February 21, 2026
+        Last updated: {formatLegalDate(LEGAL_LAST_UPDATED["privacy-policy"])}
       </p>
 
       {sections.map((section) => (

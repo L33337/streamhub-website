@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Frozen once at `next build` on the build machine, then inlined into the
+  // bundle — gives the sitemap an honest, stable build timestamp for static
+  // pages instead of a per-cold-start "now". See app/sitemap.ts.
+  env: {
+    BUILD_TIME: new Date().toISOString(),
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
