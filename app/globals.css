@@ -314,6 +314,12 @@ body {
   color: #00F0FF;
   text-shadow: 0 0 16px rgba(0,240,255,.45);
 }
+.hero-claim {
+  font: 600 19px/1.3 var(--font-sans);
+  color: rgba(255,255,255,.62);
+  letter-spacing: -.01em;
+  margin: -6px 0 24px;
+}
 .hero-sub {
   font: 400 18px/1.55 var(--font-sans);
   color: var(--color-text-secondary);
@@ -722,6 +728,7 @@ body {
   }
   .hero-launch-badge { display: none; }
   .hero-h1 { font-size: 40px; }
+  .hero-claim { font-size: 16px; }
   .hero-get { justify-content: center; }
   .hero-qr-card { display: none; }
   .hero-stores { justify-content: center; }

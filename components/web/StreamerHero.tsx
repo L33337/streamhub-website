@@ -23,8 +23,8 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             alt={`${streamer.name} avatar`}
             width={160}
             height={160}
+            sizes="160px"
             className="rounded-full border-2 border-accent-cyan/40 glow-cyan"
-            unoptimized
           />
         ) : (
           <InitialsAvatar name={streamer.name} size={160} />
