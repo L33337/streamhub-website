@@ -13,6 +13,7 @@ import {
   type SearchResultStreamer,
 } from '@/components/web/SearchResultCard';
 import { SearchFilters } from '@/components/web/SearchFilters';
+import { GetAppLink } from '@/components/web/GetAppLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,7 +127,11 @@ export default async function SearchPage({ searchParams }: Props) {
       <SearchFilters q={query} platform={activePlatform} live={liveOnly} />
 
       {filtered.length === 0 ? (
-        <NoResultsState query={query} liveOnly={liveOnly} />
+        <NoResultsState
+          query={query}
+          liveOnly={liveOnly}
+          hasDbMatches={enriched.length > 0}
+        />
       ) : (
         <ul className="mt-6 grid gap-3" aria-label={`Streamers matching ${query}`}>
           {filtered.map((s) => (
@@ -176,7 +181,15 @@ function EmptyQueryState() {
   );
 }
 
-function NoResultsState({ query, liveOnly }: { query: string; liveOnly: boolean }) {
+function NoResultsState({
+  query,
+  liveOnly,
+  hasDbMatches,
+}: {
+  query: string;
+  liveOnly: boolean;
+  hasDbMatches: boolean;
+}) {
   return (
     <div className="mt-8 gradient-border p-8 text-center">
       <h2 className="text-xl font-bold text-text-primary">
@@ -187,6 +200,20 @@ function NoResultsState({ query, liveOnly }: { query: string; liveOnly: boolean 
         {liveOnly ? ' right now' : ''}. Try a shorter or different query
         {liveOnly ? ', or remove the "Live only" filter' : ''}.
       </p>
+
+      {!hasDbMatches && (
+        <div className="mt-6 border-t border-divider pt-6">
+          <p className="mx-auto max-w-xl text-text-secondary">
+            Don&apos;t see them here? Add any Twitch or YouTube streamer right in
+            the app — we&apos;ll start tracking their schedule and AI predictions.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <GetAppLink className="inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan transition-colors hover:bg-accent-cyan/20">
+              Get the app →
+            </GetAppLink>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
