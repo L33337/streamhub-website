@@ -14,6 +14,7 @@ import type {
   Platform,
   PublicGame,
   PublicStreamer,
+  PublicStreamHistory,
   PublicStreamSlot,
 } from './types';
 
@@ -54,6 +55,11 @@ export interface ListSchedulesOptions extends FetchOptions {
 }
 
 export interface ListGamesOptions extends FetchOptions {
+  limit?: number;
+}
+
+export interface ListHistoryOptions extends FetchOptions {
+  cursor?: string;
   limit?: number;
 }
 
@@ -106,6 +112,44 @@ class PartnerApiClient {
     } catch (err) {
       if (err instanceof PartnerApiNotFoundError) return null;
       throw err;
+    }
+  }
+
+  /**
+   * Paginated broadcast history for a streamer (most recent finished streams
+   * first). The Partner API already excludes synthetic always-on/live-slot
+   * fragments, so every item is a real finished stream.
+   */
+  async getStreamerHistory(
+    id: string,
+    opts: ListHistoryOptions = {},
+  ): Promise<Paginated<PublicStreamHistory>> {
+    const params = new URLSearchParams();
+    if (opts.cursor) params.set('cursor', opts.cursor);
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    const qs = params.toString();
+    return this.request<Paginated<PublicStreamHistory>>(
+      'GET',
+      `/v1/streamers/${encodeURIComponent(id)}/history${qs ? `?${qs}` : ''}`,
+      opts,
+    );
+  }
+
+  /**
+   * Convenience wrapper returning a streamer's single most recent finished
+   * stream, or null when there is none. Best-effort: any API/network error is
+   * swallowed to null so a failing history lookup never breaks the page that
+   * renders it (mirrors `getStreamer`'s null-tolerance on 404).
+   */
+  async getLastStream(
+    id: string,
+    opts: FetchOptions = {},
+  ): Promise<PublicStreamHistory | null> {
+    try {
+      const page = await this.getStreamerHistory(id, { ...opts, limit: 1 });
+      return page.data[0] ?? null;
+    } catch {
+      return null;
     }
   }
 

@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import Link from 'next/link';
+import heroPhone from '@/public/hero-phone.webp';
 import { GetAppLink } from './GetAppLink';
 import { AppQrCode } from './AppQrCode';
 
@@ -88,8 +88,9 @@ export function HomeHero() {
           </span>
 
           <h1 className="hero-h1">
-            The TV guide for <span className="key">streamers.</span>
+            Live stream schedule for <span className="key">Twitch &amp; YouTube</span>
           </h1>
+          <p className="hero-claim">The TV guide for streamers.</p>
 
           <p className="hero-sub">
             One feed for Twitch and YouTube. Real-time live status, AI-predicted
@@ -139,12 +140,11 @@ export function HomeHero() {
         <div className="hero-portrait">
           <figure className="hero-portrait-frame">
             <Image
-              src="/hero-phone.webp"
+              src={heroPhone}
               alt="A streamer browsing tonight's lineup on her phone"
-              width={768}
-              height={1152}
+              sizes="(max-width: 420px) 100vw, 380px"
+              placeholder="blur"
               priority
-              unoptimized
             />
             <figcaption className="hero-portrait-cap">
               <span className="hpc-mono">02:14 · Berlin</span>

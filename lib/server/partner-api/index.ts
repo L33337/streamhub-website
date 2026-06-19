@@ -21,6 +21,7 @@ export type {
   PublicStreamer,
   PublicStreamSlot,
   PublicGame,
+  PublicStreamHistory,
   Paginated,
   PaginationInfo,
 } from './types';

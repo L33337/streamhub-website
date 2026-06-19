@@ -1,12 +1,18 @@
 import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
+import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
 export const revalidate = 3600;
 
 const SITE_URL = 'https://streamertimes.tv';
 const MAX_PAGES = 50; // safety cap = 25k streamers
 const PAGE_LIMIT = 500;
+
+// Frozen at `next build` (injected via next.config.ts env), so static pages
+// without an editorial date report an honest, stable build timestamp instead
+// of a per-render "now". Falls back to runtime only in dev where it's unset.
+const BUILD_TIME = new Date(process.env.BUILD_TIME ?? Date.now());
 
 /** Later of two ISO timestamps as a Date; ignores null/unparseable inputs. */
 function latestChange(updatedAt: string, lastStatusChangeAt: string | null): Date {
@@ -19,19 +25,19 @@ function latestChange(updatedAt: string, lastStatusChangeAt: string | null): Dat
 const STATIC_URLS: MetadataRoute.Sitemap = [
   {
     url: SITE_URL,
-    lastModified: new Date(),
+    lastModified: BUILD_TIME,
     changeFrequency: 'hourly',
     priority: 1.0,
   },
   {
     url: `${SITE_URL}/app`,
-    lastModified: new Date(),
+    lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
     priority: 0.5,
   },
   {
     url: `${SITE_URL}/streamers`,
-    lastModified: new Date(),
+    lastModified: BUILD_TIME,
     changeFrequency: 'daily',
     priority: 0.6,
   },
@@ -43,31 +49,31 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
   },
   {
     url: `${SITE_URL}/developers`,
-    lastModified: new Date(),
+    lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
     priority: 0.4,
   },
   {
     url: `${SITE_URL}/privacy-policy`,
-    lastModified: new Date(),
+    lastModified: new Date(LEGAL_LAST_UPDATED['privacy-policy']),
     changeFrequency: 'yearly',
     priority: 0.2,
   },
   {
     url: `${SITE_URL}/terms-of-service`,
-    lastModified: new Date(),
+    lastModified: new Date(LEGAL_LAST_UPDATED['terms-of-service']),
     changeFrequency: 'yearly',
     priority: 0.2,
   },
   {
     url: `${SITE_URL}/support`,
-    lastModified: new Date(),
+    lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
     priority: 0.3,
   },
   {
     url: `${SITE_URL}/impressum`,
-    lastModified: new Date(),
+    lastModified: new Date(LEGAL_LAST_UPDATED.impressum),
     changeFrequency: 'yearly',
     priority: 0.2,
   },
