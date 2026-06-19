@@ -449,7 +449,16 @@ export function buildStreamerMetadata(
     twDescription = L.twDesc(name, null, false);
   }
 
-  return {
+  // Index-gate thin streamer pages. A streamer with no live slot, no upcoming/
+  // predicted slot, and no editorial feature flag has nothing unique to offer
+  // search — the page renders only EmptyScheduleState. Emitting noindex keeps
+  // such near-duplicate pages out of Google's index, protecting overall domain
+  // quality under the scaled-content / helpful-content signals. It flips back to
+  // indexable automatically the moment the streamer is live or has an upcoming
+  // stream again. `follow: true` keeps the internal link graph crawlable.
+  const indexable = !!live || !!next || streamer.is_featured;
+
+  const meta: Metadata = {
     title: clampTitle(titleCore),
     description: truncate(description, MAX_DESC),
     alternates: { canonical: url },
@@ -469,6 +478,14 @@ export function buildStreamerMetadata(
       description: twDescription,
     },
   };
+
+  // Only set `robots` when gating out — leaving it unset lets the page inherit
+  // the root `index: true, follow: true` from app/layout.tsx.
+  if (!indexable) {
+    meta.robots = { index: false, follow: true };
+  }
+
+  return meta;
 }
 
 /**
