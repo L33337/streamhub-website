@@ -97,6 +97,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
 
       for (const s of resp.data) {
+        // Index-gate: skip streamers that have never gone live and aren't
+        // editorially featured. Their pages render only an empty-schedule state
+        // and are noindex'd at the page level (see buildStreamerMetadata), so
+        // listing them here only wastes crawl budget on URLs Google will drop.
+        // The public DTO carries no history flag; last_status_change_at !== null
+        // is the proxy for "was live at least once". A streamer re-enters the
+        // sitemap automatically once it goes live or is featured again.
+        if (s.last_status_change_at === null && !s.is_featured) continue;
+
         streamerUrls.push({
           url: `${SITE_URL}/streamer/${encodeURIComponent(s.id)}`,
           // Honest <lastmod>: updated_at only moves on metadata writes (avatar,
