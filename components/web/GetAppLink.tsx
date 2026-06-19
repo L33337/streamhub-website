@@ -1,12 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import {
-  detectGetAppTarget,
-  FALLBACK_URL,
-  type GetAppTarget,
-} from '@/lib/get-app-target';
+import { useGetAppTarget } from '@/lib/use-get-app-target';
 
 /**
  * Renders an anchor that points to the App Store on iOS, Google Play on
@@ -25,14 +20,7 @@ export function GetAppLink({
   children: React.ReactNode;
   className?: string;
 } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>) {
-  const [target, setTarget] = useState<GetAppTarget>({
-    href: FALLBACK_URL,
-    external: false,
-  });
-
-  useEffect(() => {
-    setTarget(detectGetAppTarget());
-  }, []);
+  const target = useGetAppTarget();
 
   if (target.external) {
     return (
