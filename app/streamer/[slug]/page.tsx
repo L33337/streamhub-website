@@ -5,6 +5,7 @@ import {
   getPartnerApi,
   type PublicStreamer,
   type PublicStreamSlot,
+  type PublicStreamHistory,
 } from '@/lib/server/partner-api';
 import {
   buildBreadcrumbJsonLd,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/seo';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { StreamerHero } from '@/components/web/StreamerHero';
+import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
@@ -29,6 +31,7 @@ interface StreamerPageData {
   streamer: PublicStreamer | null;
   liveSlots: PublicStreamSlot[];
   upcomingSlots: PublicStreamSlot[];
+  lastStream: PublicStreamHistory | null;
   now: Date;
 }
 
@@ -38,7 +41,9 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   const api = getPartnerApi();
   const now = new Date();
   const streamer = await api.getStreamer(slug);
-  if (!streamer) return { streamer: null, liveSlots: [], upcomingSlots: [], now };
+  if (!streamer) {
+    return { streamer: null, liveSlots: [], upcomingSlots: [], lastStream: null, now };
+  }
 
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
@@ -48,7 +53,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // which would exclude currently-live slots that started hours ago and
   // always-on slots whose start_time is days in the past. Splitting the
   // queries keeps the upcoming window tight while still capturing live.
-  const [liveCall, upcomingCall] = await Promise.all([
+  const [liveCall, upcomingCall, lastStream] = await Promise.all([
     api.listSchedules({
       streamerIds: [slug],
       status: ['live'],
@@ -66,9 +71,18 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       to: sevenDaysFromNow.toISOString(),
       limit: 100,
     }),
+    // Best-effort: getLastStream swallows errors to null, so a failing history
+    // lookup never rejects this Promise.all or breaks the page.
+    api.getLastStream(slug),
   ]);
 
-  return { streamer, liveSlots: liveCall.data, upcomingSlots: upcomingCall.data, now };
+  return {
+    streamer,
+    liveSlots: liveCall.data,
+    upcomingSlots: upcomingCall.data,
+    lastStream,
+    now,
+  };
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -88,7 +102,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StreamerPage({ params }: Props) {
   const { slug } = await params;
-  const { streamer, liveSlots, upcomingSlots, now } = await loadStreamerPage(slug);
+  const { streamer, liveSlots, upcomingSlots, lastStream, now } = await loadStreamerPage(slug);
   if (!streamer) notFound();
 
   // Live slots show in their own hero callout + in the "Today" day-section
@@ -153,6 +167,14 @@ export default async function StreamerPage({ params }: Props) {
       ))}
 
       <StreamerHero streamer={streamer} liveSlot={heroLiveSlot} />
+
+      {lastStream && (
+        <LastStreamCard
+          stream={lastStream}
+          streamerName={streamer.name}
+          avatarUrl={streamer.avatar_url}
+        />
+      )}
 
       {showEmpty ? (
         <EmptyScheduleState streamer={streamer} />

@@ -72,7 +72,7 @@ function clampTitle(core: string): string {
 interface Lex {
   q: [string, string];
   liveTitle(name: string, cat: string | null): string;
-  nextTitle(name: string, label: string): string;
+  nextTitle(name: string): string;
   fallbackTitle(name: string): string;
   liveBase(name: string): string;
   livePlaying(name: string, cat: string): string;
@@ -87,7 +87,7 @@ const META_STRINGS: Record<string, Lex> = {
   en: {
     q: ['“', '”'],
     liveTitle: (n, c) => (c ? `LIVE NOW: ${n} — ${c}` : `LIVE NOW: ${n} is streaming`),
-    nextTitle: (n, l) => `${n} Stream Schedule — Next live ${l}`,
+    nextTitle: (n) => `${n} Stream Schedule — Next Stream & Live Status`,
     fallbackTitle: (n) => `${n} — Stream Schedule & Live Status`,
     liveBase: (n) => `${n} is live now`,
     livePlaying: (n, c) => `${n} is live now playing ${c}`,
@@ -108,7 +108,7 @@ const META_STRINGS: Record<string, Lex> = {
   de: {
     q: ['„', '“'],
     liveTitle: (n, c) => (c ? `JETZT LIVE: ${n} — ${c}` : `JETZT LIVE: ${n} streamt`),
-    nextTitle: (n, l) => `${n} Stream-Zeiten — Nächster Stream ${l}`,
+    nextTitle: (n) => `${n} Stream-Zeiten — Nächster Stream & Live-Status`,
     fallbackTitle: (n) => `${n} — Stream-Zeiten & Live-Status`,
     liveBase: (n) => `${n} ist gerade live`,
     livePlaying: (n, c) => `${n} streamt gerade ${c}`,
@@ -131,7 +131,7 @@ const META_STRINGS: Record<string, Lex> = {
   es: {
     q: ['«', '»'],
     liveTitle: (n, c) => (c ? `EN VIVO: ${n} — ${c}` : `EN VIVO: ${n} está en directo`),
-    nextTitle: (n, l) => `${n} Horario de streams — Próximo directo ${l}`,
+    nextTitle: (n) => `${n} Horario de streams — Próximo directo y estado`,
     fallbackTitle: (n) => `${n} — Horario de streams y estado en vivo`,
     liveBase: (n) => `${n} está en directo`,
     livePlaying: (n, c) => `${n} está en directo jugando a ${c}`,
@@ -153,7 +153,7 @@ const META_STRINGS: Record<string, Lex> = {
   fr: {
     q: ['« ', ' »'],
     liveTitle: (n, c) => (c ? `EN DIRECT : ${n} — ${c}` : `EN DIRECT : ${n} est en live`),
-    nextTitle: (n, l) => `${n} programme des streams — Prochain live ${l}`,
+    nextTitle: (n) => `${n} programme des streams — Prochain live & statut`,
     fallbackTitle: (n) => `${n} — Programme des streams & statut en direct`,
     liveBase: (n) => `${n} est en live`,
     livePlaying: (n, c) => `${n} est en live et joue à ${c}`,
@@ -174,7 +174,7 @@ const META_STRINGS: Record<string, Lex> = {
   pt: {
     q: ['«', '»'],
     liveTitle: (n, c) => (c ? `AO VIVO: ${n} — ${c}` : `AO VIVO: ${n} está transmitindo`),
-    nextTitle: (n, l) => `${n} Agenda de streams — Próxima live ${l}`,
+    nextTitle: (n) => `${n} Agenda de streams — Próxima live e status`,
     fallbackTitle: (n) => `${n} — Agenda de streams e status ao vivo`,
     liveBase: (n) => `${n} está ao vivo`,
     livePlaying: (n, c) => `${n} está ao vivo jogando ${c}`,
@@ -195,7 +195,7 @@ const META_STRINGS: Record<string, Lex> = {
   it: {
     q: ['«', '»'],
     liveTitle: (n, c) => (c ? `ORA IN DIRETTA: ${n} — ${c}` : `ORA IN DIRETTA: ${n} è in live`),
-    nextTitle: (n, l) => `${n} Calendario stream — Prossima diretta ${l}`,
+    nextTitle: (n) => `${n} Calendario stream — Prossima diretta e stato`,
     fallbackTitle: (n) => `${n} — Calendario stream e stato live`,
     liveBase: (n) => `${n} è in diretta`,
     livePlaying: (n, c) => `${n} è in diretta e gioca a ${c}`,
@@ -286,8 +286,8 @@ export function buildStreamerMetadata(
     const cat = cleanField(next.category);
     const st = cleanField(next.title);
     const title = st ? truncate(st, MAX_STREAM_TITLE) : null;
-    const label = localizedNextLabel(next.start_time, lang);
-    titleCore = L.nextTitle(name, label);
+    const label = localizedNextLabel(next.start_time, lang, { relative: false });
+    titleCore = L.nextTitle(name);
     description = buildNextDesc(L, name, label, cat, title, !!next.is_predicted);
     ogTitle = L.fallbackTitle(name);
     ogDescription = L.ogDesc(name, platforms, null, false);

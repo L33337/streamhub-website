@@ -103,7 +103,7 @@ export function buildStreamerFaqItems(
   // When does {name} stream next?
   if (upcoming.length > 0) {
     const top = upcoming.slice(0, 3);
-    const labels = top.map((s) => localizedNextLabel(s.start_time, 'en'));
+    const labels = top.map((s) => localizedNextLabel(s.start_time, 'en', { relative: false }));
     let answer = `${name}'s next stream is ${labels[0]}`;
     if (top[0].category) answer += ` (${top[0].category})`;
     answer += '.';

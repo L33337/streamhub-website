@@ -55,6 +55,24 @@ export interface PublicStreamSlot {
   reasoning?: string;
 }
 
+// Mirror of supabase/functions/_shared/partner-dto.ts `PublicStreamHistory`.
+// A finished stream (VOD) from a streamer's broadcast history — feed item for
+// `/v1/streamers/{id}/history`, newest-first. Fields may be null when the
+// source platform did not provide them (Twitch VODs carry no `category`;
+// `thumbnail_url` is briefly null while a VOD is still processing).
+export interface PublicStreamHistory {
+  id: string;
+  streamer_id: string;
+  platform: Platform;
+  title: string | null;
+  category: string | null;
+  thumbnail_url: string | null;
+  started_at: string;
+  ended_at: string | null;
+  duration_minutes: number | null;
+  vod_url: string | null;
+}
+
 export interface PaginationInfo {
   next_cursor: string | null;
   has_more: boolean;

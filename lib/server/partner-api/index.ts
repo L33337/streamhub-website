@@ -19,6 +19,7 @@ export type {
   ConfidenceLevel,
   PublicStreamer,
   PublicStreamSlot,
+  PublicStreamHistory,
   Paginated,
   PaginationInfo,
 } from './types';
