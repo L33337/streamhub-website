@@ -24,6 +24,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
     heading: 'Discover',
     links: [
       { href: '/streamers', label: 'All streamers' },
+      { href: '/games', label: 'All games' },
       { href: '/', label: 'Popular streamers' },
       { href: '/app', label: 'Get the app' },
     ],

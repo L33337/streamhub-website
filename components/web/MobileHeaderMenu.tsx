@@ -67,6 +67,22 @@ export function MobileHeaderMenu() {
           className="absolute right-0 top-full z-50 mt-2 min-w-[12rem] rounded-xl border border-border-default bg-background-elevated p-2 shadow-lg"
         >
           <Link
+            href="/streamers"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
+          >
+            Streamers
+          </Link>
+          <Link
+            href="/games"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
+          >
+            Games
+          </Link>
+          <Link
             href="/app"
             role="menuitem"
             onClick={() => setOpen(false)}
