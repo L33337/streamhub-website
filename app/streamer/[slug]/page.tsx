@@ -17,6 +17,7 @@ import { StreamerHero } from '@/components/web/StreamerHero';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
+import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 
 export const revalidate = 300;
 
@@ -172,6 +173,8 @@ export default async function StreamerPage({ params }: Props) {
           })}
         </>
       )}
+
+      <RelatedStreamers currentId={streamer.id} language={streamer.language} />
     </main>
   );
 }
