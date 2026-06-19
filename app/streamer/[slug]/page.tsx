@@ -18,6 +18,7 @@ import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
 import { StreamerGames } from '@/components/web/StreamerGames';
+import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 
 export const revalidate = 300;
 
@@ -175,6 +176,7 @@ export default async function StreamerPage({ params }: Props) {
       )}
 
       <StreamerGames slots={allSlots} />
+      <RelatedStreamers currentId={streamer.id} language={streamer.language} />
     </main>
   );
 }
