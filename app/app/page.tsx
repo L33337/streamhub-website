@@ -14,7 +14,6 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { AppQrCode } from "@/components/web/AppQrCode";
-import { GetAppLink } from "@/components/web/GetAppLink";
 
 export const metadata: Metadata = {
   title:
@@ -458,12 +457,7 @@ export default async function AppPromoPage({
               </span>
             </div>
 
-            <div className="flex flex-col items-center gap-4 lg:items-start">
-              <GetAppLink className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl bg-accent-cyan px-7 text-base font-semibold text-background shadow-[0_0_28px_-6px_rgba(0,240,255,0.7)] transition-colors hover:bg-[#4dfaff]">
-                Get the free app
-              </GetAppLink>
-              <StoreBadges />
-            </div>
+            <StoreBadges />
 
             <AppQrCode className="mt-6 hidden items-center gap-4 lg:flex" />
           </div>
