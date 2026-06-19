@@ -1,22 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { detectGetAppTarget, type GetAppTarget } from '@/lib/get-app-target';
+import { useGetAppTarget } from '@/lib/use-get-app-target';
 
 export function FloatingGetAppButton() {
   const pathname = usePathname();
-  const [target, setTarget] = useState<GetAppTarget | null>(null);
-
-  useEffect(() => {
-    setTarget(detectGetAppTarget());
-  }, []);
+  const target = useGetAppTarget();
 
   if (pathname?.startsWith('/auth')) {
-    return null;
-  }
-
-  if (!target) {
     return null;
   }
 

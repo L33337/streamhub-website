@@ -8,6 +8,7 @@ export function MobileHeaderMenu() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
   // Close on outside click.
   useEffect(() => {
@@ -19,10 +20,13 @@ export function MobileHeaderMenu() {
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, []);
 
-  // Close when the user navigates (e.g. tapping a search result).
-  useEffect(() => {
+  // Close when the user navigates (e.g. tapping a search result from the
+  // header). Comparing against the previous render's pathname resets the state
+  // the React way — no effect, so no set-state-in-effect cascade.
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <div ref={containerRef} className="relative md:hidden">
