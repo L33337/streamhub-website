@@ -5,6 +5,7 @@ import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
 import { InstallAppCta } from './InstallAppCta';
+import { AppQrCode } from './AppQrCode';
 
 interface Props {
   streamer: PublicStreamer;
@@ -84,7 +85,10 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             />
           )}
 
-          <InstallAppCta />
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 md:justify-start">
+            <InstallAppCta compact />
+            <AppQrCode className="hidden items-center gap-3 md:flex" />
+          </div>
         </div>
       </div>
     </header>
