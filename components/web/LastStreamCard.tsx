@@ -18,6 +18,14 @@ function PlaceholderThumbnail({ name }: { name: string }) {
 const THUMB_SIZES =
   '(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px';
 
+// Twitch returns this placeholder while a freshly-ended VOD's thumbnail is still being
+// generated. The collector already stores it as null, but guard here too so a stale
+// placeholder URL can never render as the grey 404 image — fall back to the avatar instead.
+function usableThumbnail(url: string | null): string | null {
+  if (!url || url.includes('/_404/404_processing')) return null;
+  return url;
+}
+
 interface Props {
   stream: PublicStreamHistory;
   streamerName: string;
@@ -38,13 +46,14 @@ export function LastStreamCard({ stream, streamerName, avatarUrl }: Props) {
   const duration =
     stream.duration_minutes != null ? formatDuration(stream.duration_minutes) : '';
   const meta = [aired, duration].filter(Boolean).join(' · ');
+  const thumbnailUrl = usableThumbnail(stream.thumbnail_url);
 
   const card = (
     <article className="flex gap-3 rounded-xl bg-background-elevated p-3 gradient-border glow-cyan">
       <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
-        {stream.thumbnail_url ? (
+        {thumbnailUrl ? (
           <Image
-            src={stream.thumbnail_url}
+            src={thumbnailUrl}
             alt=""
             fill
             unoptimized
