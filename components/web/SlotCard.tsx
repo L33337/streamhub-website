@@ -84,6 +84,9 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
             <p className="truncate text-xs text-text-secondary">
               {slot.streamer_name}
             </p>
+            {slot.category ? (
+              <p className="truncate text-xs text-text-muted">{slot.category}</p>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
