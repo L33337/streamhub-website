@@ -381,10 +381,20 @@ body {
   content: ""; position: absolute; inset: 0; border-radius: 999px;
   background: #00FF88; z-index: 1;
 }
+/* Expanding echo behind the solid dot — scales past the dot's edge so the
+   pulse is actually visible (the dot itself sits above via z-index). */
+@keyframes live-ring-ping {
+  0%   { transform: scale(1);   opacity: .6; }
+  70%  { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
 .live-pulse-ring {
   position: absolute; inset: 0; border-radius: 999px;
   background: #00FF88; opacity: .6;
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: live-ring-ping 2s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse-ring { animation: none; opacity: 0; }
 }
 
 /* Hero portrait */

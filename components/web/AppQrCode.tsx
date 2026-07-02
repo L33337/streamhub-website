@@ -1,6 +1,6 @@
 import QRCode from 'react-qr-code';
 
-const QR_TARGET = 'https://streamertimes.tv/get';
+export const QR_TARGET = 'https://streamertimes.tv/get';
 
 /**
  * Desktop-only QR code that, when scanned, sends the phone to /get — which

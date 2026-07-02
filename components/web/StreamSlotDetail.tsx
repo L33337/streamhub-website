@@ -9,6 +9,7 @@ import {
 } from './Badges';
 import { InitialsAvatar } from './InitialsAvatar';
 import { LocalTime } from './LocalTime';
+import { WatchButtons } from './WatchButtons';
 
 function formatDuration(minutes: number): string | null {
   if (minutes <= 0) return null;
@@ -87,7 +88,10 @@ export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
 
       {!isLive && slot.reasoning && <ReasoningBox reasoning={slot.reasoning} />}
 
-      <WatchButtons slot={slot} />
+      <WatchButtons
+        twitchLogin={slot.twitch_login}
+        youtubeChannelId={slot.youtube_channel_id}
+      />
     </article>
   );
 }
@@ -198,36 +202,3 @@ function ReasoningBox({ reasoning }: { reasoning: string }) {
   );
 }
 
-function WatchButtons({ slot }: { slot: PublicStreamSlot }) {
-  const twitchUrl = slot.twitch_login ? `https://twitch.tv/${slot.twitch_login}` : null;
-  const youtubeUrl = slot.youtube_channel_id
-    ? `https://youtube.com/channel/${slot.youtube_channel_id}`
-    : null;
-
-  if (!twitchUrl && !youtubeUrl) return null;
-
-  return (
-    <div className="mt-4 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3">
-      {twitchUrl && (
-        <a
-          href={twitchUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-twitch px-4 py-2.5 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#A266FF] sm:py-3"
-        >
-          Watch on Twitch
-        </a>
-      )}
-      {youtubeUrl && (
-        <a
-          href={youtubeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-youtube px-4 py-2.5 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#FF3355] sm:py-3"
-        >
-          Watch on YouTube
-        </a>
-      )}
-    </div>
-  );
-}

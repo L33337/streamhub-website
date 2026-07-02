@@ -157,7 +157,7 @@ export function buildStreamerFaqItems(
     const tz = (streamer.timezone.split('/').pop() ?? streamer.timezone).replace(/_/g, ' ');
     items.push({
       question: `What timezone does ${name} stream in?`,
-      answer: `${name} is based in the ${tz} timezone. Streamer Times shows all stream times in UTC — open the app to convert ${name}'s schedule to your local time.`,
+      answer: `${name} is based in the ${tz} timezone. The schedule on this page shows each stream in your local time and in ${name}'s local time.`,
     });
   }
 

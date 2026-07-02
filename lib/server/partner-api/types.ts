@@ -52,6 +52,9 @@ export interface PublicStreamSlot {
   //   https://youtube.com/channel/{youtube_channel_id}
   twitch_login: string | null;
   youtube_channel_id: string | null;
+  // Streamer's home timezone (IANA, e.g. "Europe/Berlin"); same value as
+  // PublicStreamer.timezone. null while AI discovery hasn't determined it.
+  streamer_timezone: string | null;
   reasoning?: string;
 }
 

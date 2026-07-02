@@ -4,8 +4,8 @@ import { langCode, dirFor } from '@/lib/seo';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
-import { InstallAppCta } from './InstallAppCta';
-import { AppQrCode } from './AppQrCode';
+import { HeroAppPromo } from './HeroAppPromo';
+import { ChannelLinks, WatchButtons } from './WatchButtons';
 
 interface Props {
   streamer: PublicStreamer;
@@ -15,6 +15,13 @@ interface Props {
 export function StreamerHero({ streamer, liveSlot }: Props) {
   const isLive = liveSlot !== null;
   const isAlwaysOn = liveSlot?.is_always_on === true;
+
+  // Watch buttons deep-link only to the platform(s) the live stream is on;
+  // the API already nulls ids for platforms the streamer doesn't have.
+  const liveTwitchLogin =
+    isLive && liveSlot.platforms.includes('twitch') ? streamer.twitch_login : null;
+  const liveYoutubeChannelId =
+    isLive && liveSlot.platforms.includes('youtube') ? streamer.youtube_channel_id : null;
 
   // Mark broadcaster-language text (bio, stream title) so browsers/screen readers
   // treat it correctly while the English UI chrome (and <html lang="en">) stays put.
@@ -65,6 +72,14 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             )}
           </div>
 
+          {!isLive && (
+            <ChannelLinks
+              twitchLogin={streamer.twitch_login}
+              youtubeChannelId={streamer.youtube_channel_id}
+              className="mt-3 text-center md:text-left"
+            />
+          )}
+
           {isLive && liveSlot && (
             <p className="mt-4 text-text-secondary">
               <span className="text-text-primary font-semibold">Now streaming:</span>{' '}
@@ -77,6 +92,15 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             </p>
           )}
 
+          {isLive && (
+            <WatchButtons
+              twitchLogin={liveTwitchLogin}
+              youtubeChannelId={liveYoutubeChannelId}
+              grow={false}
+              className="mt-4 flex flex-wrap justify-center gap-3 md:justify-start"
+            />
+          )}
+
           {streamer.description && (
             <StreamerDescription
               text={streamer.description}
@@ -85,10 +109,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             />
           )}
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 md:justify-start">
-            <InstallAppCta compact />
-            <AppQrCode className="hidden items-center gap-3 md:flex" />
-          </div>
+          <HeroAppPromo />
         </div>
       </div>
     </header>

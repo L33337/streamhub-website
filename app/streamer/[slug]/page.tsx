@@ -18,6 +18,7 @@ import { StreamerHero } from '@/components/web/StreamerHero';
 import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
+import { EmptyDayRow } from '@/components/web/EmptyDayRow';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
 import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
 import { StreamerGames } from '@/components/web/StreamerGames';
@@ -120,10 +121,12 @@ export default async function StreamerPage({ params }: Props) {
     sevenDays.push(d.toISOString().slice(0, 10));
   }
 
-  // Always-on live slots get their start_time normalised to today's UTC date
-  // for grouping purposes so they appear in the Today section.
-  const alwaysOnLive = liveSlots.filter((s) => s.is_always_on);
-  for (const slot of alwaysOnLive) {
+  // Live slots that started before today's UTC date (always-on channels, but
+  // also regular streams crossing midnight) get regrouped under today, so the
+  // Today section always reflects the hero's live state — otherwise the slot
+  // would land in a past-date bucket that is never rendered and Today could
+  // claim "No streams expected" while the streamer is visibly live.
+  for (const slot of liveSlots) {
     const slotDate = slot.start_time.slice(0, 10);
     if (slotDate !== todayUtc) {
       const todayBucket = grouped.get(todayUtc) ?? [];
@@ -185,12 +188,15 @@ export default async function StreamerPage({ params }: Props) {
           <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
           {sevenDays.map((dateKey) => {
             const slots = grouped.get(dateKey) ?? [];
-            if (slots.length === 0) return null;
+            const label = utcDateLabel(dateKey, todayUtc);
+            if (slots.length === 0) {
+              return <EmptyDayRow key={dateKey} dateKey={dateKey} label={label} />;
+            }
             return (
               <DaySection
                 key={dateKey}
                 dateKey={dateKey}
-                label={utcDateLabel(dateKey, todayUtc)}
+                label={label}
                 slots={slots}
               />
             );

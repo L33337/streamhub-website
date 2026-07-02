@@ -1,9 +1,12 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   getPartnerApi,
   PartnerApiError,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
+import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
+import { InitialsAvatar } from './InitialsAvatar';
 
 const MAX_RELATED = 8;
 const MIN_BEFORE_FALLBACK = 4;
@@ -69,6 +72,10 @@ export async function RelatedStreamers({ currentId, language }: Props) {
 
   if (related.length === 0) return null;
 
+  // Best-effort live indicator — a failing live-status lookup must never
+  // suppress the chips themselves (they carry the SEO value).
+  const liveIds = await getLiveStreamerIdSet().catch(() => new Set<string>());
+
   return (
     <section
       className="mt-16 border-t border-divider pt-8"
@@ -85,9 +92,29 @@ export async function RelatedStreamers({ currentId, language }: Props) {
           <Link
             key={s.id}
             href={`/streamer/${encodeURIComponent(s.id)}`}
-            className="inline-flex items-center rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-sm text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-text-primary"
+            className="inline-flex items-center gap-2 rounded-full border border-border-default bg-background-elevated py-1 pl-1 pr-3 text-sm text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-text-primary"
           >
-            {s.name}
+            {s.avatar_url ? (
+              <Image
+                src={s.avatar_url}
+                alt=""
+                width={26}
+                height={26}
+                unoptimized
+                className="shrink-0 rounded-full border border-border-default"
+              />
+            ) : (
+              <InitialsAvatar name={s.name} size={26} className="shrink-0" />
+            )}
+            <span className="truncate">{s.name}</span>
+            {liveIds.has(s.id) && (
+              <>
+                <span className="live-pulse-dot shrink-0" aria-hidden="true">
+                  <span className="live-pulse-ring" />
+                </span>
+                <span className="sr-only">(live now)</span>
+              </>
+            )}
           </Link>
         ))}
       </nav>

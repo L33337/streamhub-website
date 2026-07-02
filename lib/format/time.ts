@@ -44,6 +44,34 @@ export function formatDuration(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+/**
+ * Short date label in the *browser's* timezone, e.g. "Fri, Jul 3". Client-side
+ * only — on the server (unknown viewer timezone) use `formatUtcDateShort`.
+ * Locale is pinned to en-US so weekday/month names match the English UI; only
+ * the timezone comes from the browser.
+ */
+export function formatLocalDateShort(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return formatUtcDateShort(iso);
+  }
+}
+
+/** Short date label in UTC, e.g. "Sat, Jul 4" — deterministic SSR counterpart. */
+export function formatUtcDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 export function groupSlotsByUtcDate<T extends { start_time: string }>(
   slots: T[],
 ): Map<string, T[]> {
