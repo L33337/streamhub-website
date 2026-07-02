@@ -1,9 +1,11 @@
 import type {
   Platform,
   PublicStreamer,
+  PublicStreamerStats,
   PublicStreamSlot,
 } from '@/lib/server/partner-api';
-import { localizedNextLabel } from '@/lib/format/time';
+import { formatDuration, localizedNextLabel, timezoneCityLabel } from '@/lib/format/time';
+import { statsLeadSentence } from '@/lib/streamer-stats';
 
 export interface FaqItem {
   question: string;
@@ -79,6 +81,7 @@ export function buildStreamerFaqItems(
   streamer: PublicStreamer,
   liveSlots: PublicStreamSlot[],
   upcomingSlots: PublicStreamSlot[],
+  stats: PublicStreamerStats | null = null,
 ): FaqItem[] {
   const items: FaqItem[] = [];
   const name = streamer.name;
@@ -98,6 +101,18 @@ export function buildStreamerFaqItems(
         ? `Yes — ${name} is live now streaming ${cat} on ${platforms}.`
         : `Yes — ${name} is live now on ${platforms}.`,
     });
+  }
+
+  // When does {name} usually stream? — the evergreen schedule answer, backed
+  // by the stats aggregation (last 28 days of history). Unlike the items below
+  // it does not depend on anything being scheduled, so it keeps answering the
+  // highest-volume query ("when does X stream") on otherwise quiet pages.
+  if (stats && !streamer.is_always_on) {
+    let answer = statsLeadSentence(name, stats);
+    if (stats.typical_duration_minutes !== null) {
+      answer += ` Streams typically last around ${formatDuration(stats.typical_duration_minutes)}.`;
+    }
+    items.push({ question: `When does ${name} usually stream?`, answer });
   }
 
   // When does {name} stream next?
@@ -154,7 +169,7 @@ export function buildStreamerFaqItems(
   // What timezone does {name} stream in? — use the city part of the IANA id
   // ("America/New_York" → "New York") for a readable sentence.
   if (streamer.timezone && !streamer.is_always_on) {
-    const tz = (streamer.timezone.split('/').pop() ?? streamer.timezone).replace(/_/g, ' ');
+    const tz = timezoneCityLabel(streamer.timezone);
     items.push({
       question: `What timezone does ${name} stream in?`,
       answer: `${name} is based in the ${tz} timezone. The schedule on this page shows each stream in your local time and in ${name}'s local time.`,

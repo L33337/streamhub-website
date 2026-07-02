@@ -22,6 +22,10 @@ export type {
   PublicStreamSlot,
   PublicGame,
   PublicStreamHistory,
+  PublicStreamerStats,
+  PublicStreamerStatsWeekday,
+  PublicStreamerStatsCategory,
+  StatsWeekday,
   Paginated,
   PaginationInfo,
 } from './types';

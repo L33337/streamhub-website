@@ -14,6 +14,7 @@ import type {
   Platform,
   PublicGame,
   PublicStreamer,
+  PublicStreamerStats,
   PublicStreamHistory,
   PublicStreamSlot,
 } from './types';
@@ -148,6 +149,30 @@ class PartnerApiClient {
     try {
       const page = await this.getStreamerHistory(id, { ...opts, limit: 1 });
       return page.data[0] ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Typical-streaming-times stats for a streamer (per-weekday medians, streams
+   * per week, top categories). Best-effort: any API/network error AND the
+   * server's `has_stats: false` case both collapse to null, so a failing or
+   * empty stats lookup never breaks the page that renders it (mirrors
+   * `getLastStream`). Stats move daily at most, so the fetch defaults to a
+   * 1-hour data-cache revalidate independent of the page-level ISR window.
+   */
+  async getStreamerStats(
+    id: string,
+    opts: FetchOptions = {},
+  ): Promise<PublicStreamerStats | null> {
+    try {
+      const stats = await this.request<PublicStreamerStats>(
+        'GET',
+        `/v1/streamers/${encodeURIComponent(id)}/stats`,
+        { revalidate: 3600, ...opts },
+      );
+      return stats.has_stats ? stats : null;
     } catch {
       return null;
     }
