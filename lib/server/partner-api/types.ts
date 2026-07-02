@@ -83,6 +83,53 @@ export interface PublicStreamHistory {
   vod_url: string | null;
 }
 
+export type StatsWeekday =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export interface PublicStreamerStatsWeekday {
+  weekday: StatsWeekday;
+  iso_dow: number; // 1=Mon .. 7=Sun
+  occurrences: number;
+  start: string; // "HH:MM", streamer-local
+  end: string; // "HH:MM" = start + duration, may wrap past midnight
+  duration_minutes: number; // median
+}
+
+export interface PublicStreamerStatsCategory {
+  category: string;
+  streams: number;
+  share_percent: number; // integer 0-100, share of categorized streams
+}
+
+// Mirror of supabase/functions/_shared/partner-dto.ts `PublicStreamerStats`.
+// Typical-streaming-times stats from `/v1/streamers/{id}/stats`: medians over
+// the last `window_days` of broadcast history, with all "HH:MM" values already
+// converted to the streamer's timezone (`timezone`, 'UTC' fallback applied
+// server-side) — no client timezone math needed. `has_stats: false` (empty
+// arrays, null scalars) when the streamer is always-on, has fewer than 5
+// usable streams in the window, or has no history.
+export interface PublicStreamerStats {
+  streamer_id: string;
+  has_stats: boolean;
+  window_days: number;
+  sample_size: number;
+  source: 'vod' | 'stream_slot' | null;
+  timezone: string;
+  typical_start: string | null;
+  typical_end: string | null;
+  typical_duration_minutes: number | null;
+  streams_per_week: number | null;
+  active_days_per_week: number | null;
+  weekdays: PublicStreamerStatsWeekday[];
+  top_categories: PublicStreamerStatsCategory[];
+}
+
 export interface PaginationInfo {
   next_cursor: string | null;
   has_more: boolean;

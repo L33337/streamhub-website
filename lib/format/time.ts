@@ -32,6 +32,14 @@ export function formatTimeAgo(iso: string, lang = 'en', now = new Date()): strin
 }
 
 /**
+ * Human-readable city label from an IANA timezone id:
+ * "America/New_York" → "New York", "Europe/Berlin" → "Berlin", "UTC" → "UTC".
+ */
+export function timezoneCityLabel(tz: string): string {
+  return (tz.split('/').pop() ?? tz).replace(/_/g, ' ');
+}
+
+/**
  * Compact human duration from a minute count, e.g. "45m", "3h", "3h 12m".
  * Returns '' for non-positive / non-finite input so callers can omit it.
  */

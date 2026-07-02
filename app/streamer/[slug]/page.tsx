@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
   type PublicStreamer,
+  type PublicStreamerStats,
   type PublicStreamSlot,
   type PublicStreamHistory,
 } from '@/lib/server/partner-api';
@@ -21,6 +22,7 @@ import { DayNavBar } from '@/components/web/DayNavBar';
 import { EmptyDayRow } from '@/components/web/EmptyDayRow';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
 import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
+import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
 import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 
@@ -35,6 +37,7 @@ interface StreamerPageData {
   liveSlots: PublicStreamSlot[];
   upcomingSlots: PublicStreamSlot[];
   lastStream: PublicStreamHistory | null;
+  stats: PublicStreamerStats | null;
   now: Date;
 }
 
@@ -45,7 +48,14 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   const now = new Date();
   const streamer = await api.getStreamer(slug);
   if (!streamer) {
-    return { streamer: null, liveSlots: [], upcomingSlots: [], lastStream: null, now };
+    return {
+      streamer: null,
+      liveSlots: [],
+      upcomingSlots: [],
+      lastStream: null,
+      stats: null,
+      now,
+    };
   }
 
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
@@ -56,7 +66,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // which would exclude currently-live slots that started hours ago and
   // always-on slots whose start_time is days in the past. Splitting the
   // queries keeps the upcoming window tight while still capturing live.
-  const [liveCall, upcomingCall, lastStream] = await Promise.all([
+  const [liveCall, upcomingCall, lastStream, stats] = await Promise.all([
     api.listSchedules({
       streamerIds: [slug],
       status: ['live'],
@@ -77,6 +87,9 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     // Best-effort: getLastStream swallows errors to null, so a failing history
     // lookup never rejects this Promise.all or breaks the page.
     api.getLastStream(slug),
+    // Best-effort too: getStreamerStats collapses errors AND has_stats:false
+    // to null. Cached for 1h in the data cache (stats move daily at most).
+    api.getStreamerStats(slug),
   ]);
 
   return {
@@ -84,6 +97,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     liveSlots: liveCall.data,
     upcomingSlots: upcomingCall.data,
     lastStream,
+    stats,
     now,
   };
 });
@@ -105,7 +119,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StreamerPage({ params }: Props) {
   const { slug } = await params;
-  const { streamer, liveSlots, upcomingSlots, lastStream, now } = await loadStreamerPage(slug);
+  const { streamer, liveSlots, upcomingSlots, lastStream, stats, now } =
+    await loadStreamerPage(slug);
   if (!streamer) notFound();
 
   // Live slots show in their own hero callout + in the "Today" day-section
@@ -201,14 +216,21 @@ export default async function StreamerPage({ params }: Props) {
               />
             );
           })}
-
-          <StreamerFaqBlock
-            streamer={streamer}
-            liveSlots={liveSlots}
-            upcomingSlots={upcomingSlots}
-          />
         </>
       )}
+
+      {/* Stats + FAQ render outside the has-schedule branch on purpose: their
+          SEO value is highest exactly when nothing is scheduled and the page
+          would otherwise be empty ("when does X usually stream?" stays
+          answered on quiet pages). */}
+      {stats && <StreamerStatsBlock streamer={streamer} stats={stats} />}
+
+      <StreamerFaqBlock
+        streamer={streamer}
+        liveSlots={liveSlots}
+        upcomingSlots={upcomingSlots}
+        stats={stats}
+      />
 
       <StreamerGames slots={allSlots} />
       <RelatedStreamers currentId={streamer.id} language={streamer.language} />
