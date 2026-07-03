@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
+import { isIndexableStreamerSlug } from '@/lib/seo';
 import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
 export const revalidate = 3600;
@@ -104,6 +105,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // The public DTO carries no history flag; last_status_change_at !== null
         // is the proxy for "was live at least once". A streamer re-enters the
         // sitemap automatically once it goes live or is featured again.
+        // Degenerate legacy slugs ('' or leading '-') never enter the sitemap:
+        // their pages are permanently noindex'd, and the empty id would emit a
+        // bare /streamer/ URL that 404s.
+        if (!isIndexableStreamerSlug(s.id)) continue;
         if (s.last_status_change_at === null && !s.is_featured) continue;
 
         streamerUrls.push({

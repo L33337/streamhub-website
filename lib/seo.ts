@@ -8,6 +8,19 @@ export function streamerCanonicalUrl(slug: string): string {
   return `${SITE_URL}/streamer/${encodeURIComponent(slug)}`;
 }
 
+/**
+ * True when a streamer id makes a sane public slug: non-empty and starting
+ * with an alphanumeric character. Legacy id-minting produced '' and
+ * '-389031'-style ids for non-Latin display names; those rows keep their ids
+ * (renames would break FKs + URLs) but their pages are noindexed and excluded
+ * from the sitemap. Mid-string hyphens (collision suffixes like
+ * 'illojuan-075649') are fine. Case-insensitive because suffixes derived from
+ * YouTube channel ids ('-OPjYcQ') contain uppercase.
+ */
+export function isIndexableStreamerSlug(id: string): boolean {
+  return /^[a-z0-9]/i.test(id);
+}
+
 /** ISO-639-1 language prefix, lowercased. 'de-AT' → 'de', null/empty → 'en'. */
 export function langCode(language: string | null | undefined): string {
   return (language || 'en').split('-')[0].toLowerCase();
@@ -456,7 +469,9 @@ export function buildStreamerMetadata(
   // quality under the scaled-content / helpful-content signals. It flips back to
   // indexable automatically the moment the streamer is live or has an upcoming
   // stream again. `follow: true` keeps the internal link graph crawlable.
-  const indexable = !!live || !!next || streamer.is_featured;
+  // Degenerate legacy slugs ('' / leading hyphen) are permanently gated out.
+  const indexable =
+    (!!live || !!next || streamer.is_featured) && isIndexableStreamerSlug(slug);
 
   const meta: Metadata = {
     title: clampTitle(titleCore),
