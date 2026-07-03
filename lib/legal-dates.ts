@@ -3,7 +3,7 @@
 // visible "Last updated" line AND the sitemap <lastmod> read from this, so the
 // two can never drift apart.
 export const LEGAL_LAST_UPDATED = {
-  'privacy-policy': '2026-02-21',
+  'privacy-policy': '2026-07-03',
   'terms-of-service': '2026-02-21',
   impressum: '2026-04-05',
 } as const;

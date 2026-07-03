@@ -21,7 +21,8 @@ const sections = [
     heading: "2. Information We Collect",
     paragraphs: [
       "Automatically Collected: When you first open the App, an anonymous account is created automatically. This account has a unique identifier but contains no personal information.",
-      "Information You Provide: If you choose to create an account, we collect your email address and password. We also store your favorite streamers (which channels you choose to follow).",
+      "Information You Provide: If you choose to create an account, we collect your email address and password. We also store your favorite streamers (which channels you choose to follow) and, optionally, interest categories you pick to personalize your feed.",
+      'Feed Usage Data (optional): To improve personalized suggestions on the Home feed, the App can log which feed cards you tap (for example opening a stream, clip, or suggested streamer). This logging is enabled by default and can be turned off at any time in Settings under "Feed usage data". These events contain no content beyond the card type, the streamer, and the category involved.',
     ],
   },
   {
@@ -34,6 +35,7 @@ const sections = [
     heading: "4. How We Use Your Information",
     paragraphs: [
       "We use your information to provide and improve the App, including: displaying personalized stream schedules based on your favorites, authenticating your account, and generating AI-powered stream predictions (processed server-side only).",
+      "Personalization: Your favorites and optional interest picks are used to build an interest profile (which categories and streaming times you prefer) that powers the Home feed, including suggestions of featured streamers you might like. This processing happens on our servers; your profile is never shared with third parties.",
     ],
   },
   {
@@ -58,6 +60,7 @@ const sections = [
       "Anonymous accounts: Data is retained until the account is deleted or becomes inactive.",
       "Email accounts: Data is retained until you request deletion of your account.",
       "Stream predictions and history: Retained for up to 14 days for analysis purposes, then automatically deleted.",
+      "Feed usage data: Automatically deleted after 90 days. Deleting your account removes it immediately.",
     ],
   },
   {
