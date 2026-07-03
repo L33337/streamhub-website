@@ -5,7 +5,7 @@ import type {
   PublicStreamSlot,
 } from '@/lib/server/partner-api';
 import { formatDuration, localizedNextLabel, timezoneCityLabel } from '@/lib/format/time';
-import { statsLeadSentence } from '@/lib/streamer-stats';
+import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
 
 export interface FaqItem {
   question: string;
@@ -115,21 +115,39 @@ export function buildStreamerFaqItems(
     items.push({ question: `When does ${name} usually stream?`, answer });
   }
 
-  // When does {name} stream next?
+  // What is {name}'s stream schedule? — head-on match for the highest-volume
+  // query family "[streamer] stream schedule", deliberately distinct from the
+  // stats-backed "usually stream" item above: this one is the concrete week
+  // (confirmed + predicted slots), that one is the typical pattern. The
+  // "next stream" intent stays covered by the "Next up:" sentence.
   if (upcoming.length > 0) {
-    const top = upcoming.slice(0, 3);
-    const labels = top.map((s) => localizedNextLabel(s.start_time, 'en', { relative: false }));
-    let answer = `${name}'s next stream is ${labels[0]}`;
-    if (top[0].category) answer += ` (${top[0].category})`;
-    answer += '.';
-    if (labels.length > 1) {
-      answer += ` More upcoming streams: ${labels.slice(1).join(', ')}.`;
+    const top = upcoming.slice(0, 5);
+    const n = upcoming.length;
+    // "Sat 20:00 UTC (Just Chatting, predicted)" — entries joined with "; "
+    // because categories and the predicted marker contain commas.
+    const entries = top.map((s) => {
+      const label = localizedNextLabel(s.start_time, 'en', { relative: false });
+      const cat = s.category?.trim();
+      const marker = s.is_predicted ? (cat ? `${cat}, predicted` : 'predicted') : cat;
+      return marker ? `${label} (${marker})` : label;
+    });
+    let answer =
+      `${name} has ${n} stream${n === 1 ? '' : 's'} on the schedule for the next 7 days. ` +
+      `Next up: ${entries[0]}.`;
+    if (entries.length > 1) {
+      answer += ` After that: ${entries.slice(1).join('; ')}.`;
+    }
+    if (n > top.length) {
+      answer += ` Plus ${n - top.length} more — see the full schedule above.`;
     }
     if (top.some((s) => s.is_predicted)) {
       answer +=
         ' Times marked as predictions are estimated by AI from past streaming patterns.';
     }
-    items.push({ question: `When does ${name} stream next?`, answer });
+    if (stats?.typical_start && !streamer.is_always_on) {
+      answer += ` Outside these dates, ${name} typically goes live around ${stats.typical_start} (${statsTimezoneLabel(stats)}) — see the typical streaming times above.`;
+    }
+    items.push({ question: `What is ${name}'s stream schedule?`, answer });
   }
 
   // What games does {name} stream?
@@ -144,11 +162,18 @@ export function buildStreamerFaqItems(
     });
   }
 
-  // How often does {name} stream?
+  // How often does {name} stream? — stats-backed when available (stable
+  // 28-day frequency, no overlap with the schedule item's 7-day count);
+  // falls back to the 7-day slot count for streamers without stats.
   if (streamer.is_always_on) {
     items.push({
       question: `How often does ${name} stream?`,
       answer: `${name} streams 24/7 — the channel is always live on ${platforms}.`,
+    });
+  } else if (stats?.streams_per_week != null) {
+    items.push({
+      question: `How often does ${name} stream?`,
+      answer: `${name} streams about ${stats.streams_per_week} times per week on average, based on the last ${stats.window_days} days of broadcasts.`,
     });
   } else if (upcoming.length > 0) {
     const days = distinctWeekdays(upcoming);
