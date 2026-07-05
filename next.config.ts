@@ -32,6 +32,39 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    // Content-Security-Policy is shipped Report-Only first: it does NOT block
+    // anything, it only reports what a strict policy WOULD block (visible in the
+    // browser console). Validate against the live site, then rename the header
+    // to "Content-Security-Policy" to enforce. connect-src lists Supabase
+    // (auth/data + realtime websocket) and the public Partner API; img-src the
+    // Twitch/YouTube avatar/thumbnail CDNs from images.remotePatterns above.
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://static-cdn.jtvnw.net https://i.ytimg.com https://*.ytimg.com https://yt3.googleusercontent.com https://*.ggpht.com",
+      "font-src 'self' data:",
+      "connect-src 'self' https://ypebfgtxythamjwgvoci.supabase.co wss://ypebfgtxythamjwgvoci.supabase.co https://api.streamertimes.com",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
+    // Low-risk, high-value headers — enforced immediately (HSTS is added by
+    // Vercel for the custom domain, so it is intentionally not duplicated here).
+    const securityHeaders = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+      },
+      { key: "Content-Security-Policy-Report-Only", value: csp },
+    ];
+
     return [
       {
         // Build artifacts (fonts, JS, CSS, statically-imported media). These are
@@ -41,6 +74,11 @@ const nextConfig: NextConfig = {
         // /_next/static/*.woff2 (and the same class of JS/CSS chunks).
         source: "/_next/static/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
+      {
+        // Security headers on every route.
+        source: "/:path*",
+        headers: securityHeaders,
       },
     ];
   },
