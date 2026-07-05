@@ -8,6 +8,18 @@ import { NextResponse, type NextRequest } from 'next/server';
  * the access token expires.
  */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  // Cookie-less visitors (all anonymous SEO traffic) carry no session to
+  // refresh — skip Supabase client construction entirely. Every cookie
+  // @supabase/ssr sets starts with "sb-" (the auth token may be chunked
+  // into sb-…-auth-token.0/.1, which still matches the prefix), so this
+  // check is robust against cookie-name changes between SDK versions.
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.startsWith('sb-'));
+  if (!hasAuthCookie) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

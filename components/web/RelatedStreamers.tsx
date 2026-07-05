@@ -17,6 +17,20 @@ interface Props {
   language: string | null;
 }
 
+type Settled<T> = { ok: true; value: T } | { ok: false; error: unknown };
+
+/**
+ * Wraps a promise so it never rejects. Lets us fire requests eagerly (for
+ * concurrency) whose results may go unused — a plain floating promise that
+ * rejects would crash the process as an unhandled rejection.
+ */
+function settle<T>(promise: Promise<T>): Promise<Settled<T>> {
+  return promise.then(
+    (value) => ({ ok: true as const, value }),
+    (error) => ({ ok: false as const, error }),
+  );
+}
+
 /**
  * "Related streamers" block on each streamer detail page. Its purpose is SEO
  * internal linking: it gives every streamer page 6–8 crawlable links to other
@@ -47,34 +61,47 @@ export async function RelatedStreamers({ currentId, language }: Props) {
     }
   };
 
-  try {
-    if (language) {
-      const resp = await api.listStreamers({
-        language,
-        order: 'popular',
-        limit: 12,
-        revalidate: 300,
-      });
-      take(resp.data);
+  // All requests start immediately and run concurrently instead of the old
+  // sequential language → popular → live-set chain. The popular fallback is
+  // fired unconditionally: its URL is identical on every streamer page, so
+  // it hits one shared data-cache entry per revalidate window — not a
+  // per-page request. Results are consumed in the same order as before
+  // (language first, popular only when too few), so the output is identical.
+  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  const languagePromise = language
+    ? settle(
+        api.listStreamers({ language, order: 'popular', limit: 12, revalidate: 300 }),
+      )
+    : null;
+  const popularPromise = settle(
+    api.listStreamers({ order: 'popular', limit: 16, revalidate: 300 }),
+  );
+
+  // Error semantics preserved from the sequential version: a Partner API
+  // error on a response we actually need degrades the section to null (it
+  // must never break the host page); anything else is a bug — rethrow.
+  if (languagePromise) {
+    const res = await languagePromise;
+    if (!res.ok) {
+      if (!(res.error instanceof PartnerApiError)) throw res.error;
+      return null;
     }
-    if (related.length < MIN_BEFORE_FALLBACK) {
-      const resp = await api.listStreamers({
-        order: 'popular',
-        limit: 16,
-        revalidate: 300,
-      });
-      take(resp.data);
+    take(res.value.data);
+  }
+  if (related.length < MIN_BEFORE_FALLBACK) {
+    const res = await popularPromise;
+    if (!res.ok) {
+      if (!(res.error instanceof PartnerApiError)) throw res.error;
+      return null;
     }
-  } catch (err) {
-    if (!(err instanceof PartnerApiError)) throw err;
-    return null;
+    take(res.value.data);
   }
 
   if (related.length === 0) return null;
 
   // Best-effort live indicator — a failing live-status lookup must never
   // suppress the chips themselves (they carry the SEO value).
-  const liveIds = await getLiveStreamerIdSet().catch(() => new Set<string>());
+  const liveIds = await livePromise;
 
   return (
     <section
