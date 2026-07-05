@@ -20,16 +20,18 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 interface Props {
-  initialUser: User | null;
   children: React.ReactNode;
 }
 
-export function AuthProvider({ initialUser, children }: Props) {
+export function AuthProvider({ children }: Props) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [user, setUser] = useState<User | null>(initialUser);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Sync state with the auth event stream from another tab / token refresh.
+  // Hydrates the user after mount and syncs with the auth event stream
+  // (other tabs, token refresh). supabase-js emits INITIAL_SESSION with the
+  // cookie-stored session on subscribe — a local read, no network — so no
+  // server-side user is needed (keeping the root layout static / ISR-able).
   // This is a "subscribe to external system" pattern — the documented
   // legitimate use of useEffect. The lint rule allows setState inside a
   // subscription callback (it only flags synchronous setState in the body).
@@ -48,7 +50,8 @@ export function AuthProvider({ initialUser, children }: Props) {
       await fetch('/auth/sign-out', { method: 'POST' });
     } finally {
       setLoading(false);
-      // Hard navigation so the Server Layout re-reads the (now empty) session.
+      // Hard navigation for a clean client boot — the fresh AuthProvider
+      // resolves to a null user from the (now cleared) session cookie.
       window.location.assign('/');
     }
   }, []);

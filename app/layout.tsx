@@ -9,8 +9,6 @@ import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
 import { Providers } from "@/components/web/Providers";
 import { FloatingGetAppButton } from "@/components/web/FloatingGetAppButton";
 import { SiteFooter } from "@/components/web/SiteFooter";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { listFavoriteIds } from "@/lib/supabase/favorites";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -66,19 +64,17 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0f",
 };
 
-export default async function RootLayout({
+// This layout must stay synchronous and free of request-scoped APIs
+// (`cookies()`, `headers()`, per-user data). Reading them here opts the
+// ENTIRE route tree into dynamic rendering and silently disables ISR for
+// every page. Auth + favorites hydrate client-side inside <Providers>.
+export default function RootLayout({
   children,
   modal,
 }: Readonly<{
   children: React.ReactNode;
   modal: React.ReactNode;
 }>) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const initialFavoriteIds = user ? await listFavoriteIds(supabase) : [];
-
   return (
     <html
       lang="en"
@@ -115,7 +111,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background">
-        <Providers initialUser={user} initialFavoriteIds={initialFavoriteIds}>
+        <Providers>
           <header className="sticky top-0 z-50 border-b border-divider bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <div className="container mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 md:gap-4">
               <Link

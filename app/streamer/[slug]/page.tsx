@@ -28,6 +28,15 @@ import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 
 export const revalidate = 300;
 
+// Required for ISR: without generateStaticParams, Next renders this dynamic
+// route per-request (ƒ in the build output) and never caches the HTML. An
+// empty array means no slugs are prerendered at build time — each is
+// generated on first visit, then served from the route cache per
+// `revalidate` (dynamicParams defaults to true).
+export function generateStaticParams(): Array<{ slug: string }> {
+  return [];
+}
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -232,6 +241,13 @@ export default async function StreamerPage({ params }: Props) {
         stats={stats}
       />
 
+      {/* Deliberately NO Suspense around these two async sections (and no
+          loading.tsx on the route): with streaming, the cached ISR HTML keeps
+          the fallback skeleton + <template>-swap markup, making the
+          SEO-critical internal links render JS-dependent on every hit — and a
+          route-level loading shell turns notFound() into a cached soft-404
+          (HTTP 200). Verified empirically 2026-07-06. Their fetches are
+          parallelized inside RelatedStreamers instead. */}
       <StreamerGames slots={allSlots} />
       <RelatedStreamers currentId={streamer.id} language={streamer.language} />
     </main>
