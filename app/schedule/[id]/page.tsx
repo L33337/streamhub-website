@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getPartnerApi } from '@/lib/server/partner-api';
+import { expiredPredictionStreamerSlug } from '@/lib/prediction-redirect';
 import { buildBreadcrumbJsonLd, streamerCanonicalUrl } from '@/lib/seo';
 import { StreamSlotDetail } from '@/components/web/StreamSlotDetail';
 import { BackLink } from '@/components/web/BackLink';
@@ -42,7 +43,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SlotPage({ params }: Props) {
   const { id } = await params;
   const slot = await getPartnerApi().getSchedule(id, { revalidate: 60 });
-  if (!slot) notFound();
+  if (!slot) {
+    // Expired AI prediction → the id encodes the streamer; send crawlers and
+    // stale links to the streamer page (308) instead of a dead 404.
+    const slug = expiredPredictionStreamerSlug(id);
+    if (slug) permanentRedirect(`/streamer/${slug}`);
+    notFound();
+  }
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: 'https://streamertimes.tv' },
