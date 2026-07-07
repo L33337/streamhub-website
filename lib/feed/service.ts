@@ -1,0 +1,304 @@
+// Feed data access (M16) — port of the app's feedService.ts +
+// streamSlotService.ts (M13). All functions take a SupabaseClient (server or
+// browser, favorites.ts pattern) so the same code serves the initial server
+// render and client-side refreshes. All personalization heavy-lifting runs
+// server-side (RPCs backed by the nightly streamer_feed_stats cache) — this
+// module only maps rows; composition and ranking glue live in loadFeed.ts.
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { MAX_STREAMER_IDS } from './constants';
+import type {
+  StreamSlot,
+  StreamSlotRow,
+  FeedRecentStream,
+  FeedRecentStreamRow,
+  FeedClip,
+  StreamClipRow,
+  DiscoverRecommendation,
+  DiscoverRecommendationRow,
+  TrendingCategory,
+  TrendingCategoryRow,
+  UserInterestProfile,
+  UserInterestProfileRow,
+  PredictionFunFact,
+  PredictionFunFactRow,
+} from './types';
+import {
+  transformStreamSlot,
+  transformFeedRecentStream,
+  transformFeedClip,
+  transformDiscoverRecommendation,
+  transformTrendingCategory,
+  transformUserInterestProfile,
+} from './transforms';
+import { pickBestFunFact } from './logic';
+
+/**
+ * Stream slots of the given streamers, with a 2-day date floor to avoid
+ * loading stale offline slots. Intentionally NOT capped at 100 ids (app
+ * parity — favorites can exceed the RPC cap without losing schedule data).
+ */
+export async function fetchStreamSlots(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<StreamSlot[]> {
+  if (streamerIds.length === 0) return [];
+
+  const floor = new Date();
+  floor.setDate(floor.getDate() - 2);
+  floor.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from('stream_slots')
+    .select('*')
+    .eq('visible', true)
+    .gte('start_time', floor.toISOString())
+    .in('streamer_id', streamerIds)
+    .order('start_time')
+    .limit(2000);
+
+  if (error) {
+    throw new Error(`Failed to fetch stream slots: ${error.message}`);
+  }
+
+  return ((data ?? []) as StreamSlotRow[]).map(transformStreamSlot);
+}
+
+/**
+ * Live slots of featured streamers the user has NOT favorited — appended to
+ * the Live Now rail with a FEATURED badge. Deviation from the app: hidden
+ * streamers (streamers.is_hidden) are excluded — they are test/removed
+ * accounts kept off the public website.
+ */
+export async function fetchLiveFeaturedSlots(
+  supabase: SupabaseClient,
+  excludeStreamerIds: Set<string>,
+): Promise<StreamSlot[]> {
+  const { data: featured, error: streamersError } = await supabase
+    .from('streamers')
+    .select('id')
+    .eq('is_featured', true)
+    .eq('approved', true)
+    .eq('is_hidden', false);
+
+  if (streamersError) {
+    throw new Error(`Failed to fetch featured streamers: ${streamersError.message}`);
+  }
+
+  const candidateIds = ((featured ?? []) as { id: string }[])
+    .map((row) => row.id)
+    .filter((id) => !excludeStreamerIds.has(id));
+
+  if (candidateIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('stream_slots')
+    .select('*')
+    .in('streamer_id', candidateIds.slice(0, MAX_STREAMER_IDS))
+    .eq('visible', true)
+    .eq('status', 'live')
+    .order('start_time')
+    .limit(20);
+
+  if (error) {
+    throw new Error(`Failed to fetch live featured slots: ${error.message}`);
+  }
+
+  return ((data ?? []) as StreamSlotRow[]).map(transformStreamSlot);
+}
+
+/**
+ * Recently ended streams for "New for you". vod/stream_slot dedupe happens
+ * server-side (fetch_feed_recent_streams RPC; clamps: 100 ids, 7-day window,
+ * limit 1-25).
+ */
+export async function fetchRecentStreams(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+  since: Date,
+  limit = 10,
+): Promise<FeedRecentStream[]> {
+  if (streamerIds.length === 0) return [];
+
+  const { data, error } = await supabase.rpc('fetch_feed_recent_streams', {
+    p_streamer_ids: streamerIds.slice(0, MAX_STREAMER_IDS),
+    p_since: since.toISOString(),
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch recent streams: ${error.message}`);
+  }
+
+  return ((data ?? []) as FeedRecentStreamRow[]).map(transformFeedRecentStream);
+}
+
+/**
+ * Twitch clips of the given streamers for the Highlights rail. Fetches a
+ * generous window; ranking + per-streamer capping happen in loadFeed
+ * (rankClips). RLS restricts to is_visible = true rows.
+ */
+export async function fetchClipsForStreamers(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+  sinceDays = 7,
+  limit = 40,
+): Promise<FeedClip[]> {
+  if (streamerIds.length === 0) return [];
+
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('stream_clips')
+    .select('*')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .gte('clip_created_at', since.toISOString())
+    .order('view_count', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch clips: ${error.message}`);
+  }
+
+  return ((data ?? []) as StreamClipRow[]).map(transformFeedClip);
+}
+
+/**
+ * Interest profile of the current user. SECURITY INVOKER RPC over auth.uid()
+ * — must be called with the user's session (server client with cookies, or
+ * browser client). Returns the empty-profile default when signed out.
+ */
+export async function fetchInterestProfile(
+  supabase: SupabaseClient,
+): Promise<UserInterestProfile> {
+  const { data, error } = await supabase.rpc('compute_user_interest_profile');
+
+  if (error) {
+    throw new Error(`Failed to compute interest profile: ${error.message}`);
+  }
+
+  return transformUserInterestProfile((data ?? {}) as UserInterestProfileRow);
+}
+
+/**
+ * Scored Discover candidates. The profile goes back to the RPC as raw jsonb
+ * — snake_case fields, exactly as compute_user_interest_profile returned
+ * them, which is why the raw payload is re-assembled here.
+ */
+export async function fetchDiscoverRecommendations(
+  supabase: SupabaseClient,
+  profile: UserInterestProfile,
+  limit = 12,
+): Promise<DiscoverRecommendation[]> {
+  const rawProfile = {
+    category_affinity: profile.categoryAffinity,
+    languages: profile.languages,
+    active_hours: profile.activeHours,
+    size_prior: profile.sizePrior,
+    favorites_count: profile.favoritesCount,
+    has_explicit_interests: profile.hasExplicitInterests,
+    is_derived_from_seed_only: profile.isDerivedFromSeedOnly,
+    computed_at: profile.computedAt,
+  };
+
+  const { data, error } = await supabase.rpc('recommend_featured_streamers', {
+    p_profile: rawProfile,
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch recommendations: ${error.message}`);
+  }
+
+  return ((data ?? []) as DiscoverRecommendationRow[]).map(transformDiscoverRecommendation);
+}
+
+/** Week-over-week trending categories (info card + chips supplement). */
+export async function fetchTrendingCategories(
+  supabase: SupabaseClient,
+  limit = 5,
+): Promise<TrendingCategory[]> {
+  const { data, error } = await supabase.rpc('fetch_trending_categories', {
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch trending categories: ${error.message}`);
+  }
+
+  return ((data ?? []) as TrendingCategoryRow[]).map(transformTrendingCategory);
+}
+
+/**
+ * Best recent prediction hit among the user's favorites ("Our AI predicted
+ * X's stream within N minutes"). Returns null when no evaluated prediction
+ * from the last 7 days qualifies.
+ */
+export async function fetchPredictionFunFact(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<PredictionFunFact | null> {
+  if (streamerIds.length === 0) return null;
+
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('ai_predictions')
+    .select('streamer_id, predicted_start_time, actual_start_time, evaluated_at')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .eq('was_accurate', true)
+    .not('actual_start_time', 'is', null)
+    .gte('evaluated_at', since.toISOString())
+    .order('evaluated_at', { ascending: false })
+    .limit(25);
+
+  if (error) {
+    throw new Error(`Failed to fetch prediction fun fact: ${error.message}`);
+  }
+
+  return pickBestFunFact((data ?? []) as PredictionFunFactRow[]);
+}
+
+/**
+ * The hidden subset of the given streamer ids (streamers.is_hidden = true).
+ * Used by loadFeed to keep test/removed streamers out of every section.
+ */
+export async function fetchHiddenStreamerIds(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<Set<string>> {
+  if (streamerIds.length === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from('streamers')
+    .select('id')
+    .in('id', streamerIds)
+    .eq('is_hidden', true);
+
+  if (error) {
+    throw new Error(`Failed to fetch hidden streamers: ${error.message}`);
+  }
+
+  return new Set(((data ?? []) as { id: string }[]).map((row) => row.id));
+}
+
+/**
+ * Category options for the interest picker: the actively-streamed categories
+ * (partner_games view — 28d window), largest first.
+ */
+export async function fetchCategoryOptions(
+  supabase: SupabaseClient,
+  limit = 30,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('partner_games')
+    .select('category, streamer_count')
+    .order('streamer_count', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch category options: ${error.message}`);
+  }
+
+  return ((data ?? []) as { category: string }[]).map((row) => row.category);
+}

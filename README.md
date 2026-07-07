@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Tests
+
+`npm run test` runs the vitest unit suite (personalized-feed logic in `lib/feed/`). For the end-to-end loop of the logged-in feed (`/feed`) against the local Supabase stack — including the dev-only sign-in bypass — see the "Personalized feed (M16)" section in `AGENTS.md`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

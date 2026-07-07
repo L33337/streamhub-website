@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { safeNextPath } from '@/lib/auth-flag';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,8 @@ export async function GET(req: NextRequest): Promise<Response> {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const providerError = url.searchParams.get('error');
-  const next = url.searchParams.get('next') ?? '/';
+  // Sanitized against open redirects — only same-site paths pass.
+  const next = safeNextPath(url.searchParams.get('next')) ?? '/';
 
   if (providerError) {
     return NextResponse.redirect(
