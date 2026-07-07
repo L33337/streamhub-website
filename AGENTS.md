@@ -20,6 +20,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
   4. `npm run dev` → open `http://localhost:3000/api/dev-login` → lands signed-in on `/feed`. The route is triple-guarded (NODE_ENV=development + localhost Supabase URL + service key present) and 404s in production builds; it signs in via admin `generateLink` + `verifyOtp` because the local auth config has hCaptcha enabled.
   Gotcha: `TaskStop`/Ctrl-C can leave a detached `next dev` holding port 3000 — the next `npm run dev` then errors with "Another next dev server is already running" and prints the PID; `taskkill /PID <pid> /F` it.
 
+# Repo hygiene (added 2026-07-07 after a stale-branch cleanup)
+
+- `main` is the single source of truth and the GitHub default branch; it is protected against force-pushes and deletion. Vercel deploys production from `main`.
+- Merge finished, verified feature branches into main promptly, then delete the branch local + remote (`git branch -d` + `git push origin --delete`). GitHub auto-deletes head branches of merged PRs (`delete_branch_on_merge` is ON).
+- If a branch's content reached main another way (cherry-pick/re-implementation), verify with `git cherry main <branch>` and delete it.
+- Remove git worktrees when their story is done (`git worktree remove`); never park uncommitted work in a worktree.
+- Doc-only or config-only tweaks may be committed directly on main.
+
 # Auth activation flag (`NEXT_PUBLIC_AUTH_ENABLED`)
 
 Website auth ships dormant and is activated WITHOUT code changes by setting the Vercel env var `NEXT_PUBLIC_AUTH_ENABLED=true` and redeploying (the value is inlined at build time — a runtime toggle is impossible by design, which is what keeps the static root layout static). Single source of truth: `lib/auth-flag.ts` (`AUTH_ENABLED`, `safeNextPath`, `signInGateRedirect`).
