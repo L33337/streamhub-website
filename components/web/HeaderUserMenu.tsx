@@ -96,6 +96,14 @@ export function HeaderUserMenu() {
           </div>
           <Link
             role="menuitem"
+            href="/feed"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm text-text-secondary hover:bg-background-highlight hover:text-text-primary transition-colors"
+          >
+            My feed
+          </Link>
+          <Link
+            role="menuitem"
             href="/favorites"
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-text-secondary hover:bg-background-highlight hover:text-text-primary transition-colors"

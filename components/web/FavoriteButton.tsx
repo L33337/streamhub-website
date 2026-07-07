@@ -11,6 +11,8 @@ interface Props {
   streamerName?: string;
   size?: Size;
   className?: string;
+  /** Fires after the toggle resolves (M16: feed interaction logging). */
+  onToggled?: (nowFavorited: boolean) => void;
 }
 
 const SIZE_CLASSES: Record<Size, { button: string; icon: number }> = {
@@ -47,6 +49,7 @@ export function FavoriteButton({
   streamerName,
   size = 'md',
   className = '',
+  onToggled,
 }: Props) {
   const { user } = useAuth();
   const { isFavorited, toggle } = useFavorites();
@@ -91,7 +94,8 @@ export function FavoriteButton({
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();
-        void toggle(streamerId);
+        const nowFavorited = !favorited;
+        void toggle(streamerId).then(() => onToggled?.(nowFavorited));
       }}
       className={`inline-flex items-center justify-center rounded-full border transition-colors ${sizeClasses.button} ${className} ${
         favorited
