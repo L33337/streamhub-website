@@ -29,20 +29,36 @@ interface GamePageData {
 }
 
 // Shared between generateMetadata and the page (React cache dedupes per request).
+// Every Partner API call is failure-isolated: a transient API error (edge
+// function restart, network blip) must degrade the page — never throw, because
+// a thrown error during prerender aborts the ENTIRE production build (seen
+// 2026-07-07: one gateway 404 during a secrets-driven function restart killed
+// the deploy). ISR (revalidate 300) self-heals degraded pages within minutes.
 const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
   const api = getPartnerApi();
   const now = new Date();
-  const games = await api.listGames({ limit: 500 });
-  const game = findGameBySlug(games.data, slug);
-  if (!game) {
-    return { category: null, streamerCount: 0, liveSlots: [], upcomingSlots: [], now };
+  const empty: GamePageData = {
+    category: null,
+    streamerCount: 0,
+    liveSlots: [],
+    upcomingSlots: [],
+    now,
+  };
+
+  let game: { category: string; streamer_count: number } | null;
+  try {
+    const games = await api.listGames({ limit: 500 });
+    game = findGameBySlug(games.data, slug);
+  } catch {
+    return empty; // API unavailable → renders as notFound; ISR retries soon
   }
+  if (!game) return empty;
 
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
 
-  const [liveCall, upcomingCall] = await Promise.all([
+  const [liveCall, upcomingCall] = await Promise.allSettled([
     api.listSchedules({
       category: game.category,
       status: ['live'],
@@ -64,8 +80,8 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
   return {
     category: game.category,
     streamerCount: game.streamer_count,
-    liveSlots: liveCall.data,
-    upcomingSlots: upcomingCall.data,
+    liveSlots: liveCall.status === 'fulfilled' ? liveCall.value.data : [],
+    upcomingSlots: upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [],
     now,
   };
 });
