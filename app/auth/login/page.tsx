@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { AUTH_ENABLED, safeNextPath } from '@/lib/auth-flag';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +17,19 @@ function siteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 }
 
-async function signInWithTwitch() {
+function callbackUrl(formData: FormData): string {
+  // Post-login destination survives the OAuth round-trip via the callback's
+  // ?next= param; re-sanitized here because the hidden field is client-editable.
+  const next = safeNextPath(formData.get('next')?.toString());
+  return `${siteUrl()}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`;
+}
+
+async function signInWithTwitch(formData: FormData) {
   'use server';
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'twitch',
-    options: { redirectTo: `${siteUrl()}/auth/callback` },
+    options: { redirectTo: callbackUrl(formData) },
   });
   if (error) {
     redirect(`/auth/login?error=${encodeURIComponent(error.message)}`);
@@ -29,12 +37,12 @@ async function signInWithTwitch() {
   redirect(data.url);
 }
 
-async function signInWithGoogle() {
+async function signInWithGoogle(formData: FormData) {
   'use server';
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${siteUrl()}/auth/callback` },
+    options: { redirectTo: callbackUrl(formData) },
   });
   if (error) {
     redirect(`/auth/login?error=${encodeURIComponent(error.message)}`);
@@ -43,21 +51,24 @@ async function signInWithGoogle() {
 }
 
 interface Props {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: Props) {
-  // Sign-in UI is hidden while the auth feature is dormant.
-  // Remove this line to re-enable the page.
-  redirect('/app');
+  // Sign-in UI is hidden while the auth feature is dormant — activate via
+  // NEXT_PUBLIC_AUTH_ENABLED=true (see lib/auth-flag.ts).
+  if (!AUTH_ENABLED) {
+    redirect('/app');
+  }
+
+  const { error, next: rawNext } = await searchParams;
+  const next = safeNextPath(rawNext);
 
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect('/');
-
-  const { error } = await searchParams;
+  if (user) redirect(next ?? '/');
 
   return (
     <main className="container mx-auto max-w-md px-4 py-12">
@@ -77,6 +88,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
       <div className="mt-8 flex flex-col gap-3">
         <form action={signInWithTwitch}>
+          {next && <input type="hidden" name="next" value={next} />}
           <button
             type="submit"
             className="flex w-full h-12 items-center justify-center gap-3 rounded-lg bg-twitch px-4 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] hover:bg-[#A266FF] transition-colors"
@@ -93,6 +105,7 @@ export default async function LoginPage({ searchParams }: Props) {
         </form>
 
         <form action={signInWithGoogle}>
+          {next && <input type="hidden" name="next" value={next} />}
           <button
             type="submit"
             className="flex w-full h-12 items-center justify-center gap-3 rounded-lg border border-border-default bg-background-elevated px-4 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"

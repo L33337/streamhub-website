@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { signInGateRedirect } from '@/lib/auth-flag';
 import {
   listFavoriteStreamers,
   type FavoriteStreamerRow,
@@ -26,7 +27,7 @@ export default async function FavoritesPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/app');
+    redirect(signInGateRedirect('/favorites'));
   }
 
   const [favorites, liveSet] = await Promise.all([

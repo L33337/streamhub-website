@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { signInGateRedirect } from '@/lib/auth-flag';
 import { loadFeed } from '@/lib/feed/loadFeed';
 import { getFeedAnalyticsEnabled } from '@/lib/feed/preferences';
 import { resolveSince } from '@/lib/feed/logic';
@@ -24,7 +25,7 @@ export default async function FeedPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/app');
+    redirect(signInGateRedirect('/feed'));
   }
 
   const cookieStore = await cookies();

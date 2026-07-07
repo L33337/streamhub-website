@@ -6,6 +6,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SearchBar } from "@/components/web/SearchBar";
 import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
+import { HeaderUserMenu } from "@/components/web/HeaderUserMenu";
+import { AUTH_ENABLED } from "@/lib/auth-flag";
 import { Providers } from "@/components/web/Providers";
 import { FloatingGetAppButton } from "@/components/web/FloatingGetAppButton";
 import { SiteFooter } from "@/components/web/SiteFooter";
@@ -133,6 +135,9 @@ export default function RootLayout({
               >
                 Get the App
               </Link>
+              {/* Static-safe: AUTH_ENABLED is a build-time constant, and
+                  HeaderUserMenu reads auth state client-side via useAuth(). */}
+              {AUTH_ENABLED && <HeaderUserMenu />}
               <div className="ml-auto md:hidden">
                 <MobileHeaderMenu />
               </div>

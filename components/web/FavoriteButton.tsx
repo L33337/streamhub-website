@@ -1,8 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { useFavorites } from '@/hooks/useFavorites';
+import { AUTH_ENABLED } from '@/lib/auth-flag';
 
 type Size = 'sm' | 'md';
 
@@ -54,27 +55,35 @@ export function FavoriteButton({
   const { user } = useAuth();
   const { isFavorited, toggle } = useFavorites();
   const router = useRouter();
+  const pathname = usePathname();
   const sizeClasses = SIZE_CLASSES[size];
 
   const label = streamerName
     ? `Favorite ${streamerName}`
     : 'Favorite streamer';
 
-  // Anonymous users get a button that points to the mobile app, where
-  // favoriting actually works. Sign-in UI on the website is dormant while
-  // auth is hidden — point to /app instead of /auth/login. Must be a <button>
-  // (not <Link>) because this component is often rendered inside a card-wide
-  // <Link>, and nested <a> elements are invalid HTML.
+  // Signed-out users: with auth enabled the heart leads to sign-in (returning
+  // here afterwards); while auth is dormant it points to the mobile app, where
+  // favoriting actually works. Must be a <button> (not <Link>) because this
+  // component is often rendered inside a card-wide <Link>, and nested <a>
+  // elements are invalid HTML.
   if (!user) {
+    const target = AUTH_ENABLED
+      ? `/auth/login?next=${encodeURIComponent(pathname)}`
+      : '/app?from=favorite';
     return (
       <button
         type="button"
-        aria-label={`Save ${streamerName ?? 'streamer'} in the app`}
-        title="Save in the app"
+        aria-label={
+          AUTH_ENABLED
+            ? `Sign in to favorite ${streamerName ?? 'this streamer'}`
+            : `Save ${streamerName ?? 'streamer'} in the app`
+        }
+        title={AUTH_ENABLED ? 'Sign in to save favorites' : 'Save in the app'}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          router.push('/app?from=favorite');
+          router.push(target);
         }}
         className={`inline-flex items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-muted hover:border-accent-pink/40 hover:text-accent-pink transition-colors ${sizeClasses.button} ${className}`}
       >

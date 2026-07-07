@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { signInGateRedirect } from '@/lib/auth-flag';
 import { fetchCategoryOptions } from '@/lib/feed/service';
 import { fetchUserInterests } from '@/lib/feed/interests';
 import { InterestsPicker } from '@/components/web/feed/InterestsPicker';
@@ -19,7 +20,7 @@ export default async function InterestsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/app');
+    redirect(signInGateRedirect('/feed/interests'));
   }
 
   const [categories, picked] = await Promise.all([

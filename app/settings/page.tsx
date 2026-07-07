@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { signInGateRedirect } from '@/lib/auth-flag';
 import { getFeedAnalyticsEnabled } from '@/lib/feed/preferences';
 import { AccountInfoSection } from '@/components/web/AccountInfoSection';
 import { SignOutSection } from '@/components/web/SignOutSection';
@@ -23,7 +24,7 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/app');
+    redirect(signInGateRedirect('/settings'));
   }
 
   const feedAnalyticsEnabled = await getFeedAnalyticsEnabled(supabase, user.id);
