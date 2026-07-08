@@ -8,7 +8,7 @@
 // cookie, and the 5-minute auto-refresh.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loadFeed } from '@/lib/feed/loadFeed';
 import {
@@ -39,8 +39,45 @@ import { SectionErrorRow, EmptyFavoritesCard, EmptyFilterHint } from './FeedStat
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
+// Canonical feed section order for impressions + scroll depth (M18 Phase 0).
+// Keep in sync with the app's home.tsx and docs/feed-kpis.md (StreamHub repo).
+const SECTION_ORDER = ['live', 'upnext', 'recent', 'clips', 'discover', 'info'] as const;
+type FeedSection = (typeof SECTION_ORDER)[number];
+
 function writeSeenCookie(): void {
   document.cookie = `${SEEN_COOKIE}=${encodeURIComponent(new Date().toISOString())}; path=/; max-age=${SEEN_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+}
+
+/**
+ * Hover/focus-revealed "Not interested" affordance (M18 Phase 0 dismiss).
+ * Web deviation from the app (documented): direct dismiss on click instead of
+ * the app's long-press + confirm dialog.
+ */
+function Dismissable({
+  onDismiss,
+  children,
+}: {
+  onDismiss: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="group relative">
+      {children}
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onDismiss();
+        }}
+        aria-label="Not interested"
+        title="Not interested"
+        className="absolute right-2 top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full bg-black/70 text-text-secondary transition-colors hover:text-white group-focus-within:flex group-hover:flex"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
 }
 
 export function FeedClient({
@@ -58,6 +95,7 @@ export function FeedClient({
   const [data, setData] = useState<FeedData>(initial);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
 
   // "New for you" window is fixed per session — refreshes never shrink it.
   const sinceRef = useRef(new Date(sinceIso));
@@ -65,6 +103,12 @@ export function FeedClient({
   const lastLoadedRef = useRef(Date.now());
   const loggedDiscoverIdsRef = useRef('');
   const tokenRef = useRef<string | null>(null);
+
+  // Section impressions + scroll depth (M18 Phase 0): one impression per
+  // section per page mount; the deepest section reached is logged on leave.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const seenSectionsRef = useRef<Set<FeedSection>>(new Set());
+  const lastLoggedDepthRef = useRef(-1);
 
   // Cache the access token synchronously for the events module (the leave
   // flush cannot await getSession()).
@@ -110,11 +154,45 @@ export function FeedClient({
     }
   }, [supabase]);
 
+  // Observe sections for impressions. Re-attached whenever the composition
+  // changes (data refresh, chip filter, dismiss); the seen-set dedupes.
+  // A tall section may never hit 50% visibility, so a ≥240px visible slice
+  // counts as seen too.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          if (entry.intersectionRatio < 0.5 && entry.intersectionRect.height < 240) return;
+          const section = (entry.target as HTMLElement).dataset.feedSection as
+            | FeedSection
+            | undefined;
+          if (!section || seenSectionsRef.current.has(section)) return;
+          seenSectionsRef.current.add(section);
+          logFeedEvent({ event: 'impression', itemType: 'section', itemId: section });
+        });
+      },
+      { threshold: [0, 0.25, 0.5] },
+    );
+    root.querySelectorAll('[data-feed-section]').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [data, selectedCategory, dismissedKeys]);
+
   // Persist the watermark + flush queued events when leaving the page —
   // pagehide (tab close/navigation), tab hidden, and client-side route away.
   useEffect(() => {
     const leave = () => {
       writeSeenCookie();
+      let depth = -1;
+      SECTION_ORDER.forEach((section, index) => {
+        if (seenSectionsRef.current.has(section)) depth = index;
+      });
+      if (depth > lastLoggedDepthRef.current) {
+        lastLoggedDepthRef.current = depth;
+        logFeedEvent({ event: 'scroll_depth', itemType: 'section', itemId: SECTION_ORDER[depth] });
+      }
       void flushFeedEvents(true);
     };
     const onVisibility = () => {
@@ -236,6 +314,24 @@ export function FeedClient({
     [],
   );
 
+  // "Not interested" (M18 Phase 0): log dismiss, hide for this page mount.
+  // Ranking suppression comes in Phase 4.
+  const handleDismiss = useCallback(
+    (
+      key: string,
+      itemType: 'clip' | 'discover' | 'info',
+      ids: { itemId?: string; streamerId?: string; category?: string },
+    ) => {
+      logFeedEvent({ event: 'dismiss', itemType, ...ids });
+      setDismissedKeys((prev) => {
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+    },
+    [],
+  );
+
   // Section composition — exact order and gating of the app's Home screen.
   const matches = (category?: string) =>
     selectedCategory === null || (category ?? '') === selectedCategory;
@@ -243,21 +339,26 @@ export function FeedClient({
   const liveEntries = data.liveNow.filter((entry) => matches(entry.slot.category));
   const upNext = data.upNext.filter((slot) => matches(slot.category));
   const recent = data.recent.filter((stream) => matches(stream.category));
-  const clips = data.clips.filter((clip) => matches(clip.category));
+  const clips = data.clips.filter(
+    (clip) => matches(clip.category) && !dismissedKeys.has(`clip:${clip.id}`),
+  );
   const allFilteredEmpty =
     selectedCategory !== null &&
     liveEntries.length === 0 &&
     upNext.length === 0 &&
     recent.length === 0 &&
     clips.length === 0;
-  const orderedDiscover = reorderDiscover(data.discover, selectedCategory);
+  const visibleDiscover = data.discover.filter(
+    (rec) => !dismissedKeys.has(`discover:${rec.streamerId}`),
+  );
+  const orderedDiscover = reorderDiscover(visibleDiscover, selectedCategory);
   const discoverTitle =
     data.profile?.isDerivedFromSeedOnly || !data.hasFavorites ? 'Popular right now' : 'Discover';
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
   const topTrend = data.trending[0];
 
   return (
-    <div>
+    <div ref={rootRef}>
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-white">My feed</h1>
         <button
@@ -284,7 +385,7 @@ export function FeedClient({
       {!data.hasFavorites && <EmptyFavoritesCard />}
 
       {liveEntries.length > 0 ? (
-        <section aria-label="Live now">
+        <section aria-label="Live now" data-feed-section="live">
           <FeedSectionHeader title="Live Now" />
           <LiveRail entries={liveEntries} onSlotTap={handleLiveTap} />
         </section>
@@ -293,7 +394,7 @@ export function FeedClient({
       ) : null}
 
       {upNext.length > 0 && (
-        <section aria-label="Up next">
+        <section aria-label="Up next" data-feed-section="upnext">
           <FeedSectionHeader title="Up Next" actionLabel="See all" actionHref="/" />
           <ul className="flex flex-col gap-3">
             {upNext.map((slot) => (
@@ -306,7 +407,7 @@ export function FeedClient({
       )}
 
       {recent.length > 0 ? (
-        <section aria-label="New for you">
+        <section aria-label="New for you" data-feed-section="recent">
           <FeedSectionHeader title="New for you" />
           <ul className="flex flex-col gap-3">
             {recent.map((stream) => (
@@ -321,7 +422,7 @@ export function FeedClient({
       ) : null}
 
       {clips.length > 0 ? (
-        <section aria-label="Highlights">
+        <section aria-label="Highlights" data-feed-section="clips">
           <FeedSectionHeader title="Highlights" />
           <ul
             className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -329,11 +430,21 @@ export function FeedClient({
           >
             {clips.map((clip) => (
               <li key={`clip-${clip.id}`} className="shrink-0">
-                <ClipCard
-                  clip={clip}
-                  streamerName={data.nameMap[clip.streamerId]}
-                  onOpen={() => handleClipOpen(clip)}
-                />
+                <Dismissable
+                  onDismiss={() =>
+                    handleDismiss(`clip:${clip.id}`, 'clip', {
+                      itemId: clip.id,
+                      streamerId: clip.streamerId,
+                      category: clip.category,
+                    })
+                  }
+                >
+                  <ClipCard
+                    clip={clip}
+                    streamerName={data.nameMap[clip.streamerId]}
+                    onOpen={() => handleClipOpen(clip)}
+                  />
+                </Dismissable>
               </li>
             ))}
           </ul>
@@ -344,27 +455,46 @@ export function FeedClient({
 
       {allFilteredEmpty && <EmptyFilterHint />}
 
-      {data.profile?.isDerivedFromSeedOnly && data.hasFavorites && (
-        <FeedInfoCard
-          variant="interests-invite"
-          headline="Make it yours"
-          body="Pick a few categories you enjoy and your feed gets personal right away."
-          ctaLabel="Choose interests"
-          ctaHref="/feed/interests"
-        />
-      )}
+      {data.profile?.isDerivedFromSeedOnly &&
+        data.hasFavorites &&
+        !dismissedKeys.has('info:interests-invite') && (
+          <div data-feed-section="info">
+            <Dismissable
+              onDismiss={() =>
+                handleDismiss('info:interests-invite', 'info', { itemId: 'interests-invite' })
+              }
+            >
+              <FeedInfoCard
+                variant="interests-invite"
+                headline="Make it yours"
+                body="Pick a few categories you enjoy and your feed gets personal right away."
+                ctaLabel="Choose interests"
+                ctaHref="/feed/interests"
+              />
+            </Dismissable>
+          </div>
+        )}
 
       {orderedDiscover.length > 0 ? (
-        <section aria-label={discoverTitle}>
+        <section aria-label={discoverTitle} data-feed-section="discover">
           <FeedSectionHeader title={discoverTitle} />
           <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {orderedDiscover.map((rec) => (
               <li key={`discover-${rec.streamerId}`}>
-                <DiscoverCard
-                  recommendation={rec}
-                  onOpen={() => handleDiscoverOpen(rec)}
-                  onFavoriteToggled={(nowFavorited) => handleDiscoverFavorite(rec, nowFavorited)}
-                />
+                <Dismissable
+                  onDismiss={() =>
+                    handleDismiss(`discover:${rec.streamerId}`, 'discover', {
+                      streamerId: rec.streamerId,
+                      category: rec.topCategory,
+                    })
+                  }
+                >
+                  <DiscoverCard
+                    recommendation={rec}
+                    onOpen={() => handleDiscoverOpen(rec)}
+                    onFavoriteToggled={(nowFavorited) => handleDiscoverFavorite(rec, nowFavorited)}
+                  />
+                </Dismissable>
               </li>
             ))}
           </ul>
@@ -373,22 +503,34 @@ export function FeedClient({
         <SectionErrorRow label="Couldn't load suggestions" onRetry={() => void refresh()} />
       ) : null}
 
-      {data.funFact && funFactName && (
-        <FeedInfoCard
-          variant="funfact"
-          headline="Prediction on point"
-          body={`Our AI predicted ${funFactName}'s latest stream within ${data.funFact.diffMinutes} minute${data.funFact.diffMinutes === 1 ? '' : 's'}.`}
-        />
+      {data.funFact && funFactName && !dismissedKeys.has('info:funfact') && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() => handleDismiss('info:funfact', 'info', { itemId: 'funfact' })}
+          >
+            <FeedInfoCard
+              variant="funfact"
+              headline="Prediction on point"
+              body={`Our AI predicted ${funFactName}'s latest stream within ${data.funFact.diffMinutes} minute${data.funFact.diffMinutes === 1 ? '' : 's'}.`}
+            />
+          </Dismissable>
+        </div>
       )}
 
-      {topTrend && topTrend.deltaPercent > 0 && (
-        <FeedInfoCard
-          variant="trending"
-          headline={`${topTrend.category} is trending`}
-          body={`${topTrend.streamersCurrent} streamers played it this week (+${topTrend.deltaPercent}% vs last week).`}
-          ctaLabel="Filter feed"
-          onCtaClick={() => handleSelectCategory(topTrend.category)}
-        />
+      {topTrend && topTrend.deltaPercent > 0 && !dismissedKeys.has('info:trending') && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() => handleDismiss('info:trending', 'info', { itemId: 'trending' })}
+          >
+            <FeedInfoCard
+              variant="trending"
+              headline={`${topTrend.category} is trending`}
+              body={`${topTrend.streamersCurrent} streamers played it this week (+${topTrend.deltaPercent}% vs last week).`}
+              ctaLabel="Filter feed"
+              onCtaClick={() => handleSelectCategory(topTrend.category)}
+            />
+          </Dismissable>
+        </div>
       )}
     </div>
   );

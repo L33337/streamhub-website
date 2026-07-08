@@ -104,13 +104,16 @@ export interface PredictionFunFact {
   evaluatedAt: string;
 }
 
+// 'scroll_depth' + item_type 'section' added in M18 Phase 0
+// (app migration 20260709120000_feed_events_phase0.sql — keep in sync).
 export type FeedEventType =
   | 'impression'
   | 'tap'
   | 'watch_tap'
   | 'favorite_from_feed'
   | 'clip_open'
-  | 'dismiss';
+  | 'dismiss'
+  | 'scroll_depth';
 
 export type FeedItemType =
   | 'live'
@@ -119,7 +122,8 @@ export type FeedItemType =
   | 'clip'
   | 'discover'
   | 'info'
-  | 'chip';
+  | 'chip'
+  | 'section';
 
 export interface HomeLiveEntry {
   slot: StreamSlot;
