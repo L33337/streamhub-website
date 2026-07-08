@@ -8,8 +8,9 @@ import { formatViews, formatClipDuration } from '@/lib/feed/logic';
 
 /**
  * Twitch clip card for the horizontal Highlights rail (M16, port of the
- * app's ClipCard). The whole card links to the clip on twitch.tv (new tab);
- * the caller logs the clip_open event via onOpen.
+ * app's ClipCard). The card is an <a> to the clip on twitch.tv; since M18
+ * Phase 1 the caller intercepts the click (preventDefault) to open the
+ * in-feed lightbox instead — the href stays as middle-click/no-JS fallback.
  */
 export function ClipCard({
   clip,
@@ -18,7 +19,7 @@ export function ClipCard({
 }: {
   clip: FeedClip;
   streamerName?: string;
-  onOpen: () => void;
+  onOpen: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const [thumbnailError, setThumbnailError] = useState(false);
   const duration = formatClipDuration(clip.durationSeconds);

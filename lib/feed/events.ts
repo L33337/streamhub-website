@@ -23,6 +23,8 @@ export interface FeedEventInput {
   itemId?: string;
   streamerId?: string;
   category?: string;
+  /** Watch duration for clip_play_end (M18 Phase 1) */
+  durationSeconds?: number;
 }
 
 export interface FeedEventsConfig {
@@ -125,6 +127,7 @@ export async function flushFeedEvents(keepalive = false): Promise<void> {
       item_id: event.itemId ?? null,
       streamer_id: event.streamerId ?? null,
       category: event.category ?? null,
+      duration_seconds: event.durationSeconds ?? null,
     }));
     const fetchFn = config.fetchFn ?? fetch;
     await fetchFn(`${config.supabaseUrl}/rest/v1/feed_events`, {

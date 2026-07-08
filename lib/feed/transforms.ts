@@ -79,6 +79,7 @@ export function transformFeedClip(row: StreamClipRow): FeedClip {
   return {
     id: row.id,
     streamerId: row.streamer_id,
+    externalClipId: row.external_clip_id,
     title: row.title,
     url: row.url,
     thumbnailUrl: sanitizeThumbnailUrl(row.thumbnail_url),

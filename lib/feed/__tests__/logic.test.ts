@@ -49,6 +49,7 @@ function clip(overrides: Partial<FeedClip>): FeedClip {
   return {
     id: 'clip-1',
     streamerId: 'streamer-1',
+    externalClipId: 'ClipSlug',
     title: 'Clip',
     url: 'https://clips.twitch.tv/x',
     viewCount: 100,

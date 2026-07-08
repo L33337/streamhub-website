@@ -49,6 +49,8 @@ export interface FeedRecentStream {
 export interface FeedClip {
   id: string;
   streamerId: string;
+  /** Twitch clip slug — drives the embed player (M18 Phase 1) */
+  externalClipId: string;
   title: string | null;
   url: string;
   thumbnailUrl?: string;
@@ -106,6 +108,8 @@ export interface PredictionFunFact {
 
 // 'scroll_depth' + item_type 'section' added in M18 Phase 0
 // (app migration 20260709120000_feed_events_phase0.sql — keep in sync).
+// 'clip_play_start'/'clip_play_end' + duration_seconds added in M18 Phase 1
+// (app migration 20260709130000_feed_events_clip_play.sql).
 export type FeedEventType =
   | 'impression'
   | 'tap'
@@ -113,7 +117,9 @@ export type FeedEventType =
   | 'favorite_from_feed'
   | 'clip_open'
   | 'dismiss'
-  | 'scroll_depth';
+  | 'scroll_depth'
+  | 'clip_play_start'
+  | 'clip_play_end';
 
 export type FeedItemType =
   | 'live'

@@ -33,6 +33,7 @@ import { CategoryChips } from './CategoryChips';
 import { LiveRail } from './LiveRail';
 import { FeedVodCard } from './FeedVodCard';
 import { ClipCard } from './ClipCard';
+import { ClipLightbox } from './ClipLightbox';
 import { DiscoverCard } from './DiscoverCard';
 import { FeedInfoCard } from './FeedInfoCard';
 import { SectionErrorRow, EmptyFavoritesCard, EmptyFilterHint } from './FeedStates';
@@ -96,6 +97,7 @@ export function FeedClient({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
+  const [lightboxClip, setLightboxClip] = useState<FeedClip | null>(null);
 
   // "New for you" window is fixed per session — refreshes never shrink it.
   const sinceRef = useRef(new Date(sinceIso));
@@ -281,15 +283,24 @@ export function FeedClient({
     });
   }, []);
 
-  const handleClipOpen = useCallback((clip: FeedClip) => {
-    logFeedEvent({
-      event: 'clip_open',
-      itemType: 'clip',
-      itemId: clip.id,
-      streamerId: clip.streamerId,
-      category: clip.category,
-    });
-  }, []);
+  // M18 Phase 1: intercept the card's <a> click and play in the lightbox;
+  // clips without a slug keep the link-out behavior.
+  const handleClipOpen = useCallback(
+    (clip: FeedClip, event: React.MouseEvent<HTMLAnchorElement>) => {
+      logFeedEvent({
+        event: 'clip_open',
+        itemType: 'clip',
+        itemId: clip.id,
+        streamerId: clip.streamerId,
+        category: clip.category,
+      });
+      if (clip.externalClipId) {
+        event.preventDefault();
+        setLightboxClip(clip);
+      }
+    },
+    [],
+  );
 
   const handleDiscoverOpen = useCallback((rec: DiscoverRecommendation) => {
     logFeedEvent({
@@ -442,7 +453,7 @@ export function FeedClient({
                   <ClipCard
                     clip={clip}
                     streamerName={data.nameMap[clip.streamerId]}
-                    onOpen={() => handleClipOpen(clip)}
+                    onOpen={(event) => handleClipOpen(clip, event)}
                   />
                 </Dismissable>
               </li>
@@ -531,6 +542,15 @@ export function FeedClient({
             />
           </Dismissable>
         </div>
+      )}
+
+      {lightboxClip && (
+        <ClipLightbox
+          key={lightboxClip.id}
+          clip={lightboxClip}
+          streamerName={data.nameMap[lightboxClip.streamerId]}
+          onClose={() => setLightboxClip(null)}
+        />
       )}
     </div>
   );

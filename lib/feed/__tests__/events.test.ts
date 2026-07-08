@@ -76,6 +76,7 @@ describe('feed events queue', () => {
         event: 'tap',
         item_type: 'chip',
         item_id: 'FPS',
+        duration_seconds: null,
         streamer_id: null,
         category: 'FPS',
       },
