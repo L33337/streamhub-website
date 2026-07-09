@@ -17,6 +17,11 @@ import {
   endedAgoLabel,
   buildReliabilityLabel,
   buildDiscoverStatsLine,
+  typicalStartHourUtc,
+  circularHourDiff,
+  computeWeeklyRecap,
+  findPeakRecord,
+  formatPeak,
 } from '../logic';
 import { sanitizeThumbnailUrl, toPublicStreamSlot } from '../transforms';
 import type {
@@ -626,5 +631,80 @@ describe('buildDiscoverStatsLine (M18 P2B)', () => {
   it('returns null when nothing is available (incl. zero counts)', () => {
     expect(buildDiscoverStatsLine({ followerCount: null, streams28d: null })).toBeNull();
     expect(buildDiscoverStatsLine({ followerCount: 0, streams28d: 0 })).toBeNull();
+  });
+});
+
+describe('M18 P2C card helpers', () => {
+  it('typicalStartHourUtc picks the strongest bin, null on flat/invalid', () => {
+    const histogram = new Array(24).fill(0);
+    histogram[19] = 0.6;
+    histogram[20] = 0.4;
+    expect(typicalStartHourUtc(histogram)).toBe(19);
+    expect(typicalStartHourUtc(new Array(24).fill(0))).toBeNull();
+    expect(typicalStartHourUtc(null)).toBeNull();
+    expect(typicalStartHourUtc([1, 2, 3])).toBeNull();
+  });
+
+  it('circularHourDiff wraps around midnight', () => {
+    expect(circularHourDiff(23, 1)).toBe(2);
+    expect(circularHourDiff(1, 23)).toBe(2);
+    expect(circularHourDiff(12, 0)).toBe(12);
+    expect(circularHourDiff(5, 5)).toBe(0);
+  });
+
+  it('computeWeeklyRecap aggregates hours + top category, null on thin weeks', () => {
+    expect(
+      computeWeeklyRecap([
+        { durationMinutes: 120, category: 'LoL' },
+        { durationMinutes: 180, category: 'LoL' },
+        { durationMinutes: 60, category: 'Just Chatting' },
+      ]),
+    ).toEqual({ totalHours: 6, streams: 3, topCategory: 'LoL' });
+    expect(computeWeeklyRecap([{ durationMinutes: 600, category: 'LoL' }])).toBeNull();
+    expect(
+      computeWeeklyRecap([
+        { durationMinutes: 20, category: null },
+        { durationMinutes: 20, category: null },
+      ]),
+    ).toBeNull();
+  });
+
+  it('findPeakRecord needs freshness, history and the noise floor', () => {
+    const NOW2 = new Date('2026-07-09T12:00:00Z');
+    const rows = [
+      { streamerId: 's1', peakViewerCount: 900, endedAt: '2026-07-09T01:00:00Z' },
+      { streamerId: 's1', peakViewerCount: 500, endedAt: '2026-06-20T01:00:00Z' },
+      { streamerId: 's1', peakViewerCount: 700, endedAt: '2026-05-20T01:00:00Z' },
+    ];
+    expect(findPeakRecord(rows, NOW2)).toEqual({ streamerId: 's1', peak: 900 });
+    // latest is not the max → no record
+    expect(
+      findPeakRecord(
+        rows.map((row, index) => (index === 0 ? { ...row, peakViewerCount: 600 } : row)),
+        NOW2,
+      ),
+    ).toBeNull();
+    // stale latest → no record
+    expect(
+      findPeakRecord(
+        rows.map((row, index) => (index === 0 ? { ...row, endedAt: '2026-07-01T01:00:00Z' } : row)),
+        NOW2,
+      ),
+    ).toBeNull();
+    // below noise floor → no record
+    expect(
+      findPeakRecord(
+        rows.map((row) => ({ ...row, peakViewerCount: (row.peakViewerCount ?? 0) / 10 })),
+        NOW2,
+      ),
+    ).toBeNull();
+    // too little history → no record
+    expect(findPeakRecord(rows.slice(0, 2), NOW2)).toBeNull();
+  });
+
+  it('formatPeak', () => {
+    expect(formatPeak(950)).toBe('950');
+    expect(formatPeak(8400)).toBe('8.4K');
+    expect(formatPeak(1_200_000)).toBe('1.2M');
   });
 });

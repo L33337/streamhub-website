@@ -26,6 +26,7 @@ import type {
   FeedFunFact,
   StreamerBreak,
   DiscoverStats,
+  NewStreamerCandidate,
 } from './types';
 import {
   fetchStreamSlots,
@@ -41,9 +42,23 @@ import {
   fetchFanMoments,
   fetchStreamerBreaks,
   fetchDiscoverStats,
+  fetchNewStreamers,
+  fetchWeeklyActivity,
+  fetchHourHistograms,
+  fetchPeakHistory,
   fetchHiddenStreamerIds,
 } from './service';
-import { deriveLiveAndUpNext, rankClips, diversityPass, deriveChipCategories } from './logic';
+import {
+  deriveLiveAndUpNext,
+  rankClips,
+  diversityPass,
+  deriveChipCategories,
+  typicalStartHourUtc,
+  circularHourDiff,
+  computeWeeklyRecap,
+  findPeakRecord,
+  MISSED_HOUR_DIFF,
+} from './logic';
 
 export interface LoadFeedOptions {
   /** "New for you" window start — session-fixed (see resolveSince). */
@@ -162,6 +177,29 @@ export async function loadFeed(
     }
   })();
 
+  const newStreamersTask = (async (): Promise<NewStreamerCandidate[]> => {
+    try {
+      const rows = await fetchNewStreamers(supabase);
+      const favSet = new Set(favIds);
+      return rows.filter((row) => !favSet.has(row.streamerId));
+    } catch {
+      // Announcement card silently absent on failure.
+      return [];
+    }
+  })();
+
+  // Weekly recap is a Monday ritual (UTC on the server) — skip otherwise.
+  const recapTask = (async () => {
+    try {
+      if (now.getDay() !== 1 || favIds.length === 0) return null;
+      const rows = await fetchWeeklyActivity(supabase, favIds);
+      return computeWeeklyRecap(rows);
+    } catch {
+      // Recap card silently absent on failure.
+      return null;
+    }
+  })();
+
   const [
     slotsPair,
     recentResult,
@@ -173,6 +211,8 @@ export async function loadFeed(
     scheduleChangesResult,
     fanMomentsResult,
     breaksResult,
+    newStreamers,
+    weeklyRecap,
   ] = await Promise.all([
     slotsTask,
     recentTask,
@@ -184,6 +224,8 @@ export async function loadFeed(
     scheduleChangesTask,
     fanMomentsTask,
     breaksTask,
+    newStreamersTask,
+    recapTask,
   ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
@@ -240,6 +282,32 @@ export async function loadFeed(
     // Stats line silently absent on failure.
   }
 
+  // M18 P2C: unusual-start + record detection for the recently active few
+  // (never the whole roster). Both decorative.
+  let missedStream: FeedRecentStream | null = null;
+  let peakRecord: { streamerId: string; peak: number } | null = null;
+  try {
+    const recentIds = [...new Set(recent.map((row) => row.streamerId))].slice(0, 10);
+    if (recentIds.length > 0) {
+      const [histograms, peaks] = await Promise.all([
+        fetchHourHistograms(supabase, recentIds),
+        fetchPeakHistory(supabase, recentIds),
+      ]);
+      for (const stream of recent) {
+        const typical = typicalStartHourUtc(histograms.get(stream.streamerId));
+        if (typical === null) continue;
+        const startHour = new Date(stream.startedAt).getUTCHours();
+        if (circularHourDiff(startHour, typical) > MISSED_HOUR_DIFF) {
+          missedStream = stream;
+          break;
+        }
+      }
+      peakRecord = findPeakRecord(peaks, now);
+    }
+  } catch {
+    // Both cards silently absent on failure.
+  }
+
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
   const clips = rankClips(rawClips, profile, now);
   const chipCategories = deriveChipCategories(profile, liveNow, upNext, recent, clips);
@@ -277,6 +345,10 @@ export async function loadFeed(
     fanMoments,
     streamerBreaks,
     discoverStatsMap,
+    newStreamers,
+    weeklyRecap,
+    missedStream,
+    peakRecord,
     chipCategories,
     sectionErrors: errors,
     avatarMap,

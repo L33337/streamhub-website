@@ -1,7 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, TrendingUp, Target, CalendarX2, Quote, Plane } from 'lucide-react';
+import {
+  Sparkles,
+  TrendingUp,
+  Target,
+  CalendarX2,
+  Quote,
+  Plane,
+  Clock,
+  BarChart3,
+  Trophy,
+  UserPlus,
+} from 'lucide-react';
 
 export type FeedInfoCardVariant =
   | 'interests-invite'
@@ -9,7 +20,11 @@ export type FeedInfoCardVariant =
   | 'trending'
   | 'schedule-change'
   | 'fan-moment'
-  | 'break';
+  | 'break'
+  | 'missed'
+  | 'recap'
+  | 'milestone'
+  | 'new-streamer';
 
 const VARIANT_ICON = {
   'interests-invite': Sparkles,
@@ -18,6 +33,10 @@ const VARIANT_ICON = {
   'schedule-change': CalendarX2,
   'fan-moment': Quote,
   break: Plane,
+  missed: Clock,
+  recap: BarChart3,
+  milestone: Trophy,
+  'new-streamer': UserPlus,
 } as const;
 
 /**

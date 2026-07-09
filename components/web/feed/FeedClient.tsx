@@ -17,7 +17,7 @@ import {
   flushFeedEvents,
 } from '@/lib/feed/events';
 import { SEEN_COOKIE, SEEN_COOKIE_MAX_AGE_SECONDS } from '@/lib/feed/constants';
-import { reorderDiscover, buildReliabilityLabel } from '@/lib/feed/logic';
+import { reorderDiscover, buildReliabilityLabel, formatPeak } from '@/lib/feed/logic';
 import { toPublicStreamSlot } from '@/lib/feed/transforms';
 import type {
   FeedData,
@@ -432,6 +432,35 @@ export function FeedClient({
     (fact) =>
       !dismissedKeys.has(`info:fanmoment-${fact.id}`) && !!data.nameMap[fact.streamerId],
   );
+
+  // M18 P2C: "you might have missed" — only while that stream is visible above.
+  const missed = data.missedStream;
+  const showMissed =
+    !!missed &&
+    recent.some((stream) => stream.id === missed.id) &&
+    !dismissedKeys.has(`info:missed-${missed.id}`) &&
+    !!data.nameMap[missed.streamerId];
+
+  // M18 P2C: Monday recap + 90-day record + interest-matched announcement.
+  const recap = data.weeklyRecap && !dismissedKeys.has('info:recap') ? data.weeklyRecap : null;
+  const record =
+    data.peakRecord &&
+    !dismissedKeys.has(`info:milestone-${data.peakRecord.streamerId}`) &&
+    data.nameMap[data.peakRecord.streamerId]
+      ? data.peakRecord
+      : null;
+  const topAffinity = new Set(
+    Object.entries(data.profile?.categoryAffinity ?? {})
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 6)
+      .map(([category]) => category),
+  );
+  const announcement = data.newStreamers.find(
+    (candidate) =>
+      candidate.topCategory !== null &&
+      topAffinity.has(candidate.topCategory) &&
+      !dismissedKeys.has(`info:newstreamer-${candidate.streamerId}`),
+  );
   const discoverTitle =
     data.profile?.isDerivedFromSeedOnly || !data.hasFavorites ? 'Popular right now' : 'Discover';
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
@@ -553,6 +582,32 @@ export function FeedClient({
       ) : data.sectionErrors.recent ? (
         <SectionErrorRow label="Couldn't load recent streams" onRetry={() => void refresh()} />
       ) : null}
+
+      {showMissed && missed && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() =>
+              handleDismiss(`info:missed-${missed.id}`, 'info', {
+                itemId: `missed-${missed.id}`,
+                streamerId: missed.streamerId,
+                category: missed.category,
+              })
+            }
+          >
+            <FeedInfoCard
+              variant="missed"
+              headline={`You might have missed ${data.nameMap[missed.streamerId]}`}
+              body={`Went live ${new Date(missed.startedAt).toLocaleString(undefined, {
+                weekday: 'short',
+                hour: 'numeric',
+                minute: '2-digit',
+              })} — far off the usual streaming time.`}
+              ctaLabel={missed.vodUrl ? 'Watch VOD' : undefined}
+              ctaHref={missed.vodUrl}
+            />
+          </Dismissable>
+        </div>
+      )}
 
       {clips.length > 0 ? (
         <section aria-label="Highlights" data-feed-section="clips">
@@ -681,6 +736,59 @@ export function FeedClient({
               body={`${topTrend.streamersCurrent} streamers played it this week (+${topTrend.deltaPercent}% vs last week).`}
               ctaLabel="Filter feed"
               onCtaClick={() => handleSelectCategory(topTrend.category)}
+            />
+          </Dismissable>
+        </div>
+      )}
+
+      {recap && (
+        <div data-feed-section="info">
+          <Dismissable onDismiss={() => handleDismiss('info:recap', 'info', { itemId: 'recap' })}>
+            <FeedInfoCard
+              variant="recap"
+              headline="Your week in streams"
+              body={`Your streamers were live ${recap.totalHours}h across ${recap.streams} streams this week${recap.topCategory ? ` — top category: ${recap.topCategory}` : ''}.`}
+            />
+          </Dismissable>
+        </div>
+      )}
+
+      {record && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() =>
+              handleDismiss(`info:milestone-${record.streamerId}`, 'info', {
+                itemId: `milestone-${record.streamerId}`,
+                streamerId: record.streamerId,
+              })
+            }
+          >
+            <FeedInfoCard
+              variant="milestone"
+              headline={`${data.nameMap[record.streamerId]} hit a 90-day record`}
+              body={`The latest stream peaked at ${formatPeak(record.peak)} viewers — the highest in three months.`}
+            />
+          </Dismissable>
+        </div>
+      )}
+
+      {announcement && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() =>
+              handleDismiss(`info:newstreamer-${announcement.streamerId}`, 'info', {
+                itemId: `newstreamer-${announcement.streamerId}`,
+                streamerId: announcement.streamerId,
+                category: announcement.topCategory ?? undefined,
+              })
+            }
+          >
+            <FeedInfoCard
+              variant="new-streamer"
+              headline={`New on Streamer Times: ${announcement.name}`}
+              body={`Streams ${announcement.topCategory} — take a look and add them to your favorites.`}
+              ctaLabel="View streamer"
+              ctaHref={`/streamer/${announcement.streamerId}`}
             />
           </Dismissable>
         </div>

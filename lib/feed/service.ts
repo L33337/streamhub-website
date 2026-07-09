@@ -29,6 +29,7 @@ import type {
   FeedFunFact,
   StreamerBreak,
   DiscoverStats,
+  NewStreamerCandidate,
 } from './types';
 import {
   transformStreamSlot,
@@ -461,4 +462,156 @@ export async function fetchDiscoverStats(
       streams28d: streamsMap.get(row.id) ?? null,
     }),
   );
+}
+
+// ============================================
+// M18 Phase 2C — M13-backlog card data
+// ============================================
+
+/**
+ * Recently added, approved streamers (announcement card, M18 P2C).
+ * Top category resolved from the nightly feed-stats cache when present.
+ */
+export async function fetchNewStreamers(
+  supabase: SupabaseClient,
+  sinceDays = 14,
+  limit = 10,
+): Promise<NewStreamerCandidate[]> {
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('streamers')
+    .select('id, name, platforms, created_at')
+    .eq('approved', true)
+    .eq('is_hidden', false)
+    .gte('created_at', since.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch new streamers: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as {
+    id: string;
+    name: string;
+    platforms: string[];
+    created_at: string;
+  }[];
+  if (rows.length === 0) return [];
+
+  const categoryMap = new Map<string, string>();
+  const { data: statsData } = await supabase
+    .from('streamer_feed_stats')
+    .select('streamer_id, category_shares')
+    .in(
+      'streamer_id',
+      rows.map((row) => row.id),
+    );
+  (
+    (statsData ?? []) as { streamer_id: string; category_shares: Record<string, number> | null }[]
+  ).forEach((stat) => {
+    if (!stat.category_shares) return;
+    const top = Object.entries(stat.category_shares).sort(([, a], [, b]) => b - a)[0];
+    if (top) categoryMap.set(stat.streamer_id, top[0]);
+  });
+
+  return rows.map((row) => ({
+    streamerId: row.id,
+    name: row.name,
+    platforms: row.platforms ?? [],
+    createdAt: row.created_at,
+    topCategory: categoryMap.get(row.id) ?? null,
+  }));
+}
+
+/**
+ * Favorites' live time of the last 7 days (weekly recap card, M18 P2C).
+ * source='stream_slot' rows only — vod rows can duplicate the same stream.
+ */
+export async function fetchWeeklyActivity(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<Array<{ durationMinutes: number | null; category: string | null }>> {
+  if (streamerIds.length === 0) return [];
+
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('stream_history')
+    .select('duration_minutes, category')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .eq('source', 'stream_slot')
+    .gte('ended_at', since.toISOString())
+    .limit(500);
+
+  if (error) {
+    throw new Error(`Failed to fetch weekly activity: ${error.message}`);
+  }
+
+  return ((data ?? []) as { duration_minutes: number | null; category: string | null }[]).map(
+    (row) => ({ durationMinutes: row.duration_minutes, category: row.category }),
+  );
+}
+
+/**
+ * Hour histograms (UTC bins) for the given streamers — powers the
+ * "you might have missed" unusual-start detection (M18 P2C).
+ */
+export async function fetchHourHistograms(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<Map<string, number[]>> {
+  const map = new Map<string, number[]>();
+  if (streamerIds.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from('streamer_feed_stats')
+    .select('streamer_id, hour_histogram')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS));
+
+  if (error) {
+    throw new Error(`Failed to fetch hour histograms: ${error.message}`);
+  }
+
+  ((data ?? []) as { streamer_id: string; hour_histogram: number[] | null }[]).forEach((row) => {
+    if (Array.isArray(row.hour_histogram)) map.set(row.streamer_id, row.hour_histogram);
+  });
+  return map;
+}
+
+/**
+ * 90-day peak-viewer history for the given (few) streamers — powers the
+ * milestone record card (M18 P2C). Callers pass the recently-active subset,
+ * never the whole favorites roster.
+ */
+export async function fetchPeakHistory(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+  sinceDays = 90,
+): Promise<Array<{ streamerId: string; peakViewerCount: number | null; endedAt: string }>> {
+  if (streamerIds.length === 0) return [];
+
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('stream_history')
+    .select('streamer_id, peak_viewer_count, ended_at')
+    .in('streamer_id', streamerIds.slice(0, 10))
+    .eq('source', 'stream_slot')
+    .gte('ended_at', since.toISOString())
+    .order('ended_at', { ascending: false })
+    .limit(400);
+
+  if (error) {
+    throw new Error(`Failed to fetch peak history: ${error.message}`);
+  }
+
+  return (
+    (data ?? []) as { streamer_id: string; peak_viewer_count: number | null; ended_at: string }[]
+  ).map((row) => ({
+    streamerId: row.streamer_id,
+    peakViewerCount: row.peak_viewer_count,
+    endedAt: row.ended_at,
+  }));
 }

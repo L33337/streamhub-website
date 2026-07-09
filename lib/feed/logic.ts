@@ -406,3 +406,126 @@ export function buildDiscoverStatsLine(stats: {
   }
   return parts.length > 0 ? parts.join(' · ') : null;
 }
+
+// ============================================
+// M18 Phase 2C — M13-backlog card helpers
+// (mirrored in the app's src/utils/feedCards.ts — keep in sync)
+// ============================================
+
+/** Minimum peak viewers before a record is worth a card (noise floor). */
+export const MILESTONE_MIN_PEAK = 100;
+/** A record only counts while it is fresh (the stream just happened). */
+export const MILESTONE_FRESH_HOURS = 72;
+/** "Off the usual time" threshold for the you-might-have-missed card. */
+export const MISSED_HOUR_DIFF = 3;
+
+/** Index of the strongest hour bin (UTC) — null when the histogram is flat/empty. */
+export function typicalStartHourUtc(hourHistogram: number[] | null | undefined): number | null {
+  if (!hourHistogram || hourHistogram.length !== 24) return null;
+  let best = -1;
+  let bestValue = 0;
+  for (let hour = 0; hour < 24; hour++) {
+    const value = hourHistogram[hour] ?? 0;
+    if (value > bestValue) {
+      bestValue = value;
+      best = hour;
+    }
+  }
+  return bestValue > 0 ? best : null;
+}
+
+/** Circular distance between two hours-of-day (0–12). */
+export function circularHourDiff(a: number, b: number): number {
+  const diff = Math.abs(a - b) % 24;
+  return Math.min(diff, 24 - diff);
+}
+
+export interface WeeklyRecapData {
+  totalHours: number;
+  streams: number;
+  topCategory: string | null;
+}
+
+/**
+ * Aggregates a week of favorites' stream history into the Monday recap card.
+ * Null when there is too little to celebrate (<2 streams or <1h total).
+ */
+export function computeWeeklyRecap(
+  rows: Array<{ durationMinutes: number | null; category: string | null }>,
+): WeeklyRecapData | null {
+  if (rows.length < 2) return null;
+
+  let totalMinutes = 0;
+  const byCategory = new Map<string, number>();
+  for (const row of rows) {
+    const minutes = row.durationMinutes ?? 0;
+    totalMinutes += minutes;
+    if (row.category) {
+      byCategory.set(row.category, (byCategory.get(row.category) ?? 0) + minutes);
+    }
+  }
+  if (totalMinutes < 60) return null;
+
+  let topCategory: string | null = null;
+  let topMinutes = 0;
+  for (const [category, minutes] of byCategory) {
+    if (minutes > topMinutes) {
+      topMinutes = minutes;
+      topCategory = category;
+    }
+  }
+
+  return {
+    totalHours: Math.round(totalMinutes / 60),
+    streams: rows.length,
+    topCategory,
+  };
+}
+
+export interface PeakRecord {
+  streamerId: string;
+  peak: number;
+}
+
+/**
+ * Detects a fresh 90-day peak-viewer record: the newest stream (within
+ * MILESTONE_FRESH_HOURS) strictly beats every earlier peak in the window and
+ * clears the noise floor. Rows may span multiple streamers.
+ */
+export function findPeakRecord(
+  rows: Array<{ streamerId: string; peakViewerCount: number | null; endedAt: string }>,
+  now: Date = new Date(),
+): PeakRecord | null {
+  const byStreamer = new Map<string, typeof rows>();
+  for (const row of rows) {
+    if (row.peakViewerCount === null) continue;
+    const list = byStreamer.get(row.streamerId) ?? [];
+    list.push(row);
+    byStreamer.set(row.streamerId, list);
+  }
+
+  const freshCutoff = now.getTime() - MILESTONE_FRESH_HOURS * 60 * 60 * 1000;
+
+  for (const [streamerId, list] of byStreamer) {
+    if (list.length < 3) continue; // a "record" needs history to beat
+    const sorted = [...list].sort(
+      (a, b) => new Date(b.endedAt).getTime() - new Date(a.endedAt).getTime(),
+    );
+    const latest = sorted[0];
+    if (new Date(latest.endedAt).getTime() < freshCutoff) continue;
+    const latestPeak = latest.peakViewerCount ?? 0;
+    if (latestPeak < MILESTONE_MIN_PEAK) continue;
+    const previousMax = Math.max(...sorted.slice(1).map((row) => row.peakViewerCount ?? 0));
+    if (latestPeak > previousMax) {
+      return { streamerId, peak: latestPeak };
+    }
+  }
+  return null;
+}
+
+/** "8.4K" / "950" formatting for viewer counts. */
+export function formatPeak(count: number): string {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+  return String(count);
+}

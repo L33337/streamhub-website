@@ -148,6 +148,15 @@ export interface DiscoverStats {
   streams28d: number | null;
 }
 
+// M18 Phase 2C: recently added streamer (announcement card candidate)
+export interface NewStreamerCandidate {
+  streamerId: string;
+  name: string;
+  platforms: string[];
+  createdAt: string;
+  topCategory: string | null;
+}
+
 // 'scroll_depth' + item_type 'section' added in M18 Phase 0
 // (app migration 20260709120000_feed_events_phase0.sql — keep in sync).
 // 'clip_play_start'/'clip_play_end' + duration_seconds added in M18 Phase 1
@@ -205,6 +214,14 @@ export interface FeedData {
   streamerBreaks: StreamerBreak[];
   /** M18 P2B: streamerId → at-a-glance stats for Discover cards */
   discoverStatsMap: Record<string, DiscoverStats>;
+  /** M18 P2C: recently added streamers (announcement card candidates) */
+  newStreamers: NewStreamerCandidate[];
+  /** M18 P2C: Monday (UTC) recap of the favorites' week */
+  weeklyRecap: { totalHours: number; streams: number; topCategory: string | null } | null;
+  /** M18 P2C: recent stream that started far off the streamer's usual hour */
+  missedStream: FeedRecentStream | null;
+  /** M18 P2C: fresh 90-day peak-viewer record among recently active favorites */
+  peakRecord: { streamerId: string; peak: number } | null;
   chipCategories: string[];
   sectionErrors: Partial<Record<FeedSectionKey, string>>;
   avatarMap: Record<string, string>;
