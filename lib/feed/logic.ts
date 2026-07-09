@@ -156,7 +156,21 @@ export function rankClips(
   profile: UserInterestProfile | null,
   now: Date = new Date(),
 ): FeedClip[] {
-  if (clips.length === 0) return [];
+  return rankClipsSplit(clips, profile, now).top;
+}
+
+/**
+ * M18 P3: same ranking, but also returns the remainder for the load-more
+ * region — everything score-ordered that did not make the top rail (either
+ * beyond the cap or blocked by the per-streamer limit). Mirrored in the
+ * app's useHomeFeed — keep in sync.
+ */
+export function rankClipsSplit(
+  clips: FeedClip[],
+  profile: UserInterestProfile | null,
+  now: Date = new Date(),
+): { top: FeedClip[]; more: FeedClip[] } {
+  if (clips.length === 0) return { top: [], more: [] };
 
   const maxLogViews = Math.max(...clips.map((clip) => Math.log1p(clip.viewCount)), 1);
   const affinity = profile?.categoryAffinity ?? {};
@@ -173,15 +187,18 @@ export function rankClips(
     .sort((a, b) => b.score - a.score);
 
   const perStreamer = new Map<string, number>();
-  const result: FeedClip[] = [];
+  const top: FeedClip[] = [];
+  const pickedIds = new Set<string>();
   for (const { clip } of scored) {
     const count = perStreamer.get(clip.streamerId) ?? 0;
     if (count >= CLIPS_PER_STREAMER) continue;
     perStreamer.set(clip.streamerId, count + 1);
-    result.push(clip);
-    if (result.length >= CLIPS_LIMIT) break;
+    top.push(clip);
+    pickedIds.add(clip.id);
+    if (top.length >= CLIPS_LIMIT) break;
   }
-  return result;
+  const more = scored.map(({ clip }) => clip).filter((clip) => !pickedIds.has(clip.id));
+  return { top, more };
 }
 
 /**

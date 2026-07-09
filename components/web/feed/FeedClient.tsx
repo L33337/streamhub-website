@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loadFeed } from '@/lib/feed/loadFeed';
+import { fetchRecentStreams } from '@/lib/feed/service';
 import {
   configureFeedEvents,
   logFeedEvent,
@@ -139,6 +140,12 @@ export function FeedClient({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
   const [lightboxClip, setLightboxClip] = useState<FeedClip | null>(null);
+
+  // M18 P3: "More" region — lower-ranked clips + Discover 6–12 are already in
+  // FeedData; older VODs are fetched lazily on expand.
+  const [moreExpanded, setMoreExpanded] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [moreRecent, setMoreRecent] = useState<FeedRecentStream[]>([]);
 
   // "New for you" window is fixed per session — refreshes never shrink it.
   const sinceRef = useRef(new Date(sinceIso));
@@ -366,6 +373,24 @@ export function FeedClient({
     [],
   );
 
+  // M18 P3: expand the "More" region (idempotent — the button disappears).
+  const handleShowMore = useCallback(async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    logFeedEvent({ event: 'load_more', itemType: 'section', itemId: 'more' });
+    try {
+      const favIds = Object.keys(data.nameMap);
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const rows = favIds.length > 0 ? await fetchRecentStreams(supabase, favIds, since, 25) : [];
+      setMoreRecent(rows);
+    } catch {
+      // Older VODs silently absent — clips/discover remainder still shows.
+    } finally {
+      setIsLoadingMore(false);
+      setMoreExpanded(true);
+    }
+  }, [isLoadingMore, data.nameMap, supabase]);
+
   // "Not interested" (M18 Phase 0): log dismiss, hide for this page mount.
   // Ranking suppression comes in Phase 4.
   const handleDismiss = useCallback(
@@ -461,6 +486,22 @@ export function FeedClient({
       topAffinity.has(candidate.topCategory) &&
       !dismissedKeys.has(`info:newstreamer-${candidate.streamerId}`),
   );
+
+  // M18 P3: "More" region contents (dedupe/dismiss/chip filters apply).
+  const moreClipsVisible = moreExpanded
+    ? data.moreClips
+        .filter((clip) => matches(clip.category) && !dismissedKeys.has(`clip:${clip.id}`))
+        .slice(0, 20)
+    : [];
+  const shownRecentIds = new Set(data.recent.map((stream) => stream.id));
+  const moreRecentVisible = moreExpanded
+    ? moreRecent
+        .filter((stream) => matches(stream.category) && !shownRecentIds.has(stream.id))
+        .slice(0, 15)
+    : [];
+  const moreDiscoverVisible = moreExpanded
+    ? data.moreDiscover.filter((rec) => !dismissedKeys.has(`discover:${rec.streamerId}`))
+    : [];
   const discoverTitle =
     data.profile?.isDerivedFromSeedOnly || !data.hasFavorites ? 'Popular right now' : 'Discover';
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
@@ -793,6 +834,95 @@ export function FeedClient({
           </Dismissable>
         </div>
       )}
+
+      {data.hasFavorites && !moreExpanded && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => void handleShowMore()}
+            disabled={isLoadingMore}
+            className="rounded-full border border-border-default bg-background-elevated px-5 py-2 text-sm font-semibold text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan disabled:opacity-60"
+          >
+            {isLoadingMore ? 'Loading…' : 'Show more'}
+          </button>
+        </div>
+      )}
+
+      {moreExpanded && moreClipsVisible.length > 0 && (
+        <section aria-label="More highlights" data-feed-section="clips">
+          <FeedSectionHeader title="More highlights" />
+          <ul
+            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="More clip highlights"
+          >
+            {moreClipsVisible.map((clip) => (
+              <li key={`clip-more-${clip.id}`} className="shrink-0">
+                <Dismissable
+                  onDismiss={() =>
+                    handleDismiss(`clip:${clip.id}`, 'clip', {
+                      itemId: clip.id,
+                      streamerId: clip.streamerId,
+                      category: clip.category,
+                    })
+                  }
+                >
+                  <ClipCard
+                    clip={clip}
+                    streamerName={data.nameMap[clip.streamerId]}
+                    onOpen={(event) => handleClipOpen(clip, event)}
+                  />
+                </Dismissable>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {moreExpanded && moreRecentVisible.length > 0 && (
+        <section aria-label="Earlier this week" data-feed-section="recent">
+          <FeedSectionHeader title="Earlier this week" />
+          <ul className="flex flex-col gap-3">
+            {moreRecentVisible.map((stream) => (
+              <li key={`vod-more-${stream.id}`}>
+                <FeedVodCard stream={stream} onWatch={() => handleVodWatch(stream)} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {moreExpanded && moreDiscoverVisible.length > 0 && (
+        <section aria-label="More to discover" data-feed-section="discover">
+          <FeedSectionHeader title="More to discover" />
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {moreDiscoverVisible.map((rec) => (
+              <li key={`discover-more-${rec.streamerId}`}>
+                <Dismissable
+                  onDismiss={() =>
+                    handleDismiss(`discover:${rec.streamerId}`, 'discover', {
+                      streamerId: rec.streamerId,
+                      category: rec.topCategory,
+                    })
+                  }
+                >
+                  <DiscoverCard
+                    recommendation={rec}
+                    onOpen={() => handleDiscoverOpen(rec)}
+                    onFavoriteToggled={(nowFavorited) => handleDiscoverFavorite(rec, nowFavorited)}
+                  />
+                </Dismissable>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {moreExpanded &&
+        moreClipsVisible.length === 0 &&
+        moreRecentVisible.length === 0 &&
+        moreDiscoverVisible.length === 0 && (
+          <p className="mt-6 text-center text-xs text-text-muted">You&apos;re all caught up.</p>
+        )}
 
       {lightboxClip && (
         <ClipLightbox

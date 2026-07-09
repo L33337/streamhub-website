@@ -161,6 +161,7 @@ export interface NewStreamerCandidate {
 // (app migration 20260709120000_feed_events_phase0.sql — keep in sync).
 // 'clip_play_start'/'clip_play_end' + duration_seconds added in M18 Phase 1
 // (app migration 20260709130000_feed_events_clip_play.sql).
+// 'load_more' added in M18 Phase 3 (20260709180000).
 export type FeedEventType =
   | 'impression'
   | 'tap'
@@ -170,7 +171,8 @@ export type FeedEventType =
   | 'dismiss'
   | 'scroll_depth'
   | 'clip_play_start'
-  | 'clip_play_end';
+  | 'clip_play_end'
+  | 'load_more';
 
 export type FeedItemType =
   | 'live'
@@ -222,6 +224,10 @@ export interface FeedData {
   missedStream: FeedRecentStream | null;
   /** M18 P2C: fresh 90-day peak-viewer record among recently active favorites */
   peakRecord: { streamerId: string; peak: number } | null;
+  /** M18 P3: lower-ranked clips that did not make the Highlights rail */
+  moreClips: FeedClip[];
+  /** M18 P3: Discover candidates 6–12 (scored but cut by the diversity pass) */
+  moreDiscover: DiscoverRecommendation[];
   chipCategories: string[];
   sectionErrors: Partial<Record<FeedSectionKey, string>>;
   avatarMap: Record<string, string>;

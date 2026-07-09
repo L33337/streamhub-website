@@ -50,7 +50,7 @@ import {
 } from './service';
 import {
   deriveLiveAndUpNext,
-  rankClips,
+  rankClipsSplit,
   diversityPass,
   deriveChipCategories,
   typicalStartHourUtc,
@@ -112,14 +112,15 @@ export async function loadFeed(
   const discoverTask = (async (): Promise<{
     profile: UserInterestProfile | null;
     discover: DiscoverRecommendation[];
+    candidates: DiscoverRecommendation[];
   }> => {
     try {
       const profile = await fetchInterestProfile(supabase);
       const candidates = await fetchDiscoverRecommendations(supabase, profile, DISCOVER_CANDIDATES);
-      return { profile, discover: diversityPass(candidates) };
+      return { profile, discover: diversityPass(candidates), candidates };
     } catch (err) {
       recordError('discover', err, 'Failed to load suggestions');
-      return { profile: null, discover: [] };
+      return { profile: null, discover: [], candidates: [] };
     }
   })();
 
@@ -244,15 +245,17 @@ export async function loadFeed(
 
   // Hidden/test streamers (streamers.is_hidden) never surface on the website.
   // Failure here is silent — sections render unfiltered rather than not at all.
+  let hiddenIds = new Set<string>();
   try {
     const candidateIds = new Set<string>([
       ...slots.map((s) => s.streamerId),
       ...featuredLiveSlots.map((s) => s.streamerId),
       ...recent.map((r) => r.streamerId),
       ...rawClips.map((c) => c.streamerId),
-      ...discover.map((d) => d.streamerId),
+      ...discoverResult.candidates.map((d) => d.streamerId),
     ]);
     const hidden = await fetchHiddenStreamerIds(supabase, Array.from(candidateIds));
+    hiddenIds = hidden;
     if (hidden.size > 0) {
       slots = slots.filter((s) => !hidden.has(s.streamerId));
       featuredLiveSlots = featuredLiveSlots.filter((s) => !hidden.has(s.streamerId));
@@ -309,8 +312,16 @@ export async function loadFeed(
   }
 
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
-  const clips = rankClips(rawClips, profile, now);
+  const { top: clips, more: moreClips } = rankClipsSplit(rawClips, profile, now);
   const chipCategories = deriveChipCategories(profile, liveNow, upNext, recent, clips);
+
+  // M18 P3: Discover candidates 6–12 for the load-more region (hidden-filtered
+  // like everything else — candidates were part of the hidden lookup above).
+  const moreDiscover = discoverResult.candidates.filter(
+    (candidate) =>
+      !hiddenIds.has(candidate.streamerId) &&
+      !discover.some((picked) => picked.streamerId === candidate.streamerId),
+  );
 
   const avatarMap: Record<string, string> = {};
   favorites.forEach((streamer) => {
@@ -349,6 +360,8 @@ export async function loadFeed(
     weeklyRecap,
     missedStream,
     peakRecord,
+    moreClips,
+    moreDiscover,
     chipCategories,
     sectionErrors: errors,
     avatarMap,
