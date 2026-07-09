@@ -106,6 +106,27 @@ export interface PredictionFunFact {
   evaluatedAt: string;
 }
 
+// M18 Phase 2: per-streamer announced-schedule adherence (M14 tiers, public read)
+export type ReliabilityTier = 'reliable' | 'medium' | 'unreliable' | 'unknown';
+export interface StreamerReliability {
+  streamerId: string;
+  timeTier: ReliabilityTier;
+  /** Signed minutes over matched segments: + = typically late */
+  medianStartDeviationMinutes: number | null;
+  timeHitRate: number | null;
+  timeSample: number;
+}
+
+// M18 Phase 2: withdrawn announced segment (stream_schedules.withdrawn_at, M17)
+export interface ScheduleChange {
+  scheduleId: string;
+  streamerId: string;
+  title: string | null;
+  category: string | null;
+  scheduledStartTime: string; // ISO 8601
+  withdrawnAt: string; // ISO 8601
+}
+
 // 'scroll_depth' + item_type 'section' added in M18 Phase 0
 // (app migration 20260709120000_feed_events_phase0.sql — keep in sync).
 // 'clip_play_start'/'clip_play_end' + duration_seconds added in M18 Phase 1
@@ -153,6 +174,10 @@ export interface FeedData {
   trending: TrendingCategory[];
   funFact: PredictionFunFact | null;
   profile: UserInterestProfile | null;
+  /** M18 P2: streamerId → adherence info (favorites, tier != unknown) */
+  reliabilityMap: Record<string, StreamerReliability>;
+  /** M18 P2: recently withdrawn future announced segments of favorites */
+  scheduleChanges: ScheduleChange[];
   chipCategories: string[];
   sectionErrors: Partial<Record<FeedSectionKey, string>>;
   avatarMap: Record<string, string>;
@@ -200,6 +225,25 @@ export interface FeedRecentStreamRow {
   peak_viewer_count: number | null;
   vod_url: string | null;
   thumbnail_url: string | null;
+}
+
+/** streamer_schedule_reliability row (M14, public read) — feed subset (M18 P2) */
+export interface StreamerReliabilityRow {
+  streamer_id: string;
+  time_tier: string;
+  median_start_deviation_minutes: number | null;
+  time_hit_rate: number | null;
+  time_sample: number;
+}
+
+/** stream_schedules row subset for withdrawn-segment cards (M17/M18 P2) */
+export interface ScheduleChangeRow {
+  id: string;
+  streamer_id: string;
+  title: string | null;
+  category: string | null;
+  scheduled_start_time: string;
+  withdrawn_at: string;
 }
 
 export interface StreamClipRow {

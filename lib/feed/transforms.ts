@@ -20,6 +20,11 @@ import type {
   TrendingCategoryRow,
   UserInterestProfile,
   UserInterestProfileRow,
+  StreamerReliability,
+  StreamerReliabilityRow,
+  ReliabilityTier,
+  ScheduleChange,
+  ScheduleChangeRow,
 } from './types';
 
 /**
@@ -88,6 +93,32 @@ export function transformFeedClip(row: StreamClipRow): FeedClip {
     category: row.category ?? undefined,
     clipCreatedAt: row.clip_created_at,
     creatorName: row.creator_name ?? undefined,
+  };
+}
+
+/** M18 Phase 2 — streamer_schedule_reliability row. */
+export function transformStreamerReliability(row: StreamerReliabilityRow): StreamerReliability {
+  const tier = ['reliable', 'medium', 'unreliable', 'unknown'].includes(row.time_tier)
+    ? (row.time_tier as ReliabilityTier)
+    : 'unknown';
+  return {
+    streamerId: row.streamer_id,
+    timeTier: tier,
+    medianStartDeviationMinutes: row.median_start_deviation_minutes,
+    timeHitRate: row.time_hit_rate,
+    timeSample: row.time_sample,
+  };
+}
+
+/** M18 Phase 2 — withdrawn stream_schedules row. */
+export function transformScheduleChange(row: ScheduleChangeRow): ScheduleChange {
+  return {
+    scheduleId: row.id,
+    streamerId: row.streamer_id,
+    title: row.title,
+    category: row.category,
+    scheduledStartTime: row.scheduled_start_time,
+    withdrawnAt: row.withdrawn_at,
   };
 }
 

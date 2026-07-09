@@ -22,6 +22,10 @@ import type {
   UserInterestProfileRow,
   PredictionFunFact,
   PredictionFunFactRow,
+  StreamerReliability,
+  StreamerReliabilityRow,
+  ScheduleChange,
+  ScheduleChangeRow,
 } from './types';
 import {
   transformStreamSlot,
@@ -30,6 +34,8 @@ import {
   transformDiscoverRecommendation,
   transformTrendingCategory,
   transformUserInterestProfile,
+  transformStreamerReliability,
+  transformScheduleChange,
 } from './transforms';
 import { pickBestFunFact } from './logic';
 
@@ -301,4 +307,58 @@ export async function fetchCategoryOptions(
   }
 
   return ((data ?? []) as { category: string }[]).map((row) => row.category);
+}
+
+/**
+ * Announced-schedule adherence tiers for the given streamers (M18 Phase 2).
+ * Rows with tier 'unknown' are dropped — nothing to show during cold start.
+ */
+export async function fetchScheduleReliability(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<StreamerReliability[]> {
+  if (streamerIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('streamer_schedule_reliability')
+    .select('streamer_id, time_tier, median_start_deviation_minutes, time_hit_rate, time_sample')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .neq('time_tier', 'unknown');
+
+  if (error) {
+    throw new Error(`Failed to fetch schedule reliability: ${error.message}`);
+  }
+
+  return ((data ?? []) as StreamerReliabilityRow[]).map(transformStreamerReliability);
+}
+
+/**
+ * Recently withdrawn future announced segments of the given streamers
+ * (M17 soft-withdraw → M18 Phase 2 "schedule change" cards).
+ */
+export async function fetchRecentScheduleChanges(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+  sinceHours = 48,
+  limit = 6,
+): Promise<ScheduleChange[]> {
+  if (streamerIds.length === 0) return [];
+
+  const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('stream_schedules')
+    .select('id, streamer_id, title, category, scheduled_start_time, withdrawn_at')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .not('withdrawn_at', 'is', null)
+    .gte('withdrawn_at', since.toISOString())
+    .gt('scheduled_start_time', new Date().toISOString())
+    .order('withdrawn_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch schedule changes: ${error.message}`);
+  }
+
+  return ((data ?? []) as ScheduleChangeRow[]).map(transformScheduleChange);
 }

@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, TrendingUp, Target } from 'lucide-react';
+import { Sparkles, TrendingUp, Target, CalendarX2 } from 'lucide-react';
 
-export type FeedInfoCardVariant = 'interests-invite' | 'funfact' | 'trending';
+export type FeedInfoCardVariant = 'interests-invite' | 'funfact' | 'trending' | 'schedule-change';
 
 const VARIANT_ICON = {
   'interests-invite': Sparkles,
   funfact: Target,
   trending: TrendingUp,
+  'schedule-change': CalendarX2,
 } as const;
 
 /**
@@ -42,7 +43,10 @@ export function FeedInfoCard({
         <Icon size={16} className="shrink-0 text-accent-cyan" strokeWidth={2} />
         <h3 className="text-sm font-bold text-text-primary">{headline}</h3>
       </div>
-      <p className="mt-1.5 text-sm text-text-secondary">{body}</p>
+      {/* Time-bearing bodies (schedule-change) format in the viewer's locale */}
+      <p className="mt-1.5 text-sm text-text-secondary" suppressHydrationWarning>
+        {body}
+      </p>
       {ctaLabel && ctaHref ? (
         <Link href={ctaHref} className={ctaClass}>
           {ctaLabel}

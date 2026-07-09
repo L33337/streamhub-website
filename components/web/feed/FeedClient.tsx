@@ -17,7 +17,7 @@ import {
   flushFeedEvents,
 } from '@/lib/feed/events';
 import { SEEN_COOKIE, SEEN_COOKIE_MAX_AGE_SECONDS } from '@/lib/feed/constants';
-import { reorderDiscover } from '@/lib/feed/logic';
+import { reorderDiscover, buildReliabilityLabel } from '@/lib/feed/logic';
 import { toPublicStreamSlot } from '@/lib/feed/transforms';
 import type {
   FeedData,
@@ -26,6 +26,8 @@ import type {
   FeedRecentStream,
   FeedClip,
   DiscoverRecommendation,
+  StreamerReliability,
+  ScheduleChange,
 } from '@/lib/feed/types';
 import { SlotCard } from '@/components/web/SlotCard';
 import { FeedSectionHeader } from './FeedSectionHeader';
@@ -47,6 +49,45 @@ type FeedSection = (typeof SECTION_ORDER)[number];
 
 function writeSeenCookie(): void {
   document.cookie = `${SEEN_COOKIE}=${encodeURIComponent(new Date().toISOString())}; path=/; max-age=${SEEN_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+}
+
+/**
+ * Reasoning teaser + schedule-adherence pill under an Up Next card
+ * (M18 Phase 2 — app parity: StreamCard teaser + ReliabilityBadge).
+ */
+function UpNextMeta({
+  slot,
+  reliability,
+}: {
+  slot: StreamSlot;
+  reliability?: StreamerReliability;
+}) {
+  const label = reliability ? buildReliabilityLabel(reliability) : null;
+  if (!slot.reasoning && !label) return null;
+
+  const tierClass =
+    reliability?.timeTier === 'reliable'
+      ? 'bg-emerald-500/15 text-emerald-400'
+      : reliability?.timeTier === 'medium'
+        ? 'bg-amber-500/15 text-amber-400'
+        : 'bg-rose-500/15 text-rose-400';
+
+  return (
+    <div className="mt-1 flex items-start justify-between gap-3 px-1">
+      {slot.reasoning ? (
+        <p className="line-clamp-2 text-xs italic text-text-muted">{slot.reasoning}</p>
+      ) : (
+        <span />
+      )}
+      {label && (
+        <span
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${tierClass}`}
+        >
+          {label}
+        </span>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -363,6 +404,20 @@ export function FeedClient({
     (rec) => !dismissedKeys.has(`discover:${rec.streamerId}`),
   );
   const orderedDiscover = reorderDiscover(visibleDiscover, selectedCategory);
+
+  // M18 P2: "schedule change" cards — one per streamer, max 2 (app parity).
+  const scheduleChangeCards: ScheduleChange[] = [];
+  {
+    const seenChangeStreamers = new Set<string>();
+    for (const change of data.scheduleChanges) {
+      if (scheduleChangeCards.length >= 2) break;
+      if (seenChangeStreamers.has(change.streamerId)) continue;
+      if (dismissedKeys.has(`info:schedule-${change.scheduleId}`)) continue;
+      if (!data.nameMap[change.streamerId]) continue;
+      seenChangeStreamers.add(change.streamerId);
+      scheduleChangeCards.push(change);
+    }
+  }
   const discoverTitle =
     data.profile?.isDerivedFromSeedOnly || !data.hasFavorites ? 'Popular right now' : 'Discover';
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
@@ -411,11 +466,39 @@ export function FeedClient({
             {upNext.map((slot) => (
               <li key={`upnext-${slot.id}`} onClickCapture={() => handleUpNextTap(slot)}>
                 <SlotCard slot={toPublicStreamSlot(slot)} />
+                <UpNextMeta slot={slot} reliability={data.reliabilityMap[slot.streamerId]} />
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      {scheduleChangeCards.map((change) => {
+        const when = new Date(change.scheduledStartTime).toLocaleString(undefined, {
+          weekday: 'short',
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+        return (
+          <div key={`schedule-${change.scheduleId}`} data-feed-section="info">
+            <Dismissable
+              onDismiss={() =>
+                handleDismiss(`info:schedule-${change.scheduleId}`, 'info', {
+                  itemId: `schedule-${change.scheduleId}`,
+                  streamerId: change.streamerId,
+                  category: change.category ?? undefined,
+                })
+              }
+            >
+              <FeedInfoCard
+                variant="schedule-change"
+                headline={`${data.nameMap[change.streamerId]} cancelled a stream`}
+                body={`The announced stream on ${when}${change.category ? ` (${change.category})` : ''} was taken off the schedule.`}
+              />
+            </Dismissable>
+          </div>
+        );
+      })}
 
       {recent.length > 0 ? (
         <section aria-label="New for you" data-feed-section="recent">

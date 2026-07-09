@@ -21,6 +21,8 @@ import type {
   TrendingCategory,
   UserInterestProfile,
   PredictionFunFact,
+  StreamerReliability,
+  ScheduleChange,
 } from './types';
 import {
   fetchStreamSlots,
@@ -31,6 +33,8 @@ import {
   fetchDiscoverRecommendations,
   fetchTrendingCategories,
   fetchPredictionFunFact,
+  fetchScheduleReliability,
+  fetchRecentScheduleChanges,
   fetchHiddenStreamerIds,
 } from './service';
 import { deriveLiveAndUpNext, rankClips, diversityPass, deriveChipCategories } from './logic';
@@ -116,8 +120,43 @@ export async function loadFeed(
     }
   })();
 
-  const [slotsPair, recentResult, clipsResult, discoverResult, trending, funFactResult] =
-    await Promise.all([slotsTask, recentTask, clipsTask, discoverTask, trendingTask, funFactTask]);
+  const reliabilityTask = (async (): Promise<StreamerReliability[]> => {
+    try {
+      return favIds.length > 0 ? await fetchScheduleReliability(supabase, favIds) : [];
+    } catch {
+      // Decorative badge — silently absent on failure.
+      return [];
+    }
+  })();
+
+  const scheduleChangesTask = (async (): Promise<ScheduleChange[]> => {
+    try {
+      return favIds.length > 0 ? await fetchRecentScheduleChanges(supabase, favIds) : [];
+    } catch {
+      // Decorative cards — silently absent on failure.
+      return [];
+    }
+  })();
+
+  const [
+    slotsPair,
+    recentResult,
+    clipsResult,
+    discoverResult,
+    trending,
+    funFactResult,
+    reliability,
+    scheduleChangesResult,
+  ] = await Promise.all([
+    slotsTask,
+    recentTask,
+    clipsTask,
+    discoverTask,
+    trendingTask,
+    funFactTask,
+    reliabilityTask,
+    scheduleChangesTask,
+  ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
   let recent = recentResult;
@@ -125,6 +164,7 @@ export async function loadFeed(
   let { discover } = discoverResult;
   const { profile } = discoverResult;
   let funFact = funFactResult;
+  let scheduleChanges = scheduleChangesResult;
 
   if (Object.keys(errors).length > 0) {
     console.warn('[feed] sections failed:', errors, `favorites=${favIds.length}`);
@@ -148,6 +188,7 @@ export async function loadFeed(
       rawClips = rawClips.filter((c) => !hidden.has(c.streamerId));
       discover = discover.filter((d) => !hidden.has(d.streamerId));
       if (funFact && hidden.has(funFact.streamerId)) funFact = null;
+      scheduleChanges = scheduleChanges.filter((c) => !hidden.has(c.streamerId));
     }
   } catch {
     // Filtering is polish, not correctness.
@@ -170,6 +211,11 @@ export async function loadFeed(
     nameMap[streamer.id] = streamer.name;
   });
 
+  const reliabilityMap: Record<string, StreamerReliability> = {};
+  reliability.forEach((entry) => {
+    reliabilityMap[entry.streamerId] = entry;
+  });
+
   return {
     hasFavorites: favIds.length > 0,
     liveNow,
@@ -180,6 +226,8 @@ export async function loadFeed(
     trending,
     funFact,
     profile,
+    reliabilityMap,
+    scheduleChanges,
     chipCategories,
     sectionErrors: errors,
     avatarMap,

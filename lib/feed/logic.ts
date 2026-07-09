@@ -361,3 +361,29 @@ export function endedAgoLabel(endedAt: string, now: Date = new Date()): string {
   if (diffHours < 24) return `Ended ${diffHours}h ago`;
   return `Ended ${Math.floor(diffHours / 24)}d ago`;
 }
+
+/**
+ * Badge copy for the M14 announced-schedule adherence tier (M18 Phase 2).
+ * Returns null for 'unknown' (cold start) — the caller renders nothing.
+ * Keep the wording in sync with the app's ReliabilityBadge.
+ */
+export function buildReliabilityLabel(reliability: {
+  timeTier: string;
+  medianStartDeviationMinutes: number | null;
+}): string | null {
+  const deviation = reliability.medianStartDeviationMinutes;
+  switch (reliability.timeTier) {
+    case 'reliable':
+      if (deviation !== null && Math.abs(deviation) >= 10) {
+        const minutes = Math.abs(Math.round(deviation));
+        return deviation > 0 ? `Usually ~${minutes} min late` : `Usually ~${minutes} min early`;
+      }
+      return 'Usually on time';
+    case 'medium':
+      return 'Mostly on schedule';
+    case 'unreliable':
+      return 'Schedule often shifts';
+    default:
+      return null;
+  }
+}

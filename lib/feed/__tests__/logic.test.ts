@@ -15,6 +15,7 @@ import {
   formatClipDuration,
   formatDuration,
   endedAgoLabel,
+  buildReliabilityLabel,
 } from '../logic';
 import { sanitizeThumbnailUrl, toPublicStreamSlot } from '../transforms';
 import type {
@@ -573,5 +574,38 @@ describe('transforms', () => {
       streamer_timezone: null,
       reasoning: 'because',
     });
+  });
+});
+
+describe('buildReliabilityLabel (M18 P2)', () => {
+  it('returns null for unknown tier (cold start)', () => {
+    expect(buildReliabilityLabel({ timeTier: 'unknown', medianStartDeviationMinutes: 5 })).toBeNull();
+  });
+
+  it('reliable with small deviation reads on time', () => {
+    expect(buildReliabilityLabel({ timeTier: 'reliable', medianStartDeviationMinutes: 4 })).toBe(
+      'Usually on time',
+    );
+    expect(buildReliabilityLabel({ timeTier: 'reliable', medianStartDeviationMinutes: null })).toBe(
+      'Usually on time',
+    );
+  });
+
+  it('reliable with >=10 min deviation names the direction', () => {
+    expect(buildReliabilityLabel({ timeTier: 'reliable', medianStartDeviationMinutes: 18 })).toBe(
+      'Usually ~18 min late',
+    );
+    expect(buildReliabilityLabel({ timeTier: 'reliable', medianStartDeviationMinutes: -12 })).toBe(
+      'Usually ~12 min early',
+    );
+  });
+
+  it('medium and unreliable have fixed labels', () => {
+    expect(buildReliabilityLabel({ timeTier: 'medium', medianStartDeviationMinutes: null })).toBe(
+      'Mostly on schedule',
+    );
+    expect(
+      buildReliabilityLabel({ timeTier: 'unreliable', medianStartDeviationMinutes: null }),
+    ).toBe('Schedule often shifts');
   });
 });
