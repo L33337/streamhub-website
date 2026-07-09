@@ -1,15 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, TrendingUp, Target, CalendarX2 } from 'lucide-react';
+import { Sparkles, TrendingUp, Target, CalendarX2, Quote, Plane } from 'lucide-react';
 
-export type FeedInfoCardVariant = 'interests-invite' | 'funfact' | 'trending' | 'schedule-change';
+export type FeedInfoCardVariant =
+  | 'interests-invite'
+  | 'funfact'
+  | 'trending'
+  | 'schedule-change'
+  | 'fan-moment'
+  | 'break';
 
 const VARIANT_ICON = {
   'interests-invite': Sparkles,
   funfact: Target,
   trending: TrendingUp,
   'schedule-change': CalendarX2,
+  'fan-moment': Quote,
+  break: Plane,
 } as const;
 
 /**

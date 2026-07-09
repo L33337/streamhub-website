@@ -26,6 +26,9 @@ import type {
   StreamerReliabilityRow,
   ScheduleChange,
   ScheduleChangeRow,
+  FeedFunFact,
+  StreamerBreak,
+  DiscoverStats,
 } from './types';
 import {
   transformStreamSlot,
@@ -361,4 +364,101 @@ export async function fetchRecentScheduleChanges(
   }
 
   return ((data ?? []) as ScheduleChangeRow[]).map(transformScheduleChange);
+}
+
+/**
+ * Recent sanitized transcript fun facts of the given streamers
+ * (feed_fun_facts projection, M18 Phase 2B).
+ */
+export async function fetchFanMoments(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+  sinceDays = 7,
+  limit = 6,
+): Promise<FeedFunFact[]> {
+  if (streamerIds.length === 0) return [];
+
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('feed_fun_facts')
+    .select('id, streamer_id, fact_text, created_at')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .gte('created_at', since.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch fan moments: ${error.message}`);
+  }
+
+  return (
+    (data ?? []) as { id: string; streamer_id: string; fact_text: string; created_at: string }[]
+  ).map((row) => ({
+    id: row.id,
+    streamerId: row.streamer_id,
+    factText: row.fact_text,
+    createdAt: row.created_at,
+  }));
+}
+
+/** Favorites currently on an announced Twitch vacation (M18 Phase 2B). */
+export async function fetchStreamerBreaks(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<StreamerBreak[]> {
+  if (streamerIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('streamers')
+    .select('id, vacation_until')
+    .in('id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .gt('vacation_until', new Date().toISOString());
+
+  if (error) {
+    throw new Error(`Failed to fetch streamer breaks: ${error.message}`);
+  }
+
+  return ((data ?? []) as { id: string; vacation_until: string }[]).map((row) => ({
+    streamerId: row.id,
+    vacationUntil: row.vacation_until,
+  }));
+}
+
+/**
+ * At-a-glance stats for Discover cards (M18 Phase 2B): follower count from
+ * streamers + 28d stream count from the nightly feed-stats cache.
+ */
+export async function fetchDiscoverStats(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<DiscoverStats[]> {
+  if (streamerIds.length === 0) return [];
+
+  const ids = streamerIds.slice(0, MAX_STREAMER_IDS);
+  const [streamersResult, statsResult] = await Promise.all([
+    supabase.from('streamers').select('id, follower_count').in('id', ids),
+    supabase.from('streamer_feed_stats').select('streamer_id, streams_28d').in('streamer_id', ids),
+  ]);
+
+  if (streamersResult.error) {
+    throw new Error(`Failed to fetch discover stats: ${streamersResult.error.message}`);
+  }
+
+  const streamsMap = new Map<string, number>();
+  if (!statsResult.error) {
+    ((statsResult.data ?? []) as { streamer_id: string; streams_28d: number | null }[]).forEach(
+      (row) => {
+        if (row.streams_28d !== null) streamsMap.set(row.streamer_id, row.streams_28d);
+      },
+    );
+  }
+
+  return ((streamersResult.data ?? []) as { id: string; follower_count: number | null }[]).map(
+    (row) => ({
+      streamerId: row.id,
+      followerCount: row.follower_count,
+      streams28d: streamsMap.get(row.id) ?? null,
+    }),
+  );
 }

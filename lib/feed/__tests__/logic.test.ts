@@ -16,6 +16,7 @@ import {
   formatDuration,
   endedAgoLabel,
   buildReliabilityLabel,
+  buildDiscoverStatsLine,
 } from '../logic';
 import { sanitizeThumbnailUrl, toPublicStreamSlot } from '../transforms';
 import type {
@@ -607,5 +608,23 @@ describe('buildReliabilityLabel (M18 P2)', () => {
     expect(
       buildReliabilityLabel({ timeTier: 'unreliable', medianStartDeviationMinutes: null }),
     ).toBe('Schedule often shifts');
+  });
+});
+
+describe('buildDiscoverStatsLine (M18 P2B)', () => {
+  it('joins both parts when available', () => {
+    expect(buildDiscoverStatsLine({ followerCount: 120_000, streams28d: 12 })).toBe(
+      '≈120K followers · 12 streams in 28d',
+    );
+  });
+
+  it('renders single parts alone', () => {
+    expect(buildDiscoverStatsLine({ followerCount: 950, streams28d: null })).toBe('≈950 followers');
+    expect(buildDiscoverStatsLine({ followerCount: null, streams28d: 1 })).toBe('1 stream in 28d');
+  });
+
+  it('returns null when nothing is available (incl. zero counts)', () => {
+    expect(buildDiscoverStatsLine({ followerCount: null, streams28d: null })).toBeNull();
+    expect(buildDiscoverStatsLine({ followerCount: 0, streams28d: 0 })).toBeNull();
   });
 });

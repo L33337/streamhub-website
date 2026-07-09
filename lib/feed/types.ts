@@ -127,6 +127,27 @@ export interface ScheduleChange {
   withdrawnAt: string; // ISO 8601
 }
 
+// M18 Phase 2B: sanitized transcript fun fact (feed_fun_facts projection)
+export interface FeedFunFact {
+  id: string;
+  streamerId: string;
+  factText: string;
+  createdAt: string; // ISO 8601
+}
+
+// M18 Phase 2B: favorite on announced Twitch vacation (streamers.vacation_until)
+export interface StreamerBreak {
+  streamerId: string;
+  vacationUntil: string; // ISO 8601
+}
+
+// M18 Phase 2B: at-a-glance stats for Discover cards
+export interface DiscoverStats {
+  streamerId: string;
+  followerCount: number | null;
+  streams28d: number | null;
+}
+
 // 'scroll_depth' + item_type 'section' added in M18 Phase 0
 // (app migration 20260709120000_feed_events_phase0.sql — keep in sync).
 // 'clip_play_start'/'clip_play_end' + duration_seconds added in M18 Phase 1
@@ -178,6 +199,12 @@ export interface FeedData {
   reliabilityMap: Record<string, StreamerReliability>;
   /** M18 P2: recently withdrawn future announced segments of favorites */
   scheduleChanges: ScheduleChange[];
+  /** M18 P2B: recent sanitized transcript fun facts of favorites */
+  fanMoments: FeedFunFact[];
+  /** M18 P2B: favorites on announced Twitch vacation */
+  streamerBreaks: StreamerBreak[];
+  /** M18 P2B: streamerId → at-a-glance stats for Discover cards */
+  discoverStatsMap: Record<string, DiscoverStats>;
   chipCategories: string[];
   sectionErrors: Partial<Record<FeedSectionKey, string>>;
   avatarMap: Record<string, string>;

@@ -23,6 +23,9 @@ import type {
   PredictionFunFact,
   StreamerReliability,
   ScheduleChange,
+  FeedFunFact,
+  StreamerBreak,
+  DiscoverStats,
 } from './types';
 import {
   fetchStreamSlots,
@@ -35,6 +38,9 @@ import {
   fetchPredictionFunFact,
   fetchScheduleReliability,
   fetchRecentScheduleChanges,
+  fetchFanMoments,
+  fetchStreamerBreaks,
+  fetchDiscoverStats,
   fetchHiddenStreamerIds,
 } from './service';
 import { deriveLiveAndUpNext, rankClips, diversityPass, deriveChipCategories } from './logic';
@@ -138,6 +144,24 @@ export async function loadFeed(
     }
   })();
 
+  const fanMomentsTask = (async (): Promise<FeedFunFact[]> => {
+    try {
+      return favIds.length > 0 ? await fetchFanMoments(supabase, favIds) : [];
+    } catch {
+      // Decorative card — silently absent on failure.
+      return [];
+    }
+  })();
+
+  const breaksTask = (async (): Promise<StreamerBreak[]> => {
+    try {
+      return favIds.length > 0 ? await fetchStreamerBreaks(supabase, favIds) : [];
+    } catch {
+      // Decorative cards — silently absent on failure.
+      return [];
+    }
+  })();
+
   const [
     slotsPair,
     recentResult,
@@ -147,6 +171,8 @@ export async function loadFeed(
     funFactResult,
     reliability,
     scheduleChangesResult,
+    fanMomentsResult,
+    breaksResult,
   ] = await Promise.all([
     slotsTask,
     recentTask,
@@ -156,6 +182,8 @@ export async function loadFeed(
     funFactTask,
     reliabilityTask,
     scheduleChangesTask,
+    fanMomentsTask,
+    breaksTask,
   ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
@@ -165,6 +193,8 @@ export async function loadFeed(
   const { profile } = discoverResult;
   let funFact = funFactResult;
   let scheduleChanges = scheduleChangesResult;
+  let fanMoments = fanMomentsResult;
+  let streamerBreaks = breaksResult;
 
   if (Object.keys(errors).length > 0) {
     console.warn('[feed] sections failed:', errors, `favorites=${favIds.length}`);
@@ -189,9 +219,25 @@ export async function loadFeed(
       discover = discover.filter((d) => !hidden.has(d.streamerId));
       if (funFact && hidden.has(funFact.streamerId)) funFact = null;
       scheduleChanges = scheduleChanges.filter((c) => !hidden.has(c.streamerId));
+      fanMoments = fanMoments.filter((f) => !hidden.has(f.streamerId));
+      streamerBreaks = streamerBreaks.filter((b) => !hidden.has(b.streamerId));
     }
   } catch {
     // Filtering is polish, not correctness.
+  }
+
+  // M18 P2B: at-a-glance stats for the picked Discover cards (decorative).
+  const discoverStatsMap: Record<string, DiscoverStats> = {};
+  try {
+    const stats = await fetchDiscoverStats(
+      supabase,
+      discover.map((rec) => rec.streamerId),
+    );
+    stats.forEach((entry) => {
+      discoverStatsMap[entry.streamerId] = entry;
+    });
+  } catch {
+    // Stats line silently absent on failure.
   }
 
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
@@ -228,6 +274,9 @@ export async function loadFeed(
     profile,
     reliabilityMap,
     scheduleChanges,
+    fanMoments,
+    streamerBreaks,
+    discoverStatsMap,
     chipCategories,
     sectionErrors: errors,
     avatarMap,

@@ -418,6 +418,20 @@ export function FeedClient({
       scheduleChangeCards.push(change);
     }
   }
+
+  // M18 P2B: break cards (announced Twitch vacation) — max 2 (app parity).
+  const breakCards = data.streamerBreaks
+    .filter(
+      (brk) =>
+        !dismissedKeys.has(`info:break-${brk.streamerId}`) && !!data.nameMap[brk.streamerId],
+    )
+    .slice(0, 2);
+
+  // M18 P2B: one "fan moment" card (sanitized transcript fun fact).
+  const fanMoment = data.fanMoments.find(
+    (fact) =>
+      !dismissedKeys.has(`info:fanmoment-${fact.id}`) && !!data.nameMap[fact.streamerId],
+  );
   const discoverTitle =
     data.profile?.isDerivedFromSeedOnly || !data.hasFavorites ? 'Popular right now' : 'Discover';
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
@@ -500,6 +514,31 @@ export function FeedClient({
         );
       })}
 
+      {breakCards.map((brk) => {
+        const until = new Date(brk.vacationUntil).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+        });
+        return (
+          <div key={`break-${brk.streamerId}`} data-feed-section="info">
+            <Dismissable
+              onDismiss={() =>
+                handleDismiss(`info:break-${brk.streamerId}`, 'info', {
+                  itemId: `break-${brk.streamerId}`,
+                  streamerId: brk.streamerId,
+                })
+              }
+            >
+              <FeedInfoCard
+                variant="break"
+                headline={`${data.nameMap[brk.streamerId]} is on break`}
+                body={`Announced on Twitch: back around ${until}.`}
+              />
+            </Dismissable>
+          </div>
+        );
+      })}
+
       {recent.length > 0 ? (
         <section aria-label="New for you" data-feed-section="recent">
           <FeedSectionHeader title="New for you" />
@@ -547,6 +586,25 @@ export function FeedClient({
         <SectionErrorRow label="Couldn't load highlights" onRetry={() => void refresh()} />
       ) : null}
 
+      {fanMoment && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() =>
+              handleDismiss(`info:fanmoment-${fanMoment.id}`, 'info', {
+                itemId: `fanmoment-${fanMoment.id}`,
+                streamerId: fanMoment.streamerId,
+              })
+            }
+          >
+            <FeedInfoCard
+              variant="fan-moment"
+              headline={`From ${data.nameMap[fanMoment.streamerId]}'s last stream`}
+              body={fanMoment.factText}
+            />
+          </Dismissable>
+        </div>
+      )}
+
       {allFilteredEmpty && <EmptyFilterHint />}
 
       {data.profile?.isDerivedFromSeedOnly &&
@@ -585,6 +643,7 @@ export function FeedClient({
                 >
                   <DiscoverCard
                     recommendation={rec}
+                    stats={data.discoverStatsMap[rec.streamerId]}
                     onOpen={() => handleDiscoverOpen(rec)}
                     onFavoriteToggled={(nowFavorited) => handleDiscoverFavorite(rec, nowFavorited)}
                   />

@@ -387,3 +387,22 @@ export function buildReliabilityLabel(reliability: {
       return null;
   }
 }
+
+/**
+ * "≈120K followers · 12 streams in 28d" for Discover cards (M18 Phase 2B).
+ * Renders only the parts we have; null when neither is available.
+ * Keep the wording in sync with the app's DiscoverStreamerCard.
+ */
+export function buildDiscoverStatsLine(stats: {
+  followerCount: number | null;
+  streams28d: number | null;
+}): string | null {
+  const parts: string[] = [];
+  if (typeof stats.followerCount === 'number' && stats.followerCount > 0) {
+    parts.push(`≈${formatViews(stats.followerCount)} followers`);
+  }
+  if (typeof stats.streams28d === 'number' && stats.streams28d > 0) {
+    parts.push(`${stats.streams28d} stream${stats.streams28d === 1 ? '' : 's'} in 28d`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : null;
+}

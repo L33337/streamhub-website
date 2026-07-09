@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Sparkles } from 'lucide-react';
-import type { DiscoverRecommendation } from '@/lib/feed/types';
-import { buildDiscoverReasonLabel } from '@/lib/feed/logic';
+import type { DiscoverRecommendation, DiscoverStats } from '@/lib/feed/types';
+import { buildDiscoverReasonLabel, buildDiscoverStatsLine } from '@/lib/feed/logic';
 import { PlatformBadge } from '@/components/web/Badges';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
@@ -33,15 +33,19 @@ export function discoverChannelUrl(rec: DiscoverRecommendation): string {
  */
 export function DiscoverCard({
   recommendation,
+  stats,
   onOpen,
   onFavoriteToggled,
 }: {
   recommendation: DiscoverRecommendation;
+  /** M18 P2B: at-a-glance stats line (followers + 28d activity) */
+  stats?: DiscoverStats;
   onOpen: () => void;
   onFavoriteToggled: (nowFavorited: boolean) => void;
 }) {
   const [avatarError, setAvatarError] = useState(false);
   const reason = buildDiscoverReasonLabel(recommendation);
+  const statsLine = stats ? buildDiscoverStatsLine(stats) : null;
 
   return (
     <a
@@ -97,6 +101,8 @@ export function DiscoverCard({
           {recommendation.description}
         </p>
       ) : null}
+
+      {statsLine ? <p className="mt-2 truncate text-[11px] text-text-muted">{statsLine}</p> : null}
 
       <span className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent-cyan/40 bg-background-highlight px-2.5 py-1">
         <Sparkles size={12} className="shrink-0 text-accent-cyan" strokeWidth={2} />
