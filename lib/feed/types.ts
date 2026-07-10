@@ -191,6 +191,7 @@ export interface NewStreamerCandidate {
 // 'clip_play_start'/'clip_play_end' + duration_seconds added in M18 Phase 1
 // (app migration 20260709130000_feed_events_clip_play.sql).
 // 'load_more' added in M18 Phase 3 (20260709180000).
+// zap_* added in M18 Phase 6 (20260710140000).
 export type FeedEventType =
   | 'impression'
   | 'tap'
@@ -201,7 +202,10 @@ export type FeedEventType =
   | 'scroll_depth'
   | 'clip_play_start'
   | 'clip_play_end'
-  | 'load_more';
+  | 'load_more'
+  | 'zap_enter'
+  | 'zap_channel_view'
+  | 'zap_exit';
 
 export type FeedItemType =
   | 'live'
