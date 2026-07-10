@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { HomeHero } from '@/components/web/HomeHero';
 import { UpcomingGrid } from '@/components/web/UpcomingGrid';
@@ -77,6 +78,14 @@ export default async function HomePage() {
       <HomeHero />
 
       <UpcomingGrid slots={upcomingResp.data} />
+
+      {/* Crawlable in-body link to the live hub — the homepage carries the
+          most link equity, so this outweighs the header/footer links. */}
+      <p className="mt-6 text-sm">
+        <Link href="/live" className="text-accent-cyan hover:text-text-primary">
+          See everyone who&apos;s live right now →
+        </Link>
+      </p>
 
       <PopularStreamersFooter streamers={popularResp.data} />
 

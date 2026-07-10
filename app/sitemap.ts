@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
-import { isIndexableStreamerSlug } from '@/lib/seo';
+import { isIndexableStreamerSlug, latestChange } from '@/lib/seo';
 import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
 export const revalidate = 3600;
@@ -15,14 +15,6 @@ const PAGE_LIMIT = 500;
 // of a per-render "now". Falls back to runtime only in dev where it's unset.
 const BUILD_TIME = new Date(process.env.BUILD_TIME ?? Date.now());
 
-/** Later of two ISO timestamps as a Date; ignores null/unparseable inputs. */
-function latestChange(updatedAt: string, lastStatusChangeAt: string | null): Date {
-  const a = Date.parse(updatedAt);
-  const b = lastStatusChangeAt ? Date.parse(lastStatusChangeAt) : NaN;
-  const max = Math.max(Number.isNaN(a) ? 0 : a, Number.isNaN(b) ? 0 : b);
-  return new Date(max || (Number.isNaN(a) ? Date.now() : a));
-}
-
 const STATIC_URLS: MetadataRoute.Sitemap = [
   {
     url: SITE_URL,
@@ -35,6 +27,14 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
     priority: 0.5,
+  },
+  {
+    url: `${SITE_URL}/live`,
+    // Honest per-render "now": the live hub's content genuinely changes every
+    // regeneration (same treatment as /games below).
+    lastModified: new Date(),
+    changeFrequency: 'hourly',
+    priority: 0.8,
   },
   {
     url: `${SITE_URL}/streamers`,

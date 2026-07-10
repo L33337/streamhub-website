@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
@@ -11,16 +12,18 @@ import {
 import {
   buildBreadcrumbJsonLd,
   buildBroadcastEventsJsonLd,
-  buildPersonJsonLd,
+  buildProfilePageJsonLd,
   buildStreamerMetadata,
 } from '@/lib/seo';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
+import { ChannelStats } from '@/components/web/ChannelStats';
 import { StreamerHero } from '@/components/web/StreamerHero';
 import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { EmptyDayRow } from '@/components/web/EmptyDayRow';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
+import { RecentStreamsSection } from '@/components/web/RecentStreamsSection';
 import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
 import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
 import { StreamerGames } from '@/components/web/StreamerGames';
@@ -45,7 +48,8 @@ interface StreamerPageData {
   streamer: PublicStreamer | null;
   liveSlots: PublicStreamSlot[];
   upcomingSlots: PublicStreamSlot[];
-  lastStream: PublicStreamHistory | null;
+  /** Finished broadcasts, newest first ([0] feeds LastStreamCard, the rest the Recent-streams list). */
+  history: PublicStreamHistory[];
   stats: PublicStreamerStats | null;
   now: Date;
 }
@@ -61,7 +65,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       streamer: null,
       liveSlots: [],
       upcomingSlots: [],
-      lastStream: null,
+      history: [],
       stats: null,
       now,
     };
@@ -75,7 +79,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // which would exclude currently-live slots that started hours ago and
   // always-on slots whose start_time is days in the past. Splitting the
   // queries keeps the upcoming window tight while still capturing live.
-  const [liveCall, upcomingCall, lastStream, stats] = await Promise.all([
+  const [liveCall, upcomingCall, history, stats] = await Promise.all([
     api.listSchedules({
       streamerIds: [slug],
       status: ['live'],
@@ -93,9 +97,14 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       to: sevenDaysFromNow.toISOString(),
       limit: 100,
     }),
-    // Best-effort: getLastStream swallows errors to null, so a failing history
-    // lookup never rejects this Promise.all or breaks the page.
-    api.getLastStream(slug),
+    // Best-effort: unlike getLastStream, getStreamerHistory does NOT swallow
+    // errors — the rejection handler here is load-bearing so a failing history
+    // lookup never rejects this Promise.all or breaks the page. Newest first;
+    // [0] feeds LastStreamCard, [1..8] the Recent-streams list.
+    api.getStreamerHistory(slug, { limit: 9 }).then(
+      (page) => page.data,
+      () => [] as PublicStreamHistory[],
+    ),
     // Best-effort too: getStreamerStats collapses errors AND has_stats:false
     // to null. Cached for 1h in the data cache (stats move daily at most).
     api.getStreamerStats(slug),
@@ -105,7 +114,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     streamer,
     liveSlots: liveCall.data,
     upcomingSlots: upcomingCall.data,
-    lastStream,
+    history,
     stats,
     now,
   };
@@ -128,9 +137,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StreamerPage({ params }: Props) {
   const { slug } = await params;
-  const { streamer, liveSlots, upcomingSlots, lastStream, stats, now } =
+  const { streamer, liveSlots, upcomingSlots, history, stats, now } =
     await loadStreamerPage(slug);
   if (!streamer) notFound();
+
+  const lastStream = history[0] ?? null;
+  const recentStreams = history.slice(1);
 
   // Live slots show in their own hero callout + in the "Today" day-section
   // when their start_time falls on today's UTC date. Upcoming slots fill the
@@ -181,10 +193,12 @@ export default async function StreamerPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
       />
+      {/* ProfilePage wraps the Person as mainEntity; the Person keeps its
+          #person @id so the BroadcastEvent broadcaster refs below resolve. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildPersonJsonLd(streamer, slug)),
+          __html: JSON.stringify(buildProfilePageJsonLd(streamer, slug)),
         }}
       />
       {broadcastEvents.map((evt, i) => (
@@ -194,6 +208,15 @@ export default async function StreamerPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(evt) }}
         />
       ))}
+
+      {/* Visible breadcrumb matching the BreadcrumbList JSON-LD above (the
+          "Home" crumb stays JSON-LD-only, same convention as the game pages). */}
+      <p className="mb-3 text-sm text-text-muted">
+        <Link href="/streamers" className="hover:text-accent-cyan">
+          Streamers
+        </Link>{' '}
+        / {streamer.name}
+      </p>
 
       <StreamerHero streamer={streamer} liveSlot={heroLiveSlot} />
 
@@ -228,11 +251,17 @@ export default async function StreamerPage({ params }: Props) {
         </>
       )}
 
-      {/* Stats + FAQ render outside the has-schedule branch on purpose: their
-          SEO value is highest exactly when nothing is scheduled and the page
-          would otherwise be empty ("when does X usually stream?" stays
-          answered on quiet pages). */}
+      {/* Channel stats + stats + recent streams + FAQ render outside the
+          has-schedule branch on purpose: their SEO value is highest exactly
+          when nothing is scheduled and the page would otherwise be empty
+          ("when does X usually stream?" stays answered on quiet pages). */}
+      <ChannelStats streamer={streamer} stats={stats} />
+
       {stats && <StreamerStatsBlock streamer={streamer} stats={stats} />}
+
+      {recentStreams.length > 0 && (
+        <RecentStreamsSection streams={recentStreams} now={now} />
+      )}
 
       <StreamerFaqBlock
         streamer={streamer}

@@ -16,6 +16,11 @@ export interface PublicStreamer {
   language: string | null;
   is_always_on: boolean;
   avg_view_count: number | null;
+  // Total followers (Twitch) / subscribers (YouTube) of the primary channel,
+  // refreshed daily by the backend. null while never fetched or when the
+  // platform hides the count.
+  follower_count: number | null;
+  follower_count_updated_at: string | null;
   updated_at: string;
   // Last live↔offline transition (null if never changed). The sitemap uses
   // MAX(updated_at, last_status_change_at) as <lastmod>, since updated_at alone
@@ -126,6 +131,12 @@ export interface PublicStreamerStats {
   typical_duration_minutes: number | null;
   streams_per_week: number | null;
   active_days_per_week: number | null;
+  // Total streamed hours in the window (1 decimal), on the same deduplicated
+  // record source as sample_size.
+  hours_streamed: number | null;
+  // Highest sampled concurrent viewer count in the window (hourly sampling,
+  // both platforms). null when never sampled.
+  peak_viewer_count: number | null;
   weekdays: PublicStreamerStatsWeekday[];
   top_categories: PublicStreamerStatsCategory[];
 }
