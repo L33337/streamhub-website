@@ -87,6 +87,13 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
             {slot.category ? (
               <p className="truncate text-xs text-text-muted">{slot.category}</p>
             ) : null}
+            {/* AI prediction reasoning — full sentence in the HTML (crawlable,
+                unique copy per slot), clamped to two lines visually. */}
+            {!isLive && slot.is_predicted && slot.reasoning?.trim() ? (
+              <p className="mt-1 text-xs text-text-muted line-clamp-2">
+                {slot.reasoning}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
