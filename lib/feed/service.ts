@@ -31,6 +31,8 @@ import type {
   DiscoverStats,
   NewStreamerCandidate,
   FeedEngagementStats,
+  YouTubeUpload,
+  TrendingGame,
 } from './types';
 import {
   transformStreamSlot,
@@ -646,4 +648,79 @@ export async function fetchEngagementStats(
     dismissedStreamers: row.dismissed_streamers ?? [],
     dismissedCategories: row.dismissed_categories ?? [],
   };
+}
+
+/**
+ * Recent regular YouTube uploads of the given streamers ("New videos" rail,
+ * M18 Phase 5). Captured quota-free by the WebSub handler.
+ */
+export async function fetchYouTubeUploads(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+  sinceDays = 7,
+  limit = 10,
+): Promise<YouTubeUpload[]> {
+  if (streamerIds.length === 0) return [];
+
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+  const { data, error } = await supabase
+    .from('youtube_uploads')
+    .select('id, streamer_id, video_id, title, url, thumbnail_url, published_at')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .gte('published_at', since.toISOString())
+    .order('published_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch uploads: ${error.message}`);
+  }
+
+  return (
+    (data ?? []) as {
+      id: string;
+      streamer_id: string;
+      video_id: string;
+      title: string | null;
+      url: string;
+      thumbnail_url: string | null;
+      published_at: string;
+    }[]
+  ).map((row) => ({
+    id: row.id,
+    streamerId: row.streamer_id,
+    videoId: row.video_id,
+    title: row.title,
+    url: row.url,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
+    publishedAt: row.published_at,
+  }));
+}
+
+/**
+ * Twitch top-games cache ("Big on Twitch right now" rail, M18 Phase 5).
+ * Refreshed every ~6h by refresh-schedules; empty until the first refresh.
+ */
+export async function fetchTrendingGames(
+  supabase: SupabaseClient,
+  limit = 10,
+): Promise<TrendingGame[]> {
+  const { data, error } = await supabase
+    .from('trending_games')
+    .select('rank, game_id, game_name, box_art_url')
+    .order('rank', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch trending games: ${error.message}`);
+  }
+
+  return (
+    (data ?? []) as { rank: number; game_id: string; game_name: string; box_art_url: string | null }[]
+  ).map((row) => ({
+    rank: row.rank,
+    gameId: row.game_id,
+    gameName: row.game_name,
+    boxArtUrl: row.box_art_url ?? undefined,
+  }));
 }

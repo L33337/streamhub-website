@@ -29,8 +29,12 @@ import type {
   DiscoverRecommendation,
   StreamerReliability,
   ScheduleChange,
+  YouTubeUpload,
+  TrendingGame,
 } from '@/lib/feed/types';
+import Image from 'next/image';
 import { SlotCard } from '@/components/web/SlotCard';
+import { UploadCard } from './UploadCard';
 import { FeedSectionHeader } from './FeedSectionHeader';
 import { CategoryChips } from './CategoryChips';
 import { LiveRail } from './LiveRail';
@@ -373,6 +377,34 @@ export function FeedClient({
     [],
   );
 
+  // M18 P5: upload tap → new tab (the card is an <a>); log like a VOD watch.
+  const handleUploadOpen = useCallback((upload: YouTubeUpload) => {
+    logFeedEvent({
+      event: 'watch_tap',
+      itemType: 'vod',
+      itemId: upload.id,
+      streamerId: upload.streamerId,
+    });
+  }, []);
+
+  // M18 P5: trending-game tap → chip filter when the category exists in the
+  // feed, otherwise the Twitch directory in a new tab.
+  const handleTrendingGameClick = useCallback(
+    (game: TrendingGame) => {
+      logFeedEvent({ event: 'tap', itemType: 'chip', itemId: game.gameName, category: game.gameName });
+      if (data.chipCategories.includes(game.gameName)) {
+        setSelectedCategory(game.gameName);
+        return;
+      }
+      window.open(
+        `https://www.twitch.tv/directory/game/${encodeURIComponent(game.gameName)}`,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    },
+    [data.chipCategories],
+  );
+
   // M18 P3: expand the "More" region (idempotent — the button disappears).
   const handleShowMore = useCallback(async () => {
     if (isLoadingMore) return;
@@ -682,6 +714,26 @@ export function FeedClient({
         <SectionErrorRow label="Couldn't load highlights" onRetry={() => void refresh()} />
       ) : null}
 
+      {selectedCategory === null && data.uploads.length > 0 && (
+        <section aria-label="New videos">
+          <FeedSectionHeader title="New videos" />
+          <ul
+            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="Recent YouTube uploads"
+          >
+            {data.uploads.map((upload) => (
+              <li key={`upload-${upload.id}`} className="shrink-0">
+                <UploadCard
+                  upload={upload}
+                  streamerName={data.nameMap[upload.streamerId]}
+                  onOpen={() => handleUploadOpen(upload)}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {fanMoment && (
         <div data-feed-section="info">
           <Dismissable
@@ -780,6 +832,46 @@ export function FeedClient({
             />
           </Dismissable>
         </div>
+      )}
+
+      {selectedCategory === null && data.trendingGames.length > 0 && (
+        <section aria-label="Big on Twitch right now">
+          <FeedSectionHeader title="Big on Twitch right now" />
+          <ul
+            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="Trending Twitch categories"
+          >
+            {data.trendingGames.map((game) => (
+              <li key={`trending-game-${game.rank}`} className="w-24 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleTrendingGameClick(game)}
+                  className="block w-full text-left focus-visible:outline-none"
+                  aria-label={`Trending on Twitch: ${game.gameName}, rank ${game.rank}`}
+                >
+                  <div className="relative h-32 w-24 overflow-hidden rounded-lg bg-background-highlight transition-transform hover:scale-[1.03]">
+                    {game.boxArtUrl ? (
+                      <Image
+                        src={game.boxArtUrl}
+                        alt=""
+                        fill
+                        unoptimized
+                        sizes="96px"
+                        className="object-cover"
+                      />
+                    ) : null}
+                    <span className="absolute left-1 top-1 rounded bg-black/70 px-1 py-px text-[10px] font-bold text-white">
+                      #{game.rank}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-text-secondary">
+                    {game.gameName}
+                  </p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {recap && (

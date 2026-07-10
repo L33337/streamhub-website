@@ -28,6 +28,8 @@ import type {
   DiscoverStats,
   NewStreamerCandidate,
   FeedEngagementStats,
+  YouTubeUpload,
+  TrendingGame,
 } from './types';
 import {
   fetchStreamSlots,
@@ -48,6 +50,8 @@ import {
   fetchHourHistograms,
   fetchPeakHistory,
   fetchEngagementStats,
+  fetchYouTubeUploads,
+  fetchTrendingGames,
   fetchHiddenStreamerIds,
 } from './service';
 import {
@@ -201,6 +205,24 @@ export async function loadFeed(
     }
   })();
 
+  const uploadsTask = (async (): Promise<YouTubeUpload[]> => {
+    try {
+      return favIds.length > 0 ? await fetchYouTubeUploads(supabase, favIds) : [];
+    } catch {
+      // Rail silently absent on failure.
+      return [];
+    }
+  })();
+
+  const trendingGamesTask = (async (): Promise<TrendingGame[]> => {
+    try {
+      return await fetchTrendingGames(supabase);
+    } catch {
+      // Rail silently absent on failure.
+      return [];
+    }
+  })();
+
   // Weekly recap is a Monday ritual (UTC on the server) — skip otherwise.
   const recapTask = (async () => {
     try {
@@ -227,6 +249,8 @@ export async function loadFeed(
     newStreamers,
     weeklyRecap,
     engagement,
+    uploadsResult,
+    trendingGames,
   ] = await Promise.all([
     slotsTask,
     recentTask,
@@ -241,6 +265,8 @@ export async function loadFeed(
     newStreamersTask,
     recapTask,
     engagementTask,
+    uploadsTask,
+    trendingGamesTask,
   ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
@@ -252,6 +278,7 @@ export async function loadFeed(
   let scheduleChanges = scheduleChangesResult;
   let fanMoments = fanMomentsResult;
   let streamerBreaks = breaksResult;
+  let uploads = uploadsResult;
 
   if (Object.keys(errors).length > 0) {
     console.warn('[feed] sections failed:', errors, `favorites=${favIds.length}`);
@@ -278,6 +305,7 @@ export async function loadFeed(
       scheduleChanges = scheduleChanges.filter((c) => !hidden.has(c.streamerId));
       fanMoments = fanMoments.filter((f) => !hidden.has(f.streamerId));
       streamerBreaks = streamerBreaks.filter((b) => !hidden.has(b.streamerId));
+      uploads = uploads.filter((u) => !hidden.has(u.streamerId));
     }
   } catch {
     // Filtering is polish, not correctness.
@@ -376,6 +404,8 @@ export async function loadFeed(
     peakRecord,
     moreClips,
     moreDiscover,
+    uploads,
+    trendingGames,
     chipCategories,
     sectionErrors: errors,
     avatarMap,

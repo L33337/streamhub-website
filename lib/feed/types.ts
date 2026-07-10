@@ -148,6 +148,25 @@ export interface DiscoverStats {
   streams28d: number | null;
 }
 
+// M18 Phase 5: regular YouTube upload (youtube_uploads, WebSub capture)
+export interface YouTubeUpload {
+  id: string;
+  streamerId: string;
+  videoId: string;
+  title: string | null;
+  url: string;
+  thumbnailUrl?: string;
+  publishedAt: string; // ISO 8601
+}
+
+// M18 Phase 5: Twitch top-games cache row ("Big on Twitch right now")
+export interface TrendingGame {
+  rank: number;
+  gameId: string;
+  gameName: string;
+  boxArtUrl?: string;
+}
+
 // M18 Phase 4: nightly per-user feed_events aggregation (feed_engagement_stats)
 export interface FeedEngagementStats {
   /** category → positive-interaction count (28d) */
@@ -238,6 +257,10 @@ export interface FeedData {
   moreClips: FeedClip[];
   /** M18 P3: Discover candidates 6–12 (scored but cut by the diversity pass) */
   moreDiscover: DiscoverRecommendation[];
+  /** M18 P5: recent regular YouTube uploads of favorites ("New videos" rail) */
+  uploads: YouTubeUpload[];
+  /** M18 P5: Twitch top-games cache ("Big on Twitch right now" rail) */
+  trendingGames: TrendingGame[];
   chipCategories: string[];
   sectionErrors: Partial<Record<FeedSectionKey, string>>;
   avatarMap: Record<string, string>;
