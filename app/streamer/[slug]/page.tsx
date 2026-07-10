@@ -12,10 +12,11 @@ import {
 import {
   buildBreadcrumbJsonLd,
   buildBroadcastEventsJsonLd,
-  buildPersonJsonLd,
+  buildProfilePageJsonLd,
   buildStreamerMetadata,
 } from '@/lib/seo';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
+import { ChannelStats } from '@/components/web/ChannelStats';
 import { StreamerHero } from '@/components/web/StreamerHero';
 import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
@@ -192,10 +193,12 @@ export default async function StreamerPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
       />
+      {/* ProfilePage wraps the Person as mainEntity; the Person keeps its
+          #person @id so the BroadcastEvent broadcaster refs below resolve. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildPersonJsonLd(streamer, slug)),
+          __html: JSON.stringify(buildProfilePageJsonLd(streamer, slug)),
         }}
       />
       {broadcastEvents.map((evt, i) => (
@@ -248,10 +251,12 @@ export default async function StreamerPage({ params }: Props) {
         </>
       )}
 
-      {/* Stats + recent streams + FAQ render outside the has-schedule branch on
-          purpose: their SEO value is highest exactly when nothing is scheduled
-          and the page would otherwise be empty ("when does X usually stream?"
-          stays answered on quiet pages). */}
+      {/* Channel stats + stats + recent streams + FAQ render outside the
+          has-schedule branch on purpose: their SEO value is highest exactly
+          when nothing is scheduled and the page would otherwise be empty
+          ("when does X usually stream?" stays answered on quiet pages). */}
+      <ChannelStats streamer={streamer} stats={stats} />
+
       {stats && <StreamerStatsBlock streamer={streamer} stats={stats} />}
 
       {recentStreams.length > 0 && (

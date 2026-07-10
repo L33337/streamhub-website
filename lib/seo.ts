@@ -21,6 +21,19 @@ export function isIndexableStreamerSlug(id: string): boolean {
   return /^[a-z0-9]/i.test(id);
 }
 
+/**
+ * Later of two ISO timestamps as a Date; ignores null/unparseable inputs.
+ * The honest "content changed" signal for a streamer page: updated_at only
+ * moves on metadata writes, last_status_change_at on live↔offline flips —
+ * both the sitemap <lastmod> and the ProfilePage dateModified take the max.
+ */
+export function latestChange(updatedAt: string, lastStatusChangeAt: string | null): Date {
+  const a = Date.parse(updatedAt);
+  const b = lastStatusChangeAt ? Date.parse(lastStatusChangeAt) : NaN;
+  const max = Math.max(Number.isNaN(a) ? 0 : a, Number.isNaN(b) ? 0 : b);
+  return new Date(max || (Number.isNaN(a) ? Date.now() : a));
+}
+
 /** ISO-639-1 language prefix, lowercased. 'de-AT' → 'de', null/empty → 'en'. */
 export function langCode(language: string | null | undefined): string {
   return (language || 'en').split('-')[0].toLowerCase();
@@ -536,7 +549,40 @@ export function buildPersonJsonLd(streamer: PublicStreamer, slug: string): objec
   }
   if (sameAs.length > 0) ld.sameAs = sameAs;
 
+  // Follower/subscriber count as an InteractionCounter — a recommended
+  // ProfilePage mainEntity property that feeds the "followers" figure in
+  // Google's profile rich results. Omitted while the backend hasn't fetched
+  // a count (null ≠ zero).
+  if (streamer.follower_count != null) {
+    ld.interactionStatistic = {
+      '@type': 'InteractionCounter',
+      interactionType: { '@type': 'FollowAction' },
+      userInteractionCount: streamer.follower_count,
+    };
+  }
+
   return ld;
+}
+
+/**
+ * ProfilePage wrapper for the streamer page — the page-level type Google's
+ * profile-page rich results expect (the Person alone types the entity, not
+ * the page). The Person nests as mainEntity WITHOUT its own @context (one
+ * graph per script) but KEEPS its `#person` @id, so the BroadcastEvent
+ * scripts' broadcaster references still resolve to it across script blocks.
+ */
+export function buildProfilePageJsonLd(streamer: PublicStreamer, slug: string): object {
+  const { '@context': _context, ...person } = buildPersonJsonLd(streamer, slug) as Record<
+    string,
+    unknown
+  >;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    url: streamerCanonicalUrl(slug),
+    dateModified: latestChange(streamer.updated_at, streamer.last_status_change_at).toISOString(),
+    mainEntity: person,
+  };
 }
 
 // Cap the number of BroadcastEvents per page. Some streamers have 15+ predicted
