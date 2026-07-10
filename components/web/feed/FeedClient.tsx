@@ -44,6 +44,7 @@ import { ClipLightbox } from './ClipLightbox';
 import { DiscoverCard } from './DiscoverCard';
 import { FeedInfoCard } from './FeedInfoCard';
 import { SectionErrorRow, EmptyFavoritesCard, EmptyFilterHint } from './FeedStates';
+import { BriefingOverlay, type BriefingCard } from './BriefingOverlay';
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
@@ -144,6 +145,17 @@ export function FeedClient({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
   const [lightboxClip, setLightboxClip] = useState<FeedClip | null>(null);
+
+  // M18 P7: Daily Briefing overlay + per-day seen state (localStorage).
+  const [briefingOpen, setBriefingOpen] = useState(false);
+  const [briefingSeen, setBriefingSeen] = useState(true);
+  useEffect(() => {
+    try {
+      setBriefingSeen(window.localStorage.getItem('st_briefing_seen') === new Date().toDateString());
+    } catch {
+      setBriefingSeen(false);
+    }
+  }, []);
 
   // M18 P3: "More" region — lower-ranked clips + Discover 6–12 are already in
   // FeedData; older VODs are fetched lazily on expand.
@@ -519,6 +531,87 @@ export function FeedClient({
       !dismissedKeys.has(`info:newstreamer-${candidate.streamerId}`),
   );
 
+  // M18 P7: Daily Briefing composition (app parity, min 2 cards).
+  const briefingCards: BriefingCard[] = [];
+  {
+    const topClip = data.clips[0];
+    if (topClip) {
+      const clipStreamer = data.nameMap[topClip.streamerId];
+      briefingCards.push({
+        kind: 'clip',
+        headline: "Last night's top clip",
+        body: `${topClip.title ?? 'Untitled clip'}${clipStreamer ? ` — ${clipStreamer}` : ''}`,
+        thumbnailUrl: topClip.thumbnailUrl,
+        clipId: topClip.id,
+      });
+    }
+    const moment = data.fanMoments.find((fact) => !!data.nameMap[fact.streamerId]);
+    if (moment) {
+      briefingCards.push({
+        kind: 'fan-moment',
+        headline: `From ${data.nameMap[moment.streamerId]}'s last stream`,
+        body: moment.factText,
+      });
+    }
+    if (data.upNext.length > 0) {
+      briefingCards.push({
+        kind: 'today',
+        headline: 'Coming up today',
+        lines: data.upNext.slice(0, 4).map(
+          (slot) =>
+            `${slot.streamerName} · ${new Date(slot.startTime).toLocaleTimeString(undefined, {
+              hour: 'numeric',
+              minute: '2-digit',
+            })}`,
+        ),
+      });
+    }
+    const changeLines: string[] = [];
+    data.scheduleChanges.slice(0, 2).forEach((change) => {
+      const name = data.nameMap[change.streamerId];
+      if (name) {
+        changeLines.push(
+          `${name} cancelled ${new Date(change.scheduledStartTime).toLocaleDateString(undefined, {
+            weekday: 'short',
+          })}`,
+        );
+      }
+    });
+    data.streamerBreaks.slice(0, 2).forEach((brk) => {
+      const name = data.nameMap[brk.streamerId];
+      if (name) {
+        changeLines.push(
+          `${name} on break until ${new Date(brk.vacationUntil).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+          })}`,
+        );
+      }
+    });
+    if (changeLines.length > 0) {
+      briefingCards.push({ kind: 'changes', headline: 'Schedule changes', lines: changeLines });
+    }
+    if (data.weeklyRecap) {
+      briefingCards.push({
+        kind: 'recap',
+        headline: 'Your week in streams',
+        body: `Live ${data.weeklyRecap.totalHours}h across ${data.weeklyRecap.streams} streams${data.weeklyRecap.topCategory ? ` — top category: ${data.weeklyRecap.topCategory}` : ''}.`,
+      });
+    }
+  }
+  const briefingAvailable = briefingCards.length >= 2;
+
+  const openBriefing = () => {
+    logFeedEvent({ event: 'story_open', itemType: 'info', itemId: 'briefing' });
+    setBriefingSeen(true);
+    try {
+      window.localStorage.setItem('st_briefing_seen', new Date().toDateString());
+    } catch {
+      // Seen state is cosmetic.
+    }
+    setBriefingOpen(true);
+  };
+
   // M18 P3: "More" region contents (dedupe/dismiss/chip filters apply).
   const moreClipsVisible = moreExpanded
     ? data.moreClips
@@ -553,6 +646,25 @@ export function FeedClient({
           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : undefined} />
         </button>
       </header>
+
+      {briefingAvailable && (
+        <button
+          type="button"
+          onClick={openBriefing}
+          className={`mt-4 block w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+            briefingSeen
+              ? 'border-border-default bg-background-elevated opacity-75 hover:opacity-100'
+              : 'border-accent-cyan bg-background-elevated hover:bg-background-highlight'
+          }`}
+        >
+          <span className="block text-[15px] font-bold text-accent-cyan">Your day ▸</span>
+          <span className="block text-xs text-text-secondary" suppressHydrationWarning>
+            {briefingSeen
+              ? 'Catch up again'
+              : `${briefingCards.length} cards · what you missed & what's next`}
+          </span>
+        </button>
+      )}
 
       {data.chipCategories.length > 0 && (
         <div className="mt-4">
@@ -1015,6 +1127,20 @@ export function FeedClient({
         moreDiscoverVisible.length === 0 && (
           <p className="mt-6 text-center text-xs text-text-muted">You&apos;re all caught up.</p>
         )}
+
+      {briefingOpen && (
+        <BriefingOverlay
+          cards={briefingCards}
+          onClose={() => setBriefingOpen(false)}
+          onWatchClip={(clipId) => {
+            const clip = data.clips.find((candidate) => candidate.id === clipId);
+            if (clip) {
+              setBriefingOpen(false);
+              setLightboxClip(clip);
+            }
+          }}
+        />
+      )}
 
       {lightboxClip && (
         <ClipLightbox

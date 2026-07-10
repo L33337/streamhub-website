@@ -205,7 +205,10 @@ export type FeedEventType =
   | 'load_more'
   | 'zap_enter'
   | 'zap_channel_view'
-  | 'zap_exit';
+  | 'zap_exit'
+  | 'story_open'
+  | 'story_advance'
+  | 'story_complete';
 
 export type FeedItemType =
   | 'live'
