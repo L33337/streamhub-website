@@ -572,10 +572,8 @@ export function buildPersonJsonLd(streamer: PublicStreamer, slug: string): objec
  * scripts' broadcaster references still resolve to it across script blocks.
  */
 export function buildProfilePageJsonLd(streamer: PublicStreamer, slug: string): object {
-  const { '@context': _context, ...person } = buildPersonJsonLd(streamer, slug) as Record<
-    string,
-    unknown
-  >;
+  const person = { ...(buildPersonJsonLd(streamer, slug) as Record<string, unknown>) };
+  delete person['@context'];
   return {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',

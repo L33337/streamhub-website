@@ -124,6 +124,12 @@ export default function RootLayout({
               </Link>
               <SearchBar className="ml-auto w-full max-w-md" />
               <Link
+                href="/live"
+                className="hidden h-9 items-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-text-primary md:inline-flex"
+              >
+                Live
+              </Link>
+              <Link
                 href="/games"
                 className="hidden h-9 items-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-text-primary md:inline-flex"
               >

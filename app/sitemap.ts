@@ -29,6 +29,14 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.5,
   },
   {
+    url: `${SITE_URL}/live`,
+    // Honest per-render "now": the live hub's content genuinely changes every
+    // regeneration (same treatment as /games below).
+    lastModified: new Date(),
+    changeFrequency: 'hourly',
+    priority: 0.8,
+  },
+  {
     url: `${SITE_URL}/streamers`,
     lastModified: BUILD_TIME,
     changeFrequency: 'daily',
