@@ -46,6 +46,18 @@ import {
 } from './transforms';
 import { pickBestFunFact } from './logic';
 
+// Explicit column lists (were SELECT * — avoids shipping unused wide columns
+// such as reasoning/created_at/updated_at over PostgREST on the hot /feed
+// path). Keep in sync with transformStreamSlot / transformFeedClip
+// (transforms.ts) — every column each transform reads must be listed here.
+const STREAM_SLOT_COLUMNS =
+  'id, streamer_id, streamer_name, platforms, stream_title, category, ' +
+  'thumbnail_url, avatar_url, start_time, duration, status, confidence, ' +
+  'reasoning, is_ai_prediction, visible, ai_prediction_id, slot_kind, is_always_on';
+const STREAM_CLIP_COLUMNS =
+  'id, streamer_id, external_clip_id, title, url, thumbnail_url, ' +
+  'duration_seconds, view_count, category, clip_created_at, creator_name';
+
 /**
  * Stream slots of the given streamers, with a 2-day date floor to avoid
  * loading stale offline slots. Intentionally NOT capped at 100 ids (app
@@ -63,7 +75,7 @@ export async function fetchStreamSlots(
 
   const { data, error } = await supabase
     .from('stream_slots')
-    .select('*')
+    .select(STREAM_SLOT_COLUMNS)
     .eq('visible', true)
     .gte('start_time', floor.toISOString())
     .in('streamer_id', streamerIds)
@@ -74,7 +86,7 @@ export async function fetchStreamSlots(
     throw new Error(`Failed to fetch stream slots: ${error.message}`);
   }
 
-  return ((data ?? []) as StreamSlotRow[]).map(transformStreamSlot);
+  return ((data ?? []) as unknown as StreamSlotRow[]).map(transformStreamSlot);
 }
 
 /**
@@ -106,7 +118,7 @@ export async function fetchLiveFeaturedSlots(
 
   const { data, error } = await supabase
     .from('stream_slots')
-    .select('*')
+    .select(STREAM_SLOT_COLUMNS)
     .in('streamer_id', candidateIds.slice(0, MAX_STREAMER_IDS))
     .eq('visible', true)
     .eq('status', 'live')
@@ -117,7 +129,7 @@ export async function fetchLiveFeaturedSlots(
     throw new Error(`Failed to fetch live featured slots: ${error.message}`);
   }
 
-  return ((data ?? []) as StreamSlotRow[]).map(transformStreamSlot);
+  return ((data ?? []) as unknown as StreamSlotRow[]).map(transformStreamSlot);
 }
 
 /**
@@ -163,7 +175,7 @@ export async function fetchClipsForStreamers(
 
   const { data, error } = await supabase
     .from('stream_clips')
-    .select('*')
+    .select(STREAM_CLIP_COLUMNS)
     .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
     .gte('clip_created_at', since.toISOString())
     .order('view_count', { ascending: false })
@@ -173,7 +185,7 @@ export async function fetchClipsForStreamers(
     throw new Error(`Failed to fetch clips: ${error.message}`);
   }
 
-  return ((data ?? []) as StreamClipRow[]).map(transformFeedClip);
+  return ((data ?? []) as unknown as StreamClipRow[]).map(transformFeedClip);
 }
 
 /**
