@@ -148,6 +148,16 @@ export interface DiscoverStats {
   streams28d: number | null;
 }
 
+// M18 Phase 4: nightly per-user feed_events aggregation (feed_engagement_stats)
+export interface FeedEngagementStats {
+  /** category → positive-interaction count (28d) */
+  categoryEngagement: Record<string, number>;
+  /** streamer ids the user dismissed in the last 60d */
+  dismissedStreamers: string[];
+  /** categories the user dismissed in the last 60d */
+  dismissedCategories: string[];
+}
+
 // M18 Phase 2C: recently added streamer (announcement card candidate)
 export interface NewStreamerCandidate {
   streamerId: string;

@@ -17,6 +17,7 @@ import {
   endedAgoLabel,
   buildReliabilityLabel,
   buildDiscoverStatsLine,
+  applyDismissSuppression,
   typicalStartHourUtc,
   circularHourDiff,
   computeWeeklyRecap,
@@ -706,5 +707,55 @@ describe('M18 P2C card helpers', () => {
     expect(formatPeak(950)).toBe('950');
     expect(formatPeak(8400)).toBe('8.4K');
     expect(formatPeak(1_200_000)).toBe('1.2M');
+  });
+});
+
+describe('M18 P4 engagement ranking', () => {
+  const engagement = {
+    categoryEngagement: { Valorant: 8, 'Just Chatting': 2 },
+    dismissedStreamers: ['streamer-bad'],
+    dismissedCategories: ['Slots'],
+  };
+
+  it('boosts categories the user actually engages with', () => {
+    const clips = [
+      clip({ id: 'jc', streamerId: 's1', category: 'Just Chatting', viewCount: 100 }),
+      clip({ id: 'val', streamerId: 's2', category: 'Valorant', viewCount: 100 }),
+    ];
+    const ranked = rankClips(clips, null, NOW, engagement);
+    expect(ranked[0].id).toBe('val');
+  });
+
+  it('rank-suppresses dismissed streamers without hiding them', () => {
+    const clips = [
+      clip({ id: 'good', streamerId: 's1', viewCount: 100 }),
+      clip({ id: 'bad', streamerId: 'streamer-bad', viewCount: 100 }),
+    ];
+    const ranked = rankClips(clips, null, NOW, engagement);
+    expect(ranked.map((c) => c.id)).toEqual(['good', 'bad']);
+  });
+
+  it('without engagement data the ordering matches the neutral formula', () => {
+    const clips = [
+      clip({ id: 'big', streamerId: 's1', viewCount: 10_000 }),
+      clip({ id: 'small', streamerId: 's2', viewCount: 10 }),
+    ];
+    expect(rankClips(clips, null, NOW).map((c) => c.id)).toEqual(['big', 'small']);
+  });
+
+  it('applyDismissSuppression sinks dismissed candidates below others', () => {
+    const candidates = [
+      rec({ streamerId: 'streamer-bad', score: 0.9 }),
+      rec({ streamerId: 'ok', score: 0.6 }),
+      rec({ streamerId: 'slots-fan', score: 0.7, topCategory: 'Slots' }),
+    ];
+    const ordered = applyDismissSuppression(candidates, engagement);
+    expect(ordered.map((c) => c.streamerId)).toEqual(['ok', 'streamer-bad', 'slots-fan']);
+    expect(ordered).toHaveLength(3);
+  });
+
+  it('applyDismissSuppression is a no-op without engagement data', () => {
+    const candidates = [rec({ streamerId: 'a', score: 0.9 }), rec({ streamerId: 'b', score: 0.8 })];
+    expect(applyDismissSuppression(candidates, null).map((c) => c.streamerId)).toEqual(['a', 'b']);
   });
 });

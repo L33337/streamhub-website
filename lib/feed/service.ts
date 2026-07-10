@@ -30,6 +30,7 @@ import type {
   StreamerBreak,
   DiscoverStats,
   NewStreamerCandidate,
+  FeedEngagementStats,
 } from './types';
 import {
   transformStreamSlot,
@@ -614,4 +615,35 @@ export async function fetchPeakHistory(
     peakViewerCount: row.peak_viewer_count,
     endedAt: row.ended_at,
   }));
+}
+
+/**
+ * The caller's nightly engagement aggregation (M18 Phase 4) — ranking input
+ * for clips + Discover. Null until the first nightly refresh after the user's
+ * first feed events (ranking then falls back to neutral terms). RLS returns
+ * only the caller's own row.
+ */
+export async function fetchEngagementStats(
+  supabase: SupabaseClient,
+): Promise<FeedEngagementStats | null> {
+  const { data, error } = await supabase
+    .from('feed_engagement_stats')
+    .select('category_engagement, dismissed_streamers, dismissed_categories')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch engagement stats: ${error.message}`);
+  }
+  if (!data) return null;
+
+  const row = data as {
+    category_engagement: Record<string, number> | null;
+    dismissed_streamers: string[] | null;
+    dismissed_categories: string[] | null;
+  };
+  return {
+    categoryEngagement: row.category_engagement ?? {},
+    dismissedStreamers: row.dismissed_streamers ?? [],
+    dismissedCategories: row.dismissed_categories ?? [],
+  };
 }

@@ -27,6 +27,7 @@ import type {
   StreamerBreak,
   DiscoverStats,
   NewStreamerCandidate,
+  FeedEngagementStats,
 } from './types';
 import {
   fetchStreamSlots,
@@ -46,12 +47,14 @@ import {
   fetchWeeklyActivity,
   fetchHourHistograms,
   fetchPeakHistory,
+  fetchEngagementStats,
   fetchHiddenStreamerIds,
 } from './service';
 import {
   deriveLiveAndUpNext,
   rankClipsSplit,
   diversityPass,
+  applyDismissSuppression,
   deriveChipCategories,
   typicalStartHourUtc,
   circularHourDiff,
@@ -111,16 +114,16 @@ export async function loadFeed(
 
   const discoverTask = (async (): Promise<{
     profile: UserInterestProfile | null;
-    discover: DiscoverRecommendation[];
     candidates: DiscoverRecommendation[];
   }> => {
     try {
       const profile = await fetchInterestProfile(supabase);
       const candidates = await fetchDiscoverRecommendations(supabase, profile, DISCOVER_CANDIDATES);
-      return { profile, discover: diversityPass(candidates), candidates };
+      // M18 P4: suppression + diversity run after the engagement row arrives.
+      return { profile, candidates };
     } catch (err) {
       recordError('discover', err, 'Failed to load suggestions');
-      return { profile: null, discover: [], candidates: [] };
+      return { profile: null, candidates: [] };
     }
   })();
 
@@ -189,6 +192,15 @@ export async function loadFeed(
     }
   })();
 
+  const engagementTask = (async (): Promise<FeedEngagementStats | null> => {
+    try {
+      return favIds.length > 0 ? await fetchEngagementStats(supabase) : null;
+    } catch {
+      // Ranking falls back to neutral terms.
+      return null;
+    }
+  })();
+
   // Weekly recap is a Monday ritual (UTC on the server) — skip otherwise.
   const recapTask = (async () => {
     try {
@@ -214,6 +226,7 @@ export async function loadFeed(
     breaksResult,
     newStreamers,
     weeklyRecap,
+    engagement,
   ] = await Promise.all([
     slotsTask,
     recentTask,
@@ -227,12 +240,13 @@ export async function loadFeed(
     breaksTask,
     newStreamersTask,
     recapTask,
+    engagementTask,
   ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
   let recent = recentResult;
   let rawClips = clipsResult;
-  let { discover } = discoverResult;
+  let discoverCandidates = discoverResult.candidates;
   const { profile } = discoverResult;
   let funFact = funFactResult;
   let scheduleChanges = scheduleChangesResult;
@@ -245,7 +259,6 @@ export async function loadFeed(
 
   // Hidden/test streamers (streamers.is_hidden) never surface on the website.
   // Failure here is silent — sections render unfiltered rather than not at all.
-  let hiddenIds = new Set<string>();
   try {
     const candidateIds = new Set<string>([
       ...slots.map((s) => s.streamerId),
@@ -255,13 +268,12 @@ export async function loadFeed(
       ...discoverResult.candidates.map((d) => d.streamerId),
     ]);
     const hidden = await fetchHiddenStreamerIds(supabase, Array.from(candidateIds));
-    hiddenIds = hidden;
     if (hidden.size > 0) {
       slots = slots.filter((s) => !hidden.has(s.streamerId));
       featuredLiveSlots = featuredLiveSlots.filter((s) => !hidden.has(s.streamerId));
       recent = recent.filter((r) => !hidden.has(r.streamerId));
       rawClips = rawClips.filter((c) => !hidden.has(c.streamerId));
-      discover = discover.filter((d) => !hidden.has(d.streamerId));
+      discoverCandidates = discoverCandidates.filter((d) => !hidden.has(d.streamerId));
       if (funFact && hidden.has(funFact.streamerId)) funFact = null;
       scheduleChanges = scheduleChanges.filter((c) => !hidden.has(c.streamerId));
       fanMoments = fanMoments.filter((f) => !hidden.has(f.streamerId));
@@ -271,12 +283,16 @@ export async function loadFeed(
     // Filtering is polish, not correctness.
   }
 
-  // M18 P2B: at-a-glance stats for the picked Discover cards (decorative).
+  // M18 P4: Discover pipeline — dismiss suppression, then the diversity pass.
+  const rankedCandidates = applyDismissSuppression(discoverCandidates, engagement);
+  const discover = diversityPass(rankedCandidates);
+
+  // M18 P2B: at-a-glance stats for all Discover candidates (top 5 + load-more).
   const discoverStatsMap: Record<string, DiscoverStats> = {};
   try {
     const stats = await fetchDiscoverStats(
       supabase,
-      discover.map((rec) => rec.streamerId),
+      rankedCandidates.map((rec) => rec.streamerId),
     );
     stats.forEach((entry) => {
       discoverStatsMap[entry.streamerId] = entry;
@@ -312,15 +328,13 @@ export async function loadFeed(
   }
 
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
-  const { top: clips, more: moreClips } = rankClipsSplit(rawClips, profile, now);
+  const { top: clips, more: moreClips } = rankClipsSplit(rawClips, profile, now, engagement);
   const chipCategories = deriveChipCategories(profile, liveNow, upNext, recent, clips);
 
-  // M18 P3: Discover candidates 6–12 for the load-more region (hidden-filtered
-  // like everything else — candidates were part of the hidden lookup above).
-  const moreDiscover = discoverResult.candidates.filter(
-    (candidate) =>
-      !hiddenIds.has(candidate.streamerId) &&
-      !discover.some((picked) => picked.streamerId === candidate.streamerId),
+  // M18 P3: Discover candidates 6–12 for the load-more region (already
+  // hidden-filtered and suppression-ordered above).
+  const moreDiscover = rankedCandidates.filter(
+    (candidate) => !discover.some((picked) => picked.streamerId === candidate.streamerId),
   );
 
   const avatarMap: Record<string, string> = {};

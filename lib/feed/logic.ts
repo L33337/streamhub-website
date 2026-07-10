@@ -25,6 +25,7 @@ import type {
   HomeLiveEntry,
   PredictionFunFact,
   PredictionFunFactRow,
+  FeedEngagementStats,
 } from './types';
 
 const MINUTE_MS = 60 * 1000;
@@ -147,41 +148,66 @@ export function deriveLiveAndUpNext(
 }
 
 /**
- * Client-side ranking of the Highlights rail (per Epic Milestone 13):
- *   0.45 × normalized log views + 0.30 × category affinity + 0.25 × recency
- * with at most CLIPS_PER_STREAMER clips per streamer, CLIPS_LIMIT total.
+ * Client-side ranking of the Highlights rail.
+ * M13 weights (0.45 views / 0.30 affinity / 0.25 recency) shifted in M18 P4 to
+ *   0.35 views / 0.25 affinity / 0.20 recency / 0.20 engagement
+ * where engagement = the user's own per-category interaction share from the
+ * nightly feed_engagement_stats aggregation (neutral 0.5 until data exists).
+ * Dismissed streamers/categories are rank-suppressed (× 0.5), never hidden.
+ * Mirrored in the app's useHomeFeed — keep in sync.
  */
 export function rankClips(
   clips: FeedClip[],
   profile: UserInterestProfile | null,
   now: Date = new Date(),
+  engagement: FeedEngagementStats | null = null,
 ): FeedClip[] {
-  return rankClipsSplit(clips, profile, now).top;
+  return rankClipsSplit(clips, profile, now, engagement).top;
 }
 
 /**
  * M18 P3: same ranking, but also returns the remainder for the load-more
  * region — everything score-ordered that did not make the top rail (either
- * beyond the cap or blocked by the per-streamer limit). Mirrored in the
- * app's useHomeFeed — keep in sync.
+ * beyond the cap or blocked by the per-streamer limit).
  */
 export function rankClipsSplit(
   clips: FeedClip[],
   profile: UserInterestProfile | null,
   now: Date = new Date(),
+  engagement: FeedEngagementStats | null = null,
 ): { top: FeedClip[]; more: FeedClip[] } {
   if (clips.length === 0) return { top: [], more: [] };
 
   const maxLogViews = Math.max(...clips.map((clip) => Math.log1p(clip.viewCount)), 1);
   const affinity = profile?.categoryAffinity ?? {};
+  const engagementCounts = engagement?.categoryEngagement ?? null;
+  const maxEngagement =
+    engagementCounts && Object.keys(engagementCounts).length > 0
+      ? Math.max(...Object.values(engagementCounts), 1)
+      : null;
+  const dismissedStreamers = new Set(engagement?.dismissedStreamers ?? []);
+  const dismissedCategories = new Set(engagement?.dismissedCategories ?? []);
 
   const scored = clips
     .map((clip) => {
       const days = Math.max((now.getTime() - new Date(clip.clipCreatedAt).getTime()) / DAY_MS, 0);
-      const score =
-        0.45 * (Math.log1p(clip.viewCount) / maxLogViews) +
-        0.3 * (clip.category ? (affinity[clip.category] ?? 0) : 0) +
-        0.25 * Math.exp(-days / 3);
+      const engagementTerm =
+        maxEngagement === null
+          ? 0.5 // no aggregation yet → neutral constant, ordering unaffected
+          : clip.category
+            ? (engagementCounts?.[clip.category] ?? 0) / maxEngagement
+            : 0.25;
+      let score =
+        0.35 * (Math.log1p(clip.viewCount) / maxLogViews) +
+        0.25 * (clip.category ? (affinity[clip.category] ?? 0) : 0) +
+        0.2 * Math.exp(-days / 3) +
+        0.2 * engagementTerm;
+      if (
+        dismissedStreamers.has(clip.streamerId) ||
+        (clip.category && dismissedCategories.has(clip.category))
+      ) {
+        score *= 0.5;
+      }
       return { clip, score };
     })
     .sort((a, b) => b.score - a.score);
@@ -199,6 +225,29 @@ export function rankClipsSplit(
   }
   const more = scored.map(({ clip }) => clip).filter((clip) => !pickedIds.has(clip.id));
   return { top, more };
+}
+
+/**
+ * M18 P4: dismissed Discover candidates sink (score × 0.5) before the
+ * diversity pass — suppressed, never removed (decays with the 60d window).
+ * Mirrored in the app's useHomeFeed — keep in sync.
+ */
+export function applyDismissSuppression(
+  candidates: DiscoverRecommendation[],
+  engagement: FeedEngagementStats | null,
+): DiscoverRecommendation[] {
+  if (!engagement) return candidates;
+  const dismissedStreamers = new Set(engagement.dismissedStreamers);
+  const dismissedCategories = new Set(engagement.dismissedCategories);
+  return candidates
+    .map((candidate) => {
+      const suppressed =
+        dismissedStreamers.has(candidate.streamerId) ||
+        (!!candidate.topCategory && dismissedCategories.has(candidate.topCategory));
+      return { candidate, adjusted: suppressed ? candidate.score * 0.5 : candidate.score };
+    })
+    .sort((a, b) => b.adjusted - a.adjusted)
+    .map((entry) => entry.candidate);
 }
 
 /**
