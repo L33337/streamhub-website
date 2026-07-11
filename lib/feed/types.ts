@@ -274,6 +274,22 @@ export interface FeedData {
   nameMap: Record<string, string>;
 }
 
+/**
+ * The minute-to-minute-volatile subset of FeedData (Live Now / Up Next / New
+ * for you) produced by loadVolatileFeed(). The auto-refresh merges this into
+ * the existing feed instead of re-running the whole loadFeed — the remaining
+ * sections are nightly/6h/weekly caches. avatarMap/nameMap are the entries for
+ * these sections only (merged over the previous maps on the client).
+ */
+export interface VolatileFeed {
+  liveNow: HomeLiveEntry[];
+  upNext: StreamSlot[];
+  recent: FeedRecentStream[];
+  avatarMap: Record<string, string>;
+  nameMap: Record<string, string>;
+  sectionErrors: Partial<Record<FeedSectionKey, string>>;
+}
+
 // ---------------------------------------------------------------------------
 // Database row / RPC output shapes (snake_case)
 // ---------------------------------------------------------------------------

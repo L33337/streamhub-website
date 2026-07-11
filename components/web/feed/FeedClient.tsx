@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, X } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { loadFeed } from '@/lib/feed/loadFeed';
+import { loadFeed, loadVolatileFeed } from '@/lib/feed/loadFeed';
 import { fetchRecentStreams } from '@/lib/feed/service';
 import {
   configureFeedEvents,
@@ -18,7 +18,12 @@ import {
   flushFeedEvents,
 } from '@/lib/feed/events';
 import { SEEN_COOKIE, SEEN_COOKIE_MAX_AGE_SECONDS } from '@/lib/feed/constants';
-import { reorderDiscover, buildReliabilityLabel, formatPeak } from '@/lib/feed/logic';
+import {
+  reorderDiscover,
+  buildReliabilityLabel,
+  formatPeak,
+  deriveChipCategories,
+} from '@/lib/feed/logic';
 import { toPublicStreamSlot } from '@/lib/feed/transforms';
 import type {
   FeedData,
@@ -202,7 +207,8 @@ export function FeedClient({
     });
   }, [userId, analyticsEnabled]);
 
-  const refresh = useCallback(async () => {
+  // Manual refresh (button + section-error retries): re-runs the whole feed.
+  const fullRefresh = useCallback(async () => {
     if (refreshingRef.current) return;
     refreshingRef.current = true;
     setIsRefreshing(true);
@@ -217,6 +223,47 @@ export function FeedClient({
     } finally {
       refreshingRef.current = false;
       setIsRefreshing(false);
+    }
+  }, [supabase]);
+
+  // Auto-refresh (5-min timer + tab-return): only the volatile sections
+  // (Live Now / Up Next / New for you) change minute-to-minute — the rest is a
+  // nightly/6h/weekly cache. Refetches ~3 queries instead of loadFeed's ~20
+  // queries + 4 RPCs and merges them into the existing feed. Runs silently (no
+  // spinner) since it is a background tick. Shares refreshingRef with
+  // fullRefresh so the two can never overlap.
+  const volatileRefresh = useCallback(async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    try {
+      const v = await loadVolatileFeed(supabase, { since: sinceRef.current });
+      setData((prev) => ({
+        ...prev,
+        liveNow: v.liveNow,
+        upNext: v.upNext,
+        recent: v.recent,
+        avatarMap: { ...prev.avatarMap, ...v.avatarMap },
+        nameMap: { ...prev.nameMap, ...v.nameMap },
+        // Chips reflect the visible sections — recompute from the merged
+        // volatile sections + the unchanged profile/clips (pure, cheap).
+        chipCategories: deriveChipCategories(
+          prev.profile,
+          v.liveNow,
+          v.upNext,
+          v.recent,
+          prev.clips,
+        ),
+        sectionErrors: {
+          ...prev.sectionErrors,
+          slots: v.sectionErrors.slots,
+          recent: v.sectionErrors.recent,
+        },
+      }));
+      lastLoadedRef.current = Date.now();
+    } catch (err) {
+      console.error('[feed] volatile refresh failed:', err);
+    } finally {
+      refreshingRef.current = false;
     }
   }, [supabase]);
 
@@ -277,14 +324,14 @@ export function FeedClient({
   // to a tab that has been hidden for 5+ minutes (app useAutoRefresh parity).
   useEffect(() => {
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState === 'visible') void volatileRefresh();
     }, AUTO_REFRESH_MS);
     const onVisibility = () => {
       if (
         document.visibilityState === 'visible' &&
         Date.now() - lastLoadedRef.current >= AUTO_REFRESH_MS
       ) {
-        void refresh();
+        void volatileRefresh();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
@@ -292,7 +339,7 @@ export function FeedClient({
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [refresh]);
+  }, [volatileRefresh]);
 
   // One impression per Discover recommendation set (CTR denominator).
   useEffect(() => {
@@ -638,7 +685,7 @@ export function FeedClient({
         <h1 className="text-3xl font-bold text-white">My feed</h1>
         <button
           type="button"
-          onClick={() => void refresh()}
+          onClick={() => void fullRefresh()}
           disabled={isRefreshing}
           aria-label="Refresh feed"
           className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan disabled:opacity-60"
@@ -684,7 +731,7 @@ export function FeedClient({
           <LiveRail entries={liveEntries} onSlotTap={handleLiveTap} />
         </section>
       ) : data.sectionErrors.slots ? (
-        <SectionErrorRow label="Couldn't load live streams" onRetry={() => void refresh()} />
+        <SectionErrorRow label="Couldn't load live streams" onRetry={() => void fullRefresh()} />
       ) : null}
 
       {upNext.length > 0 && (
@@ -765,7 +812,7 @@ export function FeedClient({
           </ul>
         </section>
       ) : data.sectionErrors.recent ? (
-        <SectionErrorRow label="Couldn't load recent streams" onRetry={() => void refresh()} />
+        <SectionErrorRow label="Couldn't load recent streams" onRetry={() => void fullRefresh()} />
       ) : null}
 
       {showMissed && missed && (
@@ -823,7 +870,7 @@ export function FeedClient({
           </ul>
         </section>
       ) : data.sectionErrors.clips ? (
-        <SectionErrorRow label="Couldn't load highlights" onRetry={() => void refresh()} />
+        <SectionErrorRow label="Couldn't load highlights" onRetry={() => void fullRefresh()} />
       ) : null}
 
       {selectedCategory === null && data.uploads.length > 0 && (
@@ -913,7 +960,7 @@ export function FeedClient({
           </ul>
         </section>
       ) : data.sectionErrors.discover ? (
-        <SectionErrorRow label="Couldn't load suggestions" onRetry={() => void refresh()} />
+        <SectionErrorRow label="Couldn't load suggestions" onRetry={() => void fullRefresh()} />
       ) : null}
 
       {data.funFact && funFactName && !dismissedKeys.has('info:funfact') && (

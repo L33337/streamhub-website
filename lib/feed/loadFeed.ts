@@ -30,6 +30,7 @@ import type {
   FeedEngagementStats,
   YouTubeUpload,
   TrendingGame,
+  VolatileFeed,
 } from './types';
 import {
   fetchStreamSlots,
@@ -315,45 +316,61 @@ export async function loadFeed(
   const rankedCandidates = applyDismissSuppression(discoverCandidates, engagement);
   const discover = diversityPass(rankedCandidates);
 
-  // M18 P2B: at-a-glance stats for all Discover candidates (top 5 + load-more).
-  const discoverStatsMap: Record<string, DiscoverStats> = {};
-  try {
-    const stats = await fetchDiscoverStats(
-      supabase,
-      rankedCandidates.map((rec) => rec.streamerId),
-    );
-    stats.forEach((entry) => {
-      discoverStatsMap[entry.streamerId] = entry;
-    });
-  } catch {
-    // Stats line silently absent on failure.
-  }
-
-  // M18 P2C: unusual-start + record detection for the recently active few
-  // (never the whole roster). Both decorative.
-  let missedStream: FeedRecentStream | null = null;
-  let peakRecord: { streamerId: string; peak: number } | null = null;
-  try {
-    const recentIds = [...new Set(recent.map((row) => row.streamerId))].slice(0, 10);
-    if (recentIds.length > 0) {
-      const [histograms, peaks] = await Promise.all([
-        fetchHourHistograms(supabase, recentIds),
-        fetchPeakHistory(supabase, recentIds),
-      ]);
-      for (const stream of recent) {
-        const typical = typicalStartHourUtc(histograms.get(stream.streamerId));
-        if (typical === null) continue;
-        const startHour = new Date(stream.startedAt).getUTCHours();
-        if (circularHourDiff(startHour, typical) > MISSED_HOUR_DIFF) {
-          missedStream = stream;
-          break;
-        }
-      }
-      peakRecord = findPeakRecord(peaks, now);
+  // M18 P2B + P2C: two independent tail fetches — Discover stats (needs the
+  // ranked candidates from Phase 3) and the unusual-start / record detection
+  // (needs the recently-active favorites from Phase 2). Neither depends on the
+  // other, so run them concurrently — one round-trip wave instead of two.
+  // Each keeps its own error isolation (a failure is a silently-absent card).
+  const discoverStatsTask = (async (): Promise<Record<string, DiscoverStats>> => {
+    const map: Record<string, DiscoverStats> = {};
+    try {
+      const stats = await fetchDiscoverStats(
+        supabase,
+        rankedCandidates.map((rec) => rec.streamerId),
+      );
+      stats.forEach((entry) => {
+        map[entry.streamerId] = entry;
+      });
+    } catch {
+      // Stats line silently absent on failure.
     }
-  } catch {
-    // Both cards silently absent on failure.
-  }
+    return map;
+  })();
+
+  const recordsTask = (async (): Promise<{
+    missedStream: FeedRecentStream | null;
+    peakRecord: { streamerId: string; peak: number } | null;
+  }> => {
+    let missed: FeedRecentStream | null = null;
+    let peak: { streamerId: string; peak: number } | null = null;
+    try {
+      const recentIds = [...new Set(recent.map((row) => row.streamerId))].slice(0, 10);
+      if (recentIds.length > 0) {
+        const [histograms, peaks] = await Promise.all([
+          fetchHourHistograms(supabase, recentIds),
+          fetchPeakHistory(supabase, recentIds),
+        ]);
+        for (const stream of recent) {
+          const typical = typicalStartHourUtc(histograms.get(stream.streamerId));
+          if (typical === null) continue;
+          const startHour = new Date(stream.startedAt).getUTCHours();
+          if (circularHourDiff(startHour, typical) > MISSED_HOUR_DIFF) {
+            missed = stream;
+            break;
+          }
+        }
+        peak = findPeakRecord(peaks, now);
+      }
+    } catch {
+      // Both cards silently absent on failure.
+    }
+    return { missedStream: missed, peakRecord: peak };
+  })();
+
+  const [discoverStatsMap, { missedStream, peakRecord }] = await Promise.all([
+    discoverStatsTask,
+    recordsTask,
+  ]);
 
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
   const { top: clips, more: moreClips } = rankClipsSplit(rawClips, profile, now, engagement);
@@ -411,4 +428,87 @@ export async function loadFeed(
     avatarMap,
     nameMap,
   };
+}
+
+/**
+ * The volatile subset of loadFeed — only the sections that change minute to
+ * minute (Live Now / Up Next / New for you). Used by the client auto-refresh
+ * (5-min timer + tab-return): ~3 queries instead of loadFeed's ~20 queries +
+ * 4 RPCs. Everything else in the feed (Discover, Highlights, info cards) is a
+ * nightly/6h/weekly cache and stays untouched between full refreshes.
+ *
+ * Mirrors loadFeed's Live/Up-Next/Recent path exactly: same fetches, same
+ * is_hidden filter (scoped to these sections), same avatar/name maps. The
+ * client merges the result over the previous FeedData.
+ */
+export async function loadVolatileFeed(
+  supabase: SupabaseClient,
+  { since, now = new Date() }: LoadFeedOptions,
+): Promise<VolatileFeed> {
+  const favorites = await listFavoriteStreamers(supabase);
+  const favIds = favorites.map((f) => f.id);
+  const favIdSet = new Set(favIds);
+
+  const errors: Partial<Record<FeedSectionKey, string>> = {};
+
+  const slotsTask = (async (): Promise<[StreamSlot[], StreamSlot[]]> => {
+    try {
+      return await Promise.all([
+        favIds.length > 0 ? fetchStreamSlots(supabase, favIds) : Promise.resolve([]),
+        fetchLiveFeaturedSlots(supabase, favIdSet),
+      ]);
+    } catch (err) {
+      errors.slots = err instanceof Error ? err.message : 'Failed to load streams';
+      return [[], []];
+    }
+  })();
+
+  const recentTask = (async (): Promise<FeedRecentStream[]> => {
+    try {
+      return favIds.length > 0 ? await fetchRecentStreams(supabase, favIds, since, 10) : [];
+    } catch (err) {
+      errors.recent = err instanceof Error ? err.message : 'Failed to load recent streams';
+      return [];
+    }
+  })();
+
+  const [slotsPair, recentResult] = await Promise.all([slotsTask, recentTask]);
+  let [slots, featuredLiveSlots] = slotsPair;
+  let recent = recentResult;
+
+  // Hidden/test streamers never surface — same filter as loadFeed, scoped to
+  // the three volatile sections. Failure is silent (polish, not correctness).
+  try {
+    const candidateIds = new Set<string>([
+      ...slots.map((s) => s.streamerId),
+      ...featuredLiveSlots.map((s) => s.streamerId),
+      ...recent.map((r) => r.streamerId),
+    ]);
+    const hidden = await fetchHiddenStreamerIds(supabase, Array.from(candidateIds));
+    if (hidden.size > 0) {
+      slots = slots.filter((s) => !hidden.has(s.streamerId));
+      featuredLiveSlots = featuredLiveSlots.filter((s) => !hidden.has(s.streamerId));
+      recent = recent.filter((r) => !hidden.has(r.streamerId));
+    }
+  } catch {
+    // Filtering is polish, not correctness.
+  }
+
+  const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
+
+  // Same map construction as loadFeed (favorites + featured-live avatars).
+  const avatarMap: Record<string, string> = {};
+  favorites.forEach((streamer) => {
+    if (streamer.avatar_url) avatarMap[streamer.id] = streamer.avatar_url;
+  });
+  featuredLiveSlots.forEach((slot) => {
+    if (slot.avatarUrl && !avatarMap[slot.streamerId]) avatarMap[slot.streamerId] = slot.avatarUrl;
+  });
+
+  const nameMap: Record<string, string> = {};
+  favorites.forEach((streamer) => {
+    nameMap[streamer.id] = streamer.name;
+  });
+
+  return { liveNow, upNext, recent, avatarMap, nameMap, sectionErrors: errors };
 }
