@@ -62,8 +62,59 @@ interface StreamerPageData {
 const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> => {
   const api = getPartnerApi();
   const now = new Date();
-  const streamer = await api.getStreamer(slug);
+
+  const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
+  const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
+
+  // De-serialized cold render (M20 S1.3): the streamer lookup and the four
+  // section calls are all fired concurrently. The section calls only need the
+  // slug (not the streamer object), so awaiting getStreamer first would stack a
+  // full partner-API round-trip in front of the section batch — ~2x p95 on a
+  // first-ever (cache-MISS) render, measured at 1.5-1.8 s TTFB in Phase 0. Every
+  // section call is individually safe for a non-existent slug (listSchedules →
+  // empty data, getStreamerHistory → [] via its rejection handler, getStreamerStats
+  // → null), so on the rare 404 we simply discard their in-flight results below.
+  const streamerCall = api.getStreamer(slug);
+  // Live + upcoming are split because the partner API filters by start_time >= from,
+  // which would exclude currently-live slots that started hours ago and always-on
+  // slots whose start_time is days in the past. Splitting keeps the upcoming
+  // window tight while still capturing live.
+  const liveCall = api.listSchedules({
+    streamerIds: [slug],
+    status: ['live'],
+    includeAlwaysOn: true,
+    from: oneYearAgo.toISOString(),
+    to: sixHoursFromNow.toISOString(),
+    limit: 10,
+  });
+  const upcomingCall = api.listSchedules({
+    streamerIds: [slug],
+    status: ['upcoming'],
+    includePredictions: true,
+    includeAlwaysOn: true,
+    from: now.toISOString(),
+    to: sevenDaysFromNow.toISOString(),
+    limit: 100,
+  });
+  // Best-effort: unlike getLastStream, getStreamerHistory does NOT swallow errors
+  // — the rejection handler here is load-bearing so a failing history lookup never
+  // rejects or breaks the page. Newest first; [0] feeds LastStreamCard, [1..8] the
+  // Recent-streams list.
+  const historyCall = api.getStreamerHistory(slug, { limit: 9 }).then(
+    (page) => page.data,
+    () => [] as PublicStreamHistory[],
+  );
+  // Best-effort too: getStreamerStats collapses errors AND has_stats:false to null.
+  // Cached for 1h in the data cache (stats move daily at most).
+  const statsCall = api.getStreamerStats(slug);
+
+  const streamer = await streamerCall;
   if (!streamer) {
+    // 404: discard the in-flight section calls. allSettled attaches a handler to
+    // each so a rejected live/upcoming fetch can't surface as an unhandled
+    // rejection — but we do NOT await it, so notFound() is not delayed.
+    void Promise.allSettled([liveCall, upcomingCall, historyCall, statsCall]);
     return {
       streamer: null,
       liveSlots: [],
@@ -74,49 +125,20 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     };
   }
 
-  const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
-  const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
-  const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
-
-  // Two parallel calls — the partner API filters by start_time >= from,
-  // which would exclude currently-live slots that started hours ago and
-  // always-on slots whose start_time is days in the past. Splitting the
-  // queries keeps the upcoming window tight while still capturing live.
-  const [liveCall, upcomingCall, history, stats] = await Promise.all([
-    api.listSchedules({
-      streamerIds: [slug],
-      status: ['live'],
-      includeAlwaysOn: true,
-      from: oneYearAgo.toISOString(),
-      to: sixHoursFromNow.toISOString(),
-      limit: 10,
-    }),
-    api.listSchedules({
-      streamerIds: [slug],
-      status: ['upcoming'],
-      includePredictions: true,
-      includeAlwaysOn: true,
-      from: now.toISOString(),
-      to: sevenDaysFromNow.toISOString(),
-      limit: 100,
-    }),
-    // Best-effort: unlike getLastStream, getStreamerHistory does NOT swallow
-    // errors — the rejection handler here is load-bearing so a failing history
-    // lookup never rejects this Promise.all or breaks the page. Newest first;
-    // [0] feeds LastStreamCard, [1..8] the Recent-streams list.
-    api.getStreamerHistory(slug, { limit: 9 }).then(
-      (page) => page.data,
-      () => [] as PublicStreamHistory[],
-    ),
-    // Best-effort too: getStreamerStats collapses errors AND has_stats:false
-    // to null. Cached for 1h in the data cache (stats move daily at most).
-    api.getStreamerStats(slug),
+  // Valid slug: await the section batch. A live/upcoming rejection still
+  // propagates here exactly as before (the page errors rather than silently
+  // dropping schedule data).
+  const [liveCall_, upcomingCall_, history, stats] = await Promise.all([
+    liveCall,
+    upcomingCall,
+    historyCall,
+    statsCall,
   ]);
 
   return {
     streamer,
-    liveSlots: liveCall.data,
-    upcomingSlots: upcomingCall.data,
+    liveSlots: liveCall_.data,
+    upcomingSlots: upcomingCall_.data,
     history,
     stats,
     now,
