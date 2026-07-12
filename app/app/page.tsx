@@ -16,13 +16,12 @@ import Image from "next/image";
 import { AppQrCode } from "@/components/web/AppQrCode";
 
 export const metadata: Metadata = {
-  title:
-    "Download Streamer Times — Free Twitch & YouTube Stream Guide App | iOS & Android",
+  title: "Download Streamer Times — Go-Live Alerts & AI Stream Predictions",
   description:
     "Download Streamer Times free for iOS and Android. AI-powered live predictions, EPG grid view, and instant go-live alerts for your favorite Twitch and YouTube streamers.",
   alternates: { canonical: "https://streamertimes.tv/app" },
   openGraph: {
-    title: "Download Streamer Times — Free Livestream Guide App",
+    title: "Download Streamer Times — Go-Live Alerts & AI Predictions",
     description:
       "AI-powered Twitch & YouTube stream predictions and go-live alerts. Free on iOS & Android.",
     url: "https://streamertimes.tv/app",

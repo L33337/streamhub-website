@@ -1,0 +1,28 @@
+# Streamer Times
+
+> Your Livestream Guide for Twitch & YouTube. AI-powered predictions of when
+> streamers go live, real-time go-live alerts, an EPG grid, and live status —
+> free on iOS & Android and on the web.
+
+Streamer Times tracks Twitch and YouTube streamers, detects cross-platform
+channels, and predicts upcoming stream schedules from streaming history and AI
+transcript analysis. Canonical domain: https://streamertimes.tv
+
+## Core pages
+- [Home / live schedule](https://streamertimes.tv/): Real-time live status and AI-powered schedule predictions.
+- [Who's live now](https://streamertimes.tv/live): Every streamer live right now, grouped by game and category.
+- [Games & categories](https://streamertimes.tv/games): Find streamers by the game or category they play.
+- [All streamers A–Z](https://streamertimes.tv/streamers): Full A–Z index of tracked Twitch and YouTube streamers.
+- [Get the app](https://streamertimes.tv/app): Go-live alerts and AI stream predictions, free for iOS and Android.
+
+## Detail pages
+- Streamer schedule: https://streamertimes.tv/streamer/{id}
+- Game / category hub: https://streamertimes.tv/game/{slug}
+
+## Developers
+- [Partner API](https://streamertimes.tv/developers): Public REST API for live schedules and AI predictions (waitlist).
+
+## Legal
+- [Privacy Policy](https://streamertimes.tv/privacy-policy)
+- [Terms of Service](https://streamertimes.tv/terms-of-service)
+- [Support](https://streamertimes.tv/support)

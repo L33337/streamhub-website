@@ -1,0 +1,51 @@
+import { ImageResponse } from 'next/og';
+import { getPartnerApi } from '@/lib/server/partner-api';
+import { findGameBySlug } from '@/lib/game-slug';
+import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+
+// nodejs so PARTNER_API_KEY reaches the route in `next dev`. This runs for every
+// game slug at build (generateStaticParams on the page), so it MUST degrade and
+// never throw — a thrown error during prerender aborts the entire production
+// build (see the documented 2026-07-07 incident in the page loader).
+export const runtime = 'nodejs';
+export const revalidate = 300; // cache per slug for 5 min (ISR) instead of per-request
+export const alt = 'Game streamers on StreamerTimes';
+export const size = { width: 1200, height: 630 };
+export const contentType = 'image/png';
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+// Fallback title when the category can't be resolved (API error / unknown slug):
+// prettify the slug so the card still reads sensibly ("just-chatting" → "Just
+// Chatting"). Not a perfect inverse of gameSlug(), but good enough for an image.
+function prettifySlug(slug: string): string {
+  return slug
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+export default async function Image({ params }: Props) {
+  const { slug } = await params;
+
+  let category: string | null = null;
+  try {
+    const games = await getPartnerApi().listGames({ limit: 500 });
+    category = findGameBySlug(games.data, slug)?.category ?? null;
+  } catch {
+    category = null;
+  }
+
+  const title = category ?? prettifySlug(slug);
+
+  return new ImageResponse(
+    renderOgFrame({
+      title,
+      subtitle: 'Live now · Upcoming schedule · AI predictions',
+    }),
+    { ...OG_SIZE },
+  );
+}
