@@ -41,3 +41,15 @@ Flag ON: `/auth/login` renders the Twitch/Google sign-in UI, the header mounts `
 2. Vercel: set `NEXT_PUBLIC_AUTH_ENABLED=true` → redeploy.
 3. Smoke-test: `/auth/login` renders; complete one Twitch and one Google login; `/feed` loads and `st_feed_seen`/`feed_events` behave; sign-out works.
 4. Rollback = unset the env var + redeploy (fully reversible, no data impact).
+
+# SEO surface
+
+Marketing/hub SEO conventions (last extended 2026-07-12 — keywords cleanup, global 404, llms.txt, per-hub OG images):
+
+- **Metadata**: no `keywords` meta anywhere (Google ignores it; removed from the root layout). `metadataBase` is set ONCE in `app/layout.tsx`; every page owns its `title`/`description`/`alternates.canonical`/`openGraph`. Intent split: the homepage keeps the "Stream Guide" wording, `/app` targets download/alert intent ("Go-Live Alerts & AI Stream Predictions") so the two don't cannibalize.
+- **OpenGraph images** (file-based `opengraph-image.tsx` per route segment; a route without one inherits the nearest ancestor's — the site-wide fallback is `app/opengraph-image.tsx`):
+  - Shared branded frame in `lib/og/frame.tsx` (`renderOgFrame({ title, subtitle, eyebrow?, pills? })` + `OG_SIZE`) — dark canvas, cyan radial glow, cyan/magenta corner brackets, "Streamer Times" eyebrow, STREAMERTIMES.TV footer. Reuse it for any new OG image; declare `runtime`/`size`/`alt`/`contentType` inline per route (Next reads them per segment).
+  - Hub images are DYNAMIC (`app/live`, `app/games`, `app/streamers`, `app/game/[slug]`): `runtime = 'nodejs'` (so `PARTNER_API_KEY` reaches the route in `next dev`), one cheap Partner API call for a counter/title, `revalidate = 300`. **Every fetch — including the `getPartnerApi()` call itself, which throws when the key is unset — is wrapped in `try/catch` and degrades to a count-free fallback. Never throw: a throw during prerender aborts the whole production build** (documented incident 2026-07-07). The Partner API exposes no total-row count (`PaginationInfo = {next_cursor, has_more}`), so `/live` and `/streamers` show the 60s-cached live-now count (`getLiveStreamerIdSet`), `/games` counts `listGames` rows, and `/game/[slug]` shows the resolved category name (slug prettified on failure).
+  - The pre-existing root `app/opengraph-image.tsx` (edge) and `app/streamer/[slug]/opengraph-image.tsx` (nodejs, per-streamer) are unchanged — they predate the shared helper.
+- **Global 404** `app/not-found.tsx`: fully static (synchronous, `Link`-only, NO data fetch / `cookies()` / segment config) so it renders inside the static root layout without breaking ISR — same rule as the layout itself. Also serves the catch-all/unmatched-route 404; links to Home + the four hubs.
+- **`public/llms.txt`**: served at `/llms.txt`, a curated Markdown map (USP + core URLs + Partner API) for LLM crawlers. Keep its URL list in sync with `app/sitemap.ts` `STATIC_URLS`.

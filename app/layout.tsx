@@ -26,16 +26,6 @@ export const metadata: Metadata = {
   title: "Streamer Times - Your Livestream Guide for Twitch & YouTube",
   description:
     "Streamer Times: Your Livestream Guide. AI-powered predictions, EPG grid view, and real-time notifications for Twitch and YouTube streamers. Free for iOS and Android.",
-  keywords: [
-    "twitch schedule",
-    "youtube live guide",
-    "stream predictions",
-    "live stream tv guide",
-    "when is streamer live",
-    "twitch tv guide",
-    "streaming schedule app",
-    "streamer times",
-  ],
   authors: [{ name: "Streamer Times" }],
   metadataBase: new URL("https://streamertimes.tv"),
   openGraph: {
