@@ -20,6 +20,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
   4. `npm run dev` → open `http://localhost:3000/api/dev-login` → lands signed-in on `/feed`. The route is triple-guarded (NODE_ENV=development + localhost Supabase URL + service key present) and 404s in production builds; it signs in via admin `generateLink` + `verifyOtp` because the local auth config has hCaptcha enabled.
   Gotcha: `TaskStop`/Ctrl-C can leave a detached `next dev` holding port 3000 — the next `npm run dev` then errors with "Another next dev server is already running" and prints the PID; `taskkill /PID <pid> /F` it.
 
+# Performance baseline (M20 Phase 0)
+
+Web-Vitals tooling for the perf-health runbook (`StreamHub/docs/performance-health.md`):
+
+- **`npm run lighthouse`** → `scripts/lighthouse-baseline.mjs`: runs the local `lighthouse` CLI over the URLs in `lighthouserc.json` (3 mobile runs each), prints median LCP/TBT/CLS/score + LCP element. **Windows-robust**: it writes each LHR before Chrome's teardown (chrome-launcher throws `EPERM` on Windows temp-cleanup *after* the report generates, which makes a bare `lhci autorun` abort with no output). `LH_RUNS=1` for a quick smoke run.
+- **`npm run lighthouse:ci`** → `lhci autorun` (Linux/CI only — the teardown bug doesn't fire there) — also enforces the budget assertions in `lighthouserc.json`. This is the hook for a future Lighthouse-CI budget (M20 S5.2).
+- Baseline finding to remember: streamer-page LCP is **render-delay-bound**, the LCP element is a text `<p>`, **not** the hero avatar — so adding `priority` to the avatar is a non-lever for LCP. Re-diagnose via the `largest-contentful-paint-element` audit before any LCP work.
+
 # Repo hygiene (added 2026-07-07 after a stale-branch cleanup)
 
 - `main` is the single source of truth and the GitHub default branch; it is protected against force-pushes and deletion. Vercel deploys production from `main`.

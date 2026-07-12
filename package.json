@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lighthouse": "node scripts/lighthouse-baseline.mjs",
+    "lighthouse:ci": "lhci autorun --config=lighthouserc.json"
   },
   "dependencies": {
     "@stoplight/elements": "^9.0.19",
@@ -25,12 +27,14 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "lighthouse": "^12.8.2",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
