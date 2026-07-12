@@ -5,6 +5,8 @@ import type {
   PublicStreamSlot,
 } from '@/lib/server/partner-api';
 import { formatDuration, localizedNextLabel, timezoneCityLabel } from '@/lib/format/time';
+import { listConjunction, resolveUiLang, weekdayLong } from '@/lib/i18n-core';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
 
 export interface FaqItem {
@@ -27,40 +29,28 @@ export interface FaqItem {
 // Every answer embeds the streamer's real name + real schedule/platform data, so
 // no two streamers produce the same text. Questions with no backing data are
 // dropped entirely (never rendered with a "no data" placeholder), which keeps the
-// block on the right side of Google's scaled-content-abuse policy. English only,
-// to match the page's English UI chrome.
+// block on the right side of Google's scaled-content-abuse policy.
+//
+// Localized to the streamer's language via lib/i18n-ui.ts (body-localization,
+// 2026-07): a German streamer's page answers "wann streamt X?" in German — the
+// language its search queries arrive in. English streamers (and unknown
+// languages) keep the original English wording byte-identically.
 
-function platformsLabel(platforms: Platform[]): string {
+function platformsLabel(platforms: Platform[], lang: string): string {
   const names = platforms.map((p) => (p === 'twitch' ? 'Twitch' : 'YouTube'));
-  if (names.length === 0) return 'Twitch and YouTube';
-  return listAnd(names);
+  if (names.length === 0) return listConjunction(['Twitch', 'YouTube'], lang);
+  return listConjunction(names, lang);
 }
 
-/** "A", "A and B", "A, B and C". */
-function listAnd(items: string[]): string {
-  if (items.length <= 1) return items[0] ?? '';
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
-}
-
-const WEEKDAY_ORDER = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-
-/** Distinct weekday names (UTC) the given slots fall on, in Mon→Sun order. */
-function distinctWeekdays(slots: PublicStreamSlot[]): string[] {
-  const present = new Set<string>();
+/** Localized long weekday names (UTC) the given slots fall on, in Mon→Sun order. */
+function distinctWeekdayLabels(slots: PublicStreamSlot[], lang: string): string[] {
+  const present = new Set<number>();
   for (const s of slots) {
     const d = new Date(s.start_time);
     if (Number.isNaN(d.getTime())) continue;
-    present.add(d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }));
+    present.add((d.getUTCDay() + 6) % 7); // ISO index: 0 = Monday … 6 = Sunday
   }
-  return WEEKDAY_ORDER.filter((w) => present.has(w));
+  return [...present].sort((a, b) => a - b).map((i) => weekdayLong(i, lang));
 }
 
 /** Up to `max` distinct, non-empty categories preserving first-seen order. */
@@ -85,7 +75,9 @@ export function buildStreamerFaqItems(
 ): FaqItem[] {
   const items: FaqItem[] = [];
   const name = streamer.name;
-  const platforms = platformsLabel(streamer.platforms);
+  const lang = resolveUiLang(streamer.language);
+  const L = uiLexFor(streamer.language).faq;
+  const platforms = platformsLabel(streamer.platforms, lang);
   const upcoming = [...upcomingSlots].sort((a, b) =>
     a.start_time.localeCompare(b.start_time),
   );
@@ -96,10 +88,8 @@ export function buildStreamerFaqItems(
   if (liveSlot) {
     const cat = liveSlot.category?.trim();
     items.push({
-      question: `Is ${name} live right now?`,
-      answer: cat
-        ? `Yes — ${name} is live now streaming ${cat} on ${platforms}.`
-        : `Yes — ${name} is live now on ${platforms}.`,
+      question: L.qIsLive(name),
+      answer: cat ? L.aIsLiveCat(name, cat, platforms) : L.aIsLive(name, platforms),
     });
   }
 
@@ -108,11 +98,11 @@ export function buildStreamerFaqItems(
   // it does not depend on anything being scheduled, so it keeps answering the
   // highest-volume query ("when does X stream") on otherwise quiet pages.
   if (stats && !streamer.is_always_on) {
-    let answer = statsLeadSentence(name, stats);
+    let answer = statsLeadSentence(name, stats, streamer.language);
     if (stats.typical_duration_minutes !== null) {
-      answer += ` Streams typically last around ${formatDuration(stats.typical_duration_minutes)}.`;
+      answer += ` ${L.typicallyLast(formatDuration(stats.typical_duration_minutes))}`;
     }
-    items.push({ question: `When does ${name} usually stream?`, answer });
+    items.push({ question: L.qUsually(name), answer });
   }
 
   // What is {name}'s stream schedule? — head-on match for the highest-volume
@@ -126,39 +116,44 @@ export function buildStreamerFaqItems(
     // "Sat 20:00 UTC (Just Chatting, predicted)" — entries joined with "; "
     // because categories and the predicted marker contain commas.
     const entries = top.map((s) => {
-      const label = localizedNextLabel(s.start_time, 'en', { relative: false });
+      const label = localizedNextLabel(s.start_time, lang, { relative: false });
       const cat = s.category?.trim();
-      const marker = s.is_predicted ? (cat ? `${cat}, predicted` : 'predicted') : cat;
+      const marker = s.is_predicted
+        ? cat
+          ? `${cat}, ${L.predictedMarker}`
+          : L.predictedMarker
+        : cat;
       return marker ? `${label} (${marker})` : label;
     });
-    let answer =
-      `${name} has ${n} stream${n === 1 ? '' : 's'} on the schedule for the next 7 days. ` +
-      `Next up: ${entries[0]}.`;
+    let answer = `${L.aScheduleLead(name, n)} ${L.nextUp(entries[0])}`;
     if (entries.length > 1) {
-      answer += ` After that: ${entries.slice(1).join('; ')}.`;
+      answer += ` ${L.afterThat(entries.slice(1).join('; '))}`;
     }
     if (n > top.length) {
-      answer += ` Plus ${n - top.length} more — see the full schedule above.`;
+      answer += ` ${L.plusMore(n - top.length)}`;
     }
     if (top.some((s) => s.is_predicted)) {
-      answer +=
-        ' Times marked as predictions are estimated by AI from past streaming patterns.';
+      answer += ` ${L.predictedNote}`;
     }
     if (stats?.typical_start && !streamer.is_always_on) {
-      answer += ` Outside these dates, ${name} typically goes live around ${stats.typical_start} (${statsTimezoneLabel(stats)}) — see the typical streaming times above.`;
+      answer += ` ${L.outsideDates(
+        name,
+        stats.typical_start,
+        statsTimezoneLabel(stats, streamer.language),
+      )}`;
     }
-    items.push({ question: `What is ${name}'s stream schedule?`, answer });
+    items.push({ question: L.qSchedule(name), answer });
   }
 
   // What games does {name} stream?
   const cats = distinctCategories(allSlots, 3);
   if (cats.length > 0) {
     items.push({
-      question: `What games does ${name} stream?`,
+      question: L.qGames(name),
       answer:
         cats.length === 1
-          ? `${name} is currently streaming ${cats[0]}. Browse the schedule above for upcoming streams.`
-          : `${name} streams ${listAnd(cats)}. Browse the schedule above to see what's coming up.`,
+          ? L.aGamesOne(name, cats[0])
+          : L.aGamesMany(name, listConjunction(cats, lang)),
     });
   }
 
@@ -166,38 +161,34 @@ export function buildStreamerFaqItems(
   // 28-day frequency, no overlap with the schedule item's 7-day count);
   // falls back to the 7-day slot count for streamers without stats.
   if (streamer.is_always_on) {
-    items.push({
-      question: `How often does ${name} stream?`,
-      answer: `${name} streams 24/7 — the channel is always live on ${platforms}.`,
-    });
+    items.push({ question: L.qHowOften(name), answer: L.aAlwaysOn(name, platforms) });
   } else if (stats?.streams_per_week != null) {
     items.push({
-      question: `How often does ${name} stream?`,
-      answer: `${name} streams about ${stats.streams_per_week} times per week on average, based on the last ${stats.window_days} days of broadcasts.`,
+      question: L.qHowOften(name),
+      answer: L.aPerWeek(name, stats.streams_per_week, stats.window_days),
     });
   } else if (upcoming.length > 0) {
-    const days = distinctWeekdays(upcoming);
-    const n = upcoming.length;
-    const answer =
-      `${name} has ${n} stream${n === 1 ? '' : 's'} on the schedule for the next 7 days` +
-      (days.length > 0 ? `, on ${listAnd(days)}.` : '.');
-    items.push({ question: `How often does ${name} stream?`, answer });
+    const days = distinctWeekdayLabels(upcoming, lang);
+    items.push({
+      question: L.qHowOften(name),
+      answer: L.aScheduleCount(
+        name,
+        upcoming.length,
+        days.length > 0 ? listConjunction(days, lang) : null,
+      ),
+    });
   }
 
   // Where can I watch {name}? — always available; keeps users on Streamer Times
   // rather than linking out to the platforms.
-  items.push({
-    question: `Where can I watch ${name}?`,
-    answer: `${name} streams live on ${platforms}. Add ${name} on Streamer Times to track their live status and upcoming streams in one place.`,
-  });
+  items.push({ question: L.qWhere(name), answer: L.aWhere(name, platforms) });
 
   // What timezone does {name} stream in? — use the city part of the IANA id
   // ("America/New_York" → "New York") for a readable sentence.
   if (streamer.timezone && !streamer.is_always_on) {
-    const tz = timezoneCityLabel(streamer.timezone);
     items.push({
-      question: `What timezone does ${name} stream in?`,
-      answer: `${name} is based in the ${tz} timezone. The schedule on this page shows each stream in your local time and in ${name}'s local time.`,
+      question: L.qTimezone(name),
+      answer: L.aTimezone(name, timezoneCityLabel(streamer.timezone)),
     });
   }
 
@@ -205,13 +196,12 @@ export function buildStreamerFaqItems(
   const predictedCount = upcoming.filter((s) => s.is_predicted).length;
   if (predictedCount > 0) {
     const total = upcoming.length;
-    const answer =
-      predictedCount === total
-        ? `${name}'s upcoming stream times are AI predictions based on past streaming patterns, each shown with a high, medium, or low confidence level. Confirmed times appear here once they're scheduled.`
-        : `${name}'s schedule mixes AI predictions with confirmed streams. ${predictedCount} of the ${total} upcoming times are predicted from past streaming patterns, shown with a confidence level.`;
     items.push({
-      question: `Are ${name}'s stream times predicted or confirmed?`,
-      answer,
+      question: L.qPredicted(name),
+      answer:
+        predictedCount === total
+          ? L.aAllPredicted(name)
+          : L.aMixed(name, predictedCount, total),
     });
   }
 

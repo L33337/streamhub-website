@@ -1,3 +1,5 @@
+import { slotLexFor } from '@/lib/i18n-slot';
+
 interface ChannelIds {
   twitchLogin: string | null;
   youtubeChannelId: string | null;
@@ -17,6 +19,8 @@ interface WatchButtonsProps extends ChannelIds {
   className?: string;
   /** flex-1 buttons (full-width split on the slot detail page). The hero passes false. */
   grow?: boolean;
+  /** Localizes button labels; default 'en' keeps StreamSlotDetail byte-identical. */
+  language?: string;
 }
 
 /**
@@ -29,9 +33,11 @@ export function WatchButtons({
   youtubeChannelId,
   className = 'mt-4 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3',
   grow = true,
+  language = 'en',
 }: WatchButtonsProps) {
   const { twitchUrl, youtubeUrl } = channelUrls({ twitchLogin, youtubeChannelId });
   if (!twitchUrl && !youtubeUrl) return null;
+  const L = slotLexFor(language);
 
   const growClass = grow ? 'flex-1 ' : '';
 
@@ -44,8 +50,8 @@ export function WatchButtons({
           rel="noopener noreferrer"
           className={`${growClass}inline-flex items-center justify-center gap-2 rounded-lg bg-twitch px-4 py-2.5 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#A266FF] sm:py-3`}
         >
-          Watch on Twitch
-          <span className="sr-only"> (opens in new tab)</span>
+          {L.watchOnTwitch}
+          <span className="sr-only">{L.opensInNewTab}</span>
         </a>
       )}
       {youtubeUrl && (
@@ -55,8 +61,8 @@ export function WatchButtons({
           rel="noopener noreferrer"
           className={`${growClass}inline-flex items-center justify-center gap-2 rounded-lg bg-youtube px-4 py-2.5 text-sm font-bold tracking-wide text-white shadow-[0_0_12px_rgba(0,240,255,0.25)] transition-colors hover:bg-[#FF3355] sm:py-3`}
         >
-          Watch on YouTube
-          <span className="sr-only"> (opens in new tab)</span>
+          {L.watchOnYouTube}
+          <span className="sr-only">{L.opensInNewTab}</span>
         </a>
       )}
     </div>
@@ -65,6 +71,8 @@ export function WatchButtons({
 
 interface ChannelLinksProps extends ChannelIds {
   className?: string;
+  /** Localizes the sr-only external-link hint; default 'en'. */
+  language?: string;
 }
 
 /**
@@ -76,9 +84,11 @@ export function ChannelLinks({
   twitchLogin,
   youtubeChannelId,
   className = '',
+  language = 'en',
 }: ChannelLinksProps) {
   const { twitchUrl, youtubeUrl } = channelUrls({ twitchLogin, youtubeChannelId });
   if (!twitchUrl && !youtubeUrl) return null;
+  const L = slotLexFor(language);
 
   return (
     <p className={`text-sm text-text-secondary ${className}`}>
@@ -90,7 +100,7 @@ export function ChannelLinks({
           className="font-medium text-twitch-fg transition-colors hover:text-white"
         >
           Twitch<span aria-hidden="true"> ↗</span>
-          <span className="sr-only"> (opens in new tab)</span>
+          <span className="sr-only">{L.opensInNewTab}</span>
         </a>
       )}
       {twitchUrl && youtubeUrl && <span className="text-text-muted"> · </span>}
@@ -102,7 +112,7 @@ export function ChannelLinks({
           className="font-medium text-youtube-fg transition-colors hover:text-white"
         >
           YouTube<span aria-hidden="true"> ↗</span>
-          <span className="sr-only"> (opens in new tab)</span>
+          <span className="sr-only">{L.opensInNewTab}</span>
         </a>
       )}
     </p>

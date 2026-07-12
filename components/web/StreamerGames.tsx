@@ -5,6 +5,7 @@ import {
   type PublicStreamSlot,
 } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
+import { uiLexFor } from '@/lib/i18n-ui';
 
 /**
  * "Games" section on a streamer page: links the games this streamer plays to
@@ -17,7 +18,14 @@ import { gameSlug } from '@/lib/game-slug';
  * are linked, so we never emit a link to a 404. Renders nothing otherwise.
  * Async server component; degrades to null on any Partner API error.
  */
-export async function StreamerGames({ slots }: { slots: PublicStreamSlot[] }) {
+export async function StreamerGames({
+  slots,
+  language = null,
+}: {
+  slots: PublicStreamSlot[];
+  /** Streamer's broadcaster language — localizes heading/aria (null → en). */
+  language?: string | null;
+}) {
   const counts = new Map<string, number>();
   for (const s of slots) {
     const c = s.category?.trim();
@@ -47,9 +55,12 @@ export async function StreamerGames({ slots }: { slots: PublicStreamSlot[] }) {
         id="games-heading"
         className="text-sm font-bold uppercase tracking-widest text-text-muted"
       >
-        Games
+        {uiLexFor(language).games.heading}
       </h2>
-      <nav aria-label="Games this streamer plays" className="mt-4 flex flex-wrap gap-2">
+      <nav
+        aria-label={uiLexFor(language).games.navAria}
+        className="mt-4 flex flex-wrap gap-2"
+      >
         {top.map((cat) => (
           <Link
             key={cat}

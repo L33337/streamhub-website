@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { useFavorites } from '@/hooks/useFavorites';
+import { slotLexFor } from '@/lib/i18n-slot';
 import { AUTH_ENABLED } from '@/lib/auth-flag';
 
 type Size = 'sm' | 'md';
@@ -14,6 +15,8 @@ interface Props {
   className?: string;
   /** Fires after the toggle resolves (M16: feed interaction logging). */
   onToggled?: (nowFavorited: boolean) => void;
+  /** Localizes labels/titles on the streamer page; default 'en' keeps search/feed/favorites callers byte-identical. */
+  language?: string;
 }
 
 const SIZE_CLASSES: Record<Size, { button: string; icon: number }> = {
@@ -51,16 +54,16 @@ export function FavoriteButton({
   size = 'md',
   className = '',
   onToggled,
+  language = 'en',
 }: Props) {
   const { user } = useAuth();
   const { isFavorited, toggle } = useFavorites();
   const router = useRouter();
   const pathname = usePathname();
   const sizeClasses = SIZE_CLASSES[size];
+  const L = slotLexFor(language);
 
-  const label = streamerName
-    ? `Favorite ${streamerName}`
-    : 'Favorite streamer';
+  const label = L.favoriteAria(streamerName);
 
   // Signed-out users: with auth enabled the heart leads to sign-in (returning
   // here afterwards); while auth is dormant it points to the mobile app, where
@@ -76,10 +79,10 @@ export function FavoriteButton({
         type="button"
         aria-label={
           AUTH_ENABLED
-            ? `Sign in to favorite ${streamerName ?? 'this streamer'}`
-            : `Save ${streamerName ?? 'streamer'} in the app`
+            ? L.signInToFavoriteAria(streamerName)
+            : L.saveInAppAria(streamerName)
         }
-        title={AUTH_ENABLED ? 'Sign in to save favorites' : 'Save in the app'}
+        title={AUTH_ENABLED ? L.signInTitle : L.saveInAppTitle}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -99,7 +102,7 @@ export function FavoriteButton({
       type="button"
       aria-label={label}
       aria-pressed={favorited}
-      title={favorited ? 'Remove from favorites' : 'Add to favorites'}
+      title={favorited ? L.removeFromFavorites : L.addToFavorites}
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();

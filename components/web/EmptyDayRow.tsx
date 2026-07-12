@@ -1,10 +1,20 @@
+import { slotLexFor } from '@/lib/i18n-slot';
+
 /**
  * Slim placeholder for a day with no scheduled or predicted streams, so the
  * 7-day structure on the streamer page stays readable instead of days silently
  * disappearing. Keeps the h2 outline and the `day-…` anchor in parity with
- * DaySection.
+ * DaySection. `language` localizes the placeholder text (default 'en').
  */
-export function EmptyDayRow({ dateKey, label }: { dateKey: string; label: string }) {
+export function EmptyDayRow({
+  dateKey,
+  label,
+  language = 'en',
+}: {
+  dateKey: string;
+  label: string;
+  language?: string;
+}) {
   return (
     <section
       id={`day-${dateKey}`}
@@ -17,7 +27,7 @@ export function EmptyDayRow({ dateKey, label }: { dateKey: string; label: string
       >
         {label}
         <span className="text-sm font-normal text-text-muted">
-          No streams expected
+          {slotLexFor(language).noStreamsExpected}
         </span>
       </h2>
     </section>

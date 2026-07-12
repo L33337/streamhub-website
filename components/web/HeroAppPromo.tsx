@@ -1,11 +1,6 @@
 import QRCode from 'react-qr-code';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { QR_TARGET } from './AppQrCode';
-
-const VALUE_PROPS = [
-  'Save your favorite streamers',
-  'Get notified the moment they go live',
-  'Add any new streamer in seconds',
-];
 
 /**
  * Compact app promo for the streamer hero. Desktop gets a small QR code (the
@@ -13,15 +8,16 @@ const VALUE_PROPS = [
  * "Get the app" pill linking to /get (UA-based store redirect) instead — a QR
  * code is useless on the device it points to. Both share the same value-prop
  * bullets. Pure static markup (react-qr-code renders SVG), so it stays a
- * Server Component.
+ * Server Component. Copy is localized to the streamer's language (null → en).
  */
-export function HeroAppPromo() {
+export function HeroAppPromo({ language = null }: { language?: string | null }) {
+  const L = uiLexFor(language).promo;
   return (
     <div className="mt-5 flex flex-col items-center gap-4 md:flex-row md:justify-start">
       <div className="hidden shrink-0 md:block">
         <div
           role="img"
-          aria-label="QR code — scan with your phone to get the Streamer Times app"
+          aria-label={L.qrAria}
           className="rounded-xl border border-border-default bg-background-elevated p-2 shadow-[0_0_15px_rgba(0,240,255,0.15)]"
         >
           <div className="rounded-md bg-white p-1.5">
@@ -39,7 +35,7 @@ export function HeroAppPromo() {
       </div>
 
       <ul className="space-y-1 text-left text-sm text-text-secondary">
-        {VALUE_PROPS.map((prop) => (
+        {L.valueProps.map((prop) => (
           <li key={prop} className="flex items-center gap-2">
             <span aria-hidden="true" className="text-accent-cyan">
               •
@@ -55,7 +51,7 @@ export function HeroAppPromo() {
         href="/get"
         className="inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan transition-colors hover:bg-accent-cyan/20 md:hidden"
       >
-        Get the app
+        {L.getApp}
       </a>
     </div>
   );

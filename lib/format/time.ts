@@ -55,29 +55,35 @@ export function formatDuration(minutes: number): string {
 /**
  * Short date label in the *browser's* timezone, e.g. "Fri, Jul 3". Client-side
  * only — on the server (unknown viewer timezone) use `formatUtcDateShort`.
- * Locale is pinned to en-US so weekday/month names match the English UI; only
- * the timezone comes from the browser.
+ * The default 'en' is pinned to en-US so English pages stay byte-identical;
+ * pass the streamer's language on localized bodies. Only the timezone comes
+ * from the browser.
  */
-export function formatLocalDateShort(iso: string): string {
+export function formatLocalDateShort(iso: string, lang = 'en'): string {
   try {
-    return new Date(iso).toLocaleDateString('en-US', {
+    return new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : lang, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
     });
   } catch {
-    return formatUtcDateShort(iso);
+    return formatUtcDateShort(iso, lang);
   }
 }
 
 /** Short date label in UTC, e.g. "Sat, Jul 4" — deterministic SSR counterpart. */
-export function formatUtcDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
+export function formatUtcDateShort(iso: string, lang = 'en'): string {
+  const options: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     timeZone: 'UTC',
-  });
+  };
+  try {
+    return new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : lang, options);
+  } catch {
+    return new Date(iso).toLocaleDateString('en-US', options);
+  }
 }
 
 export function groupSlotsByUtcDate<T extends { start_time: string }>(
@@ -96,30 +102,59 @@ export function groupSlotsByUtcDate<T extends { start_time: string }>(
   return map;
 }
 
-export function utcDateLabel(yyyyMmDd: string, todayUtc: string): string {
-  if (yyyyMmDd === todayUtc) return 'Today';
+/**
+ * "Today"/"Tomorrow" in `lang` via Intl.RelativeTimeFormat (numeric:'auto'),
+ * capitalized like the English literals ("Heute", "Сегодня", "今日"). Falls
+ * back to the English words on unknown tags.
+ */
+function relativeDayLabel(diffDays: 0 | 1, lang: string): string {
+  if (lang === 'en') return diffDays === 0 ? 'Today' : 'Tomorrow';
+  try {
+    const rel = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' }).format(
+      diffDays,
+      'day',
+    );
+    return rel.charAt(0).toUpperCase() + rel.slice(1);
+  } catch {
+    return diffDays === 0 ? 'Today' : 'Tomorrow';
+  }
+}
+
+export function utcDateLabel(yyyyMmDd: string, todayUtc: string, lang = 'en'): string {
+  if (yyyyMmDd === todayUtc) return relativeDayLabel(0, lang);
   const today = new Date(todayUtc + 'T00:00:00Z');
   const target = new Date(yyyyMmDd + 'T00:00:00Z');
   const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-  if (diffDays === 1) return 'Tomorrow';
-  return target.toLocaleDateString('en-US', {
+  if (diffDays === 1) return relativeDayLabel(1, lang);
+  const options: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     timeZone: 'UTC',
-  });
+  };
+  try {
+    return target.toLocaleDateString(lang === 'en' ? 'en-US' : lang, options);
+  } catch {
+    return target.toLocaleDateString('en-US', options);
+  }
 }
 
-export function utcDateShortLabel(yyyyMmDd: string, todayUtc: string): string {
-  if (yyyyMmDd === todayUtc) return 'Today';
+export function utcDateShortLabel(
+  yyyyMmDd: string,
+  todayUtc: string,
+  lang = 'en',
+): string {
+  if (yyyyMmDd === todayUtc) return relativeDayLabel(0, lang);
   const today = new Date(todayUtc + 'T00:00:00Z');
   const target = new Date(yyyyMmDd + 'T00:00:00Z');
   const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-  if (diffDays === 1) return 'Tomorrow';
-  return target.toLocaleDateString('en-US', {
-    weekday: 'short',
-    timeZone: 'UTC',
-  });
+  if (diffDays === 1) return relativeDayLabel(1, lang);
+  const options: Intl.DateTimeFormatOptions = { weekday: 'short', timeZone: 'UTC' };
+  try {
+    return target.toLocaleDateString(lang === 'en' ? 'en-US' : lang, options);
+  } catch {
+    return target.toLocaleDateString('en-US', options);
+  }
 }
 
 /**

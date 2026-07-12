@@ -5,6 +5,9 @@ import type {
   StatsWeekday,
 } from '@/lib/server/partner-api';
 import { formatDuration } from '@/lib/format/time';
+import { resolveUiLang, weekdayLong } from '@/lib/i18n-core';
+import { uiLexFor } from '@/lib/i18n-ui';
+import { dirFor } from '@/lib/seo';
 import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
 
 interface Props {
@@ -12,14 +15,16 @@ interface Props {
   stats: PublicStreamerStats;
 }
 
-const WEEKDAYS: Array<{ key: StatsWeekday; label: string }> = [
-  { key: 'monday', label: 'Monday' },
-  { key: 'tuesday', label: 'Tuesday' },
-  { key: 'wednesday', label: 'Wednesday' },
-  { key: 'thursday', label: 'Thursday' },
-  { key: 'friday', label: 'Friday' },
-  { key: 'saturday', label: 'Saturday' },
-  { key: 'sunday', label: 'Sunday' },
+// ISO order Mon→Sun; labels come from Intl (weekdayLong) in the streamer's
+// language — 'Monday'…'Sunday' for the English default.
+const WEEKDAY_KEYS: StatsWeekday[] = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 ];
 
 /**
@@ -30,10 +35,17 @@ const WEEKDAYS: Array<{ key: StatsWeekday; label: string }> = [
  * arrive as streamer-local "HH:MM" strings; the semantic <table> keeps the
  * weekly raster extractable for search-result snippets.
  *
+ * Localized to the streamer's language (body-localization 2026-07); prose
+ * blocks carry dir for RTL languages while the table/tiles stay LTR.
+ *
  * Callers only render this when stats are available (`getStreamerStats`
  * collapses has_stats:false and errors to null), so no empty state here.
  */
 export function StreamerStatsBlock({ streamer, stats }: Props) {
+  const lang = resolveUiLang(streamer.language);
+  const L = uiLexFor(streamer.language).stats;
+  const proseDir = dirFor(streamer.language);
+  const tzLabel = statsTimezoneLabel(stats, streamer.language);
   const byWeekday = new Map<StatsWeekday, PublicStreamerStatsWeekday>(
     stats.weekdays.map((d) => [d.weekday, d]),
   );
@@ -45,32 +57,31 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
       className="mt-16 border-t border-divider pt-8"
     >
       <h2 id="stats-heading" className="text-2xl font-bold text-white">
-        When does {streamer.name} stream?
+        {L.heading(streamer.name)}
       </h2>
-      <p className="mt-3 text-text-secondary">{statsLeadSentence(streamer.name, stats)}</p>
+      <p className="mt-3 text-text-secondary" dir={proseDir}>
+        {statsLeadSentence(streamer.name, stats, streamer.language)}
+      </p>
 
       {stats.weekdays.length > 0 && (
         <div className="mt-6 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
           <table className="w-full text-sm">
-            <caption className="sr-only">
-              Typical streaming times for {streamer.name} by weekday, shown in{' '}
-              {statsTimezoneLabel(stats)}
-            </caption>
+            <caption className="sr-only">{L.caption(streamer.name, tzLabel)}</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  Day
+                  {L.colDay}
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  Typical time
+                  {L.colTime}
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  Duration
+                  {L.colDuration}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {WEEKDAYS.map(({ key, label }) => {
+              {WEEKDAY_KEYS.map((key, isoIndex) => {
                 const day = byWeekday.get(key);
                 return (
                   <tr key={key} className="border-t border-divider">
@@ -78,7 +89,7 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
                       scope="row"
                       className="px-3 py-2 text-left font-medium text-text-primary"
                     >
-                      {label}
+                      {weekdayLong(isoIndex, lang)}
                     </th>
                     {day ? (
                       <>
@@ -91,7 +102,7 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
                       </>
                     ) : (
                       <td colSpan={2} className="px-3 py-2 text-text-muted">
-                        Usually no stream
+                        {L.usuallyNoStream}
                       </td>
                     )}
                   </tr>
@@ -106,7 +117,7 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
         {stats.streams_per_week !== null && (
           <div className="rounded-xl bg-background-elevated p-3">
             <div className="text-xs uppercase tracking-wider text-text-muted">
-              Streams per week
+              {L.streamsPerWeek}
             </div>
             <div className="mt-1 text-lg font-bold text-text-primary">
               {stats.streams_per_week}
@@ -116,7 +127,7 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
         {stats.typical_duration_minutes !== null && (
           <div className="rounded-xl bg-background-elevated p-3">
             <div className="text-xs uppercase tracking-wider text-text-muted">
-              Typical stream length
+              {L.typicalLength}
             </div>
             <div className="mt-1 text-lg font-bold text-text-primary">
               ~{formatDuration(stats.typical_duration_minutes)}
@@ -128,7 +139,7 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
       {stats.top_categories.length > 0 && (
         <div className="mt-5">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-text-muted">
-            Most streamed categories
+            {L.topCategories}
           </h3>
           <p className="mt-2 text-sm text-text-secondary">
             {stats.top_categories
@@ -138,9 +149,8 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
         </div>
       )}
 
-      <p className="mt-4 text-xs text-text-muted">
-        Based on {stats.sample_size} streams over the last {stats.window_days} days. All times
-        shown in {statsTimezoneLabel(stats)}
+      <p className="mt-4 text-xs text-text-muted" dir={proseDir}>
+        {L.basedOn(stats.sample_size, stats.window_days)} {L.allTimesIn(tzLabel)}
         {stats.timezone !== 'UTC' ? ` (${stats.timezone})` : ''}.
       </p>
     </section>

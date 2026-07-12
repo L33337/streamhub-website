@@ -4,6 +4,8 @@ import type {
   PublicStreamSlot,
 } from '@/lib/server/partner-api';
 import { buildStreamerFaqItems } from '@/lib/streamer-faq';
+import { uiLexFor } from '@/lib/i18n-ui';
+import { dirFor } from '@/lib/seo';
 import { FAQItem } from './FAQItem';
 
 interface Props {
@@ -29,9 +31,10 @@ export function StreamerFaqBlock({ streamer, liveSlots, upcomingSlots, stats = n
       className="mt-16 border-t border-divider pt-8"
     >
       <h2 id="faq-heading" className="text-2xl font-bold text-white">
-        Frequently asked questions
+        {uiLexFor(streamer.language).faq.heading}
       </h2>
-      <div className="mt-4">
+      {/* dir only on the prose container (RTL languages) — never on layout. */}
+      <div className="mt-4" dir={dirFor(streamer.language)}>
         {items.map((item) => (
           <FAQItem key={item.question} question={item.question} answer={item.answer} />
         ))}

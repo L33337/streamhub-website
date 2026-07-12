@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
 import { langCode, dirFor } from '@/lib/seo';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -24,11 +25,14 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
     isLive && liveSlot.platforms.includes('youtube') ? streamer.youtube_channel_id : null;
 
   // Mark broadcaster-language text (bio, stream title) so browsers/screen readers
-  // treat it correctly while the English UI chrome (and <html lang="en">) stays put.
-  // Only set when the language is actually non-English; dir flips only for RTL.
+  // treat it correctly. Kept although the surrounding body is now localized to
+  // the same language: for languages WITHOUT a lexicon (resolveUiLang → 'en')
+  // the chrome stays English while the bio is still native — these spans are
+  // load-bearing exactly then. dir flips only for RTL.
   const code = langCode(streamer.language); // 'en' when null/unknown
   const nativeLang = code !== 'en' ? code : undefined;
   const nativeDir = dirFor(streamer.language);
+  const L = uiLexFor(streamer.language);
 
   return (
     <header className="relative gradient-border p-6 md:p-8">
@@ -36,7 +40,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
         {streamer.avatar_url ? (
           <Image
             src={streamer.avatar_url}
-            alt={`${streamer.name} avatar`}
+            alt={L.hero.avatarAlt(streamer.name)}
             width={160}
             height={160}
             sizes="160px"
@@ -56,6 +60,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
               streamerName={streamer.name}
               size="md"
               className="mt-1 shrink-0"
+              language={streamer.language ?? undefined}
             />
           </div>
 
@@ -63,11 +68,11 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             {streamer.platforms.map((p) => (
               <PlatformBadge key={p} platform={p} />
             ))}
-            {isLive && <LiveBadge />}
+            {isLive && <LiveBadge language={streamer.language ?? undefined} />}
             {isAlwaysOn && <AlwaysOnBadge />}
             {streamer.is_featured && (
               <span className="inline-flex items-center rounded-full border border-accent-pink/40 bg-accent-pink/10 px-2 py-0.5 text-xs font-medium text-accent-pink">
-                Featured
+                {L.hero.featured}
               </span>
             )}
           </div>
@@ -77,12 +82,13 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
               twitchLogin={streamer.twitch_login}
               youtubeChannelId={streamer.youtube_channel_id}
               className="mt-3 text-center md:text-left"
+              language={streamer.language ?? undefined}
             />
           )}
 
           {isLive && liveSlot && (
             <p className="mt-4 text-text-secondary">
-              <span className="text-text-primary font-semibold">Now streaming:</span>{' '}
+              <span className="text-text-primary font-semibold">{L.hero.nowStreaming}</span>{' '}
               <span lang={nativeLang} dir={nativeDir}>
                 {liveSlot.title}
               </span>
@@ -98,6 +104,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
               youtubeChannelId={liveYoutubeChannelId}
               grow={false}
               className="mt-4 flex flex-wrap justify-center gap-3 md:justify-start"
+              language={streamer.language ?? undefined}
             />
           )}
 
@@ -109,7 +116,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             />
           )}
 
-          <HeroAppPromo />
+          <HeroAppPromo language={streamer.language} />
         </div>
       </div>
     </header>

@@ -15,6 +15,8 @@ import {
   buildProfilePageJsonLd,
   buildStreamerMetadata,
 } from '@/lib/seo';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { ChannelStats } from '@/components/web/ChannelStats';
 import { StreamerHero } from '@/components/web/StreamerHero';
@@ -181,14 +183,25 @@ export default async function StreamerPage({ params }: Props) {
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
   const broadcastEvents = buildBroadcastEventsJsonLd(streamer, allSlots, slug);
 
+  // Body localization: the page body renders in the streamer's language (their
+  // search queries arrive in that language); unknown/unsupported languages fall
+  // back to English and get no lang attribute. UI chrome (header/footer) and
+  // <html lang="en"> stay English — the localized <main> carries its own lang.
+  const uiLang = resolveUiLang(streamer.language);
+  const L = uiLexFor(streamer.language);
+
+  // Breadcrumb names must match the visible breadcrumb below (Google guidance).
   const breadcrumb = buildBreadcrumbJsonLd([
-    { name: 'Home', url: 'https://streamertimes.tv' },
-    { name: 'Streamers', url: 'https://streamertimes.tv/streamers' },
+    { name: L.breadcrumb.home, url: 'https://streamertimes.tv' },
+    { name: L.breadcrumb.streamers, url: 'https://streamertimes.tv/streamers' },
     { name: streamer.name },
   ]);
 
   return (
-    <main className="container mx-auto max-w-5xl px-4 py-8">
+    <main
+      className="container mx-auto max-w-5xl px-4 py-8"
+      lang={uiLang !== 'en' ? uiLang : undefined}
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
@@ -213,7 +226,7 @@ export default async function StreamerPage({ params }: Props) {
           "Home" crumb stays JSON-LD-only, same convention as the game pages). */}
       <p className="mb-3 text-sm text-text-muted">
         <Link href="/streamers" className="hover:text-accent-cyan">
-          Streamers
+          {L.breadcrumb.streamers}
         </Link>{' '}
         / {streamer.name}
       </p>
@@ -225,6 +238,7 @@ export default async function StreamerPage({ params }: Props) {
           stream={lastStream}
           streamerName={streamer.name}
           avatarUrl={streamer.avatar_url}
+          language={streamer.language}
         />
       )}
 
@@ -232,12 +246,24 @@ export default async function StreamerPage({ params }: Props) {
         <EmptyScheduleState streamer={streamer} />
       ) : (
         <>
-          <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
+          <DayNavBar
+            days={sevenDays}
+            grouped={grouped}
+            todayUtc={todayUtc}
+            language={streamer.language ?? undefined}
+          />
           {sevenDays.map((dateKey) => {
             const slots = grouped.get(dateKey) ?? [];
-            const label = utcDateLabel(dateKey, todayUtc);
+            const label = utcDateLabel(dateKey, todayUtc, uiLang);
             if (slots.length === 0) {
-              return <EmptyDayRow key={dateKey} dateKey={dateKey} label={label} />;
+              return (
+                <EmptyDayRow
+                  key={dateKey}
+                  dateKey={dateKey}
+                  label={label}
+                  language={streamer.language ?? undefined}
+                />
+              );
             }
             return (
               <DaySection
@@ -245,6 +271,7 @@ export default async function StreamerPage({ params }: Props) {
                 dateKey={dateKey}
                 label={label}
                 slots={slots}
+                language={streamer.language ?? undefined}
               />
             );
           })}
@@ -260,7 +287,11 @@ export default async function StreamerPage({ params }: Props) {
       {stats && <StreamerStatsBlock streamer={streamer} stats={stats} />}
 
       {recentStreams.length > 0 && (
-        <RecentStreamsSection streams={recentStreams} now={now} />
+        <RecentStreamsSection
+          streams={recentStreams}
+          now={now}
+          language={streamer.language}
+        />
       )}
 
       <StreamerFaqBlock
@@ -277,7 +308,7 @@ export default async function StreamerPage({ params }: Props) {
           route-level loading shell turns notFound() into a cached soft-404
           (HTTP 200). Verified empirically 2026-07-06. Their fetches are
           parallelized inside RelatedStreamers instead. */}
-      <StreamerGames slots={allSlots} />
+      <StreamerGames slots={allSlots} language={streamer.language} />
       <RelatedStreamers currentId={streamer.id} language={streamer.language} />
     </main>
   );
