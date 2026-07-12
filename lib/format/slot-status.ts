@@ -1,16 +1,36 @@
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
+import { slotLexFor } from '@/lib/i18n-slot';
 import { formatLocalDateShort, formatUtcDateShort } from './time';
 
-export function getRelativeTime(date: Date | string): string {
+/**
+ * Coarse elapsed/remaining duration, e.g. "2 hours" / "45 minutes". The
+ * default 'en' path is the legacy hand-rolled string (byte-identical for the
+ * shared English pages); other languages come from Intl.NumberFormat's unit
+ * style ("2 Stunden", "2 часа" — with correct plural inflection).
+ */
+export function getRelativeTime(date: Date | string, lang = 'en'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
   const diffMs = Math.abs(now.getTime() - d.getTime());
   const diffMins = Math.floor(diffMs / 60_000);
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours >= 1) {
-    return `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+  if (lang === 'en') {
+    if (diffHours >= 1) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+    }
+    return `${diffMins} minute${diffMins !== 1 ? 's' : ''}`;
   }
-  return `${diffMins} minute${diffMins !== 1 ? 's' : ''}`;
+  const unit = diffHours >= 1 ? 'hour' : 'minute';
+  const n = diffHours >= 1 ? diffHours : diffMins;
+  try {
+    return new Intl.NumberFormat(lang, {
+      style: 'unit',
+      unit,
+      unitDisplay: 'long',
+    }).format(n);
+  } catch {
+    return getRelativeTime(date, 'en');
+  }
 }
 
 export function getShortApproximateRelativeTime(date: Date | string): string {
@@ -30,6 +50,25 @@ export function getHourLabel(hour: number): string {
   return `${hour - 12}pm`;
 }
 
+/**
+ * Hour label in the requested language: the legacy 12-hour "10pm" for 'en'
+ * (byte-identical on shared English pages); otherwise Intl decides the hour
+ * cycle and digits ("22:00" for de/fr/ru/ja, Arabic-Indic digits for ar).
+ * Minute is included for non-en so 24h locales don't render a bare "22".
+ */
+function localizedHourLabel(hour: number, lang: string): string {
+  if (lang === 'en') return getHourLabel(hour);
+  try {
+    return new Intl.DateTimeFormat(lang, {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    }).format(Date.UTC(2024, 0, 1, hour));
+  } catch {
+    return getHourLabel(hour);
+  }
+}
+
 function getEndTime(startTime: Date | string, durationMinutes: number): Date {
   const start = typeof startTime === 'string' ? new Date(startTime) : startTime;
   return new Date(start.getTime() + durationMinutes * 60_000);
@@ -42,8 +81,10 @@ function getEndTime(startTime: Date | string, durationMinutes: number): Date {
  * "GMT-7" for Los Angeles), so we try both and keep the first non-offset name,
  * falling back to en-US's "GMT+X" style for zones neither locale names.
  * Falls back to UTC when the timezone is null or not a valid IANA id.
+ * The zone abbreviation stays in its latinized form on localized bodies; only
+ * the hour part follows `lang`.
  */
-function formatZoneHour(iso: string, timeZone: string | null): string {
+function formatZoneHour(iso: string, timeZone: string | null, lang = 'en'): string {
   const d = new Date(iso);
   if (timeZone) {
     try {
@@ -69,13 +110,13 @@ function formatZoneHour(iso: string, timeZone: string | null): string {
         }
       }
       if (hour !== null && zone) {
-        return `${getHourLabel(hour)} ${zone}`;
+        return `${localizedHourLabel(hour, lang)} ${zone}`;
       }
     } catch {
       // Invalid IANA id — fall through to UTC.
     }
   }
-  return `${getHourLabel(d.getUTCHours())} UTC`;
+  return `${localizedHourLabel(d.getUTCHours(), lang)} UTC`;
 }
 
 /**
@@ -86,17 +127,28 @@ function formatZoneHour(iso: string, timeZone: string | null): string {
  * Pass `useUtc=true` for SSR to get a deterministic, timezone-free hour
  * (matches the LocalTime SSR fallback pattern); pass false on the client
  * for browser-local rounding.
+ *
+ * `lang` localizes the phrasing via lib/i18n-slot.ts; the default 'en'
+ * composition is byte-identical to the previously hardcoded strings, so the
+ * shared English pages (/, /live, /game, feed) render exactly as before.
  */
-export function getStatusText(slot: PublicStreamSlot, useUtc = false): string {
+export function getStatusText(
+  slot: PublicStreamSlot,
+  useUtc = false,
+  lang = 'en',
+): string {
+  const L = slotLexFor(lang);
   const start = new Date(slot.start_time);
   const end = getEndTime(start, slot.duration_minutes);
 
   if (slot.status === 'live') {
-    const liveSince = getRelativeTime(start);
-    if (slot.is_always_on) return `Live since ${liveSince}`;
+    const liveSince = getRelativeTime(start, lang);
+    if (slot.is_always_on) return L.statusLiveSince(liveSince);
     const now = new Date();
-    if (now > end) return `Live since ${liveSince} · Ends in ~1h`;
-    return `Live since ${liveSince} · Ends in ${getShortApproximateRelativeTime(end)}`;
+    if (now > end) return `${L.statusLiveSince(liveSince)} · ${L.statusEndsIn('~1h')}`;
+    return `${L.statusLiveSince(liveSince)} · ${L.statusEndsIn(
+      getShortApproximateRelativeTime(end),
+    )}`;
   }
 
   if (slot.status === 'upcoming') {
@@ -105,18 +157,20 @@ export function getStatusText(slot: PublicStreamSlot, useUtc = false): string {
     // When the streamer part resolves to the same UTC hour already shown
     // (unknown, invalid, or UTC-valued streamer timezone) the server snapshot
     // would read "… 12pm UTC · 12pm UTC" — skip the redundant suffix there.
-    const utcHour = `${getHourLabel(start.getUTCHours())} UTC`;
-    const localHour = useUtc ? utcHour : `${getHourLabel(start.getHours())} your time`;
-    const streamerHour = formatZoneHour(slot.start_time, slot.streamer_timezone);
+    const utcHour = `${localizedHourLabel(start.getUTCHours(), lang)} UTC`;
+    const localHour = useUtc
+      ? utcHour
+      : L.statusYourTime(localizedHourLabel(start.getHours(), lang));
+    const streamerHour = formatZoneHour(slot.start_time, slot.streamer_timezone, lang);
     const suffix = useUtc && streamerHour === utcHour ? '' : ` · ${streamerHour}`;
     if (slot.is_predicted && new Date() >= start) {
-      return `Was expected around ${localHour}${suffix}`;
+      return L.statusWasExpected(`${localHour}${suffix}`);
     }
     const date = useUtc
-      ? formatUtcDateShort(slot.start_time)
-      : formatLocalDateShort(slot.start_time);
-    return `${date} · Around ${localHour}${suffix}`;
+      ? formatUtcDateShort(slot.start_time, lang)
+      : formatLocalDateShort(slot.start_time, lang);
+    return `${date} · ${L.statusAround(`${localHour}${suffix}`)}`;
   }
 
-  return 'Offline';
+  return L.statusOffline;
 }

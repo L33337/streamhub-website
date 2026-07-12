@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo } from '@/lib/format/time';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
 
 function PlaceholderThumbnail({ name }: { name: string }) {
@@ -30,6 +32,8 @@ interface Props {
   stream: PublicStreamHistory;
   streamerName: string;
   avatarUrl: string | null;
+  /** Streamer's broadcaster language — localizes the card copy (null → en). */
+  language?: string | null;
 }
 
 /**
@@ -40,9 +44,10 @@ interface Props {
  *
  * Links to the VOD when one is available; otherwise renders as a static card.
  */
-export function LastStreamCard({ stream, streamerName, avatarUrl }: Props) {
-  const title = stream.title?.trim() || 'Past stream';
-  const aired = formatTimeAgo(stream.started_at);
+export function LastStreamCard({ stream, streamerName, avatarUrl, language = null }: Props) {
+  const L = uiLexFor(language).lastStream;
+  const title = stream.title?.trim() || L.pastStream;
+  const aired = formatTimeAgo(stream.started_at, resolveUiLang(language));
   const duration =
     stream.duration_minutes != null ? formatDuration(stream.duration_minutes) : '';
   const meta = [aired, duration].filter(Boolean).join(' · ');
@@ -92,7 +97,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl }: Props) {
           <PlatformBadge platform={stream.platform} size="sm" />
           {stream.vod_url ? (
             <span className="text-[10px] font-semibold uppercase tracking-wider text-accent-cyan">
-              Watch VOD →
+              {L.watchVod}
             </span>
           ) : null}
         </div>
@@ -102,14 +107,14 @@ export function LastStreamCard({ stream, streamerName, avatarUrl }: Props) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-bold text-white mb-4">Last stream</h2>
+      <h2 className="text-2xl font-bold text-white mb-4">{L.heading}</h2>
       {stream.vod_url ? (
         <a
           href={stream.vod_url}
           target="_blank"
           rel="noopener noreferrer"
           className="block transition-transform hover:scale-[1.01] focus-visible:scale-[1.01] focus-visible:outline-none"
-          aria-label={`Watch ${streamerName}'s last stream: ${title}`}
+          aria-label={L.watchAria(streamerName, title)}
         >
           {card}
         </a>

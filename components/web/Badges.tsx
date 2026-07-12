@@ -1,10 +1,21 @@
 import type { Platform, ConfidenceLevel } from '@/lib/server/partner-api';
+import { slotLexFor } from '@/lib/i18n-slot';
 
-export function LiveBadge({ className = '' }: { className?: string }) {
+// `language` localizes aria/label text on the streamer page; the default 'en'
+// keeps every existing caller (home, /live, /game, feed) byte-identical.
+// The visible "LIVE" and "24/7" badge texts stay untranslated by design.
+
+export function LiveBadge({
+  className = '',
+  language = 'en',
+}: {
+  className?: string;
+  language?: string;
+}) {
   return (
     <span
       className={`inline-flex items-center rounded bg-live px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-black glow-green ${className}`}
-      aria-label="Currently live"
+      aria-label={slotLexFor(language).liveBadgeAria}
     >
       LIVE
     </span>
@@ -37,19 +48,16 @@ const CONFIDENCE_STYLES: Record<ConfidenceLevel, string> = {
   low: 'bg-confidence-low/15 text-confidence-low',
 };
 
-const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
-  high: 'HIGH',
-  medium: 'MEDIUM',
-  low: 'LOW',
-};
-
 export function ConfidenceBadge({
   level,
   size = 'md',
+  language = 'en',
 }: {
   level: ConfidenceLevel;
   size?: 'sm' | 'md';
+  language?: string;
 }) {
+  const L = slotLexFor(language);
   const sizing =
     size === 'sm'
       ? 'px-1.5 py-px text-[9px] tracking-wider'
@@ -57,9 +65,9 @@ export function ConfidenceBadge({
   return (
     <span
       className={`inline-flex items-center rounded font-bold uppercase ${CONFIDENCE_STYLES[level]} ${sizing}`}
-      aria-label={`${level} confidence`}
+      aria-label={L.confidenceAria(level)}
     >
-      {CONFIDENCE_LABELS[level]}
+      {L.confidenceLabels[level]}
     </span>
   );
 }

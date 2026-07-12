@@ -20,4 +20,17 @@ describe('formatCompactNumber', () => {
     expect(formatCompactNumber(Number.NaN)).toBe('');
     expect(formatCompactNumber(Number.POSITIVE_INFINITY)).toBe('');
   });
+
+  it('localizes the compact notation (loose asserts — ICU may vary)', () => {
+    // German uses comma decimals and other compact suffixes than "12.5K".
+    const de = formatCompactNumber(12_500, 'de');
+    expect(de).not.toBe('');
+    expect(de).not.toBe('12.5K');
+    expect(formatCompactNumber(12_500, 'ja')).not.toBe('');
+    expect(formatCompactNumber(12_500, 'pl')).not.toBe('');
+  });
+
+  it('falls back to en-US for invalid language tags', () => {
+    expect(formatCompactNumber(12_500, 'not a tag!')).toBe('12.5K');
+  });
 });

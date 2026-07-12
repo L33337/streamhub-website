@@ -6,6 +6,7 @@ import {
   type PublicStreamer,
 } from '@/lib/server/partner-api';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { InitialsAvatar } from './InitialsAvatar';
 
 const MAX_RELATED = 8;
@@ -112,9 +113,12 @@ export async function RelatedStreamers({ currentId, language }: Props) {
         id="related-heading"
         className="text-sm font-bold uppercase tracking-widest text-text-muted"
       >
-        Related streamers
+        {uiLexFor(language).related.heading}
       </h2>
-      <nav aria-label="Related streamers" className="mt-4 flex flex-wrap gap-2">
+      <nav
+        aria-label={uiLexFor(language).related.heading}
+        className="mt-4 flex flex-wrap gap-2"
+      >
         {related.map((s) => (
           <Link
             key={s.id}
@@ -139,7 +143,7 @@ export async function RelatedStreamers({ currentId, language }: Props) {
                 <span className="live-pulse-dot shrink-0" aria-hidden="true">
                   <span className="live-pulse-ring" />
                 </span>
-                <span className="sr-only">(live now)</span>
+                <span className="sr-only">{uiLexFor(language).related.liveNowSr}</span>
               </>
             )}
           </Link>

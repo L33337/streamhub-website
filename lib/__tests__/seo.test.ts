@@ -3,7 +3,9 @@ import type { PublicStreamer } from '../server/partner-api';
 import {
   buildBreadcrumbJsonLd,
   buildProfilePageJsonLd,
+  buildStreamerMetadata,
   isIndexableStreamerSlug,
+  langToLocale,
   latestChange,
 } from '../seo';
 
@@ -154,6 +156,23 @@ describe('isIndexableStreamerSlug', () => {
     expect(isIndexableStreamerSlug('xqc')).toBe(true);
     expect(isIndexableStreamerSlug('illojuan-075649')).toBe(true);
     expect(isIndexableStreamerSlug('9arm')).toBe(true);
+  });
+});
+
+describe('Polish metadata (new in the body-localization rollout)', () => {
+  it('maps pl to the pl_PL og:locale', () => {
+    expect(langToLocale('pl')).toBe('pl_PL');
+    expect(langToLocale('pl-PL')).toBe('pl_PL');
+  });
+
+  it('renders a Polish title/description from META_STRINGS.pl', () => {
+    const meta = buildStreamerMetadata(
+      makeStreamer({ language: 'pl', is_featured: true }),
+      'examplestreamer',
+    );
+    expect(String(meta.title)).toContain('harmonogram streamów');
+    expect(String(meta.description)).toContain('streamuje');
+    expect(meta.openGraph?.locale).toBe('pl_PL');
   });
 });
 

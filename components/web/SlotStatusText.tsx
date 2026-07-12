@@ -8,11 +8,19 @@ function subscribe(): () => void {
   return () => {};
 }
 
-export function SlotStatusText({ slot }: { slot: PublicStreamSlot }) {
+// `language` localizes the status phrasing on the streamer page; the default
+// 'en' keeps every existing caller byte-identical.
+export function SlotStatusText({
+  slot,
+  language = 'en',
+}: {
+  slot: PublicStreamSlot;
+  language?: string;
+}) {
   const text = useSyncExternalStore(
     subscribe,
-    () => getStatusText(slot, false),
-    () => getStatusText(slot, true),
+    () => getStatusText(slot, false, language),
+    () => getStatusText(slot, true, language),
   );
   if (slot.status === 'upcoming') {
     // Machine-readable start time for crawlers; the visible text is the

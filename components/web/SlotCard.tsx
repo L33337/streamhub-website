@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
+import { slotLexFor } from '@/lib/i18n-slot';
 import {
   AlwaysOnBadge,
   ConfidenceBadge,
@@ -21,7 +22,16 @@ function PlaceholderThumbnail({ name }: { name: string }) {
   );
 }
 
-export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
+// `language` localizes the card chrome (status line, confidence) on the
+// streamer page; the default 'en' keeps every existing caller (home, /live,
+// /game, feed) byte-identical.
+export function SlotCard({
+  slot,
+  language = 'en',
+}: {
+  slot: PublicStreamSlot;
+  language?: string;
+}) {
   const isLive = slot.status === 'live';
 
   return (
@@ -62,7 +72,7 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
           )}
           {isLive && (
             <div className="absolute bottom-1 left-1">
-              <LiveBadge />
+              <LiveBadge language={language} />
             </div>
           )}
         </div>
@@ -71,7 +81,7 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="truncate text-xs text-text-secondary">
-                <SlotStatusText slot={slot} />
+                <SlotStatusText slot={slot} language={language} />
               </span>
               {isLive && slot.is_always_on && <AlwaysOnBadge />}
             </div>
@@ -105,9 +115,9 @@ export function SlotCard({ slot }: { slot: PublicStreamSlot }) {
             {!isLive && (
               <div className="flex items-center gap-1">
                 <span className="text-[9px] uppercase tracking-wider text-text-muted">
-                  Confidence:
+                  {slotLexFor(language).confidencePrefix}
                 </span>
-                <ConfidenceBadge level={slot.confidence} size="sm" />
+                <ConfidenceBadge level={slot.confidence} size="sm" language={language} />
               </div>
             )}
           </div>

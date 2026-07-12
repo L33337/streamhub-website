@@ -1,5 +1,7 @@
 import type { PublicStreamer, PublicStreamerStats } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { uiLexFor } from '@/lib/i18n-ui';
 
 interface Props {
   streamer: PublicStreamer;
@@ -22,34 +24,40 @@ interface Tile {
  * StreamerStatsBlock's existing stat tiles.
  */
 export function ChannelStats({ streamer, stats }: Props) {
+  const lang = resolveUiLang(streamer.language);
+  const L = uiLexFor(streamer.language).channelStats;
+
   // Twitch counts followers, YouTube counts subscribers; a Twitch presence
   // wins the label because the backend fetches the primary channel's count
   // with the same precedence.
-  const followerLabel = streamer.platforms.includes('twitch') ? 'Followers' : 'Subscribers';
+  const followerLabel = streamer.platforms.includes('twitch') ? L.followers : L.subscribers;
 
   const tiles: Tile[] = [];
   if (streamer.follower_count != null) {
-    tiles.push({ label: followerLabel, value: formatCompactNumber(streamer.follower_count) });
+    tiles.push({
+      label: followerLabel,
+      value: formatCompactNumber(streamer.follower_count, lang),
+    });
   }
   if (streamer.avg_view_count != null) {
     tiles.push({
-      label: 'Avg viewers',
-      value: formatCompactNumber(streamer.avg_view_count),
-      detail: '28-day median',
+      label: L.avgViewers,
+      value: formatCompactNumber(streamer.avg_view_count, lang),
+      detail: L.medianDetail,
     });
   }
   if (stats?.peak_viewer_count != null) {
     tiles.push({
-      label: 'Peak viewers',
-      value: formatCompactNumber(stats.peak_viewer_count),
-      detail: `last ${stats.window_days} days`,
+      label: L.peakViewers,
+      value: formatCompactNumber(stats.peak_viewer_count, lang),
+      detail: L.lastNDays(stats.window_days),
     });
   }
   if (stats?.hours_streamed != null) {
     tiles.push({
-      label: 'Hours streamed',
-      value: formatCompactNumber(Math.round(stats.hours_streamed)),
-      detail: `last ${stats.window_days} days`,
+      label: L.hoursStreamed,
+      value: formatCompactNumber(Math.round(stats.hours_streamed), lang),
+      detail: L.lastNDays(stats.window_days),
     });
   }
 
@@ -58,7 +66,7 @@ export function ChannelStats({ streamer, stats }: Props) {
   return (
     <section aria-labelledby="channel-stats-heading" className="mt-16 border-t border-divider pt-8">
       <h2 id="channel-stats-heading" className="text-2xl font-bold text-white">
-        Channel stats
+        {L.heading}
       </h2>
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((tile) => (

@@ -54,6 +54,7 @@ const LANGUAGE_TO_LOCALE: Record<string, string> = {
   uk: 'uk_UA',
   ar: 'ar_SA',
   hu: 'hu_HU',
+  pl: 'pl_PL',
 };
 
 /** OpenGraph og:locale for a streamer language (e.g. 'de_DE'); defaults to 'en_US'. */
@@ -277,8 +278,9 @@ const META_STRINGS: Record<string, Lex> = {
     twDesc: (n, c, live) =>
       live ? (c ? `${n} in diretta — ${c}.` : `${n} è in diretta.`) : `Calendario stream di ${n}.`,
   },
-  // TODO(i18n): ru/ja/uk/ar/hu strings are AI-authored — have a native speaker
-  // review before the production rollout (esp. ru/ja for reach, ar for RTL/register).
+  // ru/ja/uk/ar/hu/pl strings are AI-authored and were re-reviewed alongside the
+  // body-localization lexica (2026-07, adversarial AI pass). A native-speaker
+  // review remains an open backlog item — accepted risk per product decision.
   ru: {
     q: ['«', '»'],
     liveTitle: (n, c) => (c ? `СЕЙЧАС В ЭФИРЕ: ${n} — ${c}` : `СЕЙЧАС В ЭФИРЕ: ${n} стримит`),
@@ -387,6 +389,28 @@ const META_STRINGS: Record<string, Lex> = {
         : `${n} stream-időpontjai és élő státusza a ${p} platformon.`,
     twDesc: (n, c, live) =>
       live ? (c ? `${n} élőben — ${c}.` : `${n} épp élőben van.`) : `${n} stream-időpontjai.`,
+  },
+  pl: {
+    q: ['„', '”'],
+    liveTitle: (n, c) => (c ? `NA ŻYWO: ${n} — ${c}` : `NA ŻYWO: ${n} streamuje`),
+    nextTitle: (n) => `${n} — harmonogram streamów — Następny stream i status na żywo`,
+    fallbackTitle: (n) => `${n} — harmonogram streamów i status na żywo`,
+    liveBase: (n) => `${n} jest teraz na żywo`,
+    livePlaying: (n, c) => `${n} jest teraz na żywo i gra w ${c}`,
+    nextLead: (n, l, p) =>
+      p ? `Przewidywany następny stream ${n} ${l}` : `Następny stream ${n} ${l}`,
+    fallbackDesc: (n, p) =>
+      `Kiedy ${n} streamuje na żywo na ${p}? Harmonogram, następne streamy przewidywane przez AI i aktualny status na żywo.`,
+    ogTitle: (n, c, live) =>
+      live ? (c ? `NA ŻYWO: ${n} — ${c}` : `NA ŻYWO: ${n}`) : `${n} — przewodnik po streamach`,
+    ogDesc: (n, p, c, live) =>
+      live
+        ? c
+          ? `${n} jest teraz na żywo i gra w ${c}.`
+          : `${n} jest teraz na żywo.`
+        : `Harmonogram streamów i status na żywo ${n} na ${p}.`,
+    twDesc: (n, c, live) =>
+      live ? (c ? `${n} na żywo — ${c}.` : `${n} jest teraz na żywo.`) : `Harmonogram streamów ${n}.`,
   },
 };
 

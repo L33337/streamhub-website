@@ -1,5 +1,7 @@
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo, formatUtcDateShort } from '@/lib/format/time';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
 
 interface Props {
@@ -7,6 +9,8 @@ interface Props {
   streams: PublicStreamHistory[];
   /** Request-time clock so the relative labels match the page's other timestamps. */
   now: Date;
+  /** Streamer's broadcaster language — localizes the section copy (null → en). */
+  language?: string | null;
 }
 
 /**
@@ -17,17 +21,19 @@ interface Props {
  * nothing scheduled. Server-rendered from props; the parent guards against an
  * empty list.
  */
-export function RecentStreamsSection({ streams, now }: Props) {
+export function RecentStreamsSection({ streams, now, language = null }: Props) {
   if (streams.length === 0) return null;
+  const lang = resolveUiLang(language);
+  const L = uiLexFor(language);
 
   return (
     <section className="mt-10" aria-labelledby="recent-streams-heading">
       <h2 id="recent-streams-heading" className="text-2xl font-bold text-white mb-4">
-        Recent streams
+        {L.recent.heading}
       </h2>
       <ul className="grid gap-2">
         {streams.map((s) => {
-          const title = s.title?.trim() || 'Past stream';
+          const title = s.title?.trim() || L.lastStream.pastStream;
           const duration =
             s.duration_minutes != null ? formatDuration(s.duration_minutes) : '';
           return (
@@ -37,9 +43,9 @@ export function RecentStreamsSection({ streams, now }: Props) {
             >
               <div className="w-28 shrink-0 text-xs text-text-muted sm:w-36">
                 <time dateTime={s.started_at} className="block text-text-secondary">
-                  {formatUtcDateShort(s.started_at)}
+                  {formatUtcDateShort(s.started_at, lang)}
                 </time>
-                {formatTimeAgo(s.started_at, 'en', now)}
+                {formatTimeAgo(s.started_at, lang, now)}
               </div>
               <div className="min-w-0 flex-1">
                 <p
@@ -60,7 +66,7 @@ export function RecentStreamsSection({ streams, now }: Props) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] font-semibold uppercase tracking-wider text-accent-cyan hover:text-text-primary"
-                    aria-label={`Watch VOD: ${title}`}
+                    aria-label={L.recent.vodAria(title)}
                   >
                     VOD →
                   </a>
