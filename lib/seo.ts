@@ -616,10 +616,16 @@ export function buildBroadcastEventsJsonLd(
   streamer: PublicStreamer,
   slots: PublicStreamSlot[],
   slug: string,
+  // Slot already represented by the page's VideoObject (its publication nests
+  // the BroadcastEvent) — emitting a second, bare event for the same broadcast
+  // with a *different* endDate would be contradictory duplicate markup. Only
+  // pass this when the VideoObject was actually emitted.
+  excludeSlotId?: string,
 ): object[] {
   const broadcasterRef = { '@id': personJsonLdId(slug) };
   return slots
     .filter((s) => s.status === 'live' || s.status === 'upcoming')
+    .filter((s) => s.id !== excludeSlotId)
     .slice(0, MAX_BROADCAST_EVENTS)
     .map((slot) => {
       const start = new Date(slot.start_time);
@@ -641,4 +647,75 @@ export function buildBroadcastEventsJsonLd(
       if (slot.reasoning) event.description = slot.reasoning;
       return event;
     });
+}
+
+/**
+ * VideoObject with a nested `publication: BroadcastEvent` — the exact shape
+ * Google requires for the LIVE badge (a bare BroadcastEvent is not enough).
+ * Emitted ONLY while the streamer is actually live: a persistent VideoObject
+ * on a page without a playable video risks the schema-spam filter.
+ *
+ * Returns null when the slot isn't live or no thumbnail is available —
+ * `thumbnailUrl` is a REQUIRED VideoObject property, so no thumbnail means
+ * no VideoObject at all (the caller keeps the bare BroadcastEvent instead).
+ *
+ * endDate must never be in the past at crawl time while the stream is live
+ * (Google won't show the badge otherwise), so it is computed as
+ * max(start + duration, now + 1h): every ISR regeneration (revalidate=300)
+ * pushes it ≥55 minutes into the future — long streams and always-on
+ * channels stay badge-eligible without knowing the real end.
+ */
+export function buildLiveVideoObjectJsonLd(
+  streamer: PublicStreamer,
+  slot: PublicStreamSlot,
+  slug: string,
+  now: Date = new Date(),
+): object | null {
+  if (slot.status !== 'live') return null;
+
+  const thumbnails = [...new Set([slot.thumbnail_url, slot.avatar_url ?? streamer.avatar_url])]
+    .filter((u): u is string => !!u);
+  if (thumbnails.length === 0) return null;
+
+  const start = new Date(slot.start_time);
+  const durationMin = slot.duration_minutes > 0 ? slot.duration_minutes : 60;
+  const approxEnd = new Date(
+    Math.max(start.getTime() + durationMin * 60_000, now.getTime() + 60 * 60_000),
+  );
+
+  // Language-neutral composition (the page body renders in the streamer's
+  // language — English filler text would clash on non-English pages).
+  const descriptionParts = [slot.title, slot.category, streamer.name];
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: slot.title,
+    description: descriptionParts.filter(Boolean).join(' — '),
+    thumbnailUrl: thumbnails,
+    uploadDate: start.toISOString(),
+    publication: {
+      '@type': 'BroadcastEvent',
+      isLiveBroadcast: true,
+      startDate: start.toISOString(),
+      endDate: approxEnd.toISOString(),
+    },
+  };
+
+  // embedUrl must be the player itself, never a watch page (Google guideline).
+  // Twitch preferred on multi-platform slots; the `parent` param has to be the
+  // production host — JSON-LD renders server-side, so the client-side
+  // window.location.hostname trick from LiveEmbedFrame is not available here.
+  if (slot.twitch_login) {
+    const parent = new URL(SITE_URL).hostname;
+    ld.embedUrl =
+      `https://player.twitch.tv/?channel=${encodeURIComponent(slot.twitch_login)}` +
+      `&parent=${encodeURIComponent(parent)}`;
+  } else if (slot.youtube_channel_id) {
+    // No video id in the DTO — YouTube's channel-based live embed.
+    ld.embedUrl = `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(slot.youtube_channel_id)}`;
+  }
+
+  if (streamer.language) ld.inLanguage = streamer.language;
+
+  return ld;
 }

@@ -12,6 +12,7 @@ import {
 import {
   buildBreadcrumbJsonLd,
   buildBroadcastEventsJsonLd,
+  buildLiveVideoObjectJsonLd,
   buildProfilePageJsonLd,
   buildStreamerMetadata,
 } from '@/lib/seo';
@@ -181,7 +182,19 @@ export default async function StreamerPage({ params }: Props) {
 
   const heroLiveSlot = liveSlots[0] ?? null;
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
-  const broadcastEvents = buildBroadcastEventsJsonLd(streamer, allSlots, slug);
+  // LIVE badge markup: VideoObject with publication:BroadcastEvent while the
+  // hero slot is live (null when offline or without a thumbnail). The covered
+  // slot is excluded from the bare BroadcastEvents so the same broadcast never
+  // appears twice with diverging endDates.
+  const liveVideoJsonLd = heroLiveSlot
+    ? buildLiveVideoObjectJsonLd(streamer, heroLiveSlot, slug, now)
+    : null;
+  const broadcastEvents = buildBroadcastEventsJsonLd(
+    streamer,
+    allSlots,
+    slug,
+    liveVideoJsonLd && heroLiveSlot ? heroLiveSlot.id : undefined,
+  );
 
   // Body localization: the page body renders in the streamer's language (their
   // search queries arrive in that language); unknown/unsupported languages fall
@@ -214,6 +227,12 @@ export default async function StreamerPage({ params }: Props) {
           __html: JSON.stringify(buildProfilePageJsonLd(streamer, slug)),
         }}
       />
+      {liveVideoJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(liveVideoJsonLd) }}
+        />
+      )}
       {broadcastEvents.map((evt, i) => (
         <script
           key={i}
