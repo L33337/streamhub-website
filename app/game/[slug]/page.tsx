@@ -3,10 +3,16 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPartnerApi, type PublicStreamSlot } from '@/lib/server/partner-api';
+import {
+  getPartnerApi,
+  type PublicStreamSlot,
+  type PublicStreamer,
+} from '@/lib/server/partner-api';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
+import { formatCompactNumber } from '@/lib/format/number';
+import { rankGameStreamers } from '@/lib/game-ranking';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
@@ -15,6 +21,13 @@ import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 export const revalidate = 300;
 
 const SITE_URL = 'https://streamertimes.tv';
+
+// "Most followed" ranking: fetch a few extra (some may have null follower_count
+// and get filtered out), display the top 12. follower_count is refreshed daily,
+// so a 1h data-cache revalidate keeps the extra call cheap (deduped with the
+// streamer pages, which fetch the same streamer rows).
+const RANK_FETCH_LIMIT = 16;
+const RANK_DISPLAY_LIMIT = 12;
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -25,6 +38,9 @@ interface GamePageData {
   streamerCount: number;
   liveSlots: PublicStreamSlot[];
   upcomingSlots: PublicStreamSlot[];
+  // Category's streamers ordered by follower_count (from the Partner API's
+  // per-category ranking). Feeds the "Most followed" table; empty on API error.
+  rankedStreamers: PublicStreamer[];
   now: Date;
 }
 
@@ -42,6 +58,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     streamerCount: 0,
     liveSlots: [],
     upcomingSlots: [],
+    rankedStreamers: [],
     now,
   };
 
@@ -58,7 +75,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
 
-  const [liveCall, upcomingCall] = await Promise.allSettled([
+  const [liveCall, upcomingCall, rankedCall] = await Promise.allSettled([
     api.listSchedules({
       category: game.category,
       status: ['live'],
@@ -75,6 +92,14 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
       to: sevenDaysFromNow.toISOString(),
       limit: 200,
     }),
+    // Per-category follower ranking (one cheap call; degrades to empty on error
+    // or against an older API that doesn't know order='followers').
+    api.listStreamers({
+      category: game.category,
+      order: 'followers',
+      limit: RANK_FETCH_LIMIT,
+      revalidate: 3600,
+    }),
   ]);
 
   return {
@@ -82,6 +107,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     streamerCount: game.streamer_count,
     liveSlots: liveCall.status === 'fulfilled' ? liveCall.value.data : [],
     upcomingSlots: upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [],
+    rankedStreamers: rankedCall.status === 'fulfilled' ? rankedCall.value.data : [],
     now,
   };
 });
@@ -104,12 +130,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return { title: 'Game not found — StreamerTimes' };
   const url = `${SITE_URL}/game/${slug}`;
   return {
-    title: `${category} Streamers — Live Now & Stream Schedule`,
-    description: `Who streams ${category}? See ${category} streamers live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.`,
+    title: `${category} Streamers — Most Watched, Live Now & Schedule`,
+    description: `Who are the most followed ${category} streamers? See ${category} streamers ranked by followers, who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.`,
     alternates: { canonical: url },
     openGraph: {
-      title: `${category} streamers — live now & schedule`,
-      description: `${category} streamers, live status and stream schedule on Twitch and YouTube.`,
+      title: `${category} streamers — most watched, live now & schedule`,
+      description: `The most followed ${category} streamers, live status and stream schedule on Twitch and YouTube.`,
       url,
       siteName: 'Streamer Times',
       type: 'website',
@@ -128,7 +154,8 @@ interface GameStreamer {
 
 export default async function GamePage({ params }: Props) {
   const { slug } = await params;
-  const { category, liveSlots, upcomingSlots, now } = await loadGamePage(slug);
+  const { category, liveSlots, upcomingSlots, rankedStreamers, now } =
+    await loadGamePage(slug);
   if (!category) notFound();
 
   // Dedupe streamers across live + upcoming; live first, then alphabetical.
@@ -150,6 +177,15 @@ export default async function GamePage({ params }: Props) {
   );
   const liveCount = liveIds.size;
 
+  // "Most followed {category} streamers" ranking (per-category follower ranking
+  // from the Partner API). Excludes null/0-follower streamers, top N by
+  // followers. The roster grid below becomes the long tail — this-week
+  // streamers NOT already in the table — so no streamer is listed twice.
+  const ranked = rankGameStreamers(rankedStreamers, RANK_DISPLAY_LIMIT);
+  const rankedIds = new Set(ranked.map((r) => r.streamer.id));
+  const moreStreamers = streamers.filter((s) => !rankedIds.has(s.id));
+  const topStreamer = ranked[0]?.streamer ?? null;
+
   // Schedule grid (live + upcoming), grouped by UTC date — same shape as the
   // streamer page so it can reuse DayNavBar + DaySection.
   const todayUtc = now.toISOString().slice(0, 10);
@@ -165,11 +201,16 @@ export default async function GamePage({ params }: Props) {
     { name: 'Games', url: `${SITE_URL}/games` },
     { name: category },
   ]);
+  // Structured list leads with the most-followed streamers, then the long tail.
+  const itemListStreamers = [
+    ...ranked.map((r) => ({ id: r.streamer.id, name: r.streamer.name })),
+    ...moreStreamers.map((s) => ({ id: s.id, name: s.name })),
+  ].slice(0, 20);
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `Streamers who stream ${category}`,
-    itemListElement: streamers.slice(0, 20).map((s, i) => ({
+    itemListElement: itemListStreamers.map((s, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       name: s.name,
@@ -182,6 +223,15 @@ export default async function GamePage({ params }: Props) {
   // NOT use the games-endpoint streamer_count here: that counts a 28-day catalog
   // window, which would overstate how many streamers are actually shown.
   const shown = streamers.length;
+  // Honest superlative line — derived ONLY from the rendered ranking (its #1),
+  // never fabricated. Omitted entirely when the ranking is empty.
+  const topFollowerNoun = topStreamer?.platforms.includes('twitch')
+    ? 'followers'
+    : 'subscribers';
+  const superlative =
+    topStreamer && topStreamer.follower_count != null
+      ? ` The most-followed ${category} streamer here is ${topStreamer.name} with ${formatCompactNumber(topStreamer.follower_count, 'en')} ${topFollowerNoun}.`
+      : '';
   const intro =
     `${shown} streamer${shown === 1 ? '' : 's'} ${shown === 1 ? 'has' : 'have'} ${category} streams live or scheduled this week on Twitch and YouTube. ` +
     (liveCount > 0
@@ -189,7 +239,8 @@ export default async function GamePage({ params }: Props) {
       : 'None are live right now') +
     (upcomingSlots.length > 0
       ? `, with ${upcomingSlots.length} upcoming stream${upcomingSlots.length === 1 ? '' : 's'} in the next 7 days.`
-      : '.');
+      : '.') +
+    superlative;
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
@@ -213,15 +264,107 @@ export default async function GamePage({ params }: Props) {
       </h1>
       <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>
 
-      <section aria-labelledby="streamers-heading" className="mt-8">
-        <h2 id="streamers-heading" className="text-xl font-bold text-white">
-          Streamers who stream {category}
-        </h2>
-        <ul
-          className="mt-4 grid gap-3 sm:grid-cols-2"
-          aria-label={`Streamers who stream ${category}`}
-        >
-          {streamers.map((s) => (
+      {ranked.length > 0 && (
+        <section aria-labelledby="most-followed-heading" className="mt-8">
+          <h2 id="most-followed-heading" className="text-xl font-bold text-white">
+            Most followed {category} streamers
+          </h2>
+          <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
+            <table className="w-full text-sm">
+              <caption className="sr-only">
+                {category} streamers ranked by follower count
+              </caption>
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
+                  <th scope="col" className="px-3 py-2 font-semibold">
+                    #
+                  </th>
+                  <th scope="col" className="px-3 py-2 font-semibold">
+                    Streamer
+                  </th>
+                  <th scope="col" className="px-3 py-2 text-right font-semibold">
+                    Followers
+                  </th>
+                  <th scope="col" className="px-3 py-2 text-right font-semibold">
+                    Avg viewers
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranked.map(({ rank, streamer }) => {
+                  const avg = streamer.avg_view_count;
+                  return (
+                    <tr key={streamer.id} className="border-t border-divider">
+                      <td className="px-3 py-2 font-bold tabular-nums text-text-muted">
+                        {rank}
+                      </td>
+                      <th scope="row" className="px-3 py-2 text-left font-medium">
+                        <Link
+                          href={`/streamer/${encodeURIComponent(streamer.id)}`}
+                          className="group flex items-center gap-3"
+                        >
+                          {streamer.avatar_url ? (
+                            <Image
+                              src={streamer.avatar_url}
+                              alt=""
+                              width={36}
+                              height={36}
+                              unoptimized
+                              className="shrink-0 rounded-full border border-border-default"
+                            />
+                          ) : (
+                            <InitialsAvatar
+                              name={streamer.name}
+                              size={36}
+                              className="shrink-0"
+                            />
+                          )}
+                          <span className="flex min-w-0 flex-col">
+                            <span className="flex items-center gap-2">
+                              <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
+                                {streamer.name}
+                              </span>
+                              {liveIds.has(streamer.id) && <LiveBadge />}
+                            </span>
+                            <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                              {streamer.platforms.map((p) => (
+                                <PlatformBadge key={p} platform={p} size="sm" />
+                              ))}
+                            </span>
+                          </span>
+                        </Link>
+                      </th>
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
+                        {formatCompactNumber(streamer.follower_count, 'en')}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
+                        {avg != null && avg > 0 ? formatCompactNumber(avg, 'en') : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {moreStreamers.length > 0 && (
+        <section aria-labelledby="streamers-heading" className="mt-10">
+          <h2 id="streamers-heading" className="text-xl font-bold text-white">
+            {ranked.length > 0
+              ? `More ${category} streamers`
+              : `Streamers who stream ${category}`}
+          </h2>
+          <ul
+            className="mt-4 grid gap-3 sm:grid-cols-2"
+            aria-label={
+              ranked.length > 0
+                ? `More ${category} streamers`
+                : `Streamers who stream ${category}`
+            }
+          >
+            {moreStreamers.map((s) => (
             <li key={s.id}>
               <Link
                 href={`/streamer/${encodeURIComponent(s.id)}`}
@@ -255,8 +398,9 @@ export default async function GamePage({ params }: Props) {
               </Link>
             </li>
           ))}
-        </ul>
-      </section>
+          </ul>
+        </section>
+      )}
 
       {hasSchedule && (
         <section aria-label={`${category} stream schedule`}>

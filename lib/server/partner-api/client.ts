@@ -35,7 +35,14 @@ export interface ListStreamersOptions extends FetchOptions {
   language?: string;
   isAlwaysOn?: boolean;
   search?: string;
-  order?: 'name' | 'popular';
+  /**
+   * Exact category/game name (e.g. "Just Chatting"). When set, the list is
+   * restricted to streamers active in that category (same 28-day/live-upcoming
+   * window as /v1/games). Pairs with `order: 'followers'` for a per-game
+   * "most followed" ranking.
+   */
+  category?: string;
+  order?: 'name' | 'popular' | 'followers';
   cursor?: string;
   limit?: number;
 }
@@ -76,6 +83,7 @@ class PartnerApiClient {
     if (opts.language) params.set('language', opts.language);
     if (opts.isAlwaysOn !== undefined) params.set('is_always_on', String(opts.isAlwaysOn));
     if (opts.search) params.set('search', opts.search);
+    if (opts.category) params.set('category', opts.category);
     if (opts.order) params.set('order', opts.order);
     if (opts.cursor) params.set('cursor', opts.cursor);
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
