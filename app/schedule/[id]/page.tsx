@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { expiredPredictionStreamerSlug } from '@/lib/prediction-redirect';
@@ -7,6 +8,23 @@ import { StreamSlotDetail } from '@/components/web/StreamSlotDetail';
 import { BackLink } from '@/components/web/BackLink';
 
 export const revalidate = 60;
+
+// Required for ISR: without generateStaticParams, Next renders this dynamic
+// route per-request (ƒ in the build output) and never caches the HTML — every
+// visitor paid a full server render (Cache-Control: private, no-store). An
+// empty array means no ids are prerendered at build time — each is generated
+// on first visit, then served from the route cache per `revalidate`
+// (dynamicParams defaults to true). notFound() and the expired-prediction
+// permanentRedirect are cached the same way (real 404/308 responses).
+export function generateStaticParams(): Array<{ id: string }> {
+  return [];
+}
+
+// Wrapped in React `cache()` so generateMetadata and the page component share
+// a single fetch per request. Load-bearing: the partner-api client always
+// passes an AbortSignal, which opts the fetch out of Next's built-in request
+// dedupe — without cache() this page fired two identical getSchedule calls.
+const loadSlot = cache((id: string) => getPartnerApi().getSchedule(id, { revalidate: 60 }));
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -21,7 +39,7 @@ const SLOT_ROBOTS = { index: false, follow: true } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const slot = await getPartnerApi().getSchedule(id, { revalidate: 60 });
+  const slot = await loadSlot(id);
   if (!slot) {
     return { title: 'Stream not found — Streamer Times', robots: SLOT_ROBOTS };
   }
@@ -42,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SlotPage({ params }: Props) {
   const { id } = await params;
-  const slot = await getPartnerApi().getSchedule(id, { revalidate: 60 });
+  const slot = await loadSlot(id);
   if (!slot) {
     // Expired AI prediction → the id encodes the streamer; send crawlers and
     // stale links to the streamer page (308) instead of a dead 404.
