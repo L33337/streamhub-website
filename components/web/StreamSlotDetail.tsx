@@ -108,6 +108,11 @@ function HeroThumbnail({ slot }: { slot: PublicStreamSlot }) {
           alt={slot.title}
           fill
           unoptimized
+          // LCP element on live-slot pages (Lighthouse 2026-07-13: without
+          // priority it lazy-loads — 1.4 s load delay on mobile). Prediction
+          // slots have no thumbnail_url and their LCP is a text <p>, so this
+          // branch never competes with them.
+          priority
           sizes="(min-width: 768px) 640px, 100vw"
           className="object-cover"
         />
