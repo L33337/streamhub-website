@@ -20,6 +20,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  // Mono is only rendered by the home page promo blocks, /developers and
+  // /app — not by the high-traffic streamer/schedule pages. preload: false
+  // drops the 29 KB woff2 preload from every page's critical window (it
+  // competed with the render-blocking CSS); pages that use the family still
+  // load it on demand (display: swap). Do NOT remove the font entirely:
+  // globals.css maps --font-mono to it inside `font:` shorthands, which
+  // become invalid wholesale if the variable is undefined.
+  preload: false,
 });
 
 export const metadata: Metadata = {
