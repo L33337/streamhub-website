@@ -169,6 +169,18 @@ export default async function StreamerPage({ params }: Props) {
   const lastStream = history[0] ?? null;
   const recentStreams = history.slice(1);
 
+  // Last-stream card placement is live-aware: offline streamers get it right
+  // under the hero (their most relevant content); live streamers keep it lower,
+  // below Channel Stats, so the hero's live callout stays the top focus.
+  const lastStreamCard = lastStream ? (
+    <LastStreamCard
+      stream={lastStream}
+      streamerName={streamer.name}
+      avatarUrl={streamer.avatar_url}
+      language={streamer.language}
+    />
+  ) : null;
+
   // Live slots show in their own hero callout + in the "Today" day-section
   // when their start_time falls on today's UTC date. Upcoming slots fill the
   // day-sections.
@@ -203,6 +215,7 @@ export default async function StreamerPage({ params }: Props) {
   }
 
   const heroLiveSlot = liveSlots[0] ?? null;
+  const isLive = heroLiveSlot !== null;
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
   // LIVE badge markup: VideoObject with publication:BroadcastEvent while the
   // hero slot is live (null when offline or without a thumbnail). The covered
@@ -274,6 +287,8 @@ export default async function StreamerPage({ params }: Props) {
 
       <StreamerHero streamer={streamer} liveSlot={heroLiveSlot} />
 
+      {!isLive && lastStreamCard}
+
       {showEmpty ? (
         <EmptyScheduleState streamer={streamer} />
       ) : (
@@ -316,14 +331,7 @@ export default async function StreamerPage({ params }: Props) {
           ("when does X usually stream?" stays answered on quiet pages). */}
       <ChannelStats streamer={streamer} stats={stats} />
 
-      {lastStream && (
-        <LastStreamCard
-          stream={lastStream}
-          streamerName={streamer.name}
-          avatarUrl={streamer.avatar_url}
-          language={streamer.language}
-        />
-      )}
+      {isLive && lastStreamCard}
 
       {stats && <StreamerStatsBlock streamer={streamer} stats={stats} />}
 
