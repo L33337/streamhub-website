@@ -32,9 +32,12 @@ interface Props {
 
 // Slot pages are ephemeral (ai_slot_pred_* ids churn with every prediction
 // cycle, real slots expire after the stream) and near-duplicates of the
-// streamer page — keep all of them out of the index. follow:true keeps the
-// links to /streamer/[slug] crawlable; robots.txt deliberately does NOT
-// disallow /schedule/ so crawlers can see this noindex.
+// streamer page — keep all of them out of the index. Since 2026-07-15
+// robots.txt disallows /schedule/ for Googlebot only (the churned ids burned
+// ~500 crawls/day as GSC "Page with redirect" entries); the * group stays
+// open so Discord/Twitter embed crawlers still fetch the OG tags of shared
+// slot URLs. This noindex stays as defense-in-depth for every crawler that
+// does reach the page (Bing, robots.txt-ignoring bots).
 const SLOT_ROBOTS = { index: false, follow: true } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
