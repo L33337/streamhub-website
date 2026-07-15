@@ -1,11 +1,11 @@
 import Image from 'next/image';
-import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
+import type { Platform, PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
 import { langCode, dirFor } from '@/lib/seo';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
-import { ChannelLinks, WatchButtons } from './WatchButtons';
+import { channelUrls, WatchButtons } from './WatchButtons';
 
 interface Props {
   streamer: PublicStreamer;
@@ -32,6 +32,16 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
   const nativeLang = code !== 'en' ? code : undefined;
   const nativeDir = dirFor(streamer.language);
   const L = uiLexFor(streamer.language);
+
+  // The channel links now live behind the Twitch/YouTube platform badges under
+  // the name (replacing the removed inline "Twitch ↗ · YouTube ↗" links). A null
+  // id → the badge falls back to a plain, non-clickable pill.
+  const { twitchUrl, youtubeUrl } = channelUrls({
+    twitchLogin: streamer.twitch_login,
+    youtubeChannelId: streamer.youtube_channel_id,
+  });
+  const channelHref = (p: Platform): string | undefined =>
+    (p === 'twitch' ? twitchUrl : youtubeUrl) ?? undefined;
 
   return (
     <header className="relative gradient-border p-6 md:p-8">
@@ -65,7 +75,12 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
 
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 md:justify-start">
             {streamer.platforms.map((p) => (
-              <PlatformBadge key={p} platform={p} />
+              <PlatformBadge
+                key={p}
+                platform={p}
+                href={channelHref(p)}
+                language={streamer.language ?? undefined}
+              />
             ))}
             {isLive && <LiveBadge language={streamer.language ?? undefined} />}
             {isAlwaysOn && <AlwaysOnBadge />}
@@ -75,15 +90,6 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
               </span>
             )}
           </div>
-
-          {!isLive && (
-            <ChannelLinks
-              twitchLogin={streamer.twitch_login}
-              youtubeChannelId={streamer.youtube_channel_id}
-              className="mt-3 text-center md:text-left"
-              language={streamer.language ?? undefined}
-            />
-          )}
 
           {isLive && liveSlot && (
             <p className="mt-4 text-text-secondary">

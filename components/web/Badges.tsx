@@ -25,21 +25,35 @@ export function LiveBadge({
 export function PlatformBadge({
   platform,
   size = 'md',
+  href,
+  language = 'en',
 }: {
   platform: Platform;
   size?: 'sm' | 'md';
+  /** When set, the badge becomes an external link to the streamer's channel. */
+  href?: string;
+  /** Localizes the sr-only "opens in new tab" hint (link variant only). */
+  language?: string;
 }) {
   const bg = platform === 'twitch' ? 'bg-twitch' : 'bg-youtube';
   const label = platform === 'twitch' ? 'Twitch' : 'YouTube';
   const sizing =
     size === 'sm' ? 'px-1 py-px text-[9px]' : 'px-1.5 py-0.5 text-[10px]';
-  return (
-    <span
-      className={`inline-flex items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`}
-    >
-      {label}
-    </span>
-  );
+  const base = `inline-flex items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`;
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${base} transition-opacity hover:opacity-80`}
+      >
+        {label}
+        <span className="sr-only">{slotLexFor(language).opensInNewTab}</span>
+      </a>
+    );
+  }
+  return <span className={base}>{label}</span>;
 }
 
 const CONFIDENCE_STYLES: Record<ConfidenceLevel, string> = {

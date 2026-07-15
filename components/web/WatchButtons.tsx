@@ -5,7 +5,7 @@ interface ChannelIds {
   youtubeChannelId: string | null;
 }
 
-function channelUrls({ twitchLogin, youtubeChannelId }: ChannelIds) {
+export function channelUrls({ twitchLogin, youtubeChannelId }: ChannelIds) {
   return {
     twitchUrl: twitchLogin ? `https://twitch.tv/${twitchLogin}` : null,
     youtubeUrl: youtubeChannelId
@@ -66,55 +66,5 @@ export function WatchButtons({
         </a>
       )}
     </div>
-  );
-}
-
-interface ChannelLinksProps extends ChannelIds {
-  className?: string;
-  /** Localizes the sr-only external-link hint; default 'en'. */
-  language?: string;
-}
-
-/**
- * Subtle inline channel links ("Twitch ↗ · YouTube ↗") for the offline hero —
- * the quiet counterpart to WatchButtons. Renders nothing when neither id is
- * available.
- */
-export function ChannelLinks({
-  twitchLogin,
-  youtubeChannelId,
-  className = '',
-  language = 'en',
-}: ChannelLinksProps) {
-  const { twitchUrl, youtubeUrl } = channelUrls({ twitchLogin, youtubeChannelId });
-  if (!twitchUrl && !youtubeUrl) return null;
-  const L = slotLexFor(language);
-
-  return (
-    <p className={`text-sm text-text-secondary ${className}`}>
-      {twitchUrl && (
-        <a
-          href={twitchUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-twitch-fg transition-colors hover:text-white"
-        >
-          Twitch<span aria-hidden="true"> ↗</span>
-          <span className="sr-only">{L.opensInNewTab}</span>
-        </a>
-      )}
-      {twitchUrl && youtubeUrl && <span className="text-text-muted"> · </span>}
-      {youtubeUrl && (
-        <a
-          href={youtubeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-youtube-fg transition-colors hover:text-white"
-        >
-          YouTube<span aria-hidden="true"> ↗</span>
-          <span className="sr-only">{L.opensInNewTab}</span>
-        </a>
-      )}
-    </p>
   );
 }
