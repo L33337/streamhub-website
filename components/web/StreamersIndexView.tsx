@@ -1,11 +1,7 @@
 import { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import {
-  getPartnerApi,
-  PartnerApiError,
-  type PublicStreamer,
-} from '@/lib/server/partner-api';
+import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import {
   SearchResultCard,
@@ -16,26 +12,18 @@ import { buildBreadcrumbJsonLd } from '@/lib/seo';
 const SITE_URL = 'https://streamertimes.tv';
 
 /**
- * Streamers rendered per page. 60 = 30 rows x 2 columns. Keeps the DOM at ~60
- * cards instead of the whole roster: the un-paginated index shipped 5.2 MB /
- * ~3,000 DOM nodes at 225 streamers (PSI mobile LCP 5.5 s), ~27 MB at the 2,000
- * cap. Paginating is the fix (M20 S1.5).
+ * Streamers rendered per page. 60 = 30 rows x 2 columns. The page fetches ONLY
+ * its own 60 via the partner API's offset pagination (M20 S1.5 clean fix), so
+ * both the fetch and the rendered HTML are constant regardless of roster size —
+ * no fetch-all-slice, no 2,000 cap. Scales to the 5,000-streamer expansion.
  */
 export const PAGE_SIZE = 60;
-const FETCH_LIMIT = 500;
-const MAX_FETCH_PAGES = 4; // safety cap = 2,000 streamers fetched (mirrors app/sitemap.ts)
 
 /** First-letter bucket key for a name: 'A'–'Z' or '#' for digits/symbols. */
 function bucketKey(name: string): string {
   const first = name.trim().charAt(0).toUpperCase();
   return /[A-Z]/.test(first) ? first : '#';
 }
-
-// Bucket order: A–Z then '#'.
-const LETTERS: string[] = [
-  ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)),
-  '#',
-];
 const letterAnchor = (l: string) => `letter-${l === '#' ? 'hash' : l}`;
 
 /** Relative href for a page number — page 1 lives at /streamers, not /page/1. */
@@ -48,53 +36,44 @@ export function pageCanonical(page: number): string {
   return `${SITE_URL}${pageHref(page)}`;
 }
 
-interface IndexData {
+/** Total pages for a roster size (>= 1 so page 1 always exists). */
+export function totalStreamerPages(total: number): number {
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
+}
+
+interface PageData {
   entries: SearchResultStreamer[];
+  total: number;
   failed: boolean;
 }
 
 /**
- * Cached per request: the page-1 render, a page-N render and generateMetadata
- * all dedupe to a single roster fetch. The partner API is cursor-only (no
- * offset), so a specific page can't be fetched directly — we page the whole
- * (alphabetical) roster once and slice in memory. The fetch is small and data-
- * cached (revalidate 300); the win is the rendered HTML, not the fetch. Cursor
- * loop mirrors app/sitemap.ts.
+ * Fetches ONE page's streamers (offset window) + the live-id set, cached per
+ * request and per page number. The partner API's offset mode returns the exact
+ * `total`, which drives the page count. `revalidate: 300` means each page number
+ * is its own data-cache entry.
  */
-export const loadStreamersIndex = cache(async (): Promise<IndexData> => {
+const loadStreamersPage = cache(async (page: number): Promise<PageData> => {
   const api = getPartnerApi();
   try {
-    // Live-set lookup runs alongside the (sequential) cursor loop.
     const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
-    const all: PublicStreamer[] = [];
-    let cursor: string | undefined = undefined;
-    let pages = 0;
-    do {
-      const resp = await api.listStreamers({
-        order: 'name',
-        limit: FETCH_LIMIT,
-        cursor,
-        revalidate: 300,
-      });
-      all.push(...resp.data);
-      cursor = resp.pagination.next_cursor ?? undefined;
-      pages++;
-    } while (cursor && pages < MAX_FETCH_PAGES);
+    const resp = await api.listStreamers({
+      order: 'name',
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+      revalidate: 300,
+    });
     const liveSet = await livePromise;
     return {
-      entries: all.map((s) => ({ ...s, is_live: liveSet.has(s.id) })),
+      entries: resp.data.map((s) => ({ ...s, is_live: liveSet.has(s.id) })),
+      total: resp.pagination.total ?? resp.data.length,
       failed: false,
     };
   } catch (err) {
     if (!(err instanceof PartnerApiError)) throw err;
-    return { entries: [], failed: true };
+    return { entries: [], total: 0, failed: true };
   }
 });
-
-/** Total pages for a roster size (>= 1 so page 1 always exists). */
-export function totalStreamerPages(count: number): number {
-  return Math.max(1, Math.ceil(count / PAGE_SIZE));
-}
 
 /**
  * Windowed page-number list for the numeric nav: 1, the current page's
@@ -129,28 +108,16 @@ const NAV_DISABLED =
  * server-rendered (the soft-404 rule from app/streamer/[slug]/page.tsx).
  */
 export async function StreamersIndexView({ page }: { page: number }) {
-  const { entries, failed } = await loadStreamersIndex();
-  const total = totalStreamerPages(entries.length);
+  const { entries, total, failed } = await loadStreamersPage(page);
+  const totalPages = totalStreamerPages(total);
 
   // Out-of-range page N → 404 (but never on API failure: page 1 shows the error
   // card instead, and page 1 always renders its shell even for an empty roster).
-  if (!failed && (page < 1 || page > total)) notFound();
+  if (!failed && (page < 1 || page > totalPages)) notFound();
 
-  const start = (page - 1) * PAGE_SIZE;
-  const slice = entries.slice(start, start + PAGE_SIZE);
-
-  // For the A–Z jump bar: the page each letter first appears on, so a letter
-  // link jumps straight to the right page + anchor across the whole roster.
-  const letterPage = new Map<string, number>();
-  entries.forEach((s, i) => {
-    const k = bucketKey(s.name);
-    if (!letterPage.has(k)) letterPage.set(k, Math.floor(i / PAGE_SIZE) + 1);
-  });
-  const activeLetters = LETTERS.filter((l) => letterPage.has(l));
-
-  // Group only this page's slice into contiguous letter sections.
+  // Group this page's slice into contiguous letter sections for the headers.
   const sections: { letter: string; items: SearchResultStreamer[] }[] = [];
-  for (const s of slice) {
+  for (const s of entries) {
     const k = bucketKey(s.name);
     const last = sections[sections.length - 1];
     if (last && last.letter === k) last.items.push(s);
@@ -179,12 +146,12 @@ export async function StreamersIndexView({ page }: { page: number }) {
       </h1>
       <p className="mt-3 max-w-2xl text-text-secondary">
         Every streamer tracked on Streamer Times — see who is live now and what
-        they stream next. Jump to a letter or browse page by page.
-        {total > 1 && (
+        they stream next. Browse the full list page by page.
+        {totalPages > 1 && (
           <>
             {' '}
             <span className="text-text-muted">
-              Page {page} of {total}.
+              Page {page} of {totalPages}.
             </span>
           </>
         )}
@@ -198,34 +165,6 @@ export async function StreamersIndexView({ page }: { page: number }) {
         </div>
       ) : (
         <>
-          {/* Sticky A–Z jump bar — each letter links to the page holding it. */}
-          <nav
-            aria-label="Jump to a letter"
-            className="sticky top-[var(--header-height)] z-10 -mx-4 mt-6 mb-2 border-b border-divider bg-background/95 px-4 py-3 backdrop-blur"
-          >
-            <ul className="flex flex-wrap gap-1.5" role="list">
-              {activeLetters.map((letter) => {
-                const lp = letterPage.get(letter)!;
-                const here = lp === page;
-                return (
-                  <li key={letter}>
-                    <Link
-                      href={`${pageHref(lp)}#${letterAnchor(letter)}`}
-                      aria-current={here ? 'true' : undefined}
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${
-                        here
-                          ? 'border-accent-cyan/60 bg-background-highlight text-accent-cyan'
-                          : 'border-border-default bg-background-elevated text-text-primary hover:border-accent-cyan/60 hover:bg-background-highlight hover:text-accent-cyan'
-                      }`}
-                    >
-                      {letter}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
           {sections.map(({ letter, items }) => (
             <section
               key={letter}
@@ -249,7 +188,7 @@ export async function StreamersIndexView({ page }: { page: number }) {
             </section>
           ))}
 
-          {total > 1 && (
+          {totalPages > 1 && (
             <nav
               aria-label="Pagination"
               className="mt-10 flex flex-wrap items-center justify-center gap-2"
@@ -261,7 +200,7 @@ export async function StreamersIndexView({ page }: { page: number }) {
               ) : (
                 <span className={NAV_DISABLED}>← Previous</span>
               )}
-              {pageWindow(page, total).map((n, i) =>
+              {pageWindow(page, totalPages).map((n, i) =>
                 n === null ? (
                   <span key={`ellipsis-${i}`} className="px-1 text-text-muted">
                     …
@@ -276,7 +215,7 @@ export async function StreamersIndexView({ page }: { page: number }) {
                   </Link>
                 ),
               )}
-              {page < total ? (
+              {page < totalPages ? (
                 <Link href={pageHref(page + 1)} rel="next" className={NAV_LINK}>
                   Next →
                 </Link>

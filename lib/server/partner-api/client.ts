@@ -45,6 +45,12 @@ export interface ListStreamersOptions extends FetchOptions {
   order?: 'name' | 'popular' | 'followers';
   cursor?: string;
   limit?: number;
+  /**
+   * Opt-in offset for numbered-page UIs (e.g. /streamers). When set, the API
+   * uses range()-based pagination and returns an exact `pagination.total`; the
+   * cursor is ignored. Omit for the default cursor pagination.
+   */
+  offset?: number;
 }
 
 export interface ListSchedulesOptions extends FetchOptions {
@@ -87,6 +93,7 @@ class PartnerApiClient {
     if (opts.order) params.set('order', opts.order);
     if (opts.cursor) params.set('cursor', opts.cursor);
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    if (opts.offset !== undefined) params.set('offset', String(opts.offset));
     return this.request<Paginated<PublicStreamer>>('GET', `/v1/streamers?${params}`, opts);
   }
 

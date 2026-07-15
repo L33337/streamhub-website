@@ -144,6 +144,11 @@ export interface PublicStreamerStats {
 export interface PaginationInfo {
   next_cursor: string | null;
   has_more: boolean;
+  /**
+   * Exact total row count of the full filtered set. Only returned when the
+   * request used `offset` (numbered-page pagination); null/absent otherwise.
+   */
+  total?: number | null;
 }
 
 export interface Paginated<T> {
