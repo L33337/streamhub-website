@@ -51,11 +51,6 @@ export function SearchResultCard({ streamer, compact = false }: Props) {
           {streamer.platforms.map((p) => (
             <PlatformBadge key={p} platform={p} />
           ))}
-          {streamer.is_featured && !compact && (
-            <span className="inline-flex items-center rounded-full border border-accent-pink/40 bg-accent-pink/10 px-2 py-0.5 text-xs font-medium text-accent-pink">
-              Featured
-            </span>
-          )}
           {streamer.is_always_on && (
             <span className="inline-flex items-center rounded-full border border-accent-cyan/40 bg-accent-cyan/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-accent-cyan">
               24/7

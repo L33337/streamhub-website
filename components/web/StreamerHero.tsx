@@ -84,11 +84,6 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
             ))}
             {isLive && <LiveBadge language={streamer.language ?? undefined} />}
             {isAlwaysOn && <AlwaysOnBadge />}
-            {streamer.is_featured && (
-              <span className="inline-flex items-center rounded-full border border-accent-pink/40 bg-accent-pink/10 px-2 py-0.5 text-xs font-medium text-accent-pink">
-                {L.hero.featured}
-              </span>
-            )}
           </div>
 
           {isLive && liveSlot && (
