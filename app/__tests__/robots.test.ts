@@ -8,7 +8,9 @@ import robots from '../robots';
 // would silently kill link embeds of user-shared slot URLs. "Simplifying"
 // back to a single group breaks one side or the other.
 
-const SHARED_DISALLOWS = ['/api/', '/auth/', '/settings', '/favorites'];
+// /feed covers /feed/interests too (path-prefix match) — like /settings and
+// /favorites it always redirects anonymous crawlers, so no bot should fetch it.
+const SHARED_DISALLOWS = ['/api/', '/auth/', '/settings', '/favorites', '/feed'];
 
 function ruleFor(userAgent: string) {
   const rules = robots().rules;
