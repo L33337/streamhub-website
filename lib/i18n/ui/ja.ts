@@ -75,6 +75,7 @@ export const ja: UiLex = {
     nextUp: (entry) => `次の配信: ${entry}。`,
     afterThat: (list) => `その後: ${list}。`,
     plusMore: (n) => `さらに${n}件 — 上の完全なスケジュールをご覧ください。`,
+    allTimesNote: (tz) => `すべての時刻は${tz}で表示しています。`,
     predictedNote:
       '予測と表示された時間は、過去の配信パターンからAIが推定したものです。',
     outsideDates: (name, time, tz) =>

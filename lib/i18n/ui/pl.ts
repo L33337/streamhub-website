@@ -102,6 +102,9 @@ export const pl: UiLex = {
     nextUp: (entry) => `Najbliższy: ${entry}.`,
     afterThat: (list) => `Potem: ${list}.`,
     plusMore: (n) => `Plus jeszcze ${n} — pełny harmonogram powyżej.`,
+    // Colon construction like stats.allTimesIn — avoids the case government
+    // a preposition would impose on the cityTime label.
+    allTimesNote: (tz) => `Wszystkie godziny: ${tz}.`,
     predictedNote:
       'Godziny oznaczone jako przewidywania są szacowane przez AI na podstawie wcześniejszych wzorców streamowania.',
     outsideDates: (name, time, tz) =>

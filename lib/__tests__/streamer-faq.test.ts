@@ -91,7 +91,9 @@ describe('buildStreamerFaqItems — English regression guard (language: null)', 
       question: "What is Testy's stream schedule?",
       answer:
         'Testy has 1 stream on the schedule for the next 7 days. ' +
-        'Next up: Sat 19:00 UTC (Fortnite, predicted). ' +
+        // 19:00 UTC → 21:00 CEST: entry times are streamer-local (Europe/Berlin).
+        'Next up: Sat 21:00 (Fortnite, predicted). ' +
+        'All times are Berlin time. ' +
         'Times marked as predictions are estimated by AI from past streaming patterns. ' +
         'Outside these dates, Testy typically goes live around 20:00 (Berlin time) — see the typical streaming times above.',
     });
@@ -175,10 +177,13 @@ describe('buildStreamerFaqItems — localized bodies', () => {
     expect(howOften).toBeDefined();
     expect(howOften!.answer).toContain('Montag');
     expect(howOften!.answer).toContain('Samstag');
-    // "UTC" stays untranslated inside schedule entries.
+    // Schedule entries are streamer-local (Europe/Berlin) with a localized
+    // zone note — no UTC marker anymore.
     const schedule = items.find((i) => i.question.includes('Stream-Plan'));
     expect(schedule).toBeDefined();
-    expect(schedule!.answer).toContain('UTC');
+    expect(schedule!.answer).not.toContain('UTC');
+    expect(schedule!.answer).toContain('21:00'); // 19:00Z in CEST
+    expect(schedule!.answer).toContain('Alle Zeiten in Ortszeit Berlin.');
     // Brands stay untranslated.
     const where = items.find((i) => i.question === 'Wo kann ich Testy anschauen?');
     expect(where!.answer).toContain('Twitch');
@@ -195,3 +200,79 @@ describe('buildStreamerFaqItems — localized bodies', () => {
     expect(schedule!.answer).toContain('5 стримов');
   });
 });
+
+describe('buildStreamerFaqItems — streamer-local schedule times', () => {
+  const predicted = () => makeSlot({ is_predicted: true, category: 'Fortnite' });
+
+  it('keeps the UTC form and omits the zone note without a usable timezone', () => {
+    for (const timezone of [null, 'UTC', 'Mars/Olympus']) {
+      const items = buildStreamerFaqItems(
+        makeStreamer({ timezone }),
+        [],
+        [predicted()],
+        null,
+      );
+      const schedule = items.find((i) => i.question.includes('schedule'));
+      expect(schedule, String(timezone)).toBeDefined();
+      expect(schedule!.answer, String(timezone)).toContain(
+        'Next up: Sat 19:00 UTC (Fortnite, predicted).',
+      );
+      expect(schedule!.answer, String(timezone)).not.toContain('All times are');
+    }
+  });
+
+  it('renders every entry in the streamer zone, not just the first', () => {
+    const items = buildStreamerFaqItems(
+      makeStreamer(),
+      [],
+      [
+        makeSlot({ id: 'a', start_time: '2026-07-18T19:00:00Z' }), // Sat 21:00 CEST
+        makeSlot({ id: 'b', start_time: '2026-07-20T17:30:00Z' }), // Mon 19:30 CEST
+      ],
+      null,
+    );
+    const schedule = items.find((i) => i.question.includes('schedule'));
+    expect(schedule!.answer).toContain('Next up: Sat 21:00.');
+    expect(schedule!.answer).toContain('After that: Mon 19:30.');
+    expect(schedule!.answer).toContain('All times are Berlin time.');
+  });
+
+  it('shifts entry weekday AND frequency weekday across the zone midnight', () => {
+    // Friday 23:30 UTC = Saturday 01:30 in Berlin.
+    const items = buildStreamerFaqItems(
+      makeStreamer(),
+      [],
+      [makeSlot({ start_time: '2026-07-17T23:30:00Z' })],
+      null,
+    );
+    const schedule = items.find((i) => i.question.includes('schedule'));
+    expect(schedule!.answer).toContain('Sat 01:30');
+    const howOften = items.find((i) => i.question === 'How often does Testy stream?');
+    expect(howOften!.answer).toContain('on Saturday');
+
+    // Same instant without a timezone stays a UTC Friday.
+    const utcItems = buildStreamerFaqItems(
+      makeStreamer({ timezone: null }),
+      [],
+      [makeSlot({ start_time: '2026-07-17T23:30:00Z' })],
+      null,
+    );
+    const utcHowOften = utcItems.find(
+      (i) => i.question === 'How often does Testy stream?',
+    );
+    expect(utcHowOften!.answer).toContain('on Friday');
+  });
+
+  it('labels the note with the city of the streamer timezone', () => {
+    const items = buildStreamerFaqItems(
+      makeStreamer({ timezone: 'America/New_York' }),
+      [],
+      [makeSlot()], // 19:00Z → 15:00 EDT
+      null,
+    );
+    const schedule = items.find((i) => i.question.includes('schedule'));
+    expect(schedule!.answer).toContain('Next up: Sat 15:00.');
+    expect(schedule!.answer).toContain('All times are New York time.');
+  });
+});
+

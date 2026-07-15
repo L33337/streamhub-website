@@ -88,6 +88,12 @@ export interface UiLex {
     nextUp(entry: string): string;
     afterThat(list: string): string;
     plusMore(n: number): string;
+    /**
+     * Standalone sentence declaring the zone of the schedule-entry times:
+     * "All times are Berlin time." `tzLabel` is the localized stats.cityTime
+     * label. Only rendered when entries are streamer-local (not UTC).
+     */
+    allTimesNote(tzLabel: string): string;
     predictedNote: string;
     outsideDates(name: string, time: string, tz: string): string;
     /** Marker inside schedule entries: "(Just Chatting, predicted)". */

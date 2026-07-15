@@ -76,6 +76,7 @@ export const hu: UiLex = {
     nextUp: (entry) => `A következő: ${entry}.`,
     afterThat: (list) => `Utána: ${list}.`,
     plusMore: (n) => `Plusz még ${n} — lásd a teljes beosztást fent.`,
+    allTimesNote: (tz) => `Minden időpont ${tz} szerint értendő.`,
     predictedNote:
       'Az előrejelzésként jelölt időpontokat MI becsüli a korábbi streammintázatok alapján.',
     outsideDates: (name, time, tz) =>

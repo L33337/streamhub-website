@@ -97,6 +97,8 @@ export const ar: UiLex = {
     nextUp: (entry) => `التالي: ${entry}.`,
     afterThat: (list) => `بعد ذلك: ${list}.`,
     plusMore: (n) => `بالإضافة إلى ${n} أخرى — انظر الجدول الكامل أعلاه.`,
+    // `tz` already contains "توقيت …" (cityTime) — no extra بتوقيت prefix.
+    allTimesNote: (tz) => `جميع الأوقات معروضة حسب ${tz}.`,
     predictedNote:
       'الأوقات الموسومة كتوقعات مُقدّرة بالذكاء الاصطناعي من أنماط البث السابقة.',
     outsideDates: (name, time, tz) =>

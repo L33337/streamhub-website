@@ -76,6 +76,7 @@ export const en: UiLex = {
     nextUp: (entry) => `Next up: ${entry}.`,
     afterThat: (list) => `After that: ${list}.`,
     plusMore: (n) => `Plus ${n} more — see the full schedule above.`,
+    allTimesNote: (tz) => `All times are ${tz}.`,
     predictedNote:
       'Times marked as predictions are estimated by AI from past streaming patterns.',
     outsideDates: (name, time, tz) =>

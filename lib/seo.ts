@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
-import { localizedNextLabel } from '@/lib/format/time';
+import { localizedNextLabel, safeTimeZone, timezoneCityLabel } from '@/lib/format/time';
+import { uiLexFor } from '@/lib/i18n-ui';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -483,7 +484,17 @@ export function buildStreamerMetadata(
     const cat = cleanField(next.category);
     const st = cleanField(next.title);
     const title = st ? truncate(st, MAX_STREAM_TITLE) : null;
-    const label = localizedNextLabel(next.start_time, lang, { relative: false });
+    // Streamer-local next-stream time when the home timezone is known (fixed
+    // zone → deterministic), labeled with the localized cityTime ("Berlin
+    // time"); UTC form otherwise. Mirrors the streamer-FAQ rendering.
+    const tz = safeTimeZone(streamer.timezone);
+    let label = localizedNextLabel(next.start_time, lang, {
+      relative: false,
+      timeZone: tz ?? undefined,
+    });
+    if (tz) {
+      label += ` (${uiLexFor(streamer.language).stats.cityTime(timezoneCityLabel(tz))})`;
+    }
     titleCore = L.nextTitle(name);
     description = buildNextDesc(L, name, label, cat, title, !!next.is_predicted);
     ogTitle = L.fallbackTitle(name);

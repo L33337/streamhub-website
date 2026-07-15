@@ -82,6 +82,7 @@ export const de: UiLex = {
       n === 1
         ? `Plus 1 weiterer — siehe den vollständigen Plan oben.`
         : `Plus ${n} weitere — siehe den vollständigen Plan oben.`,
+    allTimesNote: (tz) => `Alle Zeiten in ${tz}.`,
     predictedNote:
       'Als Prognose markierte Zeiten werden von KI aus früheren Stream-Mustern geschätzt.',
     outsideDates: (name, time, tz) =>

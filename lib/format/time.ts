@@ -6,6 +6,22 @@ export function formatUtcTime(iso: string): string {
 }
 
 /**
+ * Returns `tz` when it is a usable non-UTC IANA timezone id, else null so
+ * callers keep the deterministic UTC rendering path. 'UTC' itself maps to
+ * null on purpose: the UTC path already labels times "HH:MM UTC" and a
+ * "UTC time" city label would be redundant.
+ */
+export function safeTimeZone(tz: string | null | undefined): string | null {
+  if (!tz || tz === 'UTC') return null;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return tz;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Coarse "time ago" label for past timestamps, e.g. "2 hours ago",
  * "yesterday", "3 days ago", "last month". Counterpart to
  * `localizedNextLabel` (future). Built on `Intl.RelativeTimeFormat` so we don't
@@ -168,13 +184,48 @@ export function utcDateShortLabel(
  * even for today/tomorrow. Use it for Google-cached metadata (title/description)
  * and crawlable snippet text, where a relative word like "Today" goes stale the
  * moment Google's cached copy outlives the day.
+ *
+ * `opts.timeZone` (a validated non-UTC IANA id, see `safeTimeZone`) renders
+ * weekday + HH:MM in that zone WITHOUT a zone suffix ("Sat 21:00") — the
+ * caller appends its own localized zone label ("Berlin time"). The zone is the
+ * streamer's fixed home timezone, so the output stays deterministic and
+ * ISR-cacheable. Invalid/UTC/absent zones keep the UTC form byte-identically.
  */
 export function localizedNextLabel(
   iso: string,
   lang = 'en',
-  opts: { relative?: boolean; now?: Date } = {},
+  opts: { relative?: boolean; now?: Date; timeZone?: string } = {},
 ): string {
   const { relative = true, now = new Date() } = opts;
+  const timeZone = safeTimeZone(opts.timeZone);
+  const d = new Date(iso);
+
+  if (timeZone) {
+    const time = new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone,
+    }).format(d);
+    if (relative) {
+      // Today/tomorrow must be judged on the zone's local calendar date —
+      // 23:30Z can already be "tomorrow" in Berlin. en-CA yields YYYY-MM-DD.
+      const localDay = new Intl.DateTimeFormat('en-CA', { timeZone });
+      const diffDays = Math.round(
+        (Date.parse(localDay.format(d) + 'T00:00:00Z') -
+          Date.parse(localDay.format(now) + 'T00:00:00Z')) /
+          86_400_000,
+      );
+      if (diffDays === 0 || diffDays === 1) {
+        const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+        const rel = rtf.format(diffDays, 'day');
+        return `${rel.charAt(0).toUpperCase()}${rel.slice(1)} ${time}`;
+      }
+    }
+    const weekday = d.toLocaleDateString(lang, { weekday: 'short', timeZone });
+    return `${weekday} ${time}`;
+  }
+
   const time = formatUtcTime(iso);
   const todayUtc = now.toISOString().slice(0, 10);
   const targetUtc = iso.slice(0, 10);

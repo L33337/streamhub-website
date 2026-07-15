@@ -114,6 +114,9 @@ export const ru: UiLex = {
     nextUp: (entry) => `Ближайший: ${entry}.`,
     afterThat: (list) => `Затем: ${list}.`,
     plusMore: (n) => `И ещё ${n} — полное расписание выше.`,
+    // Colon construction like stats.allTimesIn — avoids the case government
+    // a preposition would impose on the cityTime label.
+    allTimesNote: (tz) => `Часовой пояс этих значений: ${tz}.`,
     predictedNote:
       'Время с пометкой «прогноз» рассчитано ИИ на основе прошлых стримов.',
     outsideDates: (name, time, tz) =>

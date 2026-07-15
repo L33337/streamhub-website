@@ -67,6 +67,7 @@ function renderAll(L: UiLex): Array<[string, string]> {
     ['faq.afterThat', L.faq.afterThat('Sun 20:00 UTC; Mon 19:00 UTC')],
     ['faq.plusMore.1', L.faq.plusMore(1)],
     ['faq.plusMore.3', L.faq.plusMore(3)],
+    ['faq.allTimesNote', L.faq.allTimesNote(L.stats.cityTime('Berlin'))],
     ['faq.predictedNote', L.faq.predictedNote],
     ['faq.outsideDates', L.faq.outsideDates(NAME, '20:00', 'Berlin time')],
     ['faq.predictedMarker', L.faq.predictedMarker],

@@ -383,3 +383,29 @@ describe('buildBreadcrumbJsonLd', () => {
     expect('item' in ld.itemListElement[2]).toBe(false);
   });
 });
+
+describe('buildStreamerMetadata — next-stream time in the description', () => {
+  const next = () =>
+    makeSlot({
+      status: 'upcoming',
+      is_predicted: true,
+      start_time: '2026-07-18T19:00:00Z', // Sat 21:00 in Europe/Berlin (CEST)
+    });
+
+  it('renders the time streamer-local with a localized zone label', () => {
+    const meta = buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+      nextSlot: next(),
+    });
+    expect(String(meta.description)).toContain('Sa 21:00 (Ortszeit Berlin)');
+    expect(String(meta.description)).not.toContain('UTC');
+  });
+
+  it('keeps the UTC form without a usable timezone', () => {
+    const meta = buildStreamerMetadata(
+      makeStreamer({ timezone: null }),
+      'examplestreamer',
+      { nextSlot: next() },
+    );
+    expect(String(meta.description)).toContain('Sa 19:00 UTC');
+  });
+});

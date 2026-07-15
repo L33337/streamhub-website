@@ -84,6 +84,8 @@ export const fr: UiLex = {
       n === 1
         ? `Plus 1 autre — voir le planning complet ci-dessus.`
         : `Plus ${n} autres — voir le planning complet ci-dessus.`,
+    // Colon construction like stats.allTimesIn — avoids "indiquées en heure de …".
+    allTimesNote: (tz) => `Toutes les heures indiquées : ${tz}.`,
     predictedNote:
       'Les horaires marqués comme prédictions sont estimés par IA à partir des habitudes de stream passées.',
     outsideDates: (name, time, tz) =>

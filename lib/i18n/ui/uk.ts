@@ -113,6 +113,9 @@ export const uk: UiLex = {
     nextUp: (entry) => `Найближчий: ${entry}.`,
     afterThat: (list) => `Далі: ${list}.`,
     plusMore: (n) => `І ще ${n} — повний розклад вище.`,
+    // Colon construction like stats.allTimesIn — avoids the case government
+    // a preposition would impose on the cityTime label.
+    allTimesNote: (tz) => `Часовий пояс цих значень: ${tz}.`,
     predictedNote:
       'Час із позначкою «прогноз» розраховано ШІ на основі минулих стрімів.',
     outsideDates: (name, time, tz) =>

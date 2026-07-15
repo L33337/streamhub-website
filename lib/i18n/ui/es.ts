@@ -82,6 +82,7 @@ export const es: UiLex = {
       n === 1
         ? `Y uno más — consulta el horario completo arriba.`
         : `Y ${n} más — consulta el horario completo arriba.`,
+    allTimesNote: (tz) => `Todas las horas se muestran en ${tz}.`,
     predictedNote:
       'Las horas marcadas como predicción se estiman con IA a partir de patrones de streams anteriores.',
     outsideDates: (name, time, tz) =>

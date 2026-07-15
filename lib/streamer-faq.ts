@@ -4,7 +4,12 @@ import type {
   PublicStreamerStats,
   PublicStreamSlot,
 } from '@/lib/server/partner-api';
-import { formatDuration, localizedNextLabel, timezoneCityLabel } from '@/lib/format/time';
+import {
+  formatDuration,
+  localizedNextLabel,
+  safeTimeZone,
+  timezoneCityLabel,
+} from '@/lib/format/time';
 import { listConjunction, resolveUiLang, weekdayLong } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
@@ -42,13 +47,36 @@ function platformsLabel(platforms: Platform[], lang: string): string {
   return listConjunction(names, lang);
 }
 
-/** Localized long weekday names (UTC) the given slots fall on, in Mon→Sun order. */
-function distinctWeekdayLabels(slots: PublicStreamSlot[], lang: string): string[] {
+const SHORT_EN_WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** ISO weekday index (0 = Monday … 6 = Sunday) in `tz`, or UTC when tz is null. */
+function isoWeekdayIndex(d: Date, tz: string | null): number {
+  if (tz) {
+    const short = new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      timeZone: tz,
+    }).format(d);
+    const idx = SHORT_EN_WEEKDAYS.indexOf(short);
+    if (idx >= 0) return idx;
+  }
+  return (d.getUTCDay() + 6) % 7;
+}
+
+/**
+ * Localized long weekday names the given slots fall on, in Mon→Sun order —
+ * streamer-local when `tz` is set (a 23:30 UTC Friday stream is a Saturday
+ * stream in Berlin), UTC otherwise.
+ */
+function distinctWeekdayLabels(
+  slots: PublicStreamSlot[],
+  lang: string,
+  tz: string | null,
+): string[] {
   const present = new Set<number>();
   for (const s of slots) {
     const d = new Date(s.start_time);
     if (Number.isNaN(d.getTime())) continue;
-    present.add((d.getUTCDay() + 6) % 7); // ISO index: 0 = Monday … 6 = Sunday
+    present.add(isoWeekdayIndex(d, tz));
   }
   return [...present].sort((a, b) => a - b).map((i) => weekdayLong(i, lang));
 }
@@ -76,8 +104,14 @@ export function buildStreamerFaqItems(
   const items: FaqItem[] = [];
   const name = streamer.name;
   const lang = resolveUiLang(streamer.language);
-  const L = uiLexFor(streamer.language).faq;
+  const lex = uiLexFor(streamer.language);
+  const L = lex.faq;
   const platforms = platformsLabel(streamer.platforms, lang);
+  // Schedule-entry times render in the streamer's fixed home timezone (matches
+  // the streamer-local "typical times" sentence and the searcher's own clock).
+  // Fixed zone → still deterministic and ISR/Google-cacheable. Null/'UTC'/
+  // invalid → UTC rendering as before.
+  const tz = safeTimeZone(streamer.timezone);
   const upcoming = [...upcomingSlots].sort((a, b) =>
     a.start_time.localeCompare(b.start_time),
   );
@@ -113,10 +147,14 @@ export function buildStreamerFaqItems(
   if (upcoming.length > 0) {
     const top = upcoming.slice(0, 5);
     const n = upcoming.length;
-    // "Sat 20:00 UTC (Just Chatting, predicted)" — entries joined with "; "
-    // because categories and the predicted marker contain commas.
+    // "Sat 21:00 (Just Chatting, predicted)" — streamer-local when tz is set,
+    // "Sat 20:00 UTC (…)" otherwise; entries joined with "; " because
+    // categories and the predicted marker contain commas.
     const entries = top.map((s) => {
-      const label = localizedNextLabel(s.start_time, lang, { relative: false });
+      const label = localizedNextLabel(s.start_time, lang, {
+        relative: false,
+        timeZone: tz ?? undefined,
+      });
       const cat = s.category?.trim();
       const marker = s.is_predicted
         ? cat
@@ -131,6 +169,9 @@ export function buildStreamerFaqItems(
     }
     if (n > top.length) {
       answer += ` ${L.plusMore(n - top.length)}`;
+    }
+    if (tz) {
+      answer += ` ${L.allTimesNote(lex.stats.cityTime(timezoneCityLabel(tz)))}`;
     }
     if (top.some((s) => s.is_predicted)) {
       answer += ` ${L.predictedNote}`;
@@ -168,7 +209,7 @@ export function buildStreamerFaqItems(
       answer: L.aPerWeek(name, stats.streams_per_week, stats.window_days),
     });
   } else if (upcoming.length > 0) {
-    const days = distinctWeekdayLabels(upcoming, lang);
+    const days = distinctWeekdayLabels(upcoming, lang, tz);
     items.push({
       question: L.qHowOften(name),
       answer: L.aScheduleCount(
