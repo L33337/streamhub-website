@@ -90,7 +90,7 @@ export async function loadFeed(
   const slotsTask = (async (): Promise<[StreamSlot[], StreamSlot[]]> => {
     try {
       return await Promise.all([
-        favIds.length > 0 ? fetchStreamSlots(supabase, favIds) : Promise.resolve([]),
+        favIds.length > 0 ? fetchStreamSlots(supabase, favIds, now) : Promise.resolve([]),
         fetchLiveFeaturedSlots(supabase, favIdSet),
       ]);
     } catch (err) {
@@ -454,7 +454,7 @@ export async function loadVolatileFeed(
   const slotsTask = (async (): Promise<[StreamSlot[], StreamSlot[]]> => {
     try {
       return await Promise.all([
-        favIds.length > 0 ? fetchStreamSlots(supabase, favIds) : Promise.resolve([]),
+        favIds.length > 0 ? fetchStreamSlots(supabase, favIds, now) : Promise.resolve([]),
         fetchLiveFeaturedSlots(supabase, favIdSet),
       ]);
     } catch (err) {

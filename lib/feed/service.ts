@@ -66,10 +66,14 @@ const STREAM_CLIP_COLUMNS =
 export async function fetchStreamSlots(
   supabase: SupabaseClient,
   streamerIds: string[],
+  now: Date = new Date(),
 ): Promise<StreamSlot[]> {
   if (streamerIds.length === 0) return [];
 
-  const floor = new Date();
+  // Floor is relative to the caller's clock (loadFeed threads its `now`), not
+  // the ambient one — keeps the query deterministic under an injected clock.
+  // Production passes real time, so behavior is unchanged.
+  const floor = new Date(now);
   floor.setDate(floor.getDate() - 2);
   floor.setHours(0, 0, 0, 0);
 
