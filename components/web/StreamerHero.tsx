@@ -5,7 +5,7 @@ import { uiLexFor } from '@/lib/i18n-ui';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
-import { channelUrls, WatchButtons } from './WatchButtons';
+import { channelUrls } from './WatchButtons';
 
 interface Props {
   streamer: PublicStreamer;
@@ -15,13 +15,6 @@ interface Props {
 export function StreamerHero({ streamer, liveSlot }: Props) {
   const isLive = liveSlot !== null;
   const isAlwaysOn = liveSlot?.is_always_on === true;
-
-  // Watch buttons deep-link only to the platform(s) the live stream is on;
-  // the API already nulls ids for platforms the streamer doesn't have.
-  const liveTwitchLogin =
-    isLive && liveSlot.platforms.includes('twitch') ? streamer.twitch_login : null;
-  const liveYoutubeChannelId =
-    isLive && liveSlot.platforms.includes('youtube') ? streamer.youtube_channel_id : null;
 
   // Mark broadcaster-language text (bio, stream title) so browsers/screen readers
   // treat it correctly. Kept although the surrounding body is now localized to
@@ -96,16 +89,6 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
                 <span className="text-text-muted"> · {liveSlot.category}</span>
               ) : null}
             </p>
-          )}
-
-          {isLive && (
-            <WatchButtons
-              twitchLogin={liveTwitchLogin}
-              youtubeChannelId={liveYoutubeChannelId}
-              grow={false}
-              className="mt-4 flex flex-wrap justify-center gap-3 md:justify-start"
-              language={streamer.language ?? undefined}
-            />
           )}
 
           {streamer.description && (
