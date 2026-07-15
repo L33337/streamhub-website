@@ -5,7 +5,6 @@ import { uiLexFor } from '@/lib/i18n-ui';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
-import { HeroAppPromo } from './HeroAppPromo';
 import { ChannelLinks, WatchButtons } from './WatchButtons';
 
 interface Props {
@@ -52,7 +51,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
 
         <div className="flex-1 text-center md:text-left">
           <div className="flex items-start justify-center gap-3 md:justify-start">
-            <h1 className="text-4xl md:text-5xl font-bold text-white">
+            <h1 className="text-3xl md:text-4xl font-bold text-white">
               {streamer.name}
             </h1>
             <FavoriteButton
@@ -115,8 +114,6 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
               dir={nativeDir}
             />
           )}
-
-          <HeroAppPromo language={streamer.language} />
         </div>
       </div>
     </header>
@@ -141,7 +138,7 @@ function StreamerDescription({
     <div
       lang={lang}
       dir={dir}
-      className="mt-4 space-y-3 text-sm leading-relaxed text-text-secondary md:text-base"
+      className="mt-4 space-y-3 text-sm leading-relaxed text-text-secondary"
     >
       {paragraphs.map((para, i) => (
         <p key={i}>{para}</p>
