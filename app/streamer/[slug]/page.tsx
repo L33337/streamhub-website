@@ -274,15 +274,6 @@ export default async function StreamerPage({ params }: Props) {
 
       <StreamerHero streamer={streamer} liveSlot={heroLiveSlot} />
 
-      {lastStream && (
-        <LastStreamCard
-          stream={lastStream}
-          streamerName={streamer.name}
-          avatarUrl={streamer.avatar_url}
-          language={streamer.language}
-        />
-      )}
-
       {showEmpty ? (
         <EmptyScheduleState streamer={streamer} />
       ) : (
@@ -324,6 +315,15 @@ export default async function StreamerPage({ params }: Props) {
           when nothing is scheduled and the page would otherwise be empty
           ("when does X usually stream?" stays answered on quiet pages). */}
       <ChannelStats streamer={streamer} stats={stats} />
+
+      {lastStream && (
+        <LastStreamCard
+          stream={lastStream}
+          streamerName={streamer.name}
+          avatarUrl={streamer.avatar_url}
+          language={streamer.language}
+        />
+      )}
 
       {stats && <StreamerStatsBlock streamer={streamer} stats={stats} />}
 
