@@ -17,6 +17,8 @@ import type {
   PublicStreamerStats,
   PublicStreamHistory,
   PublicStreamSlot,
+  RankingMetric,
+  RankingsResponse,
 } from './types';
 
 const USER_AGENT = 'streamertimes-web/1.0';
@@ -191,6 +193,28 @@ class PartnerApiClient {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Bounded leaderboard (max 100 entries, no pagination) for one ranking
+   * metric. The underlying aggregates move nightly, so the fetch defaults to a
+   * 1-hour data-cache revalidate (same reasoning as `getStreamerStats`).
+   * NOT best-effort — callers on prerendered routes must catch (never throw
+   * during prerender) so they can degrade to an empty list AND noindex the
+   * thin page.
+   */
+  async getRankings(
+    metric: RankingMetric,
+    opts: FetchOptions & { limit?: number } = {},
+  ): Promise<RankingsResponse> {
+    const params = new URLSearchParams();
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    const qs = params.toString();
+    return this.request<RankingsResponse>(
+      'GET',
+      `/v1/rankings/${metric}${qs ? `?${qs}` : ''}`,
+      { revalidate: 3600, ...opts },
+    );
   }
 
   async listSchedules(opts: ListSchedulesOptions = {}): Promise<Paginated<PublicStreamSlot>> {

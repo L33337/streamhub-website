@@ -49,6 +49,38 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.6,
   },
   {
+    url: `${SITE_URL}/rankings`,
+    // Honest per-render "now": the leaderboards move with each nightly refresh
+    // (same treatment as /games).
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.7,
+  },
+  {
+    url: `${SITE_URL}/rankings/most-followed`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${SITE_URL}/rankings/most-watched`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${SITE_URL}/rankings/most-active`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
+    url: `${SITE_URL}/rankings/most-reliable`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
     url: `${SITE_URL}/developers`,
     lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
@@ -138,6 +170,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'daily',
         priority: 0.6,
       });
+      // Per-game ranking pages (/rankings/game/[slug]). streamer_count >= 10 is
+      // a cheap proxy for the page's own ≥10-ranked-entries index gate (exact
+      // parity would cost one API call per game); the residual mismatch
+      // self-corrects because sub-threshold pages emit noindex.
+      if (g.streamer_count >= 10) {
+        gameUrls.push({
+          url: `${SITE_URL}/rankings/game/${slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.5,
+        });
+      }
     }
   } catch (err) {
     // The sitemap is all-or-nothing: NEVER serve a truncated list. A degraded

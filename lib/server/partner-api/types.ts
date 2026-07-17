@@ -141,6 +141,47 @@ export interface PublicStreamerStats {
   top_categories: PublicStreamerStatsCategory[];
 }
 
+// ============================================
+// Rankings (GET /v1/rankings/{metric})
+// ============================================
+
+export type RankingMetric = 'most-followed' | 'most-watched' | 'most-active' | 'most-reliable';
+
+// Per-metric numbers of one leaderboard row. Superset shape — the key set
+// depends on the requested metric (see the endpoint description in the
+// Partner API OpenAPI spec); every field is optional so one type covers all
+// four metrics.
+export interface RankingValues {
+  follower_count?: number;
+  avg_view_count?: number;
+  hours_streamed_28d?: number;
+  streams_28d?: number;
+  streams_per_week?: number;
+  avg_stream_duration_minutes?: number | null;
+  time_hit_rate?: number; // 0..1
+  time_sample?: number;
+  median_start_deviation_minutes?: number | null;
+  no_show_count?: number;
+  time_tier?: string;
+}
+
+export interface PublicRankingEntry {
+  rank: number; // 1-based, best first
+  values: RankingValues;
+  streamer: PublicStreamer;
+}
+
+// Envelope of GET /v1/rankings/{metric}. Bounded top-list (max 100), no
+// pagination. `window_days` is the aggregation window (28/90) or null for
+// most-followed; `refreshed_at` is the last nightly refresh of the underlying
+// aggregate (null for the table-backed metrics).
+export interface RankingsResponse {
+  metric: RankingMetric;
+  window_days: number | null;
+  refreshed_at: string | null;
+  data: PublicRankingEntry[];
+}
+
 export interface PaginationInfo {
   next_cursor: string | null;
   has_more: boolean;

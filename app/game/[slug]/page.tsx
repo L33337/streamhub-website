@@ -346,6 +346,14 @@ export default async function GamePage({ params }: Props) {
               </tbody>
             </table>
           </div>
+          <p className="mt-3 text-sm">
+            <Link
+              href={`/rankings/game/${slug}`}
+              className="text-accent-cyan hover:text-text-primary"
+            >
+              See the full {category} ranking (top 50) →
+            </Link>
+          </p>
         </section>
       )}
 

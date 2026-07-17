@@ -13,11 +13,19 @@ transcript analysis. Canonical domain: https://streamertimes.tv
 - [Who's live now](https://streamertimes.tv/live): Every streamer live right now, grouped by game and category.
 - [Games & categories](https://streamertimes.tv/games): Find streamers by the game or category they play.
 - [All streamers A–Z](https://streamertimes.tv/streamers): Full A–Z index of tracked Twitch and YouTube streamers.
+- [Streamer rankings](https://streamertimes.tv/rankings): Leaderboards — most followed, most watched, most active and most punctual streamers, updated daily.
 - [Get the app](https://streamertimes.tv/app): Go-live alerts and AI stream predictions, free for iOS and Android.
+
+## Rankings
+- [Most followed streamers](https://streamertimes.tv/rankings/most-followed)
+- [Most watched streamers](https://streamertimes.tv/rankings/most-watched)
+- [Most active streamers](https://streamertimes.tv/rankings/most-active)
+- [Most punctual streamers](https://streamertimes.tv/rankings/most-reliable)
 
 ## Detail pages
 - Streamer schedule: https://streamertimes.tv/streamer/{id}
 - Game / category hub: https://streamertimes.tv/game/{slug}
+- Per-game ranking: https://streamertimes.tv/rankings/game/{slug}
 
 ## Developers
 - [Partner API](https://streamertimes.tv/developers): Public REST API for live schedules and AI predictions (waitlist).
