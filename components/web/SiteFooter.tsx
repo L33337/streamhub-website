@@ -26,6 +26,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
       { href: '/live', label: 'Live now' },
       { href: '/streamers', label: 'All streamers' },
       { href: '/games', label: 'All games' },
+      { href: '/rankings', label: 'Streamer rankings' },
       { href: '/', label: 'Popular streamers' },
       { href: '/app', label: 'Get the app' },
     ],

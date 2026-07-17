@@ -28,4 +28,8 @@ export type {
   StatsWeekday,
   Paginated,
   PaginationInfo,
+  RankingMetric,
+  RankingValues,
+  PublicRankingEntry,
+  RankingsResponse,
 } from './types';

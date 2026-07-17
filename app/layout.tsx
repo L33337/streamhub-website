@@ -134,6 +134,12 @@ export default function RootLayout({
                 Games
               </Link>
               <Link
+                href="/rankings"
+                className="hidden h-9 items-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-text-primary md:inline-flex"
+              >
+                Rankings
+              </Link>
+              <Link
                 href="/app"
                 className="hidden h-9 items-center rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors md:inline-flex"
               >

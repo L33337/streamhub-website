@@ -95,6 +95,14 @@ export function MobileHeaderMenu() {
             Games
           </Link>
           <Link
+            href="/rankings"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
+          >
+            Rankings
+          </Link>
+          <Link
             href="/app"
             role="menuitem"
             onClick={() => setOpen(false)}
