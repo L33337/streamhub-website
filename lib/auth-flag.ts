@@ -1,4 +1,4 @@
-// Website auth feature flag (M16 follow-up).
+// Website auth feature flags (M16 follow-up).
 //
 // Auth is DORMANT by default. To activate it, set NEXT_PUBLIC_AUTH_ENABLED=true
 // (Vercel env var) and redeploy — no code changes needed. The flag controls:
@@ -7,6 +7,17 @@
 //   - gated pages (/feed, /feed/interests, /favorites, /settings) send
 //     signed-out visitors to /auth/login?next=<page> instead of /app
 //   - FavoriteButton's signed-out state links to /auth/login instead of /app
+//
+// EMAIL auth is a SUB-flag on top of that: NEXT_PUBLIC_EMAIL_AUTH_ENABLED=true
+// only takes effect while NEXT_PUBLIC_AUTH_ENABLED is also true. It controls:
+//   - /auth/login additionally renders the email/password form + sign-up and
+//     forgot-password links
+//   - /auth/sign-up, /auth/forgot-password, /auth/reset-password render their
+//     forms instead of redirecting (dormant: to /auth/login when base auth is
+//     on, to /app when everything is off)
+// Prerequisites before flipping it in production: hCaptcha sitekey hostname,
+// custom SMTP, and the conditional email templates — see the activation
+// checklist in AGENTS.md ("Email auth sub-flag").
 //
 // NEXT_PUBLIC_ vars are inlined at BUILD time (server and client bundles),
 // so reading this constant keeps the root layout static — flipping the flag
@@ -17,6 +28,9 @@
 // https://streamertimes.tv/auth/callback as a redirect URL.
 
 export const AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'true';
+
+export const EMAIL_AUTH_ENABLED =
+  AUTH_ENABLED && process.env.NEXT_PUBLIC_EMAIL_AUTH_ENABLED === 'true';
 
 /**
  * Sanitizes a post-login destination against open redirects: only same-site
@@ -37,4 +51,13 @@ export function safeNextPath(raw: string | null | undefined): string | null {
 export function signInGateRedirect(nextPath: string): string {
   if (!AUTH_ENABLED) return '/app';
   return `/auth/login?next=${encodeURIComponent(nextPath)}`;
+}
+
+/**
+ * Where a dormant email-auth page (/auth/sign-up, /auth/forgot-password,
+ * /auth/reset-password) sends its visitors while EMAIL_AUTH_ENABLED is off:
+ * the OAuth sign-in page when base auth is live, the app-promo page otherwise.
+ */
+export function emailAuthGateRedirect(): string {
+  return AUTH_ENABLED ? '/auth/login' : '/app';
 }
