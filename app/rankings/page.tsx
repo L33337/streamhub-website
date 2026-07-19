@@ -5,8 +5,12 @@ import { buildBreadcrumbJsonLd } from '@/lib/seo';
 import { gameSlug } from '@/lib/game-slug';
 import { formatRefreshedAt, RANKING_PAGES, sanitizeRankingEntries } from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
+import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 
-export const revalidate = 3600;
+// 300 (not 3600): live badges + the "live right now" stat need a fresh live
+// set; the ranking fetches themselves stay data-cached for an hour (fetch-level
+// revalidate below), so regeneration is cheap. Same convention as /streamers.
+export const revalidate = 300;
 
 const SITE_URL = 'https://streamertimes.tv';
 const PREVIEW_LIMIT = 10;
@@ -41,11 +45,20 @@ export default async function RankingsHubPage() {
   // self-heals within the hour). The games call starts before the awaits so
   // everything runs concurrently.
   const gamesPromise = api.listGames({ limit: 500, revalidate: 3600 }).catch(() => null);
+  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // Roster size for the stats strip: the offset mode returns an exact
+  // pagination.total, so limit 1 buys the count without paying for rows.
+  const totalPromise = api
+    .listStreamers({ limit: 1, offset: 0, revalidate: 3600 })
+    .then((r) => r.pagination.total ?? null)
+    .catch(() => null);
   const previewCalls = await Promise.allSettled(
     RANKING_PAGES.map((spec) =>
       api.getRankings(spec.metric, { limit: PREVIEW_LIMIT, revalidate: 3600 }),
     ),
   );
+  const liveIds = await livePromise;
+  const totalStreamers = await totalPromise;
 
   const sections = RANKING_PAGES.map((spec, i) => {
     const call = previewCalls[i];
@@ -63,7 +76,28 @@ export default async function RankingsHubPage() {
       .at(-1) ?? null,
   );
 
-  const games: PublicGame[] = (await gamesPromise)?.data ?? [];
+  const gamesResp = await gamesPromise;
+  const games: PublicGame[] = gamesResp?.data ?? [];
+
+  // Aggregate stats strip — every stat is failure-isolated and simply omitted
+  // when its source call failed or returned nothing (0 is never rendered:
+  // a zero here means "source down", not a real zero).
+  const stats: { value: string; label: string }[] = [];
+  if (totalStreamers != null && totalStreamers > 0) {
+    stats.push({
+      value: totalStreamers.toLocaleString('en-US'),
+      label: 'streamers tracked',
+    });
+  }
+  if (liveIds.size > 0) {
+    stats.push({ value: liveIds.size.toLocaleString('en-US'), label: 'live right now' });
+  }
+  if (games.length > 0) {
+    stats.push({
+      value: gamesResp?.pagination.has_more ? `${games.length}+` : String(games.length),
+      label: 'games & categories',
+    });
+  }
   const allGameLinks = games
     .map((g) => ({ category: g.category, slug: gameSlug(g.category), count: g.streamer_count }))
     .filter((g) => g.slug.length > 0);
@@ -112,6 +146,19 @@ export default async function RankingsHubPage() {
         )}
       </p>
 
+      {stats.length > 0 && (
+        <p className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-2 text-sm text-text-secondary">
+          {stats.map((s) => (
+            <span key={s.label} className="whitespace-nowrap">
+              <span className="text-xl font-bold tabular-nums text-accent-cyan">
+                {s.value}
+              </span>{' '}
+              {s.label}
+            </span>
+          ))}
+        </p>
+      )}
+
       {sections.map(({ spec, entries }) => (
         <section key={spec.slug} aria-labelledby={`${spec.slug}-heading`} className="mt-10">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -127,7 +174,12 @@ export default async function RankingsHubPage() {
           </div>
           <p className="mt-1 text-sm text-text-muted">{spec.methodologyNote}</p>
           <div className="mt-4">
-            <RankingTable caption={spec.h1} columns={spec.columns} entries={entries} />
+            <RankingTable
+              caption={spec.h1}
+              columns={spec.columns}
+              entries={entries}
+              liveIds={liveIds}
+            />
           </div>
         </section>
       ))}

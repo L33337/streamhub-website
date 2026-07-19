@@ -417,3 +417,28 @@ export function buildRankingItemListJsonLd(
 export function hasMissingValues(spec: RankingPageSpec, entries: PublicRankingEntry[]): boolean {
   return entries.some((e) => spec.columns.some((c) => c.format(e) === '—'));
 }
+
+// ============================================
+// 7d rank trend (rankings-page expansion)
+// ============================================
+
+export type RankTrend =
+  | { kind: 'up' | 'down'; delta: number }
+  | { kind: 'new' }
+  | { kind: 'none' };
+
+/**
+ * Week-over-week movement of a leaderboard row. The API omits
+ * `values.previous_rank` entirely while its snapshot history warms up
+ * (→ 'none' for every row); once present, null means "not in the top list
+ * a week ago" (→ 'new').
+ */
+export function rankTrend(entry: PublicRankingEntry): RankTrend {
+  const prev = entry.values.previous_rank;
+  if (prev === undefined) return { kind: 'none' };
+  if (prev === null) return { kind: 'new' };
+  const delta = prev - entry.rank;
+  if (delta > 0) return { kind: 'up', delta };
+  if (delta < 0) return { kind: 'down', delta: -delta };
+  return { kind: 'none' };
+}

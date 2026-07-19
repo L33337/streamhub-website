@@ -1,9 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import type { PublicRankingEntry } from '@/lib/server/partner-api';
-import type { RankingColumn } from '@/lib/rankings';
-import { PlatformBadge } from '@/components/web/Badges';
+import type { PublicRankingEntry, PublicStreamSlot } from '@/lib/server/partner-api';
+import { rankTrend, type RankingColumn } from '@/lib/rankings';
+import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { NextStreamTime } from '@/components/web/NextStreamTime';
+import { languageDisplayName } from '@/lib/format/language';
 
 interface Props {
   /** sr-only table caption, e.g. "Streamers ranked by follower count". */
@@ -17,6 +19,20 @@ interface Props {
    * several tables (the hub) — the ids would collide.
    */
   rowAnchorPrefix?: string;
+  /**
+   * Ids of streamers that are live right now (getLiveStreamerIdSet). When
+   * provided, live rows get a LIVE badge next to the name. Callers must run
+   * on a page whose revalidate keeps the set reasonably fresh (≤300 s — the
+   * /streamers convention); omit on pages that only revalidate hourly.
+   */
+  liveIds?: Set<string>;
+  /**
+   * Earliest upcoming slot per streamer id (lib/server/next-streams.ts). When
+   * provided, a "Next stream" column is appended: announced or predicted (~)
+   * start in the viewer's local time, "24/7" for always-on channels, "—" when
+   * nothing is scheduled within the fetch window.
+   */
+  nextSlots?: Map<string, PublicStreamSlot>;
 }
 
 // Medal accents for ranks 1-3 (gold/silver/bronze, tuned for the dark theme).
@@ -27,13 +43,65 @@ const MEDAL_CLASSES: Record<number, string> = {
 };
 
 /**
+ * ▲2 / ▼1 / "new" next to the rank — week-over-week movement from the API's
+ * `values.previous_rank`. Renders nothing while the backend's snapshot
+ * history warms up or when the rank is unchanged.
+ */
+function TrendIndicator({ entry }: { entry: PublicRankingEntry }) {
+  const trend = rankTrend(entry);
+  if (trend.kind === 'none') return null;
+  if (trend.kind === 'new') {
+    return (
+      <span
+        className="text-[9px] font-bold uppercase tracking-wider text-accent-cyan"
+        title="Not in this ranking a week ago"
+      >
+        new
+      </span>
+    );
+  }
+  const up = trend.kind === 'up';
+  return (
+    <span
+      className={`text-[10px] font-semibold tabular-nums ${up ? 'text-live' : 'text-accent-pink'}`}
+      title={`${up ? 'Up' : 'Down'} ${trend.delta} since last week`}
+    >
+      {up ? '▲' : '▼'}
+      {trend.delta}
+    </span>
+  );
+}
+
+/** Value of the "Next stream" column for one row (see Props.nextSlots). */
+function NextStreamCell({
+  streamer,
+  slot,
+}: {
+  streamer: PublicRankingEntry['streamer'];
+  slot: PublicStreamSlot | undefined;
+}) {
+  if (streamer.is_always_on) {
+    return <span title="Always-on channel — live around the clock">24/7</span>;
+  }
+  if (!slot) return <>—</>;
+  return <NextStreamTime startTime={slot.start_time} isPredicted={slot.is_predicted} />;
+}
+
+/**
  * Generic leaderboard table for the /rankings pages — same markup family as
  * the "Most followed {game} streamers" table on the game hub
  * (app/game/[slug]/page.tsx), generalized over column definitions from
- * lib/rankings.ts. Server component; deliberately no live badges (the pages
- * revalidate hourly, a live badge would be stale for up to an hour).
+ * lib/rankings.ts. Server component. Live badges render only when the caller
+ * passes `liveIds` (which implies it lowered its revalidate accordingly).
  */
-export function RankingTable({ caption, columns, entries, rowAnchorPrefix }: Props) {
+export function RankingTable({
+  caption,
+  columns,
+  entries,
+  rowAnchorPrefix,
+  liveIds,
+  nextSlots,
+}: Props) {
   return (
     <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
       <table className="w-full text-sm">
@@ -51,6 +119,11 @@ export function RankingTable({ caption, columns, entries, rowAnchorPrefix }: Pro
                 {col.header}
               </th>
             ))}
+            {nextSlots && (
+              <th scope="col" className="px-3 py-2 text-right font-semibold">
+                Next stream
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -64,10 +137,15 @@ export function RankingTable({ caption, columns, entries, rowAnchorPrefix }: Pro
                 // scroll-mt clears the sticky site header when jumping to a row anchor
                 className="scroll-mt-20 border-t border-divider"
               >
-                <td
-                  className={`px-3 py-2 font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
-                >
-                  {entry.rank}
+                <td className="px-3 py-2">
+                  <span className="flex items-baseline gap-1.5">
+                    <span
+                      className={`font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
+                    >
+                      {entry.rank}
+                    </span>
+                    <TrendIndicator entry={entry} />
+                  </span>
                 </td>
                 <th scope="row" className="px-3 py-2 text-left font-medium">
                   <Link
@@ -91,12 +169,13 @@ export function RankingTable({ caption, columns, entries, rowAnchorPrefix }: Pro
                         {streamer.name}
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {liveIds?.has(streamer.id) && <LiveBadge size="sm" />}
                         {streamer.platforms.map((p) => (
                           <PlatformBadge key={p} platform={p} size="sm" />
                         ))}
                         {streamer.language && (
-                          <span className="text-[10px] uppercase tracking-wider text-text-muted">
-                            {streamer.language}
+                          <span className="text-[10px] tracking-wider text-text-muted">
+                            {languageDisplayName(streamer.language)}
                           </span>
                         )}
                       </span>
@@ -115,6 +194,11 @@ export function RankingTable({ caption, columns, entries, rowAnchorPrefix }: Pro
                     {col.format(entry)}
                   </td>
                 ))}
+                {nextSlots && (
+                  <td className="whitespace-nowrap px-3 py-2 text-right text-text-secondary">
+                    <NextStreamCell streamer={streamer} slot={nextSlots.get(streamer.id)} />
+                  </td>
+                )}
               </tr>
             );
           })}

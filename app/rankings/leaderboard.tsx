@@ -23,6 +23,9 @@ import {
   type RankingPageSpec,
 } from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
+import { RankingSpotlight } from '@/components/web/RankingSpotlight';
+import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
+import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -76,9 +79,17 @@ export async function buildLeaderboardMetadata(slug: string): Promise<Metadata> 
 export async function LeaderboardPage({ slug }: { slug: string }) {
   const spec = getRankingPageSpec(slug);
   if (!spec) return null; // unreachable from the fixed wrappers
+  // Live badges are decoration — a failed live lookup must never break the
+  // page, so it degrades to an empty set (no badges).
+  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
   const { entries, refreshedAt } = await loadEntries(spec);
+  // Never throws (failure paths inside degrade to an empty/partial map).
+  const nextSlots = await getNextSlotByStreamer(entries.map((e) => e.streamer.id));
+  const liveIds = await livePromise;
   const siblings = RANKING_PAGES.filter((p) => p.slug !== spec.slug);
   const refreshedLabel = formatRefreshedAt(refreshedAt);
+  const top = entries[0];
+  const primaryColumn = spec.columns.find((c) => c.primary) ?? spec.columns[0];
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: SITE_URL },
@@ -144,14 +155,29 @@ export async function LeaderboardPage({ slug }: { slug: string }) {
               </>
             )}
           </p>
+          {top && primaryColumn && (
+            <RankingSpotlight
+              entry={top}
+              metricValue={primaryColumn.format(top)}
+              metricLabel={primaryColumn.header}
+              isLive={liveIds.has(top.streamer.id)}
+              nextSlot={nextSlots.get(top.streamer.id)}
+            />
+          )}
           <div className="mt-6">
             <RankingTable
               caption={spec.h1}
               columns={spec.columns}
               entries={entries}
               rowAnchorPrefix="rank"
+              liveIds={liveIds}
+              nextSlots={nextSlots}
             />
           </div>
+          <p className="mt-2 text-xs text-text-muted">
+            Next stream: announced schedule or AI-predicted (~) start within the next
+            7 days, shown in your local time.
+          </p>
           {hasMissingValues(spec, entries) && (
             <p className="mt-2 text-xs text-text-muted">
               — means we haven&apos;t collected enough data for that channel yet, for

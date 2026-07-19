@@ -34,6 +34,23 @@ export interface PublicStreamer {
   // (English when language is null). Used in Person JSON-LD on the streamer page.
   // null while pending generation for streamers added before this field existed.
   description: string | null;
+  // Per-category watch stats — present ONLY on ?category= filtered list
+  // responses, and only when the backend's nightly aggregate has data for the
+  // (streamer, category) pair. Optional in this mirror for deploy skew.
+  category_stats?: PublicStreamerCategoryStats;
+}
+
+// Mirror of supabase/functions/_shared/partner-streamers.ts `PublicCategoryStats`
+// (rankings-page expansion). Attached to /v1/streamers rows under a category
+// filter; feeds the Hours/Share columns + trend arrows on /rankings/game/*.
+export interface PublicStreamerCategoryStats {
+  streams_28d: number;
+  hours_28d: number;
+  peak_viewer_28d: number | null;
+  /** 0-100: this category's share of the streamer's categorized streams. */
+  share_percent: number;
+  /** Follower rank in this category ~7 days ago; null during snapshot cold start or when newly ranked. */
+  rank_7d_ago: number | null;
 }
 
 export interface PublicStreamSlot {
@@ -88,6 +105,9 @@ export interface PublicGame {
   peak_viewer_28d?: number | null;
   // Week-over-week trend (percent); null below the trend-cache threshold.
   trend_delta_percent?: number | null;
+  // Up to 6 categories sharing >= 2 streamers with this one, strongest overlap
+  // first (nightly aggregate). Powers the "Related rankings" links.
+  related_categories?: { category: string; shared_streamers: number }[] | null;
 }
 
 // Mirror of supabase/functions/_shared/partner-dto.ts `PublicStreamHistory`.
@@ -183,6 +203,9 @@ export interface RankingValues {
   median_start_deviation_minutes?: number | null;
   no_show_count?: number;
   time_tier?: string;
+  // Rank ~7 days ago (daily snapshots >= 6d old). The key is absent entirely
+  // while the backend's snapshot history warms up; null = newly ranked.
+  previous_rank?: number | null;
 }
 
 export interface PublicRankingEntry {

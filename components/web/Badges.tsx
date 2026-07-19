@@ -8,13 +8,17 @@ import { slotLexFor } from '@/lib/i18n-slot';
 export function LiveBadge({
   className = '',
   language = 'en',
+  size = 'md',
 }: {
   className?: string;
   language?: string;
+  /** 'sm' matches PlatformBadge's sm scale for dense list/table rows. */
+  size?: 'sm' | 'md';
 }) {
+  const sizing = size === 'sm' ? 'px-1.5 py-px text-[9px]' : 'px-2 py-0.5 text-xs';
   return (
     <span
-      className={`inline-flex items-center rounded bg-live px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-black glow-green ${className}`}
+      className={`inline-flex items-center rounded bg-live font-bold uppercase tracking-[0.1em] text-black glow-green ${sizing} ${className}`}
       aria-label={slotLexFor(language).liveBadgeAria}
     >
       LIVE
