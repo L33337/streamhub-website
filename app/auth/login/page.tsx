@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { AUTH_ENABLED, safeNextPath } from '@/lib/auth-flag';
+import { AUTH_ENABLED, EMAIL_AUTH_ENABLED, safeNextPath } from '@/lib/auth-flag';
+import { EmailLoginForm } from '@/components/web/auth/EmailLoginForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +55,13 @@ interface Props {
   searchParams: Promise<{ error?: string; next?: string }>;
 }
 
+// Known error codes get friendly copy; anything else (e.g. raw provider
+// messages from the OAuth callback) falls back to the generic line.
+const ERROR_COPY: Record<string, string> = {
+  confirm_failed:
+    'That confirmation link is invalid or has expired. Sign in below — if your email is still unconfirmed, we can send you a new link.',
+};
+
 export default async function LoginPage({ searchParams }: Props) {
   // Sign-in UI is hidden while the auth feature is dormant — activate via
   // NEXT_PUBLIC_AUTH_ENABLED=true (see lib/auth-flag.ts).
@@ -82,7 +90,8 @@ export default async function LoginPage({ searchParams }: Props) {
           role="alert"
           className="mt-6 rounded-lg border border-accent-pink/40 bg-accent-pink/10 px-3 py-2 text-sm text-accent-pink"
         >
-          Sign-in failed: {decodeURIComponent(error ?? '')}. Please try again.
+          {ERROR_COPY[error] ??
+            `Sign-in failed: ${decodeURIComponent(error ?? '')}. Please try again.`}
         </div>
       )}
 
@@ -132,6 +141,22 @@ export default async function LoginPage({ searchParams }: Props) {
           </button>
         </form>
       </div>
+
+      {EMAIL_AUTH_ENABLED && (
+        <>
+          <div className="mt-8 flex items-center gap-3" aria-hidden="true">
+            <div className="h-px flex-1 bg-divider" />
+            <span className="text-xs uppercase tracking-wide text-text-muted">
+              or with email
+            </span>
+            <div className="h-px flex-1 bg-divider" />
+          </div>
+
+          <div className="mt-6">
+            <EmailLoginForm next={next} />
+          </div>
+        </>
+      )}
 
       <p className="mt-8 text-xs text-text-muted">
         By signing in you agree to our{' '}

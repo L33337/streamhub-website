@@ -53,6 +53,27 @@ Flag ON: `/auth/login` renders the Twitch/Google sign-in UI, the header mounts `
 3. Smoke-test: `/auth/login` renders; complete one Twitch and one Google login; `/feed` loads and `st_feed_seen`/`feed_events` behave; sign-out works.
 4. Rollback = unset the env var + redeploy (fully reversible, no data impact).
 
+# Email auth sub-flag (`NEXT_PUBLIC_EMAIL_AUTH_ENABLED`)
+
+Email login/registration ships dormant on top of the base auth flag: `EMAIL_AUTH_ENABLED` (lib/auth-flag.ts) is only true when BOTH `NEXT_PUBLIC_AUTH_ENABLED=true` AND `NEXT_PUBLIC_EMAIL_AUTH_ENABLED=true`. This lets OAuth-only auth go live first and email auth follow (or roll back) independently.
+
+Sub-flag OFF: `/auth/login` shows only the OAuth buttons; `/auth/sign-up`, `/auth/forgot-password`, `/auth/reset-password` redirect to `/auth/login` (base auth on) or `/app` (everything off) via `emailAuthGateRedirect()`. Sub-flag ON: `/auth/login` additionally renders the email/password form (`components/web/auth/EmailLoginForm`) with sign-up + forgot-password links, and the three pages render their forms. `app/auth/confirm/route.ts` is deliberately NOT flag-gated: in-flight confirmation/recovery email links must keep working even if the sub-flag is rolled back mid-flight (with a bogus/expired token it only ever redirects to an error page).
+
+Key mechanics (don't break these):
+- **hCaptcha is mandatory in prod**: the Supabase project enforces captcha on auth endpoints (same as the mobile app). All email-auth calls go through the browser Supabase client from client components, with a token from `components/web/auth/HCaptchaField` (invisible mode, `NEXT_PUBLIC_HCAPTCHA_SITE_KEY`). When the sitekey env is unset the forms skip captcha — only valid against a captcha-free stack. Local dev: hCaptcha test sitekey `10000000-ffff-ffff-ffff-000000000001` + start the local Supabase stack with `HCAPTCHA_SECRET=0x0000000000000000000000000000000000000000` (config.toml reads `env(HCAPTCHA_SECRET)`).
+- **Confirmation/recovery links use `token_hash` + `/auth/confirm` (verifyOtp)**, NOT the `?code=` PKCE exchange — this makes cross-device clicks work (sign up on desktop, confirm on phone). It depends on the CONDITIONAL Supabase email templates ("Confirm signup" / "Reset password") that branch on the exact `{{ .RedirectTo }}` strings built by `lib/auth-email.ts` (`signupEmailRedirectTo`, `recoveryRedirectTo` — unit-frozen in `lib/__tests__/auth-email.test.ts`). The templates' `else` branch keeps `{{ .ConfirmationURL }}` for the mobile app — NEVER remove it, and never change the redirect strings without updating the templates in the Supabase dashboard. Without the template change (e.g. local dev defaults), website links fall back to the same-browser `?code=` flow through `/auth/callback`.
+- Auth emails are sent from `noreply@streamertimes.info` via Resend custom SMTP (Supabase dashboard → Auth → SMTP); the domain is verified in Resend (SPF/DKIM). The default Supabase mailer is limited to ~2 emails/hour — never rely on it in prod.
+
+**Activation checklist (in order; base auth flag must already be live):**
+1. Resend: `streamertimes.info` domain verified (DKIM/SPF DNS records); sending API key created.
+2. Supabase dashboard → Auth → SMTP: `smtp.resend.com:465`, user `resend`, pass = API key, sender `noreply@streamertimes.info` / "Streamer Times". Bump Auth rate limit "emails per hour" (2 → ~60). Smoke-test a password reset from the MOBILE app (sender changes for the app too).
+3. Supabase dashboard → Auth → URL Configuration: add `https://streamertimes.tv/auth/callback?next=/auth/reset-password` to the redirect allowlist (`…/auth/callback` should already be there). Do NOT change the Site URL — the app's signup flow depends on it.
+4. Supabase dashboard → Auth → Emails: snapshot the current "Confirm signup" + "Reset password" bodies, then wrap them in the conditional (`{{ if eq .RedirectTo "https://streamertimes.tv/auth/callback" }}` → confirm link `https://streamertimes.tv/auth/confirm?token_hash={{ .TokenHash }}&type=signup`; recovery: match `https://streamertimes.tv/auth/callback?next=/auth/reset-password` → `…&type=recovery`; `else` = snapshot). After EACH template save, re-test the matching mobile-app flow.
+5. hCaptcha dashboard: add `streamertimes.tv` to the allowed hostnames of the app's sitekey.
+6. Vercel: set `NEXT_PUBLIC_HCAPTCHA_SITE_KEY=<sitekey>` and `NEXT_PUBLIC_EMAIL_AUTH_ENABLED=true` → redeploy.
+7. Smoke-test: sign-up with a scratch email on desktop, confirm ON A PHONE (cross-device proof) → signed in; wrong-password error copy; forgot → reset roundtrip; one Twitch + one Google login (regression); mobile-app signup + reset with a scratch account (template regression); mail headers show DKIM pass via Resend.
+8. Rollback = unset `NEXT_PUBLIC_EMAIL_AUTH_ENABLED` + redeploy. Steps 1–5 can stay in place harmlessly.
+
 # SEO surface
 
 Marketing/hub SEO conventions (last extended 2026-07-12 — keywords cleanup, global 404, llms.txt, per-hub OG images):

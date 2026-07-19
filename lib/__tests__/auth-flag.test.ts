@@ -55,3 +55,40 @@ describe('signInGateRedirect / AUTH_ENABLED (env-dependent, fresh import per cas
     expect(mod.AUTH_ENABLED).toBe(false);
   });
 });
+
+describe('EMAIL_AUTH_ENABLED / emailAuthGateRedirect (env-dependent, fresh import per case)', () => {
+  it('both flags true → email auth enabled', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_EMAIL_AUTH_ENABLED', 'true');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.EMAIL_AUTH_ENABLED).toBe(true);
+    expect(mod.emailAuthGateRedirect()).toBe('/auth/login');
+  });
+
+  it('sub-flag alone does nothing while base auth is dormant', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', '');
+    vi.stubEnv('NEXT_PUBLIC_EMAIL_AUTH_ENABLED', 'true');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.EMAIL_AUTH_ENABLED).toBe(false);
+    expect(mod.emailAuthGateRedirect()).toBe('/app');
+  });
+
+  it('base auth on, sub-flag off → email pages gate to the OAuth login page', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_EMAIL_AUTH_ENABLED', '');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.EMAIL_AUTH_ENABLED).toBe(false);
+    expect(mod.emailAuthGateRedirect()).toBe('/auth/login');
+  });
+
+  it('only the literal "true" enables the sub-flag', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_EMAIL_AUTH_ENABLED', '1');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.EMAIL_AUTH_ENABLED).toBe(false);
+  });
+});
