@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
 import { isIndexableStreamerSlug, latestChange } from '@/lib/seo';
+import { MIN_INDEXABLE_GAME_STREAMERS } from '@/lib/rankings';
 import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
 export const revalidate = 3600;
@@ -165,17 +166,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       pages++;
     } while (cursor && pages < MAX_PAGES);
 
-    // Game/category hub pages (≥3 streamers). Small set — one page.
+    // Game/category hub pages. The catalog already requires >= 3 streamers;
+    // the >= MIN_INDEXABLE_GAME_STREAMERS / live check is a cheap proxy for
+    // the page's own thin-content gate (isGameHubIndexable — the page also
+    // counts upcoming slots, which the games row can't see; that residual
+    // mismatch self-corrects because sub-threshold pages emit noindex).
+    // No lastModified on game URLs: a per-render "now" on every regeneration
+    // teaches Google the value is meaningless — omit rather than fake.
     const gamesResp = await api.listGames({ limit: PAGE_LIMIT, revalidate: 3600 });
     for (const g of gamesResp.data) {
       const slug = gameSlug(g.category);
       if (!slug) continue;
-      gameUrls.push({
-        url: `${SITE_URL}/game/${slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 0.6,
-      });
+      if (
+        g.streamer_count >= MIN_INDEXABLE_GAME_STREAMERS ||
+        (g.live_streamer_count ?? 0) > 0
+      ) {
+        gameUrls.push({
+          url: `${SITE_URL}/game/${slug}`,
+          changeFrequency: 'daily',
+          priority: 0.6,
+        });
+      }
       // Per-game ranking pages (/rankings/game/[slug]). streamer_count >= 10 is
       // a cheap proxy for the page's own ≥10-ranked-entries index gate (exact
       // parity would cost one API call per game); the residual mismatch
@@ -183,7 +194,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (g.streamer_count >= 10) {
         gameUrls.push({
           url: `${SITE_URL}/rankings/game/${slug}`,
-          lastModified: new Date(),
           changeFrequency: 'daily',
           priority: 0.5,
         });

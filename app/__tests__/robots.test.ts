@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import robots from '../robots';
 
-// Freezes the two-group structure of robots.txt. The split is load-bearing:
-// Googlebot must not crawl the churning /schedule/<id> URLs (GSC "Page with
-// redirect" noise, ~500 wasted crawls/day), but the * group must NOT block
-// /schedule/ — Discordbot/Twitterbot respect robots.txt, and a wildcard block
-// would silently kill link embeds of user-shared slot URLs. "Simplifying"
-// back to a single group breaks one side or the other.
+// Freezes the three-group structure of robots.txt. The split is load-bearing:
+// search crawlers (Googlebot, Bingbot) must not crawl the churning
+// /schedule/<id> URLs (GSC "Page with redirect" noise, ~500 wasted
+// crawls/day), but the * group must NOT block /schedule/ —
+// Discordbot/Twitterbot respect robots.txt, and a wildcard block would
+// silently kill link embeds of user-shared slot URLs. "Simplifying" back to
+// fewer groups breaks one side or the other.
 
 // /feed covers /feed/interests too (path-prefix match) — like /settings and
 // /favorites it always redirects anonymous crawlers, so no bot should fetch it.
@@ -26,6 +27,13 @@ describe('robots.txt rules', () => {
     // group must contain the shared disallows itself — not inherit from *.
     expect(googlebot?.disallow).toEqual([...SHARED_DISALLOWS, '/schedule/']);
     expect(googlebot?.allow).toBe('/');
+  });
+
+  it('blocks /schedule/ for Bingbot, repeating every shared disallow', () => {
+    const bingbot = ruleFor('Bingbot');
+    expect(bingbot).toBeDefined();
+    expect(bingbot?.disallow).toEqual([...SHARED_DISALLOWS, '/schedule/']);
+    expect(bingbot?.allow).toBe('/');
   });
 
   it('keeps /schedule/ crawlable for every other bot (social embeds)', () => {

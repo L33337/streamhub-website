@@ -20,11 +20,18 @@ const SORT_OPTIONS: { mode: GamesSortMode; label: string }[] = [
 export function GamesExplorer({
   games,
   slugs,
+  priorityCount = 0,
 }: {
   games: PublicGame[];
   // Pre-computed on the server (gameSlug is deterministic, but computing it
   // once server-side keeps the client bundle from needing the games list twice).
   slugs: Record<string, string>;
+  // LCP hint: the first N cards of the UNSORTED input get priority box art.
+  // The server passes > 0 only when this grid is the first image section on
+  // the page (nothing live above it). Keyed off `games` — not the visible
+  // render order — so re-sorting/searching never reassigns priority to new
+  // cards and fires useless late preloads.
+  priorityCount?: number;
 }) {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<GamesSortMode>('streamers');
@@ -32,6 +39,11 @@ export function GamesExplorer({
   const visible = useMemo(
     () => sortGames(filterGames(games, query), mode),
     [games, query, mode]
+  );
+
+  const prioritized = useMemo(
+    () => new Set(games.slice(0, priorityCount).map((g) => g.category)),
+    [games, priorityCount]
   );
 
   return (
@@ -76,7 +88,11 @@ export function GamesExplorer({
         <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {visible.map((g) => (
             <li key={g.category}>
-              <GameCard game={g} slug={slugs[g.category] ?? ''} />
+              <GameCard
+                game={g}
+                slug={slugs[g.category] ?? ''}
+                priority={prioritized.has(g.category)}
+              />
             </li>
           ))}
         </ul>

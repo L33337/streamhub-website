@@ -9,9 +9,6 @@ import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 // build (see the documented 2026-07-07 incident in the page loader).
 export const runtime = 'nodejs';
 export const revalidate = 300; // cache per slug for 5 min (ISR) instead of per-request
-export const alt = 'Game streamers on StreamerTimes';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -26,6 +23,24 @@ function prettifySlug(slug: string): string {
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
+}
+
+// Per-slug alt text (was a generic static export). prettifySlug instead of the
+// resolved category: no API call, no failure-isolation concern — the casing
+// difference ("Pubg" vs "PUBG") is acceptable for alt text.
+export async function generateImageMetadata({ params }: Props) {
+  // Next probes this route during build page-data collection with empty
+  // params — guard so the probe never throws (build-abort rule).
+  const { slug } = (await params) ?? {};
+  const label = typeof slug === 'string' && slug.length > 0 ? prettifySlug(slug) : 'Game';
+  return [
+    {
+      id: 'og',
+      alt: `${label} streamers on StreamerTimes`,
+      size: OG_SIZE,
+      contentType: 'image/png',
+    },
+  ];
 }
 
 export default async function Image({ params }: Props) {

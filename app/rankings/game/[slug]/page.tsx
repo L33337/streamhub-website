@@ -195,6 +195,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: 'Streamer Times',
       type: 'website',
     },
+    // Without a page-level twitter block, X cards fall back to the root
+    // layout's generic site title/image. Next auto-wires the colocated
+    // opengraph-image as twitter:image once this block exists.
+    twitter: {
+      card: 'summary_large_image',
+      title: `Top ${category} streamers — ranked by followers`,
+      description,
+    },
   };
   // Thin-content gate: a depth ranking with a handful of rows would be a
   // near-duplicate of the game hub's own table — keep it out of the index
@@ -293,6 +301,7 @@ export default async function GameRankingPage({ params }: Props) {
               boxArtUrl={game.box_art_url}
               name={category}
               sizes="(min-width: 640px) 128px, 96px"
+              priority
             />
           </div>
         )}

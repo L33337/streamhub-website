@@ -21,10 +21,14 @@ export function GameBoxArt({
   boxArtUrl,
   name,
   sizes,
+  priority = false,
 }: {
   boxArtUrl: string | null | undefined;
   name: string;
   sizes: string;
+  // Above-the-fold usage only (LCP): eager load + fetchpriority=high +
+  // preload. Everything below the fold stays lazy (the default).
+  priority?: boolean;
 }) {
   return (
     <div className="relative aspect-[285/380] w-full overflow-hidden rounded-lg bg-background-highlight">
@@ -35,6 +39,7 @@ export function GameBoxArt({
           fill
           unoptimized
           sizes={sizes}
+          priority={priority}
           className="object-cover"
         />
       ) : (
@@ -61,7 +66,15 @@ function TrendBadge({ delta }: { delta: number }) {
  * (nullable) source field is present — an old-API deploy or a cold aggregate
  * simply shows fewer numbers.
  */
-export function GameCard({ game, slug }: { game: PublicGame; slug: string }) {
+export function GameCard({
+  game,
+  slug,
+  priority = false,
+}: {
+  game: PublicGame;
+  slug: string;
+  priority?: boolean;
+}) {
   const liveCount = game.live_streamer_count ?? 0;
   const hours = game.hours_28d;
   // Top-3 most-followed names (nightly aggregate) as crawlable text — people
@@ -80,6 +93,7 @@ export function GameCard({ game, slug }: { game: PublicGame; slug: string }) {
           boxArtUrl={game.box_art_url}
           name={game.category}
           sizes="(min-width: 1024px) 160px, (min-width: 640px) 25vw, 33vw"
+          priority={priority}
         />
         {liveCount > 0 && (
           <span className="absolute left-1 top-1 rounded bg-live px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
