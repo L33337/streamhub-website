@@ -19,6 +19,7 @@ import {
   topGameStreamerNames,
   formatNameList,
 } from '@/lib/game-ranking';
+import { isGameHubIndexable } from '@/lib/rankings';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
@@ -136,7 +137,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const { category, game, rankedStreamers } = await loadGamePage(slug);
+  const { category, game, liveSlots, upcomingSlots, rankedStreamers } =
+    await loadGamePage(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
   const url = `${SITE_URL}/game/${slug}`;
   // Coarse, slow-moving numbers only (streamer_count changes daily at most,
@@ -160,7 +162,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${formatNameList(names)} lead${names.length === 1 ? 's' : ''} the ranking — see`
       : `See ${category} streamers ranked by followers,`;
   const ogNames = names.length > 0 ? ` — ${formatNameList(names)} —` : ',';
-  return {
+  const meta: Metadata = {
     title: `${category} Streamers${titleCount} — Live Now, Rankings & Schedule`,
     description: `Who are the most followed ${category} streamers? ${namesLead} who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.${hoursSentence}`,
     alternates: { canonical: url },
@@ -171,8 +173,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: 'Streamer Times',
       type: 'website',
     },
-    robots: { index: true, follow: true },
   };
+  // Site convention (lib/seo.ts, rankings pages): only set robots when gating
+  // out; indexable pages inherit the root default.
+  if (
+    !isGameHubIndexable({
+      streamerCount: game?.streamer_count ?? 0,
+      liveCount: liveSlots.length,
+      upcomingCount: upcomingSlots.length,
+    })
+  ) {
+    meta.robots = { index: false, follow: true };
+  }
+  return meta;
 }
 
 interface GameStreamer {

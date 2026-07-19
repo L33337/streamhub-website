@@ -9,7 +9,9 @@ import {
   formatRefreshedAt,
   getRankingPageSpec,
   hasMissingValues,
+  isGameHubIndexable,
   isRankingIndexable,
+  MIN_INDEXABLE_GAME_STREAMERS,
   MIN_INDEXABLE_RANKING_ENTRIES,
   RANKING_PAGES,
   rankTrend,
@@ -92,6 +94,37 @@ describe('index gating', () => {
     expect(isRankingIndexable(MIN_INDEXABLE_RANKING_ENTRIES - 1)).toBe(false);
     expect(isRankingIndexable(MIN_INDEXABLE_RANKING_ENTRIES)).toBe(true);
     expect(isRankingIndexable(0)).toBe(false);
+  });
+});
+
+describe('game hub index gating', () => {
+  it('indexes at the streamer-count threshold without activity', () => {
+    expect(
+      isGameHubIndexable({
+        streamerCount: MIN_INDEXABLE_GAME_STREAMERS,
+        liveCount: 0,
+        upcomingCount: 0,
+      }),
+    ).toBe(true);
+    expect(
+      isGameHubIndexable({
+        streamerCount: MIN_INDEXABLE_GAME_STREAMERS - 1,
+        liveCount: 0,
+        upcomingCount: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it('live or upcoming activity overrides a thin streamer count', () => {
+    expect(
+      isGameHubIndexable({ streamerCount: 3, liveCount: 1, upcomingCount: 0 }),
+    ).toBe(true);
+    expect(
+      isGameHubIndexable({ streamerCount: 3, liveCount: 0, upcomingCount: 2 }),
+    ).toBe(true);
+    expect(
+      isGameHubIndexable({ streamerCount: 0, liveCount: 0, upcomingCount: 0 }),
+    ).toBe(false);
   });
 });
 

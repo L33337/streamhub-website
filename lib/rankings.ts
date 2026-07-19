@@ -20,6 +20,27 @@ export function isRankingIndexable(entryCount: number): boolean {
   return entryCount >= MIN_INDEXABLE_RANKING_ENTRIES;
 }
 
+// Thin-content gate for /game/[slug] hub pages. The catalog itself already
+// requires >= 3 streamers, so this only gates the 3-4-streamer tail — unless
+// the category has actual live/upcoming activity, which makes even a small
+// hub a useful result. Caveat: when the slots fetches degrade (API blip),
+// live/upcoming read as 0 and an active sub-threshold page can flip to
+// noindex for one ISR cycle (300s) — accepted, same failure mode as the
+// ranking pages; do not "fix" by removing the activity terms.
+export const MIN_INDEXABLE_GAME_STREAMERS = 5;
+
+export function isGameHubIndexable(params: {
+  streamerCount: number;
+  liveCount: number;
+  upcomingCount: number;
+}): boolean {
+  return (
+    params.streamerCount >= MIN_INDEXABLE_GAME_STREAMERS ||
+    params.liveCount > 0 ||
+    params.upcomingCount > 0
+  );
+}
+
 export function rankingCanonicalUrl(slug: string): string {
   return `${SITE_URL}/rankings/${slug}`;
 }
