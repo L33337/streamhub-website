@@ -60,14 +60,34 @@ export interface PublicStreamSlot {
   // Streamer's home timezone (IANA, e.g. "Europe/Berlin"); same value as
   // PublicStreamer.timezone. null while AI discovery hasn't determined it.
   streamer_timezone: string | null;
+  // Live concurrent viewers. Non-null only on status='live' slots with a
+  // fresh sample (<25 min); null = unknown/stale, never "zero viewers".
+  // Optional in this mirror for deploy skew (old API, new site) — treat
+  // undefined like null.
+  viewer_count?: number | null;
   reasoning?: string;
 }
 
 // A game/category that qualifies for a hub page (>= 3 active streamers).
 // Returned by GET /v1/games; `category` is the canonical category name.
+// All fields beyond category/streamer_count are additive enrichments
+// (games-page expansion): optional in this mirror for deploy skew (old API,
+// new site) — treat undefined like null.
 export interface PublicGame {
   category: string;
   streamer_count: number;
+  // Twitch box art (285x380); null while unresolved / non-Twitch categories.
+  box_art_url?: string | null;
+  twitch_game_id?: string | null;
+  // Request-time live numbers.
+  live_streamer_count?: number;
+  live_viewer_total?: number | null;
+  // Nightly 28d aggregates (always-on excluded).
+  streams_28d?: number | null;
+  hours_28d?: number | null;
+  peak_viewer_28d?: number | null;
+  // Week-over-week trend (percent); null below the trend-cache threshold.
+  trend_delta_percent?: number | null;
 }
 
 // Mirror of supabase/functions/_shared/partner-dto.ts `PublicStreamHistory`.

@@ -6,6 +6,7 @@ import {
   buildLiveVideoObjectJsonLd,
   buildProfilePageJsonLd,
   buildStreamerMetadata,
+  buildVideoGameJsonLd,
   isIndexableStreamerSlug,
   langToLocale,
   latestChange,
@@ -407,5 +408,28 @@ describe('buildStreamerMetadata — next-stream time in the description', () => 
       { nextSlot: next() },
     );
     expect(String(meta.description)).toContain('Sa 19:00 UTC');
+  });
+});
+
+describe('buildVideoGameJsonLd', () => {
+  it('emits VideoGame with name, url and image', () => {
+    const ld = buildVideoGameJsonLd({
+      name: 'Fortnite',
+      url: 'https://streamertimes.tv/game/fortnite',
+      imageUrl: 'https://static-cdn.jtvnw.net/ttv-boxart/33214-285x380.jpg',
+    }) as Record<string, unknown>;
+    expect(ld['@type']).toBe('VideoGame');
+    expect(ld.name).toBe('Fortnite');
+    expect(ld.url).toBe('https://streamertimes.tv/game/fortnite');
+    expect(ld.image).toBe('https://static-cdn.jtvnw.net/ttv-boxart/33214-285x380.jpg');
+  });
+
+  it('omits image when box art is unknown', () => {
+    const ld = buildVideoGameJsonLd({
+      name: 'Obscure Game',
+      url: 'https://streamertimes.tv/game/obscure-game',
+      imageUrl: null,
+    }) as Record<string, unknown>;
+    expect('image' in ld).toBe(false);
   });
 });
