@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
+  type PublicGame,
   type PublicStreamSlot,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
-import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildBreadcrumbJsonLd, buildVideoGameJsonLd } from '@/lib/seo';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
+import { isVideoGameCategory } from '@/lib/game-categories';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { formatCompactNumber } from '@/lib/format/number';
 import { rankGameStreamers } from '@/lib/game-ranking';
@@ -17,6 +19,8 @@ import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { GameBoxArt } from '@/components/web/games/GameCard';
+import { SlotCard } from '@/components/web/SlotCard';
 
 export const revalidate = 300;
 
@@ -35,7 +39,9 @@ interface Props {
 
 interface GamePageData {
   category: string | null;
-  streamerCount: number;
+  // Full games-list row: streamer_count plus the enrichment fields (box art,
+  // live numbers, 28d stats, trend). Null when the slug is unknown.
+  game: PublicGame | null;
   liveSlots: PublicStreamSlot[];
   upcomingSlots: PublicStreamSlot[];
   // Category's streamers ordered by follower_count (from the Partner API's
@@ -55,14 +61,14 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
   const now = new Date();
   const empty: GamePageData = {
     category: null,
-    streamerCount: 0,
+    game: null,
     liveSlots: [],
     upcomingSlots: [],
     rankedStreamers: [],
     now,
   };
 
-  let game: { category: string; streamer_count: number } | null;
+  let game: PublicGame | null;
   try {
     const games = await api.listGames({ limit: 500 });
     game = findGameBySlug(games.data, slug);
@@ -104,7 +110,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
 
   return {
     category: game.category,
-    streamerCount: game.streamer_count,
+    game,
     liveSlots: liveCall.status === 'fulfilled' ? liveCall.value.data : [],
     upcomingSlots: upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [],
     rankedStreamers: rankedCall.status === 'fulfilled' ? rankedCall.value.data : [],
@@ -126,15 +132,25 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const { category } = await loadGamePage(slug);
+  const { category, game } = await loadGamePage(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
   const url = `${SITE_URL}/game/${slug}`;
+  // Coarse, slow-moving numbers only (streamer_count changes daily at most,
+  // hours_28d nightly). NEVER live viewer counts here — hourly metadata churn
+  // hurts SEO more than the numbers help.
+  const count = game?.streamer_count;
+  const titleCount = count && count > 0 ? ` (${count})` : '';
+  const hours = game?.hours_28d;
+  const hoursSentence =
+    hours != null && hours >= 10
+      ? ` ~${formatCompactNumber(Math.round(hours), 'en')} hours streamed in the last 28 days.`
+      : '';
   return {
-    title: `${category} Streamers — Most Watched, Live Now & Schedule`,
-    description: `Who are the most followed ${category} streamers? See ${category} streamers ranked by followers, who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.`,
+    title: `${category} Streamers${titleCount} — Live Now, Rankings & Schedule`,
+    description: `Who are the most followed ${category} streamers? See ${category} streamers ranked by followers, who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.${hoursSentence}`,
     alternates: { canonical: url },
     openGraph: {
-      title: `${category} streamers — most watched, live now & schedule`,
+      title: `${category} streamers — live now, rankings & schedule`,
       description: `The most followed ${category} streamers, live status and stream schedule on Twitch and YouTube.`,
       url,
       siteName: 'Streamer Times',
@@ -154,9 +170,9 @@ interface GameStreamer {
 
 export default async function GamePage({ params }: Props) {
   const { slug } = await params;
-  const { category, liveSlots, upcomingSlots, rankedStreamers, now } =
+  const { category, game, liveSlots, upcomingSlots, rankedStreamers, now } =
     await loadGamePage(slug);
-  if (!category) notFound();
+  if (!category || !game) notFound();
 
   // Dedupe streamers across live + upcoming; live first, then alphabetical.
   const liveIds = new Set(liveSlots.map((s) => s.streamer_id));
@@ -186,21 +202,31 @@ export default async function GamePage({ params }: Props) {
   const moreStreamers = streamers.filter((s) => !rankedIds.has(s.id));
   const topStreamer = ranked[0]?.streamer ?? null;
 
-  // Schedule grid (live + upcoming), grouped by UTC date — same shape as the
-  // streamer page so it can reuse DayNavBar + DaySection.
+  // Schedule grid (upcoming only, grouped by UTC date) — same shape as the
+  // streamer page so it can reuse DayNavBar + DaySection. Live slots have
+  // their own "Watching now" section above and would duplicate here.
   const todayUtc = now.toISOString().slice(0, 10);
-  const grouped = groupSlotsByUtcDate([...liveSlots, ...upcomingSlots]);
+  const grouped = groupSlotsByUtcDate(upcomingSlots);
   const sevenDays: string[] = [];
   for (let i = 0; i < 7; i++) {
     sevenDays.push(new Date(now.getTime() + i * 86_400_000).toISOString().slice(0, 10));
   }
-  const hasSchedule = liveSlots.length + upcomingSlots.length > 0;
+  const hasSchedule = upcomingSlots.length > 0;
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: SITE_URL },
     { name: 'Games', url: `${SITE_URL}/games` },
     { name: category },
   ]);
+  // VideoGame structured data ONLY for actual video games — "Just Chatting" /
+  // IRL-style categories keep Breadcrumb + ItemList only.
+  const videoGameJsonLd = isVideoGameCategory(category)
+    ? buildVideoGameJsonLd({
+        name: category,
+        url: `${SITE_URL}/game/${slug}`,
+        imageUrl: game.box_art_url,
+      })
+    : null;
   // Structured list leads with the most-followed streamers, then the long tail.
   const itemListStreamers = [
     ...ranked.map((r) => ({ id: r.streamer.id, name: r.streamer.name })),
@@ -252,6 +278,12 @@ export default async function GamePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
       />
+      {videoGameJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(videoGameJsonLd) }}
+        />
+      )}
 
       <p className="text-sm text-text-muted">
         <Link href="/games" className="hover:text-accent-cyan">
@@ -259,10 +291,96 @@ export default async function GamePage({ params }: Props) {
         </Link>{' '}
         / {category}
       </p>
-      <h1 className="mt-2 text-3xl font-bold text-white md:text-4xl">
-        {category} streamers — live now &amp; schedule
-      </h1>
-      <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>
+
+      <div className="mt-3 flex items-start gap-4 sm:gap-6">
+        {game.box_art_url && (
+          <div className="w-24 flex-shrink-0 sm:w-32">
+            <GameBoxArt
+              boxArtUrl={game.box_art_url}
+              name={category}
+              sizes="(min-width: 640px) 128px, 96px"
+            />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-3xl font-bold text-white md:text-4xl">
+            {category} streamers — live now &amp; schedule
+          </h1>
+          <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>
+          {/* Stats chips — every chip conditional on its (nullable) field. */}
+          <ul className="mt-3 flex flex-wrap gap-2 text-xs" aria-label={`${category} statistics`}>
+            <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
+              <span className="font-semibold text-text-primary">{game.streamer_count}</span>{' '}
+              streamer{game.streamer_count === 1 ? '' : 's'}
+            </li>
+            {liveCount > 0 && (
+              <li className="rounded-full border border-live/40 bg-background-elevated px-2.5 py-1 text-live">
+                <span className="font-semibold">{liveCount}</span> live now
+                {game.live_viewer_total != null && (
+                  <>
+                    {' '}
+                    · <span className="font-semibold">
+                      {formatCompactNumber(game.live_viewer_total, 'en')}
+                    </span>{' '}
+                    watching
+                  </>
+                )}
+              </li>
+            )}
+            {game.hours_28d != null && game.hours_28d > 0 && (
+              <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
+                <span className="font-semibold text-text-primary">
+                  {formatCompactNumber(Math.round(game.hours_28d), 'en')}h
+                </span>{' '}
+                streamed / 28d
+              </li>
+            )}
+            {game.streams_28d != null && game.streams_28d > 0 && (
+              <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
+                <span className="font-semibold text-text-primary">{game.streams_28d}</span>{' '}
+                streams / 28d
+              </li>
+            )}
+            {game.peak_viewer_28d != null && game.peak_viewer_28d > 0 && (
+              <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
+                Peak{' '}
+                <span className="font-semibold text-text-primary">
+                  {formatCompactNumber(game.peak_viewer_28d, 'en')}
+                </span>{' '}
+                viewers / 28d
+              </li>
+            )}
+            {game.trend_delta_percent != null && (
+              <li
+                className={`rounded-full border border-border-default bg-background-elevated px-2.5 py-1 font-semibold ${
+                  game.trend_delta_percent >= 0 ? 'text-live' : 'text-accent-pink'
+                }`}
+                title="Week-over-week change in active streamers"
+              >
+                {game.trend_delta_percent >= 0 ? '▲' : '▼'}{' '}
+                {Math.abs(game.trend_delta_percent)}% this week
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+
+      {liveSlots.length > 0 && (
+        <section aria-labelledby="watching-now-heading" className="mt-8">
+          <h2 id="watching-now-heading" className="text-xl font-bold text-white">
+            Watching {category} now
+          </h2>
+          <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-label={`Live ${category} streams`}>
+            {[...liveSlots]
+              .sort((a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1))
+              .map((slot) => (
+                <li key={slot.id}>
+                  <SlotCard slot={slot} />
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
 
       {ranked.length > 0 && (
         <section aria-labelledby="most-followed-heading" className="mt-8">
@@ -411,7 +529,10 @@ export default async function GamePage({ params }: Props) {
       )}
 
       {hasSchedule && (
-        <section aria-label={`${category} stream schedule`}>
+        <section aria-label={`${category} stream schedule`} className="mt-10">
+          <h2 className="text-xl font-bold text-white">
+            Upcoming {category} streams
+          </h2>
           <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
           {sevenDays.map((dateKey) => {
             const slots = grouped.get(dateKey) ?? [];

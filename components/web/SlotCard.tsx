@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
+import { formatCompactNumber } from '@/lib/format/number';
 import { slotLexFor } from '@/lib/i18n-slot';
 import {
   AlwaysOnBadge,
@@ -71,8 +72,15 @@ export function SlotCard({
             <PlaceholderThumbnail name={slot.streamer_name} />
           )}
           {isLive && (
-            <div className="absolute bottom-1 left-1">
+            <div className="absolute bottom-1 left-1 flex items-center gap-1">
               <LiveBadge language={language} />
+              {/* Live concurrent viewers — the API already guarantees this is
+                  non-null only on live slots with a fresh (<25 min) sample. */}
+              {slot.viewer_count != null && (
+                <span className="rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">
+                  {formatCompactNumber(slot.viewer_count)} watching
+                </span>
+              )}
             </div>
           )}
         </div>

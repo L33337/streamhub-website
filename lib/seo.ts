@@ -96,6 +96,27 @@ export function buildBreadcrumbJsonLd(
   };
 }
 
+/**
+ * VideoGame JSON-LD for /game/[slug] hub pages. Callers must gate on
+ * isVideoGameCategory() — emitting VideoGame markup for "Just Chatting"-style
+ * categories would be wrong structured data. `image` is included only when
+ * box art is known.
+ */
+export function buildVideoGameJsonLd(params: {
+  name: string;
+  url: string;
+  imageUrl?: string | null;
+}): object {
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: params.name,
+    url: params.url,
+  };
+  if (params.imageUrl) jsonLd.image = params.imageUrl;
+  return jsonLd;
+}
+
 // --- SEO meta text generation -------------------------------------------------
 //
 // Streamer pages render dynamic, language-localised <title>/<meta description>
