@@ -56,9 +56,10 @@ function LiveNowSection({ games }: { games: GameWithSlug[] }) {
     <section aria-label="Games with live streams" className="mt-8">
       <h2 className="text-xl font-bold text-white">Live right now</h2>
       <ul className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-        {live.map((g) => (
+        {live.map((g, i) => (
           <li key={g.slug}>
-            <GameCard game={g} slug={g.slug} />
+            {/* First 6 cards are above the fold — LCP candidates. */}
+            <GameCard game={g} slug={g.slug} priority={i < 6} />
           </li>
         ))}
       </ul>
@@ -210,7 +211,15 @@ export default async function GamesIndexPage() {
           <div className="mt-10">
             <h2 className="text-xl font-bold text-white">All games &amp; categories</h2>
             <div className="mt-3">
-              <GamesExplorer games={withSlug} slugs={slugsByCategory} />
+              {/* Priority only when nothing is live above (else the live rail
+                  owns the LCP and extra preloads would compete with it).
+                  Approximation: with no live but a trending rail, the rail is
+                  technically the first image section — accepted. */}
+              <GamesExplorer
+                games={withSlug}
+                slugs={slugsByCategory}
+                priorityCount={totalLive > 0 ? 0 : 6}
+              />
             </div>
           </div>
         </>

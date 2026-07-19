@@ -353,6 +353,7 @@ export default async function GamePage({ params }: Props) {
               boxArtUrl={game.box_art_url}
               name={category}
               sizes="(min-width: 640px) 128px, 96px"
+              priority
             />
           </div>
         )}
