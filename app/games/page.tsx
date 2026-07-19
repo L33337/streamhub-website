@@ -104,6 +104,16 @@ export default async function GamesIndexPage() {
                   {g.streamer_count} streamer{g.streamer_count === 1 ? '' : 's'}
                 </span>
               </Link>
+              {/* Crawl path into the per-game leaderboard; gate mirrors the
+                  sitemap's streamer_count >= 10 indexability proxy. */}
+              {g.streamer_count >= 10 && (
+                <Link
+                  href={`/rankings/game/${g.slug}`}
+                  className="mt-1 inline-block px-1 text-xs text-text-muted transition-colors hover:text-accent-cyan"
+                >
+                  Top {g.category} streamers →
+                </Link>
+              )}
             </li>
           ))}
         </ul>

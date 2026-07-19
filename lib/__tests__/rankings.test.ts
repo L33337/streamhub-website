@@ -6,7 +6,9 @@ import {
   formatDurationMinutes,
   formatHitRate,
   formatHours,
+  formatRefreshedAt,
   getRankingPageSpec,
+  hasMissingValues,
   isRankingIndexable,
   MIN_INDEXABLE_RANKING_ENTRIES,
   RANKING_PAGES,
@@ -70,6 +72,15 @@ describe('value formatters', () => {
     expect(formatDurationMinutes(45)).toBe('45 m');
     expect(formatDurationMinutes(0)).toBe('—');
     expect(formatDurationMinutes(null)).toBe('—');
+  });
+
+  it('formatRefreshedAt: fixed en-US UTC date, null/invalid-safe', () => {
+    expect(formatRefreshedAt('2026-07-18T04:15:00Z')).toBe('Jul 18, 2026');
+    // UTC rendering: late-evening UTC stays on the same UTC day regardless of server TZ
+    expect(formatRefreshedAt('2026-12-31T23:30:00Z')).toBe('Dec 31, 2026');
+    expect(formatRefreshedAt(null)).toBeNull();
+    expect(formatRefreshedAt(undefined)).toBeNull();
+    expect(formatRefreshedAt('not-a-date')).toBeNull();
   });
 });
 
@@ -138,6 +149,34 @@ describe('page registry', () => {
     });
     expect(spec.columns.map((c) => c.format(e))).toEqual(['91%', '+16 min', '11']);
   });
+
+  it('every metric ships a non-empty FAQ block', () => {
+    for (const spec of RANKING_PAGES) {
+      expect(spec.faq.length).toBeGreaterThanOrEqual(3);
+      for (const { q, a } of spec.faq) {
+        expect(q.length).toBeGreaterThan(0);
+        expect(a.length).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe('hasMissingValues', () => {
+  const spec = getRankingPageSpec('most-followed')!;
+
+  it('true when any rendered cell is the em-dash placeholder', () => {
+    const entries = [
+      entry(1, { follower_count: 900 }),
+      entry(2, { follower_count: 500 }, { avg_view_count: null }),
+    ];
+    expect(hasMissingValues(spec, entries)).toBe(true);
+  });
+
+  it('false when every cell has a value', () => {
+    const entries = [entry(1, { follower_count: 900 })];
+    expect(hasMissingValues(spec, entries)).toBe(false);
+    expect(hasMissingValues(spec, [])).toBe(false);
+  });
 });
 
 describe('sanitizeRankingEntries', () => {
@@ -174,6 +213,17 @@ describe('sanitizeRankingEntries', () => {
 });
 
 describe('buildRankingItemListJsonLd', () => {
+  type LdItem = {
+    position: number;
+    item: {
+      '@type': string;
+      '@id': string;
+      name: string;
+      url: string;
+      interactionStatistic?: { userInteractionCount: number };
+    };
+  };
+
   it('emits Person items positioned by rank with encoded streamer URLs', () => {
     const jsonLd = buildRankingItemListJsonLd('Most followed streamers', [
       entry(1, { follower_count: 10 }, { id: 'a b', name: 'A B' }),
@@ -181,13 +231,30 @@ describe('buildRankingItemListJsonLd', () => {
     ]);
     expect(jsonLd['@type']).toBe('ItemList');
     expect(jsonLd.numberOfItems).toBe(2);
-    const items = jsonLd.itemListElement as Array<{
-      position: number;
-      item: { '@type': string; name: string; url: string };
-    }>;
+    const items = jsonLd.itemListElement as LdItem[];
     expect(items[0].position).toBe(1);
     expect(items[0].item['@type']).toBe('Person');
     expect(items[0].item.url).toBe('https://streamertimes.tv/streamer/a%20b');
     expect(items[1].position).toBe(2);
+  });
+
+  it('carries the streamer-page #person @id so entities merge across pages', () => {
+    const jsonLd = buildRankingItemListJsonLd('Most followed streamers', [
+      entry(1, { follower_count: 10 }, { id: 'a b' }),
+    ]);
+    const items = jsonLd.itemListElement as LdItem[];
+    expect(items[0].item['@id']).toBe('https://streamertimes.tv/streamer/a%20b#person');
+  });
+
+  it('emits an InteractionCounter from values, falling back to the streamer DTO', () => {
+    const jsonLd = buildRankingItemListJsonLd('x', [
+      entry(1, { follower_count: 10 }),
+      entry(2, { avg_view_count: 99 }, { follower_count: 7 }), // no values count → DTO fallback
+      entry(3, { avg_view_count: 5 }, { follower_count: null }), // no count at all → omitted
+    ]);
+    const items = jsonLd.itemListElement as LdItem[];
+    expect(items[0].item.interactionStatistic?.userInteractionCount).toBe(10);
+    expect(items[1].item.interactionStatistic?.userInteractionCount).toBe(7);
+    expect(items[2].item.interactionStatistic).toBeUndefined();
   });
 });

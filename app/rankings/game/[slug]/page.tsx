@@ -13,6 +13,7 @@ import { rankGameStreamers } from '@/lib/game-ranking';
 import {
   buildRankingItemListJsonLd,
   getRankingPageSpec,
+  hasMissingValues,
   isRankingIndexable,
 } from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
@@ -127,7 +128,8 @@ export default async function GameRankingPage({ params }: Props) {
   if (!category) notFound();
 
   // Reuse the most-followed column definitions (Followers primary + Avg viewers).
-  const columns = getRankingPageSpec('most-followed')!.columns;
+  const mostFollowedSpec = getRankingPageSpec('most-followed')!;
+  const columns = mostFollowedSpec.columns;
   const top = entries[0];
 
   const breadcrumb = buildBreadcrumbJsonLd([
@@ -179,8 +181,15 @@ export default async function GameRankingPage({ params }: Props) {
               caption={`${category} streamers ranked by follower count`}
               columns={columns}
               entries={entries}
+              rowAnchorPrefix="rank"
             />
           </div>
+          {hasMissingValues(mostFollowedSpec, entries) && (
+            <p className="mt-2 text-xs text-text-muted">
+              — means we haven&apos;t collected enough data for that channel yet, for
+              example viewer sampling for recently added channels.
+            </p>
+          )}
         </>
       ) : (
         <p className="mt-3 max-w-2xl text-text-secondary">
