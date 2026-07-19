@@ -52,6 +52,10 @@ interface GamePageData {
   // Category's streamers ordered by follower_count (from the Partner API's
   // per-category ranking). Feeds the "Most followed" table; empty on API error.
   rankedStreamers: PublicStreamer[];
+  // Related categories (roster overlap, nightly) filtered to catalog entries
+  // that have a hub page — never emits internal 404 links. Feeds the
+  // "Related games" chips (the internal mesh between game pages).
+  related: { category: string; slug: string }[];
   now: Date;
 }
 
@@ -70,17 +74,29 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     liveSlots: [],
     upcomingSlots: [],
     rankedStreamers: [],
+    related: [],
     now,
   };
 
   let game: PublicGame | null;
+  let catalog: Set<string>;
   try {
     const games = await api.listGames({ limit: 500 });
     game = findGameBySlug(games.data, slug);
+    catalog = new Set(games.data.map((g) => g.category));
   } catch {
     return empty; // API unavailable → renders as notFound; ISR retries soon
   }
   if (!game) return empty;
+
+  // Same filter chain as /rankings/game/[slug]: only categories with a hub
+  // page of their own, plus a self-reference guard.
+  const currentCategory = game.category;
+  const related = (game.related_categories ?? [])
+    .filter((r) => r.category !== currentCategory && catalog.has(r.category))
+    .map((r) => ({ category: r.category, slug: gameSlug(r.category) }))
+    .filter((r) => r.slug.length > 0)
+    .slice(0, 6);
 
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
@@ -119,6 +135,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     liveSlots: liveCall.status === 'fulfilled' ? liveCall.value.data : [],
     upcomingSlots: upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [],
     rankedStreamers: rankedCall.status === 'fulfilled' ? rankedCall.value.data : [],
+    related,
     now,
   };
 });
@@ -144,8 +161,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Coarse, slow-moving numbers only (streamer_count changes daily at most,
   // hours_28d nightly). NEVER live viewer counts here — hourly metadata churn
   // hurts SEO more than the numbers help.
-  const count = game?.streamer_count;
-  const titleCount = count && count > 0 ? ` (${count})` : '';
   const hours = game?.hours_28d;
   const hoursSentence =
     hours != null && hours >= 10
@@ -163,7 +178,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `See ${category} streamers ranked by followers,`;
   const ogNames = names.length > 0 ? ` — ${formatNameList(names)} —` : ',';
   const meta: Metadata = {
-    title: `${category} Streamers${titleCount} — Live Now, Rankings & Schedule`,
+    // No streamer count in the title: it changes daily → title churn on every
+    // re-crawl, and the chars are better spent on the stable keywords.
+    title: `${category} Streamers — Live Now, Rankings & Schedule`,
     description: `Who are the most followed ${category} streamers? ${namesLead} who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.${hoursSentence}`,
     alternates: { canonical: url },
     openGraph: {
@@ -207,7 +224,7 @@ interface GameStreamer {
 
 export default async function GamePage({ params }: Props) {
   const { slug } = await params;
-  const { category, game, liveSlots, upcomingSlots, rankedStreamers, now } =
+  const { category, game, liveSlots, upcomingSlots, rankedStreamers, related, now } =
     await loadGamePage(slug);
   if (!category || !game) notFound();
 
@@ -583,6 +600,33 @@ export default async function GamePage({ params }: Props) {
               />
             );
           })}
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <section aria-labelledby="related-games-heading" className="mt-12">
+          <h2
+            id="related-games-heading"
+            className="text-sm font-semibold uppercase tracking-wider text-text-muted"
+          >
+            Related games
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label="Related games">
+            {related.map((r) => (
+              <li key={r.category}>
+                <Link
+                  href={`/game/${r.slug}`}
+                  prefetch={false}
+                  className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
+                >
+                  {r.category} streamers
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-text-muted">
+            Games with overlapping streamer rosters in the last 28 days.
+          </p>
         </section>
       )}
 
