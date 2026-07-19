@@ -14,7 +14,11 @@ import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { formatCompactNumber } from '@/lib/format/number';
-import { rankGameStreamers } from '@/lib/game-ranking';
+import {
+  rankGameStreamers,
+  topGameStreamerNames,
+  formatNameList,
+} from '@/lib/game-ranking';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
@@ -132,7 +136,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const { category, game } = await loadGamePage(slug);
+  const { category, game, rankedStreamers } = await loadGamePage(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
   const url = `${SITE_URL}/game/${slug}`;
   // Coarse, slow-moving numbers only (streamer_count changes daily at most,
@@ -145,13 +149,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     hours != null && hours >= 10
       ? ` ~${formatCompactNumber(Math.round(hours), 'en')} hours streamed in the last 28 days.`
       : '';
+  // Top names from the SAME ranking the visible "Most followed" table renders —
+  // they target "streamer + game" searches. follower_count refreshes daily, so
+  // the names are stable between crawls; when the ranking call degraded (or no
+  // streamer has a usable follower count) the copy falls back to the nameless
+  // variant instead of churning.
+  const names = topGameStreamerNames(rankedStreamers, 3);
+  const namesLead =
+    names.length > 0
+      ? `${formatNameList(names)} lead${names.length === 1 ? 's' : ''} the ranking — see`
+      : `See ${category} streamers ranked by followers,`;
+  const ogNames = names.length > 0 ? ` — ${formatNameList(names)} —` : ',';
   return {
     title: `${category} Streamers${titleCount} — Live Now, Rankings & Schedule`,
-    description: `Who are the most followed ${category} streamers? See ${category} streamers ranked by followers, who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.${hoursSentence}`,
+    description: `Who are the most followed ${category} streamers? ${namesLead} who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.${hoursSentence}`,
     alternates: { canonical: url },
     openGraph: {
       title: `${category} streamers — live now, rankings & schedule`,
-      description: `The most followed ${category} streamers, live status and stream schedule on Twitch and YouTube.`,
+      description: `The most followed ${category} streamers${ogNames} live status and stream schedule on Twitch and YouTube.`,
       url,
       siteName: 'Streamer Times',
       type: 'website',

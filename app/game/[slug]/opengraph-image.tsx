@@ -32,9 +32,14 @@ export default async function Image({ params }: Props) {
   const { slug } = await params;
 
   let category: string | null = null;
+  let topNames: string[] = [];
   try {
     const games = await getPartnerApi().listGames({ limit: 500 });
-    category = findGameBySlug(games.data, slug)?.category ?? null;
+    const game = findGameBySlug(games.data, slug);
+    category = game?.category ?? null;
+    // Nightly top-3 most-followed names, straight from the games row (no extra
+    // API call). Absent against an older API / cold aggregate → generic line.
+    topNames = (game?.top_streamers ?? []).slice(0, 3).map((t) => t.name);
   } catch {
     category = null;
   }
@@ -44,7 +49,10 @@ export default async function Image({ params }: Props) {
   return new ImageResponse(
     renderOgFrame({
       title,
-      subtitle: 'Live now · Upcoming schedule · AI predictions',
+      subtitle:
+        topNames.length > 0
+          ? `${topNames.join(' · ')} — live now & schedule`
+          : 'Live now · Upcoming schedule · AI predictions',
     }),
     { ...OG_SIZE },
   );

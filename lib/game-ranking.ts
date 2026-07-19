@@ -37,6 +37,25 @@ export function rankGameStreamers(
     .map((streamer, i) => ({ rank: i + 1, streamer }));
 }
 
+/**
+ * Top streamer names of a category, in the exact order of the visible "Most
+ * followed" table (rankGameStreamers). Feeds the game page's meta/OG copy —
+ * the names target "streamer + game" searches, so they must never diverge
+ * from what the page itself shows.
+ */
+export function topGameStreamerNames(
+  streamers: PublicStreamer[],
+  limit: number,
+): string[] {
+  return rankGameStreamers(streamers, limit).map((r) => r.streamer.name);
+}
+
+/** English prose list: "Ninja", "Ninja and Clix", "Ninja, Jynxzi and Clix". */
+export function formatNameList(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 // ============================================
 // View model for /rankings/game/[slug] (rankings-page expansion)
 // ============================================
