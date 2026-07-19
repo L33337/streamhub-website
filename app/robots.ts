@@ -4,29 +4,42 @@ const SITE_URL = 'https://streamertimes.tv';
 
 export const revalidate = 86400;
 
+// Disallows every group repeats: a crawler reads ONLY its most specific
+// matching group, so nothing is inherited from the * group.
+const SHARED_DISALLOWS = ['/api/', '/auth/', '/settings', '/favorites', '/feed'];
+
+// Search crawlers additionally skip /schedule/<id>: those URLs churn every
+// prediction cycle (ai_slot_pred_* ids embed a timestamp) and expired slots
+// 308 to the streamer page — Google burned ~500 crawls/day on them (GSC
+// "Page with redirect" noise) before the Googlebot group existed; Bing was
+// still crawling them until it got its own group (2026-07-20).
+const SEARCH_CRAWLER_DISALLOWS = [...SHARED_DISALLOWS, '/schedule/'];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Googlebot gets its own group: /schedule/<id> URLs churn every
-      // prediction cycle (ai_slot_pred_* ids embed a timestamp), so Google
-      // kept burning ~500 crawls/day on expired slots that 308 to the
-      // streamer page — GSC then lists them all under "Page with redirect".
-      // A crawler reads ONLY its most specific matching group, so this group
-      // must repeat every disallow from the * group.
       {
         userAgent: 'Googlebot',
         allow: '/',
-        disallow: ['/api/', '/auth/', '/settings', '/favorites', '/feed', '/schedule/'],
+        disallow: SEARCH_CRAWLER_DISALLOWS,
+      },
+      {
+        userAgent: 'Bingbot',
+        allow: '/',
+        disallow: SEARCH_CRAWLER_DISALLOWS,
       },
       // NO /schedule/ here: Discordbot/Twitterbot respect robots.txt — a
       // wildcard block would kill link embeds of user-shared slot URLs.
+      // Residual: other search bots (DuckDuckBot, Yandex, …) may still crawl
+      // /schedule/ — accepted to keep unfurls working; add a named group if
+      // one of them shows up as measurable crawl waste.
       // /feed IS here: like /settings and /favorites it is auth-gated and
       // always 307s anonymous crawlers (to /app while auth is dormant, to
       // the login page once enabled) — there is never content to fetch.
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/auth/', '/settings', '/favorites', '/feed'],
+        disallow: SHARED_DISALLOWS,
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
