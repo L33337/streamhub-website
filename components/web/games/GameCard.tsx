@@ -64,6 +64,10 @@ function TrendBadge({ delta }: { delta: number }) {
 export function GameCard({ game, slug }: { game: PublicGame; slug: string }) {
   const liveCount = game.live_streamer_count ?? 0;
   const hours = game.hours_28d;
+  // Top-3 most-followed names (nightly aggregate) as crawlable text — people
+  // search "streamer + game". Plain text, never nested links (card IS a link).
+  const topNames = (game.top_streamers ?? []).map((t) => t.name);
+  const moreCount = Math.max(0, game.streamer_count - topNames.length);
 
   return (
     <Link
@@ -90,6 +94,15 @@ export function GameCard({ game, slug }: { game: PublicGame; slug: string }) {
         >
           {game.category}
         </h3>
+        {topNames.length > 0 && (
+          <p
+            className="mt-0.5 truncate text-[11px] text-text-secondary"
+            title={topNames.join(', ')}
+          >
+            {topNames.join(', ')}
+            {moreCount > 0 && <span className="text-text-muted"> +{moreCount}</span>}
+          </p>
+        )}
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-text-muted">
           <span>
             {game.streamer_count} streamer{game.streamer_count === 1 ? '' : 's'}

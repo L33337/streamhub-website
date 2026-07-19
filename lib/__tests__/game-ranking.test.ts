@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { rankGameStreamers } from '../game-ranking';
+import {
+  rankGameStreamers,
+  topGameStreamerNames,
+  formatNameList,
+} from '../game-ranking';
 import type { PublicStreamer } from '@/lib/server/partner-api';
 
 function mk(over: Partial<PublicStreamer> & { id: string; name: string }): PublicStreamer {
@@ -108,6 +112,46 @@ import {
   sortGameRankingRows,
   type GameRankingRow,
 } from '../game-ranking';
+
+describe('topGameStreamerNames', () => {
+  it('returns names in ranking order, capped at limit', () => {
+    const out = topGameStreamerNames(
+      [
+        mk({ id: 'a', name: 'A', follower_count: 1000 }),
+        mk({ id: 'c', name: 'C', follower_count: 5000 }),
+        mk({ id: 'b', name: 'B', follower_count: 3000 }),
+        mk({ id: 'd', name: 'D', follower_count: 2000 }),
+      ],
+      3,
+    );
+    expect(out).toEqual(['C', 'B', 'D']);
+  });
+
+  it('drops streamers without usable follower counts (same rule as the table)', () => {
+    const out = topGameStreamerNames(
+      [
+        mk({ id: 'a', name: 'A', follower_count: null }),
+        mk({ id: 'b', name: 'B', follower_count: 0 }),
+        mk({ id: 'c', name: 'C', follower_count: 42 }),
+      ],
+      3,
+    );
+    expect(out).toEqual(['C']);
+  });
+
+  it('empty input → empty list', () => {
+    expect(topGameStreamerNames([], 3)).toEqual([]);
+  });
+});
+
+describe('formatNameList', () => {
+  it('joins as English prose', () => {
+    expect(formatNameList([])).toBe('');
+    expect(formatNameList(['Ninja'])).toBe('Ninja');
+    expect(formatNameList(['Ninja', 'Clix'])).toBe('Ninja and Clix');
+    expect(formatNameList(['Ninja', 'Jynxzi', 'Clix'])).toBe('Ninja, Jynxzi and Clix');
+  });
+});
 
 function ranked(
   id: string,

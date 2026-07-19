@@ -108,6 +108,10 @@ export interface PublicGame {
   // Up to 6 categories sharing >= 2 streamers with this one, strongest overlap
   // first (nightly aggregate). Powers the "Related rankings" links.
   related_categories?: { category: string; shared_streamers: number }[] | null;
+  // Up to 3 most-followed streamers of the category (nightly aggregate, hidden
+  // excluded), most followers first. Powers the hub-card name line and the
+  // game OG-image subtitle; never an empty array (null instead).
+  top_streamers?: { id: string; name: string; followers: number | null }[] | null;
 }
 
 // Mirror of supabase/functions/_shared/partner-dto.ts `PublicStreamHistory`.
