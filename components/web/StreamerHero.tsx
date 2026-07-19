@@ -54,7 +54,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
 
         <div className="flex-1 text-center md:text-left">
           <div className="flex items-start justify-center gap-3 md:justify-start">
-            <h1 className="text-3xl md:text-4xl font-bold text-white">
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
               {streamer.name}
             </h1>
             <FavoriteButton

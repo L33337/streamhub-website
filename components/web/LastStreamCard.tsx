@@ -106,7 +106,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
   );
 
   return (
-    <section className="mt-10">
+    <section className="mt-6">
       <h2 className="text-2xl font-bold text-white mb-4">{L.heading}</h2>
       {stream.vod_url ? (
         <a
