@@ -63,6 +63,12 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.6,
   },
   {
+    url: `${SITE_URL}/rankings/fastest-growing`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
     url: `${SITE_URL}/rankings/most-watched`,
     lastModified: new Date(),
     changeFrequency: 'daily',

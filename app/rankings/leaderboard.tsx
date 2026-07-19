@@ -26,6 +26,7 @@ import { RankingTable } from '@/components/web/RankingTable';
 import { RankingSpotlight } from '@/components/web/RankingSpotlight';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import { gameSlug } from '@/lib/game-slug';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -82,10 +83,21 @@ export async function LeaderboardPage({ slug }: { slug: string }) {
   // Live badges are decoration — a failed live lookup must never break the
   // page, so it degrades to an empty set (no badges).
   const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // Games list gates the "Main game" links: /rankings/game/[slug] 404s for
+  // categories outside it, so those render as plain text. Failure → empty map
+  // → every main game renders unlinked (never breaks the page).
+  const gamesPromise = getPartnerApi()
+    .listGames({ limit: 500, revalidate: 3600 })
+    .catch(() => null);
   const { entries, refreshedAt } = await loadEntries(spec);
   // Never throws (failure paths inside degrade to an empty/partial map).
   const nextSlots = await getNextSlotByStreamer(entries.map((e) => e.streamer.id));
   const liveIds = await livePromise;
+  const mainGameSlugs = new Map<string, string>(
+    ((await gamesPromise)?.data ?? [])
+      .map((g) => [g.category, gameSlug(g.category)] as const)
+      .filter(([, slug]) => slug.length > 0),
+  );
   const siblings = RANKING_PAGES.filter((p) => p.slug !== spec.slug);
   const refreshedLabel = formatRefreshedAt(refreshedAt);
   const top = entries[0];
@@ -172,6 +184,7 @@ export async function LeaderboardPage({ slug }: { slug: string }) {
               rowAnchorPrefix="rank"
               liveIds={liveIds}
               nextSlots={nextSlots}
+              mainGameSlugs={mainGameSlugs}
             />
           </div>
           <p className="mt-2 text-xs text-text-muted">

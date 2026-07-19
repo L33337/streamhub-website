@@ -25,12 +25,12 @@ const GAME_RANKING_MIN_STREAMERS = 10;
 export const metadata: Metadata = {
   title: 'Streamer Rankings — Most Followed, Most Watched & Most Active',
   description:
-    'Live leaderboards for Twitch and YouTube streamers: the most followed, most watched, most active and most punctual streamers we track, plus rankings by game. Updated daily.',
+    'Live leaderboards for Twitch and YouTube streamers: the most followed, fastest growing, most watched, most active and most punctual streamers we track, plus rankings by game. Updated daily.',
   alternates: { canonical: `${SITE_URL}/rankings` },
   openGraph: {
     title: 'Streamer Rankings — most followed, most watched & most active',
     description:
-      'Leaderboards for Twitch and YouTube streamers, updated daily: followers, viewers, hours streamed, schedule punctuality and per-game rankings.',
+      'Leaderboards for Twitch and YouTube streamers, updated daily: followers, follower growth, viewers, hours streamed, schedule punctuality and per-game rankings.',
     url: `${SITE_URL}/rankings`,
     siteName: 'Streamer Times',
     type: 'website',
@@ -138,9 +138,9 @@ export default async function RankingsHubPage() {
 
       <h1 className="text-3xl font-bold text-white md:text-4xl">Streamer rankings</h1>
       <p className="mt-3 max-w-2xl text-text-secondary">
-        Who are the biggest, busiest and most dependable streamers on Twitch and
-        YouTube? Four leaderboards over every streamer we track — updated daily
-        from real broadcast data.
+        Who are the biggest, fastest growing, busiest and most dependable
+        streamers on Twitch and YouTube? {sections.length} leaderboards over
+        every streamer we track — updated daily from real broadcast data.
         {refreshedLabel && (
           <span className="text-text-muted"> Data refreshed {refreshedLabel}.</span>
         )}

@@ -64,6 +64,23 @@ function compact(value: number | null | undefined): string {
   return s === '' ? '—' : s;
 }
 
+/** 12400 → "+12.4K" (gain column; negatives render "−" defensively). */
+export function formatSignedCompact(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value) || value === 0) return '—';
+  const body = compact(Math.abs(value));
+  if (body === '—') return '—';
+  return value > 0 ? `+${body}` : `−${body}`;
+}
+
+/** 3.25 → "+3.3%", 2900 → "+2900%" (whole percent from 100 up), null → "—". */
+export function formatGrowthPercent(percent: number | null | undefined): string {
+  if (percent == null || !Number.isFinite(percent)) return '—';
+  const abs = Math.abs(percent);
+  const rounded = abs >= 100 ? Math.round(abs) : Math.round(abs * 10) / 10;
+  const text = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+  return `${percent < 0 ? '−' : '+'}${text}%`;
+}
+
 /**
  * "2026-07-18T04:15:00Z" → "Jul 18, 2026" for the visible freshness line.
  * Fixed en-US locale + UTC (site copy is English; avoids server-locale
@@ -178,6 +195,63 @@ export const RANKING_PAGES: RankingPageSpec[] = [
       {
         q: 'What does the average viewers column show?',
         a: 'The median number of concurrent live viewers over the last 28 days, sampled hourly while the channel is live. A dash means we have not collected enough viewer samples for that channel yet.',
+      },
+    ],
+  },
+  {
+    metric: 'fastest-growing',
+    slug: 'fastest-growing',
+    navLabel: 'Fastest growing',
+    h1: 'Fastest growing streamers',
+    buildTitle: (n) =>
+      degradedTitle(
+        'Fastest Growing Streamers — Follower Gains This Week',
+        'Top {n} Fastest Growing Streamers — Follower Gains This Week',
+        n,
+      ),
+    buildDescription: (top) =>
+      (top?.values.follower_gain_7d
+        ? `${top.streamer.name} gained ${compact(top.values.follower_gain_7d)} ${followerNoun(top)} in the last 7 days. `
+        : '') +
+      'The fastest growing livestreamers we track, ranked by follower and subscriber gain over the last 7 days across Twitch and YouTube. Updated daily.',
+    buildIntro: (n, top) =>
+      `The ${n} fastest growing streamers on Streamer Times, ranked by follower and subscriber gain over the last 7 days.` +
+      (top?.values.follower_gain_7d
+        ? ` ${top.streamer.name} tops the list, up ${compact(top.values.follower_gain_7d)} ${followerNoun(top)} this week.`
+        : ''),
+    methodologyNote:
+      'Gain in channel followers (Twitch) or subscribers (YouTube) over the last 7 days, from daily snapshots of every tracked channel. Only channels with positive growth rank. Updated daily.',
+    primaryValue: (e) => e.values.follower_gain_7d,
+    columns: [
+      {
+        key: 'gained',
+        header: 'Gained (7d)',
+        primary: true,
+        format: (e) => formatSignedCompact(e.values.follower_gain_7d),
+      },
+      {
+        key: 'growth',
+        header: 'Growth',
+        format: (e) => formatGrowthPercent(e.values.follower_growth_percent_7d),
+      },
+      {
+        key: 'followers',
+        header: 'Followers now',
+        format: (e) => compact(e.values.follower_count),
+      },
+    ],
+    faq: [
+      {
+        q: 'How is follower growth measured?',
+        a: 'We snapshot the follower and subscriber counts of every tracked channel once a day and compare the current count against the snapshot from at least 7 days ago. The leaderboard ranks the absolute gain over that window.',
+      },
+      {
+        q: 'Why rank by absolute gain instead of percent?',
+        a: 'Percent growth is dominated by tiny channels — going from 10 to 20 followers doubles a channel but means little. Absolute gain reflects real momentum; the Growth column still shows the relative change for context.',
+      },
+      {
+        q: 'Why is this leaderboard empty or short?',
+        a: 'A channel needs at least 7 days of snapshot history to qualify, so the board is empty right after the feature launched and recently added streamers take a week to appear. Channels with no growth or a declining count are not listed.',
       },
     ],
   },

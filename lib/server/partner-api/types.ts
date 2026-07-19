@@ -189,12 +189,17 @@ export interface PublicStreamerStats {
 // Rankings (GET /v1/rankings/{metric})
 // ============================================
 
-export type RankingMetric = 'most-followed' | 'most-watched' | 'most-active' | 'most-reliable';
+export type RankingMetric =
+  | 'most-followed'
+  | 'most-watched'
+  | 'most-active'
+  | 'most-reliable'
+  | 'fastest-growing';
 
 // Per-metric numbers of one leaderboard row. Superset shape — the key set
 // depends on the requested metric (see the endpoint description in the
 // Partner API OpenAPI spec); every field is optional so one type covers all
-// four metrics.
+// five metrics.
 export interface RankingValues {
   follower_count?: number;
   avg_view_count?: number;
@@ -207,6 +212,11 @@ export interface RankingValues {
   median_start_deviation_minutes?: number | null;
   no_show_count?: number;
   time_tier?: string;
+  // fastest-growing: follower/subscriber gain vs a daily snapshot >= 7 days
+  // old, and that gain as percent of the baseline (1 decimal, null without a
+  // positive baseline). Both absent on every other metric.
+  follower_gain_7d?: number;
+  follower_growth_percent_7d?: number | null;
   // Rank ~7 days ago (daily snapshots >= 6d old). The key is absent entirely
   // while the backend's snapshot history warms up; null = newly ranked.
   previous_rank?: number | null;
@@ -216,6 +226,9 @@ export interface PublicRankingEntry {
   rank: number; // 1-based, best first
   values: RankingValues;
   streamer: PublicStreamer;
+  // Streamer's main game over the last 28 days (most streamed hours).
+  // Absent while unknown — aggregate cold start or uncategorized history.
+  top_category?: { category: string; share_percent: number };
 }
 
 // Envelope of GET /v1/rankings/{metric}. Bounded top-list (max 100), no

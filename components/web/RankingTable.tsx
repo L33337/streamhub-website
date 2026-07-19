@@ -33,6 +33,13 @@ interface Props {
    * nothing is scheduled within the fetch window.
    */
   nextSlots?: Map<string, PublicStreamSlot>;
+  /**
+   * category → /rankings/game/ slug for every game with a hub page. When
+   * provided, a "Main game" column is appended from each entry's
+   * `top_category`; categories without a hub page render as plain text (the
+   * game-ranking route 404s for categories outside the games list).
+   */
+  mainGameSlugs?: Map<string, string>;
 }
 
 // Medal accents for ranks 1-3 (gold/silver/bronze, tuned for the dark theme).
@@ -72,6 +79,31 @@ function TrendIndicator({ entry }: { entry: PublicRankingEntry }) {
   );
 }
 
+/** Value of the "Main game" column for one row (see Props.mainGameSlugs). */
+function MainGameCell({
+  topCategory,
+  slugs,
+}: {
+  topCategory: PublicRankingEntry['top_category'];
+  slugs: Map<string, string>;
+}) {
+  if (!topCategory) return <>—</>;
+  const title = `${topCategory.share_percent}% of their categorized streams`;
+  const slug = slugs.get(topCategory.category);
+  if (!slug) {
+    return <span title={title}>{topCategory.category}</span>;
+  }
+  return (
+    <Link
+      href={`/rankings/game/${slug}`}
+      title={title}
+      className="text-text-secondary underline decoration-border-default underline-offset-4 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan/60"
+    >
+      {topCategory.category}
+    </Link>
+  );
+}
+
 /** Value of the "Next stream" column for one row (see Props.nextSlots). */
 function NextStreamCell({
   streamer,
@@ -101,6 +133,7 @@ export function RankingTable({
   rowAnchorPrefix,
   liveIds,
   nextSlots,
+  mainGameSlugs,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
@@ -119,6 +152,11 @@ export function RankingTable({
                 {col.header}
               </th>
             ))}
+            {mainGameSlugs && (
+              <th scope="col" className="px-3 py-2 text-right font-semibold">
+                Main game
+              </th>
+            )}
             {nextSlots && (
               <th scope="col" className="px-3 py-2 text-right font-semibold">
                 Next stream
@@ -194,6 +232,11 @@ export function RankingTable({
                     {col.format(entry)}
                   </td>
                 ))}
+                {mainGameSlugs && (
+                  <td className="max-w-40 truncate px-3 py-2 text-right text-text-secondary">
+                    <MainGameCell topCategory={entry.top_category} slugs={mainGameSlugs} />
+                  </td>
+                )}
                 {nextSlots && (
                   <td className="whitespace-nowrap px-3 py-2 text-right text-text-secondary">
                     <NextStreamCell streamer={streamer} slot={nextSlots.get(streamer.id)} />

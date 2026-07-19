@@ -14,6 +14,8 @@ import {
   RANKING_PAGES,
   rankTrend,
   sanitizeRankingEntries,
+  formatGrowthPercent,
+  formatSignedCompact,
 } from '@/lib/rankings';
 
 function streamer(overrides: Partial<PublicStreamer> = {}): PublicStreamer {
@@ -94,11 +96,12 @@ describe('index gating', () => {
 });
 
 describe('page registry', () => {
-  it('exposes all four metrics with unique slugs', () => {
-    expect(RANKING_PAGES).toHaveLength(4);
+  it('exposes all five metrics with unique slugs', () => {
+    expect(RANKING_PAGES).toHaveLength(5);
     const slugs = RANKING_PAGES.map((p) => p.slug);
-    expect(new Set(slugs).size).toBe(4);
+    expect(new Set(slugs).size).toBe(5);
     expect(getRankingPageSpec('most-followed')?.metric).toBe('most-followed');
+    expect(getRankingPageSpec('fastest-growing')?.metric).toBe('fastest-growing');
     expect(getRankingPageSpec('bogus')).toBeNull();
   });
 
@@ -283,5 +286,85 @@ describe('rankTrend', () => {
     expect(rankTrend(entry(3, { follower_count: 10, previous_rank: 3 }))).toEqual({
       kind: 'none',
     });
+  });
+});
+
+describe('formatSignedCompact', () => {
+  it('prefixes positive gains, compacted', () => {
+    expect(formatSignedCompact(12400)).toBe('+12.4K');
+    expect(formatSignedCompact(500)).toBe('+500');
+  });
+
+  it('renders a minus for defensive negative input', () => {
+    expect(formatSignedCompact(-1200)).toBe('−1.2K');
+  });
+
+  it('dashes zero and missing values', () => {
+    expect(formatSignedCompact(0)).toBe('—');
+    expect(formatSignedCompact(null)).toBe('—');
+    expect(formatSignedCompact(undefined)).toBe('—');
+    expect(formatSignedCompact(NaN)).toBe('—');
+  });
+});
+
+describe('formatGrowthPercent', () => {
+  it('one decimal below 100, trailing .0 dropped', () => {
+    expect(formatGrowthPercent(3.25)).toBe('+3.3%');
+    expect(formatGrowthPercent(3)).toBe('+3%');
+    expect(formatGrowthPercent(0.04)).toBe('+0%');
+  });
+
+  it('whole percent from 100 up', () => {
+    expect(formatGrowthPercent(2900)).toBe('+2900%');
+    expect(formatGrowthPercent(100.4)).toBe('+100%');
+  });
+
+  it('dashes missing values and signs negatives', () => {
+    expect(formatGrowthPercent(null)).toBe('—');
+    expect(formatGrowthPercent(undefined)).toBe('—');
+    expect(formatGrowthPercent(-12.34)).toBe('−12.3%');
+  });
+});
+
+describe('fastest-growing spec', () => {
+  const spec = getRankingPageSpec('fastest-growing')!;
+
+  const growthEntry = (id: string, gain: number | undefined): PublicRankingEntry => ({
+    rank: 1,
+    values: {
+      follower_gain_7d: gain,
+      follower_growth_percent_7d: gain != null ? 5 : undefined,
+      follower_count: 100000,
+    },
+    streamer: streamer({ id, name: id }),
+  });
+
+  it('title degrades honestly with entry count', () => {
+    expect(spec.buildTitle(100)).toContain('Top 100');
+    expect(spec.buildTitle(12)).toContain('Top 12');
+    expect(spec.buildTitle(3)).not.toContain('Top');
+  });
+
+  it('columns format gain, percent and current followers', () => {
+    const entry = growthEntry('a', 5000);
+    expect(spec.columns[0].format(entry)).toBe('+5K');
+    expect(spec.columns[1].format(entry)).toBe('+5%');
+    expect(spec.columns[2].format(entry)).toBe('100K');
+  });
+
+  it('sanitize drops entries without a positive gain', () => {
+    const out = sanitizeRankingEntries(spec, [
+      growthEntry('a', 5000),
+      growthEntry('b', 0),
+      growthEntry('c', undefined),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].streamer.id).toBe('a');
+    expect(out[0].rank).toBe(1);
+  });
+
+  it('description embeds the leader gain when available', () => {
+    expect(spec.buildDescription(growthEntry('kai', 250000))).toContain('gained 250K');
+    expect(spec.buildDescription(undefined)).toContain('fastest growing livestreamers');
   });
 });
