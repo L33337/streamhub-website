@@ -12,6 +12,7 @@ import {
   isRankingIndexable,
   MIN_INDEXABLE_RANKING_ENTRIES,
   RANKING_PAGES,
+  rankTrend,
   sanitizeRankingEntries,
 } from '@/lib/rankings';
 
@@ -256,5 +257,31 @@ describe('buildRankingItemListJsonLd', () => {
     expect(items[0].item.interactionStatistic?.userInteractionCount).toBe(10);
     expect(items[1].item.interactionStatistic?.userInteractionCount).toBe(7);
     expect(items[2].item.interactionStatistic).toBeUndefined();
+  });
+});
+
+describe('rankTrend', () => {
+  it('none while the API omits previous_rank (snapshot cold start)', () => {
+    expect(rankTrend(entry(5, { follower_count: 10 }))).toEqual({ kind: 'none' });
+  });
+
+  it('new when previous_rank is explicitly null', () => {
+    expect(rankTrend(entry(5, { follower_count: 10, previous_rank: null }))).toEqual({
+      kind: 'new',
+    });
+  });
+
+  it('up/down deltas from previous_rank vs rank', () => {
+    expect(rankTrend(entry(3, { follower_count: 10, previous_rank: 7 }))).toEqual({
+      kind: 'up',
+      delta: 4,
+    });
+    expect(rankTrend(entry(7, { follower_count: 10, previous_rank: 3 }))).toEqual({
+      kind: 'down',
+      delta: 4,
+    });
+    expect(rankTrend(entry(3, { follower_count: 10, previous_rank: 3 }))).toEqual({
+      kind: 'none',
+    });
   });
 });
