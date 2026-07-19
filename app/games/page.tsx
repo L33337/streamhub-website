@@ -31,6 +31,15 @@ export const metadata: Metadata = {
     siteName: 'Streamer Times',
     type: 'website',
   },
+  // Without a page-level twitter block, X cards fall back to the root
+  // layout's generic site title/image. Next auto-wires the colocated
+  // opengraph-image as twitter:image once this block exists.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Browse Games & Categories — Twitch & YouTube Streamers',
+    description:
+      'Find streamers by the game they play — live viewer counts, trending games and stream schedules across Twitch and YouTube.',
+  },
   robots: { index: true, follow: true },
 };
 

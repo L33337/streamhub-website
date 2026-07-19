@@ -173,6 +173,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: 'Streamer Times',
       type: 'website',
     },
+    // Without a page-level twitter block, X cards fall back to the root
+    // layout's generic site title/image. Next auto-wires the colocated
+    // opengraph-image as twitter:image once this block exists. Names only,
+    // no live numbers (churn rule above).
+    twitter: {
+      card: 'summary_large_image',
+      title: `${category} streamers — live now, rankings & schedule`,
+      description: `The most followed ${category} streamers${ogNames} live status and stream schedule on Twitch and YouTube.`,
+    },
   };
   // Site convention (lib/seo.ts, rankings pages): only set robots when gating
   // out; indexable pages inherit the root default.
