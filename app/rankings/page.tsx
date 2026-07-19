@@ -3,14 +3,20 @@ import Link from 'next/link';
 import { getPartnerApi, type PublicGame } from '@/lib/server/partner-api';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
 import { gameSlug } from '@/lib/game-slug';
-import { RANKING_PAGES, sanitizeRankingEntries } from '@/lib/rankings';
+import { formatRefreshedAt, RANKING_PAGES, sanitizeRankingEntries } from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
 
 export const revalidate = 3600;
 
 const SITE_URL = 'https://streamertimes.tv';
 const PREVIEW_LIMIT = 10;
-const GAME_LINK_LIMIT = 8;
+// Game-ranking chips: link every game whose ranking page is indexable
+// (streamer_count >= 10, the sitemap's proxy gate) up to the cap — the hub is
+// the main crawl path into /rankings/game/*. Falls back to the most popular
+// games while nothing clears the gate (cold start).
+const GAME_LINK_LIMIT = 24;
+const GAME_LINK_FALLBACK_LIMIT = 8;
+const GAME_RANKING_MIN_STREAMERS = 10;
 
 export const metadata: Metadata = {
   title: 'Streamer Rankings — Most Followed, Most Watched & Most Active',
@@ -47,11 +53,27 @@ export default async function RankingsHubPage() {
     return { spec, entries: sanitizeRankingEntries(spec, raw) };
   }).filter((s) => s.entries.length > 0);
 
+  // Latest aggregate refresh across the leaderboards — one visible freshness
+  // line for the whole hub (refreshed_at is null for table-backed metrics).
+  const refreshedLabel = formatRefreshedAt(
+    previewCalls
+      .map((c) => (c.status === 'fulfilled' ? c.value.refreshed_at : null))
+      .filter((v): v is string => v !== null)
+      .sort()
+      .at(-1) ?? null,
+  );
+
   const games: PublicGame[] = (await gamesPromise)?.data ?? [];
-  const gameLinks = games
-    .map((g) => ({ category: g.category, slug: gameSlug(g.category) }))
-    .filter((g) => g.slug.length > 0)
+  const allGameLinks = games
+    .map((g) => ({ category: g.category, slug: gameSlug(g.category), count: g.streamer_count }))
+    .filter((g) => g.slug.length > 0);
+  const indexableGameLinks = allGameLinks
+    .filter((g) => g.count >= GAME_RANKING_MIN_STREAMERS)
     .slice(0, GAME_LINK_LIMIT);
+  const gameLinks =
+    indexableGameLinks.length > 0
+      ? indexableGameLinks
+      : allGameLinks.slice(0, GAME_LINK_FALLBACK_LIMIT);
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: SITE_URL },
@@ -85,6 +107,9 @@ export default async function RankingsHubPage() {
         Who are the biggest, busiest and most dependable streamers on Twitch and
         YouTube? Four leaderboards over every streamer we track — updated daily
         from real broadcast data.
+        {refreshedLabel && (
+          <span className="text-text-muted"> Data refreshed {refreshedLabel}.</span>
+        )}
       </p>
 
       {sections.map(({ spec, entries }) => (

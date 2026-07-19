@@ -11,7 +11,20 @@ interface Props {
   /** Metric value columns (rendered right-aligned after the streamer cell). */
   columns: RankingColumn[];
   entries: PublicRankingEntry[];
+  /**
+   * When set, each row gets id="{prefix}-{rank}" so positions are deep-linkable
+   * (e.g. /rankings/most-followed#rank-42). Leave unset on pages that render
+   * several tables (the hub) — the ids would collide.
+   */
+  rowAnchorPrefix?: string;
 }
+
+// Medal accents for ranks 1-3 (gold/silver/bronze, tuned for the dark theme).
+const MEDAL_CLASSES: Record<number, string> = {
+  1: 'text-[#FFC94D]',
+  2: 'text-[#C7CEDD]',
+  3: 'text-[#C9885A]',
+};
 
 /**
  * Generic leaderboard table for the /rankings pages — same markup family as
@@ -20,7 +33,7 @@ interface Props {
  * lib/rankings.ts. Server component; deliberately no live badges (the pages
  * revalidate hourly, a live badge would be stale for up to an hour).
  */
-export function RankingTable({ caption, columns, entries }: Props) {
+export function RankingTable({ caption, columns, entries, rowAnchorPrefix }: Props) {
   return (
     <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
       <table className="w-full text-sm">
@@ -43,9 +56,17 @@ export function RankingTable({ caption, columns, entries }: Props) {
         <tbody>
           {entries.map((entry) => {
             const { streamer } = entry;
+            const medal = MEDAL_CLASSES[entry.rank];
             return (
-              <tr key={streamer.id} className="border-t border-divider">
-                <td className="px-3 py-2 font-bold tabular-nums text-text-muted">
+              <tr
+                key={streamer.id}
+                id={rowAnchorPrefix ? `${rowAnchorPrefix}-${entry.rank}` : undefined}
+                // scroll-mt clears the sticky site header when jumping to a row anchor
+                className="scroll-mt-20 border-t border-divider"
+              >
+                <td
+                  className={`px-3 py-2 font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
+                >
                   {entry.rank}
                 </td>
                 <th scope="row" className="px-3 py-2 text-left font-medium">

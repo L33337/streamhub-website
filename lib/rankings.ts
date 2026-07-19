@@ -64,6 +64,23 @@ function compact(value: number | null | undefined): string {
   return s === '' ? '—' : s;
 }
 
+/**
+ * "2026-07-18T04:15:00Z" → "Jul 18, 2026" for the visible freshness line.
+ * Fixed en-US locale + UTC (site copy is English; avoids server-locale
+ * drift across regenerations). null/invalid → null (line is omitted).
+ */
+export function formatRefreshedAt(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(d);
+}
+
 // ============================================
 // Page registry
 // ============================================
@@ -93,6 +110,13 @@ export interface RankingPageSpec {
   /** Value used for defensive sanitization — entries without a positive primary value are dropped. */
   primaryValue: (entry: PublicRankingEntry) => number | null | undefined;
   columns: RankingColumn[];
+  /**
+   * Visible Q&A block rendered under the leaderboard — targets informational
+   * long-tail queries ("how is X measured"). Plain content only, deliberately
+   * no FAQPage JSON-LD (Google restricted FAQ rich results to gov/health
+   * sites in 2023; the copy itself is the SEO value).
+   */
+  faq: Array<{ q: string; a: string }>;
 }
 
 function degradedTitle(base: string, topTitle: string, entryCount: number): string {
@@ -142,6 +166,20 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         format: (e) => compact(e.streamer.avg_view_count),
       },
     ],
+    faq: [
+      {
+        q: 'How is "most followed" measured?',
+        a: 'We rank by the follower count of a streamer’s primary channel — channel followers on Twitch or subscribers on YouTube. Counts are refreshed regularly from the platforms and can lag the number you see on Twitch or YouTube itself.',
+      },
+      {
+        q: 'Why is a well-known streamer missing?',
+        a: 'The ranking covers streamers tracked on Streamer Times. A streamer also drops out while we have no follower count for them — for example right after they were added, or when the platform hides the count.',
+      },
+      {
+        q: 'What does the average viewers column show?',
+        a: 'The median number of concurrent live viewers over the last 28 days, sampled hourly while the channel is live. A dash means we have not collected enough viewer samples for that channel yet.',
+      },
+    ],
   },
   {
     metric: 'most-watched',
@@ -178,6 +216,20 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         key: 'followers',
         header: 'Followers',
         format: (e) => compact(e.streamer.follower_count),
+      },
+    ],
+    faq: [
+      {
+        q: 'How are average viewers calculated?',
+        a: 'We sample each channel’s concurrent live viewers once per hour while it is live, on both Twitch and YouTube, and take the median over the last 28 days.',
+      },
+      {
+        q: 'Why the median instead of peak viewers?',
+        a: 'The median reflects a channel’s typical live audience. Peaks are dominated by one-off events — a single tournament or collab would outrank channels that draw a large audience every day.',
+      },
+      {
+        q: 'Why is a big streamer missing?',
+        a: 'A channel needs enough live time in the last 28 days for the sampling to be meaningful. Streamers who were on a break or streamed very little recently drop out until they are live again.',
       },
     ],
   },
@@ -219,6 +271,20 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         format: (e) => formatDurationMinutes(e.values.avg_stream_duration_minutes),
       },
     ],
+    faq: [
+      {
+        q: 'How are streamed hours counted?',
+        a: 'Total hours live over the last 28 days across Twitch and YouTube. Simultaneous broadcasts of the same stream on both platforms are counted once.',
+      },
+      {
+        q: 'Why are 24/7 channels excluded?',
+        a: 'Always-on rebroadcast channels are live around the clock and would fill the entire leaderboard. This ranking is about streamers who actually go live and end their streams.',
+      },
+      {
+        q: 'What does "Streams / week" mean?',
+        a: 'The average number of separate streams per week over the same 28-day window, alongside the typical length of one stream in the last column.',
+      },
+    ],
   },
   {
     metric: 'most-reliable',
@@ -257,6 +323,20 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         format: (e) => (e.values.time_sample != null ? String(e.values.time_sample) : '—'),
       },
     ],
+    faq: [
+      {
+        q: 'What counts as starting on time?',
+        a: 'A stream that goes live within ±30 minutes of the time announced in the streamer’s Twitch schedule. Streams that were already live at the announced start also count as on time.',
+      },
+      {
+        q: 'Which streams are evaluated?',
+        a: 'The last 20 announced Twitch schedule slots within the past 90 days. A streamer needs at least 10 evaluated slots to appear, so one lucky week can’t top the board.',
+      },
+      {
+        q: 'Why is this Twitch-only?',
+        a: 'Punctuality is measured against a published schedule, and Twitch is the only platform we track with formally announced schedule slots. YouTube-only streamers have no equivalent announcement to compare against.',
+      },
+    ],
   },
 ];
 
@@ -293,6 +373,11 @@ export function sanitizeRankingEntries(
  * Person-typed ItemList for a leaderboard page — richer than the game hub's
  * name/url-only ItemList, which also keeps the two page types' structured
  * data distinct.
+ *
+ * Each Person carries the same `{url}#person` @id the streamer pages emit
+ * (lib/seo.ts personJsonLdId), so Google can resolve a ranking entry and the
+ * streamer's ProfilePage Person as one entity, plus the follower count as an
+ * InteractionCounter (same FollowAction shape as buildPersonJsonLd).
  */
 export function buildRankingItemListJsonLd(
   name: string,
@@ -304,14 +389,31 @@ export function buildRankingItemListJsonLd(
     name,
     numberOfItems: entries.length,
     itemListOrder: 'https://schema.org/ItemListOrderDescending',
-    itemListElement: entries.map((e) => ({
-      '@type': 'ListItem',
-      position: e.rank,
-      item: {
+    itemListElement: entries.map((e) => {
+      const url = `${SITE_URL}/streamer/${encodeURIComponent(e.streamer.id)}`;
+      const item: Record<string, unknown> = {
         '@type': 'Person',
+        '@id': `${url}#person`,
         name: e.streamer.name,
-        url: `${SITE_URL}/streamer/${encodeURIComponent(e.streamer.id)}`,
-      },
-    })),
+        url,
+      };
+      const followers = e.values.follower_count ?? e.streamer.follower_count;
+      if (followers != null) {
+        item.interactionStatistic = {
+          '@type': 'InteractionCounter',
+          interactionType: { '@type': 'FollowAction' },
+          userInteractionCount: followers,
+        };
+      }
+      return { '@type': 'ListItem', position: e.rank, item };
+    }),
   };
+}
+
+/**
+ * True when any rendered cell of the leaderboard would show the "—"
+ * placeholder — drives the explanatory footnote under the table.
+ */
+export function hasMissingValues(spec: RankingPageSpec, entries: PublicRankingEntry[]): boolean {
+  return entries.some((e) => spec.columns.some((c) => c.format(e) === '—'));
 }

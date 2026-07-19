@@ -13,7 +13,9 @@ import {
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
 import {
   buildRankingItemListJsonLd,
+  formatRefreshedAt,
   getRankingPageSpec,
+  hasMissingValues,
   isRankingIndexable,
   rankingCanonicalUrl,
   sanitizeRankingEntries,
@@ -24,30 +26,35 @@ import { RankingTable } from '@/components/web/RankingTable';
 
 const SITE_URL = 'https://streamertimes.tv';
 
+interface LoadedRanking {
+  entries: PublicRankingEntry[];
+  /** ISO timestamp of the last nightly aggregate refresh; null for table-backed metrics or on failure. */
+  refreshedAt: string | null;
+}
+
 // Failure-isolated loader shared by generateMetadata + the page body (React
 // cache dedupes per request). Never throws — a thrown error during prerender
 // aborts the ENTIRE production build (see app/game/[slug]/page.tsx); a failed
 // fetch degrades to an empty, noindexed page that ISR self-heals within the
 // hour. Rankings move nightly, so the 1h data-cache revalidate is plenty.
-const loadRanking = cache(
-  async (metric: RankingMetric): Promise<PublicRankingEntry[]> => {
-    try {
-      const resp = await getPartnerApi().getRankings(metric, { limit: 100, revalidate: 3600 });
-      return resp.data;
-    } catch {
-      return [];
-    }
-  },
-);
+const loadRanking = cache(async (metric: RankingMetric): Promise<LoadedRanking> => {
+  try {
+    const resp = await getPartnerApi().getRankings(metric, { limit: 100, revalidate: 3600 });
+    return { entries: resp.data, refreshedAt: resp.refreshed_at };
+  } catch {
+    return { entries: [], refreshedAt: null };
+  }
+});
 
-async function loadEntries(spec: RankingPageSpec): Promise<PublicRankingEntry[]> {
-  return sanitizeRankingEntries(spec, await loadRanking(spec.metric));
+async function loadEntries(spec: RankingPageSpec): Promise<LoadedRanking> {
+  const { entries, refreshedAt } = await loadRanking(spec.metric);
+  return { entries: sanitizeRankingEntries(spec, entries), refreshedAt };
 }
 
 export async function buildLeaderboardMetadata(slug: string): Promise<Metadata> {
   const spec = getRankingPageSpec(slug);
   if (!spec) return { title: 'Streamer Rankings — StreamerTimes' };
-  const entries = await loadEntries(spec);
+  const { entries } = await loadEntries(spec);
   const url = rankingCanonicalUrl(spec.slug);
   const title = spec.buildTitle(entries.length);
   const description = spec.buildDescription(entries[0]);
@@ -69,8 +76,9 @@ export async function buildLeaderboardMetadata(slug: string): Promise<Metadata> 
 export async function LeaderboardPage({ slug }: { slug: string }) {
   const spec = getRankingPageSpec(slug);
   if (!spec) return null; // unreachable from the fixed wrappers
-  const entries = await loadEntries(spec);
+  const { entries, refreshedAt } = await loadEntries(spec);
   const siblings = RANKING_PAGES.filter((p) => p.slug !== spec.slug);
+  const refreshedLabel = formatRefreshedAt(refreshedAt);
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: SITE_URL },
@@ -100,18 +108,74 @@ export async function LeaderboardPage({ slug }: { slug: string }) {
       </p>
       <h1 className="mt-2 text-3xl font-bold text-white md:text-4xl">{spec.h1}</h1>
 
+      <nav aria-label="Ranking categories" className="mt-4 flex flex-wrap gap-2">
+        {RANKING_PAGES.map((p) =>
+          p.slug === spec.slug ? (
+            <span
+              key={p.slug}
+              aria-current="page"
+              className="inline-block rounded-full border border-accent-cyan/60 bg-background-elevated px-4 py-1.5 text-sm font-semibold text-accent-cyan"
+            >
+              {p.navLabel}
+            </span>
+          ) : (
+            <Link
+              key={p.slug}
+              href={`/rankings/${p.slug}`}
+              className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
+            >
+              {p.navLabel}
+            </Link>
+          ),
+        )}
+      </nav>
+
       {entries.length > 0 ? (
         <>
-          <p className="mt-3 max-w-2xl text-text-secondary">
+          <p className="mt-4 max-w-2xl text-text-secondary">
             {spec.buildIntro(entries.length, entries[0])}
           </p>
-          <p className="mt-2 max-w-2xl text-sm text-text-muted">{spec.methodologyNote}</p>
+          <p className="mt-2 max-w-2xl text-sm text-text-muted">
+            {spec.methodologyNote}
+            {refreshedLabel && (
+              <>
+                {' '}
+                Data refreshed <time dateTime={refreshedAt!}>{refreshedLabel}</time>.
+              </>
+            )}
+          </p>
           <div className="mt-6">
-            <RankingTable caption={spec.h1} columns={spec.columns} entries={entries} />
+            <RankingTable
+              caption={spec.h1}
+              columns={spec.columns}
+              entries={entries}
+              rowAnchorPrefix="rank"
+            />
           </div>
+          {hasMissingValues(spec, entries) && (
+            <p className="mt-2 text-xs text-text-muted">
+              — means we haven&apos;t collected enough data for that channel yet, for
+              example viewer sampling for recently added channels.
+            </p>
+          )}
+          {spec.faq.length > 0 && (
+            <section aria-labelledby="ranking-faq-heading" className="mt-12 max-w-2xl">
+              <h2 id="ranking-faq-heading" className="text-xl font-bold text-white">
+                About this ranking
+              </h2>
+              <dl className="mt-4 space-y-5">
+                {spec.faq.map(({ q, a }) => (
+                  <div key={q}>
+                    <dt className="font-semibold text-text-primary">{q}</dt>
+                    <dd className="mt-1 text-sm text-text-secondary">{a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
         </>
       ) : (
-        <p className="mt-3 max-w-2xl text-text-secondary">
+        <p className="mt-4 max-w-2xl text-text-secondary">
           This ranking is warming up — we need a bit more data before it&apos;s
           meaningful. Check back soon.
         </p>
