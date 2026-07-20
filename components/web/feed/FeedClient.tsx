@@ -25,6 +25,7 @@ import {
   deriveChipCategories,
 } from '@/lib/feed/logic';
 import { toPublicStreamSlot } from '@/lib/feed/transforms';
+import { pickReasoning } from '@/lib/slot-copy';
 import type {
   FeedData,
   HomeLiveEntry,
@@ -74,7 +75,17 @@ function UpNextMeta({
   reliability?: StreamerReliability;
 }) {
   const label = reliability ? buildReliabilityLabel(reliability) : null;
-  if (!slot.reasoning && !label) return null;
+  // M22 P3: the feed chrome is English — foreign-language reasoning copy
+  // swaps to the always-English generic summary when available.
+  const picked = pickReasoning(
+    {
+      reasoning: slot.reasoning,
+      generic_reasoning: slot.genericReasoning,
+      copy_language: slot.copyLanguage,
+    },
+    'en',
+  );
+  if (!picked && !label) return null;
 
   const tierClass =
     reliability?.timeTier === 'reliable'
@@ -85,8 +96,13 @@ function UpNextMeta({
 
   return (
     <div className="mt-1 flex items-start justify-between gap-3 px-1">
-      {slot.reasoning ? (
-        <p className="line-clamp-2 text-xs italic text-text-muted">{slot.reasoning}</p>
+      {picked ? (
+        <p
+          className="line-clamp-2 text-xs italic text-text-muted"
+          lang={picked.lang && picked.lang !== 'en' ? picked.lang : undefined}
+        >
+          {picked.text}
+        </p>
       ) : (
         <span />
       )}

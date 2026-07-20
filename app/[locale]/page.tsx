@@ -5,8 +5,9 @@ import { fetchTrendingRail } from '@/lib/server/trending';
 import { gameSlug } from '@/lib/game-slug';
 import { HomeHero } from '@/components/web/HomeHero';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
-import { applyLocaleSeo } from '@/lib/seo';
+import { applyLocaleSeo, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
 import { UpcomingGrid } from '@/components/web/UpcomingGrid';
 import { PopularStreamersFooter } from '@/components/web/PopularStreamersFooter';
 import { ApiPromo } from '@/components/web/ApiPromo';
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
     },
   };
-  return applyLocaleSeo(meta, locale, '/');
+  return applyLocaleSeo(meta, locale, '/', INDEXABLE_HUB_LOCALES);
 }
 
 function buildWebSiteJsonLd(): object {
@@ -70,6 +71,7 @@ function buildWebSiteJsonLd(): object {
 export default async function HomePage({ params }: Props) {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const L = hubLexFor(locale);
   const api = getPartnerApi();
   const now = new Date();
   const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -120,22 +122,26 @@ export default async function HomePage({ params }: Props) {
         }}
       />
 
-      <HomeHero />
+      <HomeHero locale={locale} />
 
-      <UpcomingGrid slots={upcomingSlots} />
+      <UpcomingGrid slots={upcomingSlots} locale={locale} />
 
       {/* Trending games — the homepage carries the most link equity, so these
           in-body /game/* and /games links matter more than the nav's. Rail
           degrades to null when trending is empty; cards render unlinked when
           the catalog call failed (never internal 404s). */}
-      <TrendingRail trending={trending} catalogSlugByName={catalogSlugByName} />
+      <TrendingRail
+        trending={trending}
+        catalogSlugByName={catalogSlugByName}
+        locale={locale}
+      />
       {trending.length > 0 && (
         <p className="mt-2 text-sm">
           <Link
             href={localeHref(locale, '/games')}
             className="text-accent-cyan hover:text-text-primary"
           >
-            Browse all games &amp; categories →
+            {L.home.browseAllGames}
           </Link>
         </p>
       )}
@@ -147,13 +153,13 @@ export default async function HomePage({ params }: Props) {
           href={localeHref(locale, '/live')}
           className="text-accent-cyan hover:text-text-primary"
         >
-          See everyone who&apos;s live right now →
+          {L.home.seeLiveNow}
         </Link>
       </p>
 
-      <PopularStreamersFooter streamers={popularStreamers} />
+      <PopularStreamersFooter streamers={popularStreamers} locale={locale} />
 
-      <ApiPromo />
+      <ApiPromo locale={locale} />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { Platform, PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
-import { langCode, dirFor } from '@/lib/seo';
+import { langCode, dirFor, pickDescription } from '@/lib/seo';
+import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
@@ -94,13 +95,22 @@ export function StreamerHero({ streamer, liveSlot, uiLanguage }: Props) {
             </p>
           )}
 
-          {streamer.description && (
-            <StreamerDescription
-              text={streamer.description}
-              lang={nativeLang}
-              dir={nativeDir}
-            />
-          )}
+          {(() => {
+            // M22 P3 (D4): bio follows the best content language for the
+            // viewer — original on the streamer's own-language variant,
+            // description_en everywhere else (original as last resort). The
+            // lang attribute marks the text only when it differs from the
+            // page's UI language.
+            const picked = pickDescription(streamer, resolveUiLang(ui));
+            if (!picked) return null;
+            return (
+              <StreamerDescription
+                text={picked.text}
+                lang={picked.lang !== langCode(ui) ? picked.lang : undefined}
+                dir={picked.dir}
+              />
+            );
+          })()}
         </div>
       </div>
     </header>

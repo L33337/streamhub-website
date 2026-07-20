@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
 import { localizedNextLabel, safeTimeZone, timezoneCityLabel } from '@/lib/format/time';
 import { uiLexFor } from '@/lib/i18n-ui';
-import { localeHref, type UiLang } from '@/lib/i18n-core';
+import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -11,27 +11,116 @@ export function streamerCanonicalUrl(slug: string): string {
 }
 
 /**
- * M22 P2 interim locale gate — until P3 ships hreflang clusters + the
- * indexability matrix, every NON-English locale variant is viewable but
- * `noindex,follow` with a SELF-canonical (its prefixed URL; a foreign
- * canonical next to noindex sends conflicting signals). English (unprefixed)
- * metadata passes through untouched. Call this LAST in a page's
- * generateMetadata: `return applyLocaleSeo(meta, locale, '/live')` where
+ * M22 P3 (D2): hub page classes indexable beyond English. Streamer pages have
+ * their own per-streamer pair (see streamerIndexableLocales); everything else
+ * defaults to English-only. Phase 4 widens this list to all 12 after GSC
+ * confirms the en+de pair indexes cleanly — a one-line change here, sitemap
+ * and metadata follow automatically.
+ */
+export const INDEXABLE_HUB_LOCALES: readonly UiLang[] = ['en', 'de'];
+
+/**
+ * Absolute URL of a locale variant. The English root collapses to the bare
+ * origin WITHOUT a trailing slash — byte-identical to the pre-M22 home
+ * canonical, so hreflang/canonical/x-default all agree on one English form.
+ */
+export function absoluteLocaleUrl(locale: UiLang, path: string): string {
+  const href = localeHref(locale, path);
+  return href === '/' ? SITE_URL : `${SITE_URL}${href}`;
+}
+
+/**
+ * Indexable locales for one streamer page: English plus the streamer's own
+ * broadcast language when it is one of the 12 UI locales (D2 — the two
+ * substantive variants: full lexicon + a real description in both).
+ */
+export function streamerIndexableLocales(language: string | null | undefined): UiLang[] {
+  const own = langCode(language);
+  return own !== 'en' && isUiLang(own) ? ['en', own] : ['en'];
+}
+
+/**
+ * hreflang cluster for one path: `{ en: ..., de: ..., 'x-default': ... }`,
+ * or undefined when fewer than two distinct locales are indexable (a
+ * single-language cluster is noise). x-default always points at the
+ * unprefixed English URL.
+ */
+export function buildAlternates(
+  path: string,
+  indexableLocales: readonly UiLang[],
+): Record<string, string> | undefined {
+  const langs = [...new Set(indexableLocales)];
+  if (langs.length < 2) return undefined;
+  const languages: Record<string, string> = {};
+  for (const l of langs) languages[l] = absoluteLocaleUrl(l, path);
+  languages['x-default'] = absoluteLocaleUrl('en', path);
+  return languages;
+}
+
+/** True when a Metadata.robots value explicitly gates the page out. */
+function isNoindex(robots: Metadata['robots']): boolean {
+  return typeof robots === 'object' && robots !== null && robots.index === false;
+}
+
+/**
+ * M22 P3 indexability matrix (D2). Call LAST in a page's generateMetadata:
+ * `return applyLocaleSeo(meta, locale, '/live', INDEXABLE_HUB_LOCALES)` where
  * `path` is the unprefixed route path.
  *
- * P3 replaces the body of this function with the real per-page-class
- * indexability matrix + `alternates.languages` — call sites stay unchanged.
+ * - The page's own gate wins first: if the incoming metadata already says
+ *   noindex (thin streamer page, deep pagination), EVERY locale variant stays
+ *   out — English passes through untouched, other locales get self-canonical
+ *   + noindex,follow and never an hreflang cluster.
+ * - Variants whose locale is in `indexableLocales` (default: English only)
+ *   are indexable: self-canonical, hreflang cluster of ALL indexable variants
+ *   + x-default (only when the cluster has ≥2 members), matching
+ *   og:locale:alternate.
+ * - Every other locale variant is viewable but noindex,follow with a
+ *   self-canonical (a foreign canonical next to noindex sends conflicting
+ *   signals) and is NOT listed in any cluster.
  */
-export function applyLocaleSeo(metadata: Metadata, locale: UiLang, path: string): Metadata {
-  if (locale === 'en') return metadata;
-  return {
+export function applyLocaleSeo(
+  metadata: Metadata,
+  locale: UiLang,
+  path: string,
+  indexableLocales: readonly UiLang[] = ['en'],
+): Metadata {
+  const indexableHere = !isNoindex(metadata.robots) && indexableLocales.includes(locale);
+
+  if (!indexableHere) {
+    if (locale === 'en') return metadata;
+    return {
+      ...metadata,
+      alternates: {
+        ...metadata.alternates,
+        canonical: absoluteLocaleUrl(locale, path),
+      },
+      robots: { index: false, follow: true },
+    };
+  }
+
+  const languages = buildAlternates(path, indexableLocales);
+  // Single-locale "cluster" (en-only page classes): nothing to add for the
+  // English variant — hard pass-through guarantees zero metadata drift.
+  if (!languages && locale === 'en') return metadata;
+  const result: Metadata = {
     ...metadata,
     alternates: {
       ...metadata.alternates,
-      canonical: `${SITE_URL}${localeHref(locale, path)}`,
+      canonical: absoluteLocaleUrl(locale, path),
+      ...(languages ? { languages } : {}),
     },
-    robots: { index: false, follow: true },
   };
+  if (languages && metadata.openGraph) {
+    const alternate = indexableLocales
+      .filter((l) => l !== locale)
+      .map((l) => LANGUAGE_TO_LOCALE[l])
+      .filter((v): v is string => !!v);
+    if (alternate.length > 0) {
+      result.openGraph = { ...metadata.openGraph, alternateLocale: alternate };
+    }
+  }
+  return result;
 }
 
 /**
@@ -96,6 +185,36 @@ const RTL_LANGS = new Set(['ar', 'he', 'fa', 'ur']);
 /** Text direction for a native-language text element: 'rtl' or undefined (LTR). */
 export function dirFor(language: string | null | undefined): 'rtl' | undefined {
   return RTL_LANGS.has(langCode(language)) ? 'rtl' : undefined;
+}
+
+export interface PickedDescription {
+  text: string;
+  /** ISO-639-1 language of `text` — drives the lang/dir attributes it renders with. */
+  lang: string;
+  dir?: 'rtl';
+}
+
+/**
+ * M22 P3 (D4): best available description for a viewer locale.
+ * - Viewer reads the streamer's own language → the original bio.
+ * - Any other viewer (including English) → `description_en ?? description`.
+ * `description_en` is NULL for English streamers and for bios the translator
+ * classified as already-English — in both cases the original IS the English
+ * text. Always render with the returned `lang`/`dir`, never the viewer's.
+ */
+export function pickDescription(
+  streamer: Pick<PublicStreamer, 'description' | 'description_en' | 'language'>,
+  viewerLocale: UiLang,
+): PickedDescription | null {
+  const own = streamer.description || null;
+  const en = streamer.description_en || null;
+  const ownLang = langCode(streamer.language);
+  if (own && viewerLocale === ownLang) {
+    return { text: own, lang: ownLang, dir: dirFor(ownLang) };
+  }
+  if (en) return { text: en, lang: 'en' };
+  if (own) return { text: own, lang: ownLang, dir: dirFor(ownLang) };
+  return null;
 }
 
 /**
@@ -613,7 +732,14 @@ function personJsonLdId(slug: string): string {
   return `${streamerCanonicalUrl(slug)}#person`;
 }
 
-export function buildPersonJsonLd(streamer: PublicStreamer, slug: string): object {
+export function buildPersonJsonLd(
+  streamer: PublicStreamer,
+  slug: string,
+  // M22 P3 (D4/S3.5): the Person description follows the same content-language
+  // pick as the visible bio — the English URL no longer carries a
+  // foreign-language Person.description. Omitted → 'en' (the indexable default).
+  viewerLocale: UiLang = 'en',
+): object {
   const canonicalUrl = streamerCanonicalUrl(slug);
   const ld: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -623,7 +749,8 @@ export function buildPersonJsonLd(streamer: PublicStreamer, slug: string): objec
     url: canonicalUrl,
   };
   if (streamer.avatar_url) ld.image = streamer.avatar_url;
-  if (streamer.description) ld.description = streamer.description;
+  const picked = pickDescription(streamer, viewerLocale);
+  if (picked) ld.description = picked.text;
   // schema.org: `inLanguage` is not valid on Person — use `knowsLanguage`
   // ("a known language for a person"). BCP-47 string is accepted.
   if (streamer.language) ld.knowsLanguage = streamer.language;
@@ -660,8 +787,12 @@ export function buildPersonJsonLd(streamer: PublicStreamer, slug: string): objec
  * graph per script) but KEEPS its `#person` @id, so the BroadcastEvent
  * scripts' broadcaster references still resolve to it across script blocks.
  */
-export function buildProfilePageJsonLd(streamer: PublicStreamer, slug: string): object {
-  const person = { ...(buildPersonJsonLd(streamer, slug) as Record<string, unknown>) };
+export function buildProfilePageJsonLd(
+  streamer: PublicStreamer,
+  slug: string,
+  viewerLocale: UiLang = 'en',
+): object {
+  const person = { ...(buildPersonJsonLd(streamer, slug, viewerLocale) as Record<string, unknown>) };
   delete person['@context'];
   return {
     '@context': 'https://schema.org',
@@ -705,8 +836,12 @@ export function buildBroadcastEventsJsonLd(
         endDate: end.toISOString(),
         broadcaster: broadcasterRef,
       };
-      // inLanguage IS valid on Event/BroadcastEvent. Helps non-English fans find the schedule.
-      if (streamer.language) event.inLanguage = streamer.language;
+      // inLanguage IS valid on Event/BroadcastEvent. M22 P3 (S3.5): the event's
+      // text is the slot copy, so its ACTUAL language (copy_language, persisted
+      // by the copywriter) wins over the streamer's broadcast language; slots
+      // predating M22 fall back to the old streamer-language guess.
+      const textLang = slot.copy_language ?? streamer.language;
+      if (textLang) event.inLanguage = textLang;
       // Use the AI's reasoning as the event description when available — meaningful
       // SEO copy that explains why this slot was predicted.
       if (slot.reasoning) event.description = slot.reasoning;

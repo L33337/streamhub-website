@@ -1,21 +1,34 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { WaitlistForm } from './components/WaitlistForm';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { applyLocaleSeo } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Partner API — Coming Soon | Streamer Times',
-  description:
-    'Public access to the Streamer Times Partner API is opening soon. Join the waitlist for early invites and launch updates.',
-  alternates: { canonical: '/developers' },
-  openGraph: {
-    title: 'Streamer Times Partner API — Coming Soon',
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const meta: Metadata = {
+    title: 'Partner API — Coming Soon | Streamer Times',
     description:
-      'Join the waitlist for early access to live streamer schedules and AI predictions.',
-    url: 'https://streamertimes.tv/developers',
-    type: 'website',
-  },
-  robots: { index: true, follow: true },
-};
+      'Public access to the Streamer Times Partner API is opening soon. Join the waitlist for early invites and launch updates.',
+    alternates: { canonical: '/developers' },
+    openGraph: {
+      title: 'Streamer Times Partner API — Coming Soon',
+      description:
+        'Join the waitlist for early access to live streamer schedules and AI predictions.',
+      url: 'https://streamertimes.tv/developers',
+      type: 'website',
+    },
+    robots: { index: true, follow: true },
+  };
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant.
+  return applyLocaleSeo(meta, locale, '/developers');
+}
 
 const SUPPORT_EMAIL = 'streamertimes@icloud.com';
 

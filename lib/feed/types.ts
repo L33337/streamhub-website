@@ -23,6 +23,10 @@ export interface StreamSlot {
   status: StreamStatus;
   confidence: FeedConfidenceLevel;
   reasoning?: string;
+  /** M22 P3: ISO-639-1 language of the reasoning copy (undefined pre-M22). */
+  copyLanguage?: string;
+  /** M22 P3: always-English template reasoning — fallback for foreign copy. */
+  genericReasoning?: string;
   isAiPrediction: boolean;
   visible: boolean;
   aiPredictionId?: string;
@@ -308,6 +312,8 @@ export interface StreamSlotRow {
   status: string;
   confidence: string;
   reasoning: string | null;
+  copy_language: string | null;
+  generic_reasoning: string | null;
   is_ai_prediction: boolean;
   visible: boolean;
   ai_prediction_id: string | null;

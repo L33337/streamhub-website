@@ -2,13 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { LEGAL_LAST_UPDATED, formatLegalDate } from "@/lib/legal-dates";
+import { isUiLang, type UiLang } from "@/lib/i18n-core";
+import { applyLocaleSeo } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Legal Notice (Impressum) - Streamer Times",
-  description:
-    "Streamer Times Legal Notice (Impressum). Information in accordance with § 5 TMG.",
-  alternates: { canonical: "/impressum" },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : "en";
+  const meta: Metadata = {
+    title: "Legal Notice (Impressum) - Streamer Times",
+    description:
+      "Streamer Times Legal Notice (Impressum). Information in accordance with § 5 TMG.",
+    alternates: { canonical: "/impressum" },
+  };
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant.
+  return applyLocaleSeo(meta, locale, "/impressum");
+}
 
 const sections = [
   {

@@ -4,7 +4,7 @@ import { loadGamesHub } from '@/lib/server/games-hub-data';
 import { GamesHubView } from '@/components/web/games/GamesHubView';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
-import { applyLocaleSeo } from '@/lib/seo';
+import { applyLocaleSeo, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
 
 // 10 min: the page carries live numbers (live streamers/viewers per game), so
 // an hourly window would show stale "live" counts.
@@ -51,9 +51,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
     },
   };
-  return applyLocaleSeo(result, locale, '/games');
+  return applyLocaleSeo(result, locale, '/games', INDEXABLE_HUB_LOCALES);
 }
 
-export default function GamesIndexPage() {
-  return <GamesHubView spec={SPEC} />;
+export default async function GamesIndexPage({ params }: Props) {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  return <GamesHubView spec={SPEC} locale={locale} />;
 }

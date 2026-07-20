@@ -1,0 +1,178 @@
+import { formatCompactNumber } from '@/lib/format/number';
+import type { HubLex } from './types';
+
+export const es: HubLex = {
+  crumbs: {
+    aria: 'Ruta de navegación',
+    home: 'Inicio',
+    liveNow: 'En directo ahora',
+    games: 'Juegos',
+    streamers: 'Streamers',
+    rankings: 'Rankings',
+    pageN: (n) => `Página ${n}`,
+  },
+  common: {
+    browseStreamersAZ: 'Todos los streamers de la A a la Z',
+    allGamesCategories: 'Todos los juegos y categorías',
+  },
+  home: {
+    browseAllGames: 'Explora todos los juegos y categorías →',
+    seeLiveNow: 'Mira quién está en directo ahora mismo →',
+  },
+  hero: {
+    kicker: 'Guía de streamers en directo',
+    badgeNew: 'Nuevo',
+    badgeLive: 'Ya disponible en iOS y Android',
+    titleLead: 'Horarios de streams en directo de ',
+    titleTail: '',
+    subtitle: 'La guía TV de los streamers.',
+    bodyLead:
+      'Un solo feed para Twitch y YouTube. Estado en directo en tiempo real, próximos streams predichos por IA y cero ruido. Gratis y sin cuenta:',
+    bodyLink: 'descarga la app',
+    bodyTail: 'para recibir alertas en directo.',
+    appStoreSub: 'Descargar en el',
+    playSub: 'DISPONIBLE EN',
+    phoneAlt: 'Una streamer mirando la programación de esta noche en su móvil',
+    phoneCaption: 'Mirando el lineup de esta noche',
+    statBothLabel: 'Dos plataformas, una sola guía',
+    statFavoritesValue: 'Tus favoritos',
+    statFavoritesLabel: 'Añade cualquier canal en segundos',
+    statApiValue: 'API pública',
+    statApiLabel: 'Muy pronto · únete a la lista de espera',
+  },
+  upcoming: {
+    heading: 'Próximamente',
+    aria: 'Próximos streams',
+    empty: 'No hay nada programado ahora mismo — vuelve pronto.',
+  },
+  trending: {
+    heading: 'Tendencias en Twitch',
+    subtitle:
+      'Los juegos más grandes de Twitch ahora mismo — nuestros streamers aún no cubren todos.',
+    aria: 'Juegos en tendencia en Twitch',
+    rankOnTwitch: (rank) => `#${rank} en Twitch`,
+  },
+  popular: {
+    heading: 'Streamers populares',
+    viewAll: 'Ver todos los streamers →',
+  },
+  apiPromo: {
+    heading: 'API para desarrolladores',
+    comingSoon: 'Muy pronto',
+    eyebrow: 'Para desarrolladores',
+    headlineLead: 'Construye con los mismos datos:',
+    headlineKey: 'muy pronto, en nuestra API.',
+    body: 'Estamos incorporando a los primeros socios piloto. Únete a la lista de espera y te escribiremos en cuanto se abra el acceso público — con un nivel gratuito para desarrolladores indie incluido.',
+    bullets: [
+      'Estado en directo y espectadores en tiempo real',
+      'Próximos streams predichos por IA con nivel de confianza',
+      'Webhooks para eventos de «se ha puesto en directo»',
+      'Especificación OpenAPI incluida',
+    ],
+    cta: 'Únete a la lista de espera',
+  },
+  live: {
+    h1: 'En directo ahora en Twitch y YouTube',
+    intro: (liveCount, categoryCount, soonCount, soonHours = 6) =>
+      `${liveCount} streamer${liveCount === 1 ? ' está' : 's están'} en directo ahora mismo` +
+      (categoryCount > 0
+        ? ` en ${categoryCount} juego${categoryCount === 1 ? '' : 's'} y categorías`
+        : '') +
+      '.' +
+      (soonCount > 0
+        ? ` ${soonCount} más ${soonCount === 1 ? 'tiene previsto empezar' : 'tienen previsto empezar'} en las próximas ${soonHours} horas.`
+        : ''),
+    introEmpty: 'Ahora mismo no hay nadie en directo — esto es lo que empieza pronto.',
+    error: 'El estado en directo no está disponible temporalmente. Inténtalo de nuevo en un momento.',
+    otherCategory: 'Otros',
+    categoryLiveAria: (name) => `${name} — en directo ahora`,
+    nLive: (n) => `${n} en directo`,
+    startingSoon: 'Empiezan pronto',
+    nextNHours: (n) => `próximas ${n} horas`,
+    emptyAll:
+      'Ahora mismo no hay nada en directo ni a punto de empezar. Explora el directorio completo de streamers o descubre juegos para encontrar tu próximo stream.',
+    itemListName: 'Streamers en directo ahora mismo en Twitch y YouTube',
+  },
+  streamers: {
+    h1: 'Todos los streamers de Twitch y YouTube de la A a la Z',
+    intro:
+      'Todos los streamers que seguimos en Streamer Times — mira quién está en directo y qué van a emitir después. Recorre la lista completa página a página.',
+    pageOf: (page, totalPages) => `Página ${page} de ${totalPages}.`,
+    error: 'Los streamers no están disponibles temporalmente. Inténtalo de nuevo en un momento.',
+    paginationAria: 'Paginación',
+    prev: '← Anterior',
+    next: 'Siguiente →',
+  },
+  games: {
+    liveRightNow: 'En directo ahora',
+    liveAria: 'Juegos con streams en directo',
+    error: 'Los juegos no están disponibles temporalmente. Inténtalo de nuevo en un momento.',
+    aboutHeading: 'Sobre estos juegos',
+    updatedAt: (stamp) => `Actualizado a las ${stamp}.`,
+    relatedAria: 'Páginas relacionadas',
+  },
+  gamesRoot: {
+    h1: 'Los juegos más populares de Twitch y YouTube',
+    methodologyNote:
+      'Ordenados por cuántos streamers seguimos en cada categoría durante los últimos 28 días.',
+    intro: (gameCount, liveStreamerCount, liveGameCount) => {
+      const lead = `Seguimos ${gameCount} juego${gameCount === 1 ? '' : 's'} y categorías en Twitch y YouTube.`;
+      const note =
+        'Ordenados por cuántos streamers seguimos en cada categoría durante los últimos 28 días.';
+      if (liveStreamerCount <= 0) return `${lead} ${note}`;
+      const streamers = `${formatCompactNumber(liveStreamerCount, 'es')} streamer${liveStreamerCount === 1 ? ' está' : 's están'} en directo ahora mismo`;
+      const across =
+        liveGameCount > 0
+          ? ` en ${liveGameCount} categoría${liveGameCount === 1 ? '' : 's'}`
+          : '';
+      return `${lead} ${streamers}${across}. ${note}`;
+    },
+    faqPopularQ: '¿Cuál es el juego más popular de Twitch y YouTube?',
+    faqPopularA: (top, second) =>
+      `${top.category} es el que más streamers reúne entre los que seguimos — ${top.count} canal${top.count === 1 ? ' lo emitió' : 'es lo emitieron'} en los últimos 28 días${second ? `, por delante de ${second.category} con ${second.count}` : ''}.`,
+    faqWhoQ: '¿Quién está haciendo streaming ahora mismo?',
+    faqWhoA: (liveStreamerCount, liveGameCount) =>
+      `${liveStreamerCount} streamer${liveStreamerCount === 1 ? ' está' : 's están'} en directo en ${liveGameCount} categoría${liveGameCount === 1 ? '' : 's'}. Abre cualquier categoría para ver los canales en directo y sus próximos streams.`,
+    faqRankedQ: '¿Cómo se clasifican estos juegos?',
+    faqRankedA: (gameCount) =>
+      `Ordenados por cuántos streamers seguimos en cada categoría durante los últimos 28 días. Las cifras salen de un agregado nocturno de emisiones terminadas sobre ${gameCount} juego${gameCount === 1 ? '' : 's'}; los datos en directo se actualizan cada pocos minutos.`,
+    faqHoursQ: '¿«Horas emitidas» significa tiempo de visionado?',
+    faqHoursA:
+      'No. Las horas emitidas miden cuánto tiempo estuvieron en directo los streamers en una categoría. No registramos el tiempo de visionado de los espectadores; los espectadores en directo de las tarjetas son una muestra puntual, no un total.',
+  },
+  rankings: {
+    h1: 'Rankings de streamers',
+    intro: (n) =>
+      `¿Quiénes son los streamers más grandes, los que más crecen, los más activos y los más constantes de Twitch y YouTube? ${n} clasificaciones sobre todos los streamers que seguimos — actualizadas a diario con datos reales de emisiones.`,
+    dataRefreshed: (label) => ` Datos actualizados el ${label}.`,
+    statStreamersTracked: 'streamers seguidos',
+    statLiveNow: 'en directo ahora',
+    statGamesCategories: 'juegos y categorías',
+    seeFullRanking: 'Ver el ranking completo →',
+    warmingUp: 'Las clasificaciones se están calentando — vuelve pronto.',
+    byGameHeading: 'Rankings por juego',
+    byGameSubtitle: 'Los streamers con más seguidores de cada juego y categoría.',
+    byGameAria: 'Rankings de juegos populares',
+    topGameStreamers: (category) => `Mejores streamers de ${category}`,
+    whoIsLive: '¿Quién está en directo ahora mismo?',
+    metricH1: {
+      'most-followed': 'Streamers con más seguidores',
+      'fastest-growing': 'Streamers que más crecen',
+      'most-watched': 'Streamers más vistos',
+      'most-active': 'Streamers más activos',
+      'most-reliable': 'Streamers más puntuales',
+    },
+    metricNote: {
+      'most-followed':
+        'Actualizado a diario. Los recuentos de seguidores y suscriptores se refrescan con regularidad y pueden ir por detrás de las cifras en vivo de las plataformas.',
+      'fastest-growing':
+        'Ganancia de seguidores del canal (Twitch) o suscriptores (YouTube) en los últimos 7 días, a partir de instantáneas diarias de cada canal seguido. Solo clasifican los canales con crecimiento positivo. Actualizado a diario.',
+      'most-watched':
+        'Mediana de espectadores simultáneos en directo durante los últimos 28 días (muestreo cada hora). Actualizado a diario.',
+      'most-active':
+        'Horas totales en directo en los últimos 28 días. Cada stream se cuenta una vez; los canales 24/7 siempre en emisión quedan excluidos. Actualizado a diario.',
+      'most-reliable':
+        'Porcentaje de streams anunciados en Twitch que realmente empezaron dentro de ±30 minutos, sobre los últimos 20 streams anunciados en 90 días (mínimo 10 evaluados). Actualizado a diario.',
+    },
+  },
+};

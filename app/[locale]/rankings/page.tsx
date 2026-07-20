@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getPartnerApi, type PublicGame } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd } from '@/lib/seo';
-import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
+import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { gameSlug } from '@/lib/game-slug';
 import { formatRefreshedAt, RANKING_PAGES, sanitizeRankingEntries } from '@/lib/rankings';
@@ -56,13 +57,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
     },
   };
-  return applyLocaleSeo(meta, locale, '/rankings');
+  return applyLocaleSeo(meta, locale, '/rankings', INDEXABLE_HUB_LOCALES);
 }
 
 export default async function RankingsHubPage({ params }: Props) {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  void locale; // body links localize in a P3 sweep; metadata is locale-aware above
+  const L = hubLexFor(locale);
   const api = getPartnerApi();
 
   // One preview call per leaderboard + the game list — all failure-isolated:
@@ -111,16 +112,19 @@ export default async function RankingsHubPage({ params }: Props) {
   if (totalStreamers != null && totalStreamers > 0) {
     stats.push({
       value: totalStreamers.toLocaleString('en-US'),
-      label: 'streamers tracked',
+      label: L.rankings.statStreamersTracked,
     });
   }
   if (liveIds.size > 0) {
-    stats.push({ value: liveIds.size.toLocaleString('en-US'), label: 'live right now' });
+    stats.push({
+      value: liveIds.size.toLocaleString('en-US'),
+      label: L.rankings.statLiveNow,
+    });
   }
   if (games.length > 0) {
     stats.push({
       value: gamesResp?.pagination.has_more ? `${games.length}+` : String(games.length),
-      label: 'games & categories',
+      label: L.rankings.statGamesCategories,
     });
   }
   const allGameLinks = games
@@ -135,8 +139,8 @@ export default async function RankingsHubPage({ params }: Props) {
       : allGameLinks.slice(0, GAME_LINK_FALLBACK_LIMIT);
 
   const breadcrumb = buildBreadcrumbJsonLd([
-    { name: 'Home', url: SITE_URL },
-    { name: 'Rankings' },
+    { name: L.crumbs.home, url: SITE_URL },
+    { name: L.crumbs.rankings },
   ]);
   const collectionPage = {
     '@context': 'https://schema.org',
@@ -161,13 +165,11 @@ export default async function RankingsHubPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPage) }}
       />
 
-      <h1 className="text-3xl font-bold text-white md:text-4xl">Streamer rankings</h1>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">{L.rankings.h1}</h1>
       <p className="mt-3 max-w-2xl text-text-secondary">
-        Who are the biggest, fastest growing, busiest and most dependable
-        streamers on Twitch and YouTube? {sections.length} leaderboards over
-        every streamer we track — updated daily from real broadcast data.
+        {L.rankings.intro(sections.length)}
         {refreshedLabel && (
-          <span className="text-text-muted"> Data refreshed {refreshedLabel}.</span>
+          <span className="text-text-muted">{L.rankings.dataRefreshed(refreshedLabel)}</span>
         )}
       </p>
 
@@ -188,19 +190,19 @@ export default async function RankingsHubPage({ params }: Props) {
         <section key={spec.slug} aria-labelledby={`${spec.slug}-heading`} className="mt-10">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id={`${spec.slug}-heading`} className="text-xl font-bold text-white">
-              {spec.h1}
+              {L.rankings.metricH1[spec.metric]}
             </h2>
             <Link
-              href={`/rankings/${spec.slug}`}
+              href={localeHref(locale, `/rankings/${spec.slug}`)}
               className="text-sm text-accent-cyan hover:text-text-primary"
             >
-              See the full ranking →
+              {L.rankings.seeFullRanking}
             </Link>
           </div>
-          <p className="mt-1 text-sm text-text-muted">{spec.methodologyNote}</p>
+          <p className="mt-1 text-sm text-text-muted">{L.rankings.metricNote[spec.metric]}</p>
           <div className="mt-4">
             <RankingTable
-              caption={spec.h1}
+              caption={L.rankings.metricH1[spec.metric]}
               columns={spec.columns}
               entries={entries}
               liveIds={liveIds}
@@ -210,46 +212,51 @@ export default async function RankingsHubPage({ params }: Props) {
       ))}
 
       {sections.length === 0 && (
-        <p className="mt-10 text-text-secondary">
-          The leaderboards are warming up — check back soon.
-        </p>
+        <p className="mt-10 text-text-secondary">{L.rankings.warmingUp}</p>
       )}
 
       <section aria-labelledby="by-game-heading" className="mt-12">
         <h2 id="by-game-heading" className="text-xl font-bold text-white">
-          Rankings by game
+          {L.rankings.byGameHeading}
         </h2>
-        <p className="mt-1 text-sm text-text-muted">
-          The most followed streamers for each game and category.
-        </p>
+        <p className="mt-1 text-sm text-text-muted">{L.rankings.byGameSubtitle}</p>
         {gameLinks.length > 0 && (
-          <ul className="mt-4 flex flex-wrap gap-2" aria-label="Popular game rankings">
+          <ul className="mt-4 flex flex-wrap gap-2" aria-label={L.rankings.byGameAria}>
             {gameLinks.map((g) => (
               <li key={g.slug}>
                 <Link
-                  href={`/rankings/game/${g.slug}`}
+                  href={localeHref(locale, `/rankings/game/${g.slug}`)}
                   className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
                 >
-                  Top {g.category} streamers
+                  {L.rankings.topGameStreamers(g.category)}
                 </Link>
               </li>
             ))}
           </ul>
         )}
         <p className="mt-4 text-sm">
-          <Link href="/games" className="text-accent-cyan hover:text-text-primary">
-            All games &amp; categories →
+          <Link
+            href={localeHref(locale, '/games')}
+            className="text-accent-cyan hover:text-text-primary"
+          >
+            {L.common.allGamesCategories} →
           </Link>
         </p>
       </section>
 
       <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">
-        <Link href="/live" className="text-accent-cyan hover:text-text-primary">
-          Who is live right now?
+        <Link
+          href={localeHref(locale, '/live')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {L.rankings.whoIsLive}
         </Link>
         {'  ·  '}
-        <Link href="/streamers" className="text-accent-cyan hover:text-text-primary">
-          Browse all streamers A–Z
+        <Link
+          href={localeHref(locale, '/streamers')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {L.common.browseStreamersAZ}
         </Link>
       </p>
     </main>

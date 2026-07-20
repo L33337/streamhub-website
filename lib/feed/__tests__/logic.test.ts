@@ -580,6 +580,8 @@ describe('transforms', () => {
       youtube_channel_id: null,
       streamer_timezone: null,
       reasoning: 'because',
+      copy_language: null,
+      generic_reasoning: undefined,
     });
   });
 });

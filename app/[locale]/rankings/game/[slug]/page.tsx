@@ -8,7 +8,8 @@ import {
   type PublicRankingEntry,
   type PublicStreamSlot,
 } from '@/lib/server/partner-api';
-import { buildBreadcrumbJsonLd, buildVideoGameJsonLd } from '@/lib/seo';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, buildVideoGameJsonLd } from '@/lib/seo';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { formatCompactNumber } from '@/lib/format/number';
@@ -50,7 +51,7 @@ const SITE_URL = 'https://streamertimes.tv';
 const RANK_FETCH_LIMIT = 500;
 
 interface Props {
-  params: Promise<{ slug: string; page?: string }>;
+  params: Promise<{ locale: string; slug: string; page?: string }>;
 }
 
 interface GameRankingData {
@@ -183,7 +184,8 @@ export async function generateStaticParams({
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, page: rawPage } = await params;
+  const { locale: rawLocale, slug, page: rawPage } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const page = parseGamePage(rawPage);
   if (page === null) {
     return { title: 'Not found — StreamerTimes', robots: { index: false, follow: false } };
@@ -239,7 +241,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (page > 1 || !isRankingIndexable(rows.length)) {
     meta.robots = { index: false, follow: true };
   }
-  return meta;
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant (incoming noindex sticks).
+  return applyLocaleSeo(
+    meta,
+    locale,
+    page === 1 ? `/rankings/game/${slug}` : `/rankings/game/${slug}/${page}`,
+  );
 }
 
 /**

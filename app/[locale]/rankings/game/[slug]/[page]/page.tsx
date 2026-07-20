@@ -14,7 +14,7 @@ import GameRankingPage, { generateMetadata as buildMeta } from '../page';
 export const revalidate = 300;
 
 interface Props {
-  params: Promise<{ slug: string; page: string }>;
+  params: Promise<{ locale: string; slug: string; page: string }>;
 }
 
 /**

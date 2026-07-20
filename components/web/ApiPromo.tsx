@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 
 /**
  * ApiPromo
@@ -7,7 +9,8 @@ import Link from 'next/link';
  * teaser — links to the /developers waitlist. Switch back to the full
  * "Get an API key / Read the docs" CTAs once the public API launches.
  */
-export function ApiPromo() {
+export function ApiPromo({ locale = 'en' }: { locale?: UiLang }) {
+  const L = hubLexFor(locale);
   return (
     <section className="api-promo-section" aria-labelledby="api-promo-heading">
       <div className="mb-5 flex items-end justify-between gap-4 border-b border-white/[0.06] pb-3.5">
@@ -15,10 +18,10 @@ export function ApiPromo() {
           id="api-promo-heading"
           className="text-2xl font-bold tracking-tight text-text-primary"
         >
-          Developer API
+          {L.apiPromo.heading}
         </h2>
         <span className="whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.14em] text-white/40">
-          Coming soon
+          {L.apiPromo.comingSoon}
         </span>
       </div>
 
@@ -27,38 +30,24 @@ export function ApiPromo() {
           <div className="api-promo-copy">
             <span className="api-eyebrow">
               <span className="api-eyebrow-tag">/&nbsp;DEV</span>
-              For developers
+              {L.apiPromo.eyebrow}
             </span>
             <h3 className="api-h2">
-              Build with the same data —{' '}
-              <span className="api-key">soon, on our API.</span>
+              {L.apiPromo.headlineLead}{' '}
+              <span className="api-key">{L.apiPromo.headlineKey}</span>
             </h3>
-            <p className="api-sub">
-              We&apos;re onboarding pilot partners now. Join the waitlist and
-              we&apos;ll email you the moment public access opens — including a
-              free tier for indie builders.
-            </p>
+            <p className="api-sub">{L.apiPromo.body}</p>
             <div className="api-feats">
-              <div className="api-feat">
-                <span className="af-bullet" />
-                Real-time live status &amp; viewer counts
-              </div>
-              <div className="api-feat">
-                <span className="af-bullet" />
-                AI-predicted upcoming slots with confidence
-              </div>
-              <div className="api-feat">
-                <span className="af-bullet" />
-                Webhooks for &ldquo;went live&rdquo; events
-              </div>
-              <div className="api-feat">
-                <span className="af-bullet" />
-                OpenAPI spec included
-              </div>
+              {L.apiPromo.bullets.map((bullet) => (
+                <div key={bullet} className="api-feat">
+                  <span className="af-bullet" />
+                  {bullet}
+                </div>
+              ))}
             </div>
             <div className="api-actions">
-              <Link href="/developers" className="api-cta-primary">
-                Join the waitlist
+              <Link href={localeHref(locale, '/developers')} className="api-cta-primary">
+                {L.apiPromo.cta}
                 <svg
                   viewBox="0 0 24 24"
                   width="14"

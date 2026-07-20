@@ -14,27 +14,40 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { AppQrCode } from "@/components/web/AppQrCode";
+import { isUiLang, type UiLang } from "@/lib/i18n-core";
+import { applyLocaleSeo } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Download Streamer Times — Go-Live Alerts & AI Stream Predictions",
-  description:
-    "Download Streamer Times free for iOS and Android. AI-powered live predictions, EPG grid view, and instant go-live alerts for your favorite Twitch and YouTube streamers.",
-  alternates: { canonical: "https://streamertimes.tv/app" },
-  openGraph: {
-    title: "Download Streamer Times — Go-Live Alerts & AI Predictions",
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : "en";
+  const meta: Metadata = {
+    title: "Download Streamer Times — Go-Live Alerts & AI Stream Predictions",
     description:
-      "AI-powered Twitch & YouTube stream predictions and go-live alerts. Free on iOS & Android.",
-    url: "https://streamertimes.tv/app",
-    siteName: "Streamer Times",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Download Streamer Times",
-    description:
-      "AI-powered Twitch & YouTube stream predictions. Free on iOS & Android.",
-  },
-};
+      "Download Streamer Times free for iOS and Android. AI-powered live predictions, EPG grid view, and instant go-live alerts for your favorite Twitch and YouTube streamers.",
+    alternates: { canonical: "https://streamertimes.tv/app" },
+    openGraph: {
+      title: "Download Streamer Times — Go-Live Alerts & AI Predictions",
+      description:
+        "AI-powered Twitch & YouTube stream predictions and go-live alerts. Free on iOS & Android.",
+      url: "https://streamertimes.tv/app",
+      siteName: "Streamer Times",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Download Streamer Times",
+      description:
+        "AI-powered Twitch & YouTube stream predictions. Free on iOS & Android.",
+    },
+  };
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant.
+  return applyLocaleSeo(meta, locale, "/app");
+}
 
 const FEATURES = [
   {

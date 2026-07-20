@@ -1,0 +1,225 @@
+import { formatCompactNumber } from '@/lib/format/number';
+import { pluralForms } from '@/lib/i18n-core';
+import type { HubLex } from './types';
+
+/** "3 streamerów nadaje" — counted streamers with correct Polish forms. */
+const nStreamers = (n: number): string =>
+  pluralForms('pl', n, {
+    one: `${n} streamer`,
+    few: `${n} streamerów`,
+    many: `${n} streamerów`,
+    other: `${n} streamera`,
+  });
+
+/** "w 3 kategoriach" — locative counted categories. */
+const inCategories = (n: number): string =>
+  pluralForms('pl', n, {
+    one: `w ${n} kategorii`,
+    other: `w ${n} kategoriach`,
+  });
+
+export const pl: HubLex = {
+  crumbs: {
+    aria: 'Ścieżka nawigacji',
+    home: 'Strona główna',
+    liveNow: 'Teraz na żywo',
+    games: 'Gry',
+    streamers: 'Streamerzy',
+    rankings: 'Rankingi',
+    pageN: (n) => `Strona ${n}`,
+  },
+  common: {
+    browseStreamersAZ: 'Wszyscy streamerzy od A do Z',
+    allGamesCategories: 'Wszystkie gry i kategorie',
+  },
+  home: {
+    browseAllGames: 'Przeglądaj wszystkie gry i kategorie →',
+    seeLiveNow: 'Zobacz, kto jest teraz na żywo →',
+  },
+  hero: {
+    kicker: 'Przewodnik po streamach na żywo',
+    badgeNew: 'Nowość',
+    badgeLive: 'Już dostępne na iOS i Androida',
+    titleLead: 'Rozkład streamów na żywo dla ',
+    titleTail: '',
+    subtitle: 'Program TV dla streamerów.',
+    bodyLead:
+      'Jeden feed dla Twitcha i YouTube. Status na żywo w czasie rzeczywistym, kolejne streamy przewidywane przez AI i zero szumu. Za darmo, bez konta —',
+    bodyLink: 'pobierz aplikację',
+    bodyTail: 'i otrzymuj powiadomienia o streamach.',
+    appStoreSub: 'Pobierz w',
+    playSub: 'POBIERZ Z',
+    phoneAlt: 'Streamerka przegląda dzisiejszy program na telefonie',
+    phoneCaption: 'Przegląd dzisiejszego programu',
+    statBothLabel: 'Dwie platformy, jeden przewodnik',
+    statFavoritesValue: 'Twoje ulubione',
+    statFavoritesLabel: 'Dodaj dowolny kanał w kilka sekund',
+    statApiValue: 'Publiczne API',
+    statApiLabel: 'Wkrótce · zapisz się na listę oczekujących',
+  },
+  upcoming: {
+    heading: 'Wkrótce w programie',
+    aria: 'Nadchodzące streamy',
+    empty: 'W tej chwili nic nie jest zaplanowane — wróć niedługo.',
+  },
+  trending: {
+    heading: 'Na topie na Twitchu',
+    subtitle:
+      'Największe gry na Twitchu w tej chwili — nasi streamerzy nie obejmują jeszcze wszystkich.',
+    aria: 'Popularne gry na Twitchu',
+    rankOnTwitch: (rank) => `#${rank} na Twitchu`,
+  },
+  popular: {
+    heading: 'Popularni streamerzy',
+    viewAll: 'Zobacz wszystkich streamerów →',
+  },
+  apiPromo: {
+    heading: 'API dla deweloperów',
+    comingSoon: 'Wkrótce',
+    eyebrow: 'Dla deweloperów',
+    headlineLead: 'Buduj na tych samych danych —',
+    headlineKey: 'wkrótce, przez nasze API.',
+    body: 'Właśnie wdrażamy pierwszych partnerów pilotażowych. Zapisz się na listę oczekujących, a napiszemy do Ciebie, gdy tylko otworzymy publiczny dostęp — z darmowym planem dla niezależnych twórców.',
+    bullets: [
+      'Status na żywo i liczba widzów w czasie rzeczywistym',
+      'Nadchodzące streamy przewidywane przez AI z poziomem pewności',
+      'Webhooki dla zdarzeń „wszedł na żywo”',
+      'Specyfikacja OpenAPI w zestawie',
+    ],
+    cta: 'Zapisz się na listę',
+  },
+  live: {
+    h1: 'Teraz na żywo na Twitchu i YouTube',
+    intro: (liveCount, categoryCount, soonCount, soonHours = 6) =>
+      `W tej chwili na żywo jest ${nStreamers(liveCount)}` +
+      (categoryCount > 0
+        ? ` ${pluralForms('pl', categoryCount, {
+            one: `w ${categoryCount} grze i kategorii`,
+            other: `w ${categoryCount} grach i kategoriach`,
+          })}`
+        : '') +
+      '.' +
+      (soonCount > 0
+        ? ` ${pluralForms('pl', soonCount, {
+            one: `Kolejny ${soonCount} ma zacząć`,
+            other: `Kolejnych ${soonCount} ma zacząć`,
+          })} w ciągu najbliższych ${soonHours} godzin.`
+        : ''),
+    introEmpty: 'W tej chwili nikt nie streamuje — oto kto zaczyna niedługo.',
+    error: 'Status na żywo jest chwilowo niedostępny. Spróbuj ponownie za chwilę.',
+    otherCategory: 'Inne',
+    categoryLiveAria: (name) => `${name} — teraz na żywo`,
+    nLive: (n) => `${n} na żywo`,
+    startingSoon: 'Zaczynają wkrótce',
+    nextNHours: (n) => `najbliższe ${n} godzin`,
+    emptyAll:
+      'W tej chwili nic nie jest na żywo i nic zaraz się nie zaczyna. Przejrzyj pełny katalog streamerów albo odkrywaj gry, by znaleźć swój następny stream.',
+    itemListName: 'Streamerzy nadający teraz na żywo na Twitchu i YouTube',
+  },
+  streamers: {
+    h1: 'Wszyscy streamerzy Twitcha i YouTube od A do Z',
+    intro:
+      'Wszyscy streamerzy śledzeni w Streamer Times — zobacz, kto jest na żywo i co będą streamować dalej. Przeglądaj pełną listę strona po stronie.',
+    pageOf: (page, totalPages) => `Strona ${page} z ${totalPages}.`,
+    error: 'Streamerzy są chwilowo niedostępni. Spróbuj ponownie za chwilę.',
+    paginationAria: 'Paginacja',
+    prev: '← Poprzednia',
+    next: 'Następna →',
+  },
+  games: {
+    liveRightNow: 'Teraz na żywo',
+    liveAria: 'Gry z aktywnymi streamami',
+    error: 'Gry są chwilowo niedostępne. Spróbuj ponownie za chwilę.',
+    aboutHeading: 'O tych grach',
+    updatedAt: (stamp) => `Zaktualizowano o ${stamp}.`,
+    relatedAria: 'Powiązane strony',
+  },
+  gamesRoot: {
+    h1: 'Najpopularniejsze gry na Twitchu i YouTube',
+    methodologyNote:
+      'Uporządkowane według liczby streamerów, których śledzimy w każdej kategorii przez ostatnie 28 dni.',
+    intro: (gameCount, liveStreamerCount, liveGameCount) => {
+      const lead = `Śledzimy ${pluralForms('pl', gameCount, {
+        one: `${gameCount} grę`,
+        few: `${gameCount} gry`,
+        many: `${gameCount} gier`,
+        other: `${gameCount} gry`,
+      })} i kategorie na Twitchu i YouTube.`;
+      const note =
+        'Uporządkowane według liczby streamerów, których śledzimy w każdej kategorii przez ostatnie 28 dni.';
+      if (liveStreamerCount <= 0) return `${lead} ${note}`;
+      const streamers = `W tej chwili na żywo jest ${formatCompactNumber(liveStreamerCount, 'pl')} ${pluralForms(
+        'pl',
+        liveStreamerCount,
+        {
+          one: 'streamer',
+          few: 'streamerów',
+          many: 'streamerów',
+          other: 'streamera',
+        },
+      )}`;
+      const across = liveGameCount > 0 ? ` ${inCategories(liveGameCount)}` : '';
+      return `${lead} ${streamers}${across}. ${note}`;
+    },
+    faqPopularQ: 'Jaka jest najpopularniejsza gra na Twitchu i YouTube?',
+    faqPopularA: (top, second) =>
+      `${top.category} ma najwięcej śledzonych przez nas streamerów — ${pluralForms('pl', top.count, {
+        one: `${top.count} kanał streamował ją`,
+        few: `${top.count} kanały streamowały ją`,
+        many: `${top.count} kanałów streamowało ją`,
+        other: `${top.count} kanału streamowało ją`,
+      })} w ciągu ostatnich 28 dni${second ? `, przed ${second.category} z wynikiem ${second.count}` : ''}.`,
+    faqWhoQ: 'Kto streamuje w tej chwili?',
+    faqWhoA: (liveStreamerCount, liveGameCount) =>
+      `Na żywo jest ${nStreamers(liveStreamerCount)} ${inCategories(liveGameCount)}. Otwórz dowolną kategorię, by zobaczyć kanały na żywo i ich nadchodzące streamy.`,
+    faqRankedQ: 'Jak te gry są klasyfikowane?',
+    faqRankedA: (gameCount) =>
+      `Uporządkowane według liczby streamerów, których śledzimy w każdej kategorii przez ostatnie 28 dni. Liczby pochodzą z nocnej agregacji zakończonych transmisji z ${pluralForms('pl', gameCount, {
+        one: `${gameCount} gry`,
+        other: `${gameCount} gier`,
+      })}; dane na żywo odświeżają się co kilka minut.`,
+    faqHoursQ: 'Czy „przestreamowane godziny” to czas oglądania?',
+    faqHoursA:
+      'Nie. Przestreamowane godziny mierzą, jak długo streamerzy byli na żywo w danej kategorii. Nie mierzymy czasu oglądania widzów; liczby widzów na kartach to bieżąca próbka, a nie suma.',
+  },
+  rankings: {
+    h1: 'Rankingi streamerów',
+    intro: (n) =>
+      `Kim są najwięksi, najszybciej rosnący, najbardziej pracowici i najbardziej niezawodni streamerzy na Twitchu i YouTube? ${n} ${pluralForms('pl', n, {
+        one: 'ranking',
+        few: 'rankingi',
+        many: 'rankingów',
+        other: 'rankingu',
+      })} obejmujące wszystkich śledzonych przez nas streamerów — aktualizowane codziennie na podstawie prawdziwych danych z transmisji.`,
+    dataRefreshed: (label) => ` Dane odświeżono ${label}.`,
+    statStreamersTracked: 'śledzonych streamerów',
+    statLiveNow: 'teraz na żywo',
+    statGamesCategories: 'gier i kategorii',
+    seeFullRanking: 'Zobacz pełny ranking →',
+    warmingUp: 'Rankingi dopiero się rozgrzewają — wróć niedługo.',
+    byGameHeading: 'Rankingi według gier',
+    byGameSubtitle: 'Streamerzy z największą liczbą obserwujących w każdej grze i kategorii.',
+    byGameAria: 'Rankingi popularnych gier',
+    topGameStreamers: (category) => `Najlepsi streamerzy ${category}`,
+    whoIsLive: 'Kto jest teraz na żywo?',
+    metricH1: {
+      'most-followed': 'Najczęściej obserwowani streamerzy',
+      'fastest-growing': 'Najszybciej rosnący streamerzy',
+      'most-watched': 'Najchętniej oglądani streamerzy',
+      'most-active': 'Najaktywniejsi streamerzy',
+      'most-reliable': 'Najpunktualniejsi streamerzy',
+    },
+    metricNote: {
+      'most-followed':
+        'Aktualizowane codziennie. Liczby obserwujących i subskrybentów są odświeżane regularnie i mogą być opóźnione względem liczb na platformach.',
+      'fastest-growing':
+        'Przyrost obserwujących kanał (Twitch) lub subskrybentów (YouTube) w ciągu ostatnich 7 dni, z codziennych migawek każdego śledzonego kanału. W rankingu są tylko kanały z dodatnim wzrostem. Aktualizowane codziennie.',
+      'most-watched':
+        'Mediana jednoczesnych widzów na żywo z ostatnich 28 dni (próbkowanie co godzinę). Aktualizowane codziennie.',
+      'most-active':
+        'Łączna liczba godzin na żywo w ciągu ostatnich 28 dni. Każdy stream liczy się raz; kanały nadające 24/7 są wykluczone. Aktualizowane codziennie.',
+      'most-reliable':
+        'Odsetek zapowiedzianych streamów na Twitchu, które faktycznie zaczęły się w granicach ±30 minut, z ostatnich 20 zapowiedzianych streamów w ciągu 90 dni (minimum 10 ocenionych). Aktualizowane codziennie.',
+    },
+  },
+};

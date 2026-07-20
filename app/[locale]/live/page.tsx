@@ -7,8 +7,9 @@ import {
   type PublicGame,
   type PublicStreamSlot,
 } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { gameSlug } from '@/lib/game-slug';
 import { groupLiveSlotsByCategory } from '@/lib/live-hub';
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     robots: { index: true, follow: true },
   };
-  return applyLocaleSeo(meta, locale, '/live');
+  return applyLocaleSeo(meta, locale, '/live', INDEXABLE_HUB_LOCALES);
 }
 
 /**
@@ -128,6 +129,7 @@ function LiveStreamerRow({ slot, locale }: { slot: PublicStreamSlot; locale: UiL
 export default async function LivePage({ params }: PageProps) {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const L = hubLexFor(locale);
   const api = getPartnerApi();
   const now = new Date();
   const soonCutoff = new Date(now.getTime() + STARTING_SOON_HOURS * 60 * 60 * 1000);
@@ -172,24 +174,17 @@ export default async function LivePage({ params }: PageProps) {
   const intro = failed
     ? ''
     : liveCount > 0
-      ? `${liveCount} streamer${liveCount === 1 ? ' is' : 's are'} live right now` +
-        (categoryCount > 0
-          ? ` across ${categoryCount} game${categoryCount === 1 ? '' : 's'} and categories`
-          : '') +
-        '.' +
-        (startingSoon.length > 0
-          ? ` ${startingSoon.length} more ${startingSoon.length === 1 ? 'is' : 'are'} scheduled to start in the next ${STARTING_SOON_HOURS} hours.`
-          : '')
-      : `No streamers are live right now — here's who's starting soon.`;
+      ? L.live.intro(liveCount, categoryCount, startingSoon.length, STARTING_SOON_HOURS)
+      : L.live.introEmpty;
 
   const breadcrumb = buildBreadcrumbJsonLd([
-    { name: 'Home', url: SITE_URL },
-    { name: 'Live now' },
+    { name: L.crumbs.home, url: SITE_URL },
+    { name: L.crumbs.liveNow },
   ]);
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Streamers live right now on Twitch & YouTube',
+    name: L.live.itemListName,
     itemListElement: groups
       .flatMap((g) => g.slots)
       .slice(0, 20)
@@ -214,26 +209,22 @@ export default async function LivePage({ params }: PageProps) {
         />
       )}
 
-      <h1 className="text-3xl font-bold text-white md:text-4xl">
-        Live now on Twitch &amp; YouTube
-      </h1>
+      <h1 className="text-3xl font-bold text-white md:text-4xl">{L.live.h1}</h1>
       {intro && <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>}
 
       {failed ? (
         <div className="mt-8 gradient-border p-8 text-center">
-          <p className="text-accent-pink">
-            Live status is temporarily unavailable. Please try again in a moment.
-          </p>
+          <p className="text-accent-pink">{L.live.error}</p>
         </div>
       ) : (
         <>
           {groups.map((group) => {
-            const name = group.category ?? 'Other';
+            const name = group.category ?? L.live.otherCategory;
             const slug = group.category ? gameSlug(group.category) : '';
             const linkable =
               group.category !== null && slug !== '' && linkableCategories.has(group.category);
             return (
-              <section key={name} aria-label={`${name} — live now`} className="mt-10">
+              <section key={name} aria-label={L.live.categoryLiveAria(name)} className="mt-10">
                 <h2 className="text-xl font-bold text-white">
                   {linkable ? (
                     <Link
@@ -246,7 +237,7 @@ export default async function LivePage({ params }: PageProps) {
                     name
                   )}
                   <span className="ml-2 text-sm font-normal text-text-muted">
-                    {group.slots.length} live
+                    {L.live.nLive(group.slots.length)}
                   </span>
                 </h2>
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -263,9 +254,9 @@ export default async function LivePage({ params }: PageProps) {
           {startingSoon.length > 0 && (
             <section aria-labelledby="starting-soon-heading" className="mt-12">
               <h2 id="starting-soon-heading" className="text-xl font-bold text-white">
-                Starting soon
+                {L.live.startingSoon}
                 <span className="ml-2 text-sm font-normal text-text-muted">
-                  next {STARTING_SOON_HOURS} hours
+                  {L.live.nextNHours(STARTING_SOON_HOURS)}
                 </span>
               </h2>
               <ul className="mt-3 grid gap-3 md:grid-cols-2">
@@ -280,10 +271,7 @@ export default async function LivePage({ params }: PageProps) {
 
           {liveCount === 0 && startingSoon.length === 0 && (
             <div className="mt-8 gradient-border p-8 text-center">
-              <p className="text-text-secondary">
-                Nothing is live or about to start right now. Browse the full
-                streamer directory or explore games to find your next stream.
-              </p>
+              <p className="text-text-secondary">{L.live.emptyAll}</p>
             </div>
           )}
         </>
@@ -294,14 +282,14 @@ export default async function LivePage({ params }: PageProps) {
           href={localeHref(locale, '/streamers')}
           className="text-accent-cyan hover:text-text-primary"
         >
-          Browse all streamers A–Z
+          {L.common.browseStreamersAZ}
         </Link>
         {'  ·  '}
         <Link
           href={localeHref(locale, '/games')}
           className="text-accent-cyan hover:text-text-primary"
         >
-          All games &amp; categories
+          {L.common.allGamesCategories}
         </Link>
       </p>
     </main>

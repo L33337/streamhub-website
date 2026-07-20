@@ -9,6 +9,7 @@ import {
 } from '@/components/web/SearchResultCard';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -119,6 +120,7 @@ export async function StreamersIndexView({
   const { entries, total, failed } = await loadStreamersPage(page);
   const totalPages = totalStreamerPages(total);
   const navHref = (n: number) => localeHref(locale, pageHref(n));
+  const L = hubLexFor(locale);
 
   // Out-of-range page N → 404 (but never on API failure: page 1 shows the error
   // card instead, and page 1 always renders its shell even for an empty roster).
@@ -136,11 +138,11 @@ export async function StreamersIndexView({
   const breadcrumb = buildBreadcrumbJsonLd(
     page > 1
       ? [
-          { name: 'Home', url: SITE_URL },
-          { name: 'Streamers', url: `${SITE_URL}/streamers` },
-          { name: `Page ${page}` },
+          { name: L.crumbs.home, url: SITE_URL },
+          { name: L.crumbs.streamers, url: `${SITE_URL}/streamers` },
+          { name: L.crumbs.pageN(page) },
         ]
-      : [{ name: 'Home', url: SITE_URL }, { name: 'Streamers' }],
+      : [{ name: L.crumbs.home, url: SITE_URL }, { name: L.crumbs.streamers }],
   );
 
   return (
@@ -150,27 +152,20 @@ export async function StreamersIndexView({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
       />
 
-      <h1 className="text-3xl font-bold text-white">
-        All Twitch &amp; YouTube streamers A–Z
-      </h1>
+      <h1 className="text-3xl font-bold text-white">{L.streamers.h1}</h1>
       <p className="mt-3 max-w-2xl text-text-secondary">
-        Every streamer tracked on Streamer Times — see who is live now and what
-        they stream next. Browse the full list page by page.
+        {L.streamers.intro}
         {totalPages > 1 && (
           <>
             {' '}
-            <span className="text-text-muted">
-              Page {page} of {totalPages}.
-            </span>
+            <span className="text-text-muted">{L.streamers.pageOf(page, totalPages)}</span>
           </>
         )}
       </p>
 
       {failed || entries.length === 0 ? (
         <div className="mt-8 gradient-border p-8 text-center">
-          <p className="text-accent-pink">
-            Streamers are temporarily unavailable. Please try again in a moment.
-          </p>
+          <p className="text-accent-pink">{L.streamers.error}</p>
         </div>
       ) : (
         <>
@@ -199,15 +194,15 @@ export async function StreamersIndexView({
 
           {totalPages > 1 && (
             <nav
-              aria-label="Pagination"
+              aria-label={L.streamers.paginationAria}
               className="mt-10 flex flex-wrap items-center justify-center gap-2"
             >
               {page > 1 ? (
                 <Link href={navHref(page - 1)} rel="prev" className={NAV_LINK}>
-                  ← Previous
+                  {L.streamers.prev}
                 </Link>
               ) : (
-                <span className={NAV_DISABLED}>← Previous</span>
+                <span className={NAV_DISABLED}>{L.streamers.prev}</span>
               )}
               {pageWindow(page, totalPages).map((n, i) =>
                 n === null ? (
@@ -226,10 +221,10 @@ export async function StreamersIndexView({
               )}
               {page < totalPages ? (
                 <Link href={navHref(page + 1)} rel="next" className={NAV_LINK}>
-                  Next →
+                  {L.streamers.next}
                 </Link>
               ) : (
-                <span className={NAV_DISABLED}>Next →</span>
+                <span className={NAV_DISABLED}>{L.streamers.next}</span>
               )}
             </nav>
           )}

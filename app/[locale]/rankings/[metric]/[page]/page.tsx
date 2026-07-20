@@ -14,13 +14,15 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { buildLeaderboardMetadata, LeaderboardPage } from '../../leaderboard';
 import { getRankingPageSpec } from '@/lib/rankings';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { applyLocaleSeo } from '@/lib/seo';
 
 // Matches the page-1 wrappers: LIVE badges need a fresh live set, while the
 // ranking fetch itself stays data-cached for an hour.
 export const revalidate = 300;
 
 interface Props {
-  params: Promise<{ metric: string; page: string }>;
+  params: Promise<{ locale: string; metric: string; page: string }>;
 }
 
 /**
@@ -44,12 +46,19 @@ function parsePage(raw: string): number | null {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { metric, page } = await params;
+  const { locale: rawLocale, metric, page } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const n = parsePage(page);
   if (!n || n < 2 || !getRankingPageSpec(metric)) {
     return { title: 'Not found — StreamerTimes', robots: { index: false, follow: false } };
   }
-  return buildLeaderboardMetadata(metric, n);
+  // M22 P3: en-only indexability matrix — pass-through for 'en' (pages >= 2
+  // keep their own noindex,follow), noindex,follow + self-canonical elsewhere.
+  return applyLocaleSeo(
+    await buildLeaderboardMetadata(metric, n),
+    locale,
+    `/rankings/${metric}/${n}`,
+  );
 }
 
 export default async function RankingDeepPage({ params }: Props) {

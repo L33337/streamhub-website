@@ -17,6 +17,7 @@ import {
   buildLiveVideoObjectJsonLd,
   buildProfilePageJsonLd,
   buildStreamerMetadata,
+  streamerIndexableLocales,
 } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
@@ -176,7 +177,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     nextSlot,
     viewerLocale: locale,
   });
-  return applyLocaleSeo(meta, locale, `/streamer/${encodeURIComponent(slug)}`);
+  // M22 P3 (D2): each streamer page indexes as an en + own-language hreflang
+  // pair (en-only for English/unknown-language streamers); the thin-page gate
+  // inside buildStreamerMetadata still wins for every variant.
+  return applyLocaleSeo(
+    meta,
+    locale,
+    `/streamer/${encodeURIComponent(slug)}`,
+    streamerIndexableLocales(streamer.language),
+  );
 }
 
 export default async function StreamerPage({ params }: Props) {
@@ -284,7 +293,7 @@ export default async function StreamerPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildProfilePageJsonLd(streamer, slug)),
+          __html: JSON.stringify(buildProfilePageJsonLd(streamer, slug, locale)),
         }}
       />
       {liveVideoJsonLd && (

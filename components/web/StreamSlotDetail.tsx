@@ -11,6 +11,8 @@ import { InitialsAvatar } from './InitialsAvatar';
 import { LocalTime } from './LocalTime';
 import { WatchButtons } from './WatchButtons';
 import { slotLexFor } from '@/lib/i18n-slot';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { pickReasoning } from '@/lib/slot-copy';
 
 function formatDuration(minutes: number): string | null {
   if (minutes <= 0) return null;
@@ -95,9 +97,7 @@ export function StreamSlotDetail({
         {!isLive && <ConfidenceBadge level={slot.confidence} />}
       </div>
 
-      {!isLive && slot.reasoning && (
-        <ReasoningBox reasoning={slot.reasoning} language={language} />
-      )}
+      {!isLive && <ReasoningBox slot={slot} language={language} />}
 
       <WatchButtons
         twitchLogin={slot.twitch_login}
@@ -193,7 +193,20 @@ function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; classNa
   );
 }
 
-function ReasoningBox({ reasoning, language }: { reasoning: string; language: string }) {
+function ReasoningBox({
+  slot,
+  language,
+}: {
+  slot: PublicStreamSlot;
+  language: string;
+}) {
+  // M22 P3 (S3.6): reasoning in a third language falls back to the labelled
+  // always-English generic summary instead of showing e.g. Japanese text
+  // under German chrome.
+  const picked = pickReasoning(slot, language);
+  if (!picked) return null;
+  const textLang =
+    picked.lang && picked.lang !== resolveUiLang(language) ? picked.lang : undefined;
   return (
     <section
       aria-labelledby="reasoning-heading"
@@ -205,8 +218,13 @@ function ReasoningBox({ reasoning, language }: { reasoning: string; language: st
       >
         {slotLexFor(language).whyThisPrediction}
       </h3>
-      <div className="space-y-3 text-sm leading-relaxed text-text-secondary">
-        {reasoning
+      {picked.isGeneric && (
+        <p className="mb-2 text-xs text-text-muted">
+          {slotLexFor(language).autoSummary}
+        </p>
+      )}
+      <div className="space-y-3 text-sm leading-relaxed text-text-secondary" lang={textLang}>
+        {picked.text
           .split(/\n\s*\n/)
           .map((para) => para.trim())
           .filter(Boolean)

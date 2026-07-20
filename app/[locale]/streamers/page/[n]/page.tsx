@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { StreamersIndexView, pageCanonical } from '@/components/web/StreamersIndexView';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
-import { applyLocaleSeo } from '@/lib/seo';
+import { applyLocaleSeo, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
 
 export const revalidate = 300;
 
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: pageCanonical(page) },
     robots: { index: true, follow: true },
   };
-  return applyLocaleSeo(meta, locale, `/streamers/page/${page}`);
+  return applyLocaleSeo(meta, locale, `/streamers/page/${page}`, INDEXABLE_HUB_LOCALES);
 }
 
 export default async function StreamersPaginatedPage({ params }: Props) {

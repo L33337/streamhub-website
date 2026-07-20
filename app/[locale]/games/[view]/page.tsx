@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { gamesHubSegments, gamesHubUrl, gamesHubViewBySegment } from '@/lib/games-hub';
+import { gamesHubPath, gamesHubSegments, gamesHubUrl, gamesHubViewBySegment } from '@/lib/games-hub';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { applyLocaleSeo } from '@/lib/seo';
 import { loadGamesHub } from '@/lib/server/games-hub-data';
 import { GamesHubView } from '@/components/web/games/GamesHubView';
 
@@ -21,10 +23,11 @@ export function generateStaticParams(): { view: string }[] {
   return gamesHubSegments().map((view) => ({ view }));
 }
 
-type Props = { params: Promise<{ view: string }> };
+type Props = { params: Promise<{ locale: string; view: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { view } = await params;
+  const { locale: rawLocale, view } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const spec = gamesHubViewBySegment(view);
   if (!spec) return { title: 'Not found — StreamerTimes' };
 
@@ -32,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = spec.buildTitle(meta);
   const description = spec.buildDescription(meta);
   const url = gamesHubUrl(spec);
-  return {
+  const pageMeta: Metadata = {
     title,
     description,
     // Self-canonical: these are distinct pages with distinct orderings and
@@ -42,6 +45,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: { title: spec.h1, description, url, siteName: 'Streamer Times', type: 'website' },
     twitter: { card: 'summary_large_image', title: spec.h1, description },
   };
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant.
+  return applyLocaleSeo(pageMeta, locale, gamesHubPath(spec));
 }
 
 export default async function GamesHubSubView({ params }: Props) {

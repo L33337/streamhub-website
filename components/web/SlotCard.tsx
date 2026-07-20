@@ -4,6 +4,7 @@ import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
 import { slotLexFor } from '@/lib/i18n-slot';
 import { localeHref, resolveUiLang } from '@/lib/i18n-core';
+import { pickReasoning } from '@/lib/slot-copy';
 import {
   AlwaysOnBadge,
   ConfidenceBadge,
@@ -107,12 +108,28 @@ export function SlotCard({
               <p className="truncate text-xs text-text-muted">{slot.category}</p>
             ) : null}
             {/* AI prediction reasoning — full sentence in the HTML (crawlable,
-                unique copy per slot), clamped to two lines visually. */}
-            {!isLive && slot.is_predicted && slot.reasoning?.trim() ? (
-              <p className="mt-1 text-xs text-text-muted line-clamp-2">
-                {slot.reasoning}
-              </p>
-            ) : null}
+                unique copy per slot), clamped to two lines visually. M22 P3:
+                copy in a third language falls back to the labelled English
+                generic summary (pickReasoning). */}
+            {(() => {
+              const picked =
+                !isLive && slot.is_predicted ? pickReasoning(slot, language) : null;
+              if (!picked) return null;
+              const textLang =
+                picked.lang && picked.lang !== resolveUiLang(language)
+                  ? picked.lang
+                  : undefined;
+              return (
+                <p className="mt-1 text-xs text-text-muted line-clamp-2" lang={textLang}>
+                  {picked.isGeneric ? (
+                    <span className="text-text-muted/70">
+                      {slotLexFor(language).autoSummary}:{' '}
+                    </span>
+                  ) : null}
+                  {picked.text}
+                </p>
+              );
+            })()}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">

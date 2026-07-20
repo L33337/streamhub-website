@@ -9,7 +9,8 @@ import {
   type PublicStreamSlot,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
-import { buildBreadcrumbJsonLd, buildVideoGameJsonLd } from '@/lib/seo';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, buildVideoGameJsonLd } from '@/lib/seo';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
@@ -43,7 +44,7 @@ const RANK_DISPLAY_LIMIT = 5;
 const LIVE_DISPLAY_LIMIT = 4;
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }
 
 interface GamePageData {
@@ -164,7 +165,8 @@ export async function generateStaticParams({
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale: rawLocale, slug } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const { category, game, liveSlots, upcomingSlots, rankedStreamers } =
     await loadGamePage(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
@@ -222,7 +224,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ) {
     meta.robots = { index: false, follow: true };
   }
-  return meta;
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant.
+  return applyLocaleSeo(meta, locale, `/game/${slug}`);
 }
 
 interface GameStreamer {

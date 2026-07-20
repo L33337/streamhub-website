@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Mail, MessageCircle, Shield } from "lucide-react";
+import { isUiLang, type UiLang } from "@/lib/i18n-core";
+import { applyLocaleSeo } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Support - Streamer Times",
-  description: "Get help with Streamer Times. Contact us for support, bug reports, or feedback.",
-  alternates: { canonical: "/support" },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : "en";
+  const meta: Metadata = {
+    title: "Support - Streamer Times",
+    description: "Get help with Streamer Times. Contact us for support, bug reports, or feedback.",
+    alternates: { canonical: "/support" },
+  };
+  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
+  // + self-canonical for every other locale variant.
+  return applyLocaleSeo(meta, locale, "/support");
+}
 
 export default function Support() {
   return (

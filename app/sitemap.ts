@@ -1,7 +1,14 @@
 import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
-import { isIndexableStreamerSlug, latestChange } from '@/lib/seo';
+import {
+  absoluteLocaleUrl,
+  buildAlternates,
+  INDEXABLE_HUB_LOCALES,
+  isIndexableStreamerSlug,
+  latestChange,
+  streamerIndexableLocales,
+} from '@/lib/seo';
 import { MIN_INDEXABLE_GAME_STREAMERS } from '@/lib/rankings';
 import { gamesHubSegments } from '@/lib/games-hub';
 import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
@@ -17,39 +24,53 @@ const PAGE_LIMIT = 500;
 // of a per-render "now". Falls back to runtime only in dev where it's unset.
 const BUILD_TIME = new Date(process.env.BUILD_TIME ?? Date.now());
 
+/**
+ * M22 P3 (S3.4): one sitemap entry per indexable locale variant of a hub,
+ * each carrying the full hreflang cluster (Google reads alternates from any
+ * member; listing every indexable URL keeps discovery symmetric). Non-hub
+ * static URLs stay English-only entries without alternates.
+ */
+function hubEntries(
+  path: string,
+  base: Omit<MetadataRoute.Sitemap[number], 'url' | 'alternates'>,
+): MetadataRoute.Sitemap {
+  const languages = buildAlternates(path, INDEXABLE_HUB_LOCALES);
+  return INDEXABLE_HUB_LOCALES.map((l) => ({
+    url: absoluteLocaleUrl(l, path),
+    ...base,
+    ...(languages ? { alternates: { languages } } : {}),
+  }));
+}
+
 const STATIC_URLS: MetadataRoute.Sitemap = [
-  {
-    url: SITE_URL,
+  ...hubEntries('/', {
     lastModified: BUILD_TIME,
     changeFrequency: 'hourly',
     priority: 1.0,
-  },
+  }),
   {
     url: `${SITE_URL}/app`,
     lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
     priority: 0.5,
   },
-  {
-    url: `${SITE_URL}/live`,
+  ...hubEntries('/live', {
     // Honest per-render "now": the live hub's content genuinely changes every
     // regeneration (same treatment as /games below).
     lastModified: new Date(),
     changeFrequency: 'hourly',
     priority: 0.8,
-  },
-  {
-    url: `${SITE_URL}/streamers`,
+  }),
+  ...hubEntries('/streamers', {
     lastModified: BUILD_TIME,
     changeFrequency: 'daily',
     priority: 0.6,
-  },
-  {
-    url: `${SITE_URL}/games`,
+  }),
+  ...hubEntries('/games', {
     lastModified: new Date(),
     changeFrequency: 'daily',
     priority: 0.6,
-  },
+  }),
   // Sorted hub views. Separate URLs with their own titles, copy and orderings
   // (not duplicates of /games — each is self-canonical), so they belong in the
   // sitemap. Generated from the same registry that defines the routes, so a
@@ -60,14 +81,13 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     changeFrequency: 'daily' as const,
     priority: 0.5,
   })),
-  {
-    url: `${SITE_URL}/rankings`,
+  ...hubEntries('/rankings', {
     // Honest per-render "now": the leaderboards move with each nightly refresh
     // (same treatment as /games).
     lastModified: new Date(),
     changeFrequency: 'daily',
     priority: 0.7,
-  },
+  }),
   {
     url: `${SITE_URL}/rankings/most-followed`,
     lastModified: new Date(),
@@ -161,16 +181,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (!isIndexableStreamerSlug(s.id)) continue;
         if (s.last_status_change_at === null && !s.is_featured) continue;
 
-        streamerUrls.push({
-          url: `${SITE_URL}/streamer/${encodeURIComponent(s.id)}`,
-          // Honest <lastmod>: updated_at only moves on metadata writes (avatar,
-          // discovery), so it misses live↔offline flips that change the page's
-          // title/description. last_status_change_at captures those. Take the
-          // later of the two so Google sees a real "changed" signal.
-          lastModified: latestChange(s.updated_at, s.last_status_change_at),
-          changeFrequency: 'daily',
-          priority: 0.7,
-        });
+        // M22 P3 (S3.4): non-English streamers index as an en + own-language
+        // pair — emit BOTH URLs, each carrying the pair's hreflang cluster.
+        // English/unknown-language streamers stay single unprefixed entries.
+        const path = `/streamer/${encodeURIComponent(s.id)}`;
+        const locales = streamerIndexableLocales(s.language);
+        const languages = buildAlternates(path, locales);
+        for (const l of locales) {
+          streamerUrls.push({
+            url: absoluteLocaleUrl(l, path),
+            // Honest <lastmod>: updated_at only moves on metadata writes (avatar,
+            // discovery), so it misses live↔offline flips that change the page's
+            // title/description. last_status_change_at captures those. Take the
+            // later of the two so Google sees a real "changed" signal.
+            lastModified: latestChange(s.updated_at, s.last_status_change_at),
+            changeFrequency: 'daily',
+            priority: l === 'en' ? 0.7 : 0.6,
+            ...(languages ? { alternates: { languages } } : {}),
+          });
+        }
       }
 
       cursor = resp.pagination.next_cursor ?? undefined;

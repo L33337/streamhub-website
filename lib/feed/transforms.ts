@@ -53,6 +53,11 @@ export function transformStreamSlot(row: StreamSlotRow): StreamSlot {
     status: row.status as StreamStatus,
     confidence: row.confidence as FeedConfidenceLevel,
     reasoning: row.reasoning ?? undefined,
+    // M22 P3: language of the reasoning copy + always-English template
+    // fallback — the teaser swaps to the generic when the copy language is
+    // neither the viewer's nor English (see lib/slot-copy.ts).
+    copyLanguage: row.copy_language ?? undefined,
+    genericReasoning: row.generic_reasoning ?? undefined,
     isAiPrediction: row.is_ai_prediction,
     visible: row.visible,
     aiPredictionId: row.ai_prediction_id ?? undefined,
@@ -194,5 +199,7 @@ export function toPublicStreamSlot(slot: StreamSlot): PublicStreamSlot {
     youtube_channel_id: null,
     streamer_timezone: null,
     reasoning: slot.reasoning,
+    copy_language: slot.copyLanguage ?? null,
+    generic_reasoning: slot.genericReasoning,
   };
 }

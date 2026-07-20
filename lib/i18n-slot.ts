@@ -58,6 +58,8 @@ export interface SlotLex {
   opensInNewTab: string;
   /** M22: heading of the prediction-reasoning box in StreamSlotDetail. */
   whyThisPrediction: string;
+  /** M22 P3: label shown when the always-English generic_reasoning replaces foreign-language copy. */
+  autoSummary: string;
 }
 
 const SLOT_STRINGS: Record<UiLang, SlotLex> = {
@@ -87,6 +89,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Watch on YouTube',
     opensInNewTab: ' (opens in new tab)',
     whyThisPrediction: 'Why this prediction?',
+    autoSummary: 'Auto summary',
   },
   de: {
     statusLiveSince: (d) => `Live seit ${d}`,
@@ -118,6 +121,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Auf YouTube ansehen',
     opensInNewTab: ' (öffnet in neuem Tab)',
     whyThisPrediction: 'Warum diese Vorhersage?',
+    autoSummary: 'Automatische Kurzfassung (englisch)',
   },
   es: {
     statusLiveSince: (d) => `En directo desde hace ${d}`,
@@ -148,6 +152,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Ver en YouTube',
     opensInNewTab: ' (se abre en una pestaña nueva)',
     whyThisPrediction: '¿Por qué esta predicción?',
+    autoSummary: 'Resumen automático (en inglés)',
   },
   fr: {
     statusLiveSince: (d) => `En live depuis ${d}`,
@@ -178,6 +183,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Regarder sur YouTube',
     opensInNewTab: ` (s'ouvre dans un nouvel onglet)`,
     whyThisPrediction: 'Pourquoi cette prédiction ?',
+    autoSummary: 'Résumé automatique (en anglais)',
   },
   pt: {
     statusLiveSince: (d) => `Ao vivo há ${d}`,
@@ -207,6 +213,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Assistir no YouTube',
     opensInNewTab: ' (abre em nova aba)',
     whyThisPrediction: 'Por que esta previsão?',
+    autoSummary: 'Resumo automático (em inglês)',
   },
   it: {
     statusLiveSince: (d) => `In diretta da ${d}`,
@@ -238,6 +245,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Guarda su YouTube',
     opensInNewTab: ' (si apre in una nuova scheda)',
     whyThisPrediction: 'Perché questa previsione?',
+    autoSummary: 'Riepilogo automatico (in inglese)',
   },
   ru: {
     statusLiveSince: (d) => `В эфире уже ${d}`,
@@ -274,6 +282,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Смотреть на YouTube',
     opensInNewTab: ' (откроется в новой вкладке)',
     whyThisPrediction: 'Почему такой прогноз?',
+    autoSummary: 'Автоматическое резюме (на английском)',
   },
   ja: {
     statusLiveSince: (d) => `配信開始から${d}`,
@@ -303,6 +312,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'YouTubeで視聴',
     opensInNewTab: '（新しいタブで開きます）',
     whyThisPrediction: 'この予測の理由',
+    autoSummary: '自動要約（英語）',
   },
   uk: {
     statusLiveSince: (d) => `В ефірі вже ${d}`,
@@ -339,6 +349,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Дивитися на YouTube',
     opensInNewTab: ' (відкриється в новій вкладці)',
     whyThisPrediction: 'Чому такий прогноз?',
+    autoSummary: 'Автоматичний підсумок (англійською)',
   },
   ar: {
     // "مدة البث:" (broadcast duration) sidesteps the case governance that
@@ -379,6 +390,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'شاهد على YouTube',
     opensInNewTab: ' (يفتح في تبويب جديد)',
     whyThisPrediction: 'لماذا هذا التوقع؟',
+    autoSummary: 'ملخص تلقائي (بالإنجليزية)',
   },
   hu: {
     // "Élőben: 2 óra" (elapsed live time) — Hungarian would need the -ja
@@ -411,6 +423,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Nézd a YouTube-on',
     opensInNewTab: ' (új lapon nyílik meg)',
     whyThisPrediction: 'Miért ez az előrejelzés?',
+    autoSummary: 'Automatikus összefoglaló (angolul)',
   },
   pl: {
     // "już 2 godziny" keeps Intl's nominative form grammatical ("od" would
@@ -449,6 +462,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Oglądaj na YouTube',
     opensInNewTab: ' (otwiera się w nowej karcie)',
     whyThisPrediction: 'Skąd ta prognoza?',
+    autoSummary: 'Automatyczne podsumowanie (po angielsku)',
   },
 };
 
