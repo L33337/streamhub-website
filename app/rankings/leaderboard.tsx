@@ -174,6 +174,7 @@ export async function LeaderboardPage({ slug }: { slug: string }) {
               metricLabel={primaryColumn.header}
               isLive={liveIds.has(top.streamer.id)}
               nextSlot={nextSlots.get(top.streamer.id)}
+              mainGameSlugs={mainGameSlugs}
             />
           )}
           <div className="mt-6">

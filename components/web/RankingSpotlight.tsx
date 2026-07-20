@@ -18,6 +18,7 @@ export function RankingSpotlight({
   metricLabel,
   isLive,
   nextSlot,
+  mainGameSlugs,
 }: {
   entry: PublicRankingEntry;
   /** Formatted primary metric, e.g. "24.4M". */
@@ -26,8 +27,16 @@ export function RankingSpotlight({
   metricLabel: string;
   isLive: boolean;
   nextSlot?: PublicStreamSlot;
+  /**
+   * category → /rankings/game/ slug (same map as RankingTable). The main-game
+   * line links only for categories with a hub page — the route 404s outside
+   * the games list — and renders plain text otherwise.
+   */
+  mainGameSlugs?: Map<string, string>;
 }) {
   const { streamer } = entry;
+  const topCategory = entry.top_category;
+  const mainGameSlug = topCategory ? mainGameSlugs?.get(topCategory.category) : undefined;
   return (
     <section
       aria-label={`Number one: ${streamer.name}`}
@@ -80,6 +89,24 @@ export function RankingSpotlight({
           <span className="block text-xs uppercase tracking-wider text-text-muted">
             {metricLabel}
           </span>
+          {topCategory && (
+            <span
+              className="mt-1 block text-xs text-text-secondary"
+              title={`${topCategory.share_percent}% of their categorized streams`}
+            >
+              Main game:{' '}
+              {mainGameSlug ? (
+                <Link
+                  href={`/rankings/game/${mainGameSlug}`}
+                  className="underline decoration-border-default underline-offset-4 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan/60"
+                >
+                  {topCategory.category}
+                </Link>
+              ) : (
+                topCategory.category
+              )}
+            </span>
+          )}
           {!streamer.is_always_on && nextSlot && (
             <span className="mt-1 block text-xs text-text-secondary">
               Next stream:{' '}
