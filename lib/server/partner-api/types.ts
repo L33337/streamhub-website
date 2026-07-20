@@ -34,6 +34,10 @@ export interface PublicStreamer {
   // (English when language is null). Used in Person JSON-LD on the streamer page.
   // null while pending generation for streamers added before this field existed.
   description: string | null;
+  // M22: English translation of `description` (null when the source is already
+  // English, or while pending). English-locale rendering: description_en ?? description.
+  // Optional in this mirror for deploy skew (old API, new site).
+  description_en?: string | null;
   // Per-category watch stats — present ONLY on ?category= filtered list
   // responses, and only when the backend's nightly aggregate has data for the
   // (streamer, category) pair. Optional in this mirror for deploy skew.
@@ -83,6 +87,13 @@ export interface PublicStreamSlot {
   // undefined like null.
   viewer_count?: number | null;
   reasoning?: string;
+  // M22: ISO 639-1 language of title/reasoning on predicted rows ('en' for
+  // template-fallback copy). null on real slots and pre-M22 predictions.
+  // Optional in this mirror for deploy skew (old API, new site).
+  copy_language?: string | null;
+  // M22: always-English template reasoning (Silver+ only, predicted rows) —
+  // honest English fallback when copy_language ≠ 'en'.
+  generic_reasoning?: string;
 }
 
 // A game/category that qualifies for a hub page (>= 3 active streamers).
