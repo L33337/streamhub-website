@@ -56,6 +56,8 @@ export interface SlotLex {
   watchOnYouTube: string;
   /** sr-only external-link hint, including its own leading spacing. */
   opensInNewTab: string;
+  /** M22: heading of the prediction-reasoning box in StreamSlotDetail. */
+  whyThisPrediction: string;
 }
 
 const SLOT_STRINGS: Record<UiLang, SlotLex> = {
@@ -84,6 +86,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Watch on Twitch',
     watchOnYouTube: 'Watch on YouTube',
     opensInNewTab: ' (opens in new tab)',
+    whyThisPrediction: 'Why this prediction?',
   },
   de: {
     statusLiveSince: (d) => `Live seit ${d}`,
@@ -114,6 +117,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Auf Twitch ansehen',
     watchOnYouTube: 'Auf YouTube ansehen',
     opensInNewTab: ' (öffnet in neuem Tab)',
+    whyThisPrediction: 'Warum diese Vorhersage?',
   },
   es: {
     statusLiveSince: (d) => `En directo desde hace ${d}`,
@@ -143,6 +147,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Ver en Twitch',
     watchOnYouTube: 'Ver en YouTube',
     opensInNewTab: ' (se abre en una pestaña nueva)',
+    whyThisPrediction: '¿Por qué esta predicción?',
   },
   fr: {
     statusLiveSince: (d) => `En live depuis ${d}`,
@@ -172,6 +177,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Regarder sur Twitch',
     watchOnYouTube: 'Regarder sur YouTube',
     opensInNewTab: ` (s'ouvre dans un nouvel onglet)`,
+    whyThisPrediction: 'Pourquoi cette prédiction ?',
   },
   pt: {
     statusLiveSince: (d) => `Ao vivo há ${d}`,
@@ -200,6 +206,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Assistir na Twitch',
     watchOnYouTube: 'Assistir no YouTube',
     opensInNewTab: ' (abre em nova aba)',
+    whyThisPrediction: 'Por que esta previsão?',
   },
   it: {
     statusLiveSince: (d) => `In diretta da ${d}`,
@@ -230,6 +237,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Guarda su Twitch',
     watchOnYouTube: 'Guarda su YouTube',
     opensInNewTab: ' (si apre in una nuova scheda)',
+    whyThisPrediction: 'Perché questa previsione?',
   },
   ru: {
     statusLiveSince: (d) => `В эфире уже ${d}`,
@@ -265,6 +273,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Смотреть на Twitch',
     watchOnYouTube: 'Смотреть на YouTube',
     opensInNewTab: ' (откроется в новой вкладке)',
+    whyThisPrediction: 'Почему такой прогноз?',
   },
   ja: {
     statusLiveSince: (d) => `配信開始から${d}`,
@@ -293,6 +302,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Twitchで視聴',
     watchOnYouTube: 'YouTubeで視聴',
     opensInNewTab: '（新しいタブで開きます）',
+    whyThisPrediction: 'この予測の理由',
   },
   uk: {
     statusLiveSince: (d) => `В ефірі вже ${d}`,
@@ -328,6 +338,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Дивитися на Twitch',
     watchOnYouTube: 'Дивитися на YouTube',
     opensInNewTab: ' (відкриється в новій вкладці)',
+    whyThisPrediction: 'Чому такий прогноз?',
   },
   ar: {
     // "مدة البث:" (broadcast duration) sidesteps the case governance that
@@ -367,6 +378,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'شاهد على Twitch',
     watchOnYouTube: 'شاهد على YouTube',
     opensInNewTab: ' (يفتح في تبويب جديد)',
+    whyThisPrediction: 'لماذا هذا التوقع؟',
   },
   hu: {
     // "Élőben: 2 óra" (elapsed live time) — Hungarian would need the -ja
@@ -398,6 +410,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Nézd a Twitchen',
     watchOnYouTube: 'Nézd a YouTube-on',
     opensInNewTab: ' (új lapon nyílik meg)',
+    whyThisPrediction: 'Miért ez az előrejelzés?',
   },
   pl: {
     // "już 2 godziny" keeps Intl's nominative form grammatical ("od" would
@@ -435,6 +448,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnTwitch: 'Oglądaj na Twitchu',
     watchOnYouTube: 'Oglądaj na YouTube',
     opensInNewTab: ' (otwiera się w nowej karcie)',
+    whyThisPrediction: 'Skąd ta prognoza?',
   },
 };
 

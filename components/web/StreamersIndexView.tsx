@@ -8,6 +8,7 @@ import {
   type SearchResultStreamer,
 } from '@/components/web/SearchResultCard';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -107,9 +108,17 @@ const NAV_DISABLED =
  * component is awaited directly so notFound() 404s honestly and every link is
  * server-rendered (the soft-404 rule from app/streamer/[slug]/page.tsx).
  */
-export async function StreamersIndexView({ page }: { page: number }) {
+export async function StreamersIndexView({
+  page,
+  locale = 'en',
+}: {
+  page: number;
+  // M22: pagination links stay inside the viewer's locale tree.
+  locale?: UiLang;
+}) {
   const { entries, total, failed } = await loadStreamersPage(page);
   const totalPages = totalStreamerPages(total);
+  const navHref = (n: number) => localeHref(locale, pageHref(n));
 
   // Out-of-range page N → 404 (but never on API failure: page 1 shows the error
   // card instead, and page 1 always renders its shell even for an empty roster).
@@ -194,7 +203,7 @@ export async function StreamersIndexView({ page }: { page: number }) {
               className="mt-10 flex flex-wrap items-center justify-center gap-2"
             >
               {page > 1 ? (
-                <Link href={pageHref(page - 1)} rel="prev" className={NAV_LINK}>
+                <Link href={navHref(page - 1)} rel="prev" className={NAV_LINK}>
                   ← Previous
                 </Link>
               ) : (
@@ -210,13 +219,13 @@ export async function StreamersIndexView({ page }: { page: number }) {
                     {n}
                   </span>
                 ) : (
-                  <Link key={n} href={pageHref(n)} className={NAV_LINK}>
+                  <Link key={n} href={navHref(n)} className={NAV_LINK}>
                     {n}
                   </Link>
                 ),
               )}
               {page < totalPages ? (
-                <Link href={pageHref(page + 1)} rel="next" className={NAV_LINK}>
+                <Link href={navHref(page + 1)} rel="next" className={NAV_LINK}>
                   Next →
                 </Link>
               ) : (

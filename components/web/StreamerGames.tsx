@@ -5,6 +5,7 @@ import {
   type PublicStreamSlot,
 } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
+import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 
 /**
@@ -64,7 +65,7 @@ export async function StreamerGames({
         {top.map((cat) => (
           <Link
             key={cat}
-            href={`/game/${gameSlug(cat)}`}
+            href={localeHref(resolveUiLang(language), `/game/${gameSlug(cat)}`)}
             className="inline-flex items-center rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-sm text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-text-primary"
           >
             {cat}

@@ -1,0 +1,643 @@
+import type { UiLang } from './i18n-core';
+
+// --- Global chrome lexicon (server-rendered) ------------------------------------
+//
+// Strings for the site chrome that wraps every localized page: header/nav,
+// footer, mobile menu and the 404 page. The layout and footer are server
+// components — they resolve the locale once and pass plain strings down as
+// props to any client components (the mobile menu), so this module never lands
+// in a client bundle by itself. Keep it free of server-only imports anyway:
+// props-drilled strings may cross the client boundary.
+//
+// The 'en' entries are byte-identical to the previously hardcoded strings;
+// pages without a locale render exactly as before.
+//
+// Translation register (see lib/i18n-slot.ts header for the full spec):
+// - Informal streaming tone; German uses du-form, French tu-form, Japanese
+//   polite です/ます.
+// - Brand names (Twitch, YouTube, Streamer Times, App Store, Google Play) and
+//   "Impressum" (German legal term) stay untranslated.
+// - All non-English strings are AI-authored (reviewed via an adversarial
+//   AI pass 2026-07; no native-speaker review yet — accepted risk).
+
+export interface ChromeLex {
+  nav: {
+    live: string;
+    streamers: string;
+    games: string;
+    rankings: string;
+    getApp: string;
+    /** aria-label on the hamburger button. */
+    openMenu: string;
+    /** aria-label on the mobile-menu close button. */
+    closeMenu: string;
+    /** Keep the … ellipsis character in every language. */
+    searchPlaceholder: string;
+    /** aria-label on the search results listbox. */
+    searchResults: string;
+    /** aria-label on the footer wordmark link. */
+    home: string;
+  };
+  footer: {
+    /** Column heading. */
+    discover: string;
+    /** Column heading. */
+    developers: string;
+    /** Column heading. */
+    legal: string;
+    /** Column heading for the language switcher. */
+    languages: string;
+    liveNow: string;
+    allStreamers: string;
+    allGames: string;
+    rankings: string;
+    popularStreamers: string;
+    getTheApp: string;
+    publicApi: string;
+    support: string;
+    privacy: string;
+    terms: string;
+    /** German legal term — stays "Impressum" in ALL languages. */
+    impressum: string;
+    tagline: string;
+    /** Rendered after '© {year} '. */
+    copyrightTail: string;
+    appStoreAria: string;
+    playStoreAria: string;
+  };
+  notFound: {
+    /** '404' everywhere — the number IS the message. */
+    kicker: string;
+    title: string;
+    body: string;
+    home: string;
+    liveNow: string;
+    browseStreamers: string;
+    games: string;
+    getApp: string;
+  };
+}
+
+export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
+  en: {
+    nav: {
+      live: 'Live',
+      streamers: 'Streamers',
+      games: 'Games',
+      rankings: 'Rankings',
+      getApp: 'Get the App',
+      openMenu: 'Open menu',
+      closeMenu: 'Close menu',
+      searchPlaceholder: 'Search streamers…',
+      searchResults: 'Search results',
+      home: 'Streamer Times home',
+    },
+    footer: {
+      discover: 'Discover',
+      developers: 'Developers',
+      legal: 'Legal',
+      languages: 'Languages',
+      liveNow: 'Live now',
+      allStreamers: 'All streamers',
+      allGames: 'All games',
+      rankings: 'Streamer rankings',
+      popularStreamers: 'Popular streamers',
+      getTheApp: 'Get the app',
+      publicApi: 'Public API',
+      support: 'Support',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      impressum: 'Impressum',
+      tagline: 'Your Livestream Guide for Twitch & YouTube.',
+      copyrightTail: 'Streamer Times — Your Livestream Guide.',
+      appStoreAria: 'Download on the App Store',
+      playStoreAria: 'Get it on Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Page not found',
+      body: 'We couldn’t find that page. It may have moved, or the link may be broken. Try one of these instead:',
+      home: 'Home',
+      liveNow: "Who's live now",
+      browseStreamers: 'Browse streamers',
+      games: 'Games',
+      getApp: 'Get the app',
+    },
+  },
+  de: {
+    nav: {
+      live: 'Live',
+      streamers: 'Streamer',
+      games: 'Spiele',
+      rankings: 'Rankings',
+      getApp: 'Hol dir die App',
+      openMenu: 'Menü öffnen',
+      closeMenu: 'Menü schließen',
+      searchPlaceholder: 'Streamer suchen…',
+      searchResults: 'Suchergebnisse',
+      home: 'Streamer Times Startseite',
+    },
+    footer: {
+      discover: 'Entdecken',
+      developers: 'Entwickler',
+      legal: 'Rechtliches',
+      languages: 'Sprachen',
+      liveNow: 'Jetzt live',
+      allStreamers: 'Alle Streamer',
+      allGames: 'Alle Spiele',
+      rankings: 'Streamer-Rankings',
+      popularStreamers: 'Beliebte Streamer',
+      getTheApp: 'Hol dir die App',
+      publicApi: 'Öffentliche API',
+      support: 'Support',
+      privacy: 'Datenschutzerklärung',
+      terms: 'Nutzungsbedingungen',
+      impressum: 'Impressum',
+      tagline: 'Dein Livestream-Guide für Twitch & YouTube.',
+      copyrightTail: 'Streamer Times — Dein Livestream-Guide.',
+      appStoreAria: 'Im App Store laden',
+      playStoreAria: 'Jetzt bei Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Seite nicht gefunden',
+      body: 'Diese Seite konnten wir nicht finden. Vielleicht wurde sie verschoben oder der Link ist kaputt. Probier stattdessen eine dieser Seiten:',
+      home: 'Startseite',
+      liveNow: 'Wer ist gerade live?',
+      browseStreamers: 'Alle Streamer durchstöbern',
+      games: 'Spiele',
+      getApp: 'Hol dir die App',
+    },
+  },
+  es: {
+    nav: {
+      live: 'En directo',
+      streamers: 'Streamers',
+      games: 'Juegos',
+      rankings: 'Rankings',
+      getApp: 'Descarga la app',
+      openMenu: 'Abrir menú',
+      closeMenu: 'Cerrar menú',
+      searchPlaceholder: 'Buscar streamers…',
+      searchResults: 'Resultados de búsqueda',
+      home: 'Inicio de Streamer Times',
+    },
+    footer: {
+      discover: 'Descubre',
+      developers: 'Desarrolladores',
+      legal: 'Legal',
+      languages: 'Idiomas',
+      liveNow: 'En directo ahora',
+      allStreamers: 'Todos los streamers',
+      allGames: 'Todos los juegos',
+      rankings: 'Rankings de streamers',
+      popularStreamers: 'Streamers populares',
+      getTheApp: 'Descarga la app',
+      publicApi: 'API pública',
+      support: 'Soporte',
+      privacy: 'Política de privacidad',
+      terms: 'Términos de servicio',
+      impressum: 'Impressum',
+      tagline: 'Tu guía de livestreams para Twitch y YouTube.',
+      copyrightTail: 'Streamer Times — Tu guía de livestreams.',
+      appStoreAria: 'Descargar en el App Store',
+      playStoreAria: 'Disponible en Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Página no encontrada',
+      body: 'No hemos encontrado esa página. Puede que se haya movido o que el enlace esté roto. Prueba con una de estas:',
+      home: 'Inicio',
+      liveNow: 'Quién está en directo',
+      browseStreamers: 'Ver todos los streamers',
+      games: 'Juegos',
+      getApp: 'Descarga la app',
+    },
+  },
+  fr: {
+    nav: {
+      live: 'En direct',
+      streamers: 'Streamers',
+      games: 'Jeux',
+      rankings: 'Classements',
+      getApp: `Télécharge l'app`,
+      openMenu: 'Ouvrir le menu',
+      closeMenu: 'Fermer le menu',
+      searchPlaceholder: 'Rechercher un streamer…',
+      searchResults: 'Résultats de recherche',
+      home: 'Accueil Streamer Times',
+    },
+    footer: {
+      discover: 'Découvrir',
+      developers: 'Développeurs',
+      legal: 'Légal',
+      languages: 'Langues',
+      liveNow: 'En direct maintenant',
+      allStreamers: 'Tous les streamers',
+      allGames: 'Tous les jeux',
+      rankings: 'Classements des streamers',
+      popularStreamers: 'Streamers populaires',
+      getTheApp: `Télécharge l'app`,
+      publicApi: 'API publique',
+      support: 'Support',
+      privacy: 'Politique de confidentialité',
+      terms: `Conditions d'utilisation`,
+      impressum: 'Impressum',
+      tagline: 'Ton guide des livestreams pour Twitch & YouTube.',
+      copyrightTail: 'Streamer Times — Ton guide des livestreams.',
+      appStoreAria: `Télécharger dans l'App Store`,
+      playStoreAria: 'Disponible sur Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Page introuvable',
+      body: `Impossible de trouver cette page. Elle a peut-être été déplacée, ou le lien est cassé. Essaie plutôt l'une de ces pages :`,
+      home: 'Accueil',
+      liveNow: 'Qui est en direct',
+      browseStreamers: 'Parcourir les streamers',
+      games: 'Jeux',
+      getApp: `Télécharge l'app`,
+    },
+  },
+  pt: {
+    nav: {
+      live: 'Ao vivo',
+      streamers: 'Streamers',
+      games: 'Jogos',
+      rankings: 'Rankings',
+      getApp: 'Baixe o app',
+      openMenu: 'Abrir menu',
+      closeMenu: 'Fechar menu',
+      searchPlaceholder: 'Buscar streamers…',
+      searchResults: 'Resultados da busca',
+      home: 'Página inicial do Streamer Times',
+    },
+    footer: {
+      discover: 'Descubra',
+      developers: 'Desenvolvedores',
+      legal: 'Legal',
+      languages: 'Idiomas',
+      liveNow: 'Ao vivo agora',
+      allStreamers: 'Todos os streamers',
+      allGames: 'Todos os jogos',
+      rankings: 'Rankings de streamers',
+      popularStreamers: 'Streamers populares',
+      getTheApp: 'Baixe o app',
+      publicApi: 'API pública',
+      support: 'Suporte',
+      privacy: 'Política de Privacidade',
+      terms: 'Termos de Serviço',
+      impressum: 'Impressum',
+      tagline: 'Seu guia de livestreams para Twitch e YouTube.',
+      copyrightTail: 'Streamer Times — Seu guia de livestreams.',
+      appStoreAria: 'Baixar na App Store',
+      playStoreAria: 'Disponível no Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Página não encontrada',
+      body: 'Não encontramos essa página. Ela pode ter sido movida, ou o link pode estar quebrado. Tente uma destas:',
+      home: 'Início',
+      liveNow: 'Quem está ao vivo',
+      browseStreamers: 'Ver todos os streamers',
+      games: 'Jogos',
+      getApp: 'Baixe o app',
+    },
+  },
+  it: {
+    nav: {
+      live: 'In diretta',
+      streamers: 'Streamer',
+      games: 'Giochi',
+      rankings: 'Classifiche',
+      getApp: `Scarica l'app`,
+      openMenu: 'Apri il menu',
+      closeMenu: 'Chiudi il menu',
+      searchPlaceholder: 'Cerca streamer…',
+      searchResults: 'Risultati della ricerca',
+      home: 'Home di Streamer Times',
+    },
+    footer: {
+      discover: 'Scopri',
+      developers: 'Sviluppatori',
+      legal: 'Note legali',
+      languages: 'Lingue',
+      liveNow: 'In diretta ora',
+      allStreamers: 'Tutti gli streamer',
+      allGames: 'Tutti i giochi',
+      rankings: 'Classifiche degli streamer',
+      popularStreamers: 'Streamer popolari',
+      getTheApp: `Scarica l'app`,
+      publicApi: 'API pubblica',
+      support: 'Supporto',
+      privacy: 'Informativa sulla privacy',
+      terms: 'Termini di servizio',
+      impressum: 'Impressum',
+      tagline: 'La tua guida ai livestream per Twitch e YouTube.',
+      copyrightTail: 'Streamer Times — La tua guida ai livestream.',
+      appStoreAria: `Scarica dall'App Store`,
+      playStoreAria: 'Disponibile su Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Pagina non trovata',
+      body: 'Non siamo riusciti a trovare questa pagina. Forse è stata spostata o il link non funziona più. Prova con una di queste:',
+      home: 'Home',
+      liveNow: 'Chi è in diretta ora',
+      browseStreamers: 'Sfoglia gli streamer',
+      games: 'Giochi',
+      getApp: `Scarica l'app`,
+    },
+  },
+  ru: {
+    nav: {
+      live: 'В эфире',
+      streamers: 'Стримеры',
+      games: 'Игры',
+      rankings: 'Рейтинги',
+      getApp: 'Скачать приложение',
+      openMenu: 'Открыть меню',
+      closeMenu: 'Закрыть меню',
+      searchPlaceholder: 'Поиск стримеров…',
+      searchResults: 'Результаты поиска',
+      home: 'Главная Streamer Times',
+    },
+    footer: {
+      discover: 'Обзор',
+      developers: 'Разработчикам',
+      legal: 'Правовая информация',
+      languages: 'Языки',
+      liveNow: 'Сейчас в эфире',
+      allStreamers: 'Все стримеры',
+      allGames: 'Все игры',
+      rankings: 'Рейтинги стримеров',
+      popularStreamers: 'Популярные стримеры',
+      getTheApp: 'Скачать приложение',
+      publicApi: 'Публичный API',
+      support: 'Поддержка',
+      privacy: 'Политика конфиденциальности',
+      terms: 'Условия использования',
+      impressum: 'Impressum',
+      tagline: 'Ваш гид по стримам на Twitch и YouTube.',
+      copyrightTail: 'Streamer Times — ваш гид по стримам.',
+      appStoreAria: 'Загрузить в App Store',
+      playStoreAria: 'Доступно в Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Страница не найдена',
+      body: 'Мы не смогли найти эту страницу. Возможно, её переместили или ссылка не работает. Попробуйте одну из этих:',
+      home: 'Главная',
+      liveNow: 'Кто сейчас в эфире',
+      browseStreamers: 'Все стримеры',
+      games: 'Игры',
+      getApp: 'Скачать приложение',
+    },
+  },
+  ja: {
+    nav: {
+      live: '配信中',
+      streamers: 'ストリーマー',
+      games: 'ゲーム',
+      rankings: 'ランキング',
+      getApp: 'アプリを入手',
+      openMenu: 'メニューを開く',
+      closeMenu: 'メニューを閉じる',
+      searchPlaceholder: 'ストリーマーを検索…',
+      searchResults: '検索結果',
+      home: 'Streamer Times ホーム',
+    },
+    footer: {
+      discover: '見つける',
+      developers: '開発者向け',
+      legal: '法的情報',
+      languages: '言語',
+      liveNow: '現在配信中',
+      allStreamers: 'すべてのストリーマー',
+      allGames: 'すべてのゲーム',
+      rankings: 'ストリーマーランキング',
+      popularStreamers: '人気のストリーマー',
+      getTheApp: 'アプリを入手',
+      publicApi: '公開API',
+      support: 'サポート',
+      privacy: 'プライバシーポリシー',
+      terms: '利用規約',
+      impressum: 'Impressum',
+      tagline: 'Twitch & YouTubeのライブ配信ガイド。',
+      copyrightTail: 'Streamer Times — ライブ配信ガイド。',
+      appStoreAria: 'App Storeでダウンロード',
+      playStoreAria: 'Google Playで手に入れよう',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'ページが見つかりません',
+      body: 'お探しのページは見つかりませんでした。移動したか、リンクが切れている可能性があります。代わりにこちらをお試しください:',
+      home: 'ホーム',
+      liveNow: '現在配信中のストリーマー',
+      browseStreamers: 'ストリーマー一覧',
+      games: 'ゲーム',
+      getApp: 'アプリを入手',
+    },
+  },
+  uk: {
+    nav: {
+      live: 'В ефірі',
+      streamers: 'Стримери',
+      games: 'Ігри',
+      rankings: 'Рейтинги',
+      getApp: 'Завантажити застосунок',
+      openMenu: 'Відкрити меню',
+      closeMenu: 'Закрити меню',
+      searchPlaceholder: 'Пошук стримерів…',
+      searchResults: 'Результати пошуку',
+      home: 'Головна Streamer Times',
+    },
+    footer: {
+      discover: 'Огляд',
+      developers: 'Розробникам',
+      legal: 'Правова інформація',
+      languages: 'Мови',
+      liveNow: 'Зараз в ефірі',
+      allStreamers: 'Усі стримери',
+      allGames: 'Усі ігри',
+      rankings: 'Рейтинги стримерів',
+      popularStreamers: 'Популярні стримери',
+      getTheApp: 'Завантажити застосунок',
+      publicApi: 'Публічний API',
+      support: 'Підтримка',
+      privacy: 'Політика конфіденційності',
+      terms: 'Умови користування',
+      impressum: 'Impressum',
+      tagline: 'Ваш гід по стрімах на Twitch і YouTube.',
+      copyrightTail: 'Streamer Times — ваш гід по стрімах.',
+      appStoreAria: 'Завантажити в App Store',
+      playStoreAria: 'Доступно в Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Сторінку не знайдено',
+      body: 'Ми не змогли знайти цю сторінку. Можливо, її перемістили або посилання не працює. Спробуйте натомість одну з цих:',
+      home: 'Головна',
+      liveNow: 'Хто зараз в ефірі',
+      browseStreamers: 'Усі стримери',
+      games: 'Ігри',
+      getApp: 'Завантажити застосунок',
+    },
+  },
+  ar: {
+    nav: {
+      live: 'مباشر',
+      streamers: 'الستريمرز',
+      games: 'الألعاب',
+      rankings: 'التصنيفات',
+      getApp: 'حمّل التطبيق',
+      openMenu: 'فتح القائمة',
+      closeMenu: 'إغلاق القائمة',
+      searchPlaceholder: 'ابحث عن ستريمر…',
+      searchResults: 'نتائج البحث',
+      home: 'الصفحة الرئيسية لـ Streamer Times',
+    },
+    footer: {
+      discover: 'استكشف',
+      developers: 'المطورون',
+      legal: 'قانوني',
+      languages: 'اللغات',
+      liveNow: 'مباشر الآن',
+      allStreamers: 'كل الستريمرز',
+      allGames: 'كل الألعاب',
+      rankings: 'تصنيفات الستريمرز',
+      popularStreamers: 'ستريمرز مشهورون',
+      getTheApp: 'حمّل التطبيق',
+      publicApi: 'واجهة API عامة',
+      support: 'الدعم',
+      privacy: 'سياسة الخصوصية',
+      terms: 'شروط الخدمة',
+      impressum: 'Impressum',
+      tagline: 'دليلك للبث المباشر على Twitch وYouTube.',
+      copyrightTail: 'Streamer Times — دليلك للبث المباشر.',
+      appStoreAria: 'حمّل من App Store',
+      playStoreAria: 'احصل عليه من Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'الصفحة غير موجودة',
+      body: 'لم نتمكن من العثور على هذه الصفحة. ربما تم نقلها أو أن الرابط معطّل. جرّب إحدى هذه الصفحات بدلًا من ذلك:',
+      home: 'الرئيسية',
+      liveNow: 'من يبث الآن',
+      browseStreamers: 'تصفّح الستريمرز',
+      games: 'الألعاب',
+      getApp: 'حمّل التطبيق',
+    },
+  },
+  hu: {
+    nav: {
+      live: 'Élő',
+      streamers: 'Streamerek',
+      games: 'Játékok',
+      rankings: 'Ranglisták',
+      getApp: 'Töltsd le az appot',
+      openMenu: 'Menü megnyitása',
+      closeMenu: 'Menü bezárása',
+      searchPlaceholder: 'Streamerek keresése…',
+      searchResults: 'Keresési találatok',
+      home: 'Streamer Times főoldal',
+    },
+    footer: {
+      discover: 'Fedezd fel',
+      developers: 'Fejlesztőknek',
+      legal: 'Jogi információk',
+      languages: 'Nyelvek',
+      liveNow: 'Most élőben',
+      allStreamers: 'Összes streamer',
+      allGames: 'Összes játék',
+      rankings: 'Streamer-ranglisták',
+      popularStreamers: 'Népszerű streamerek',
+      getTheApp: 'Töltsd le az appot',
+      publicApi: 'Nyilvános API',
+      support: 'Támogatás',
+      privacy: 'Adatvédelmi irányelvek',
+      terms: 'Felhasználási feltételek',
+      impressum: 'Impressum',
+      tagline: 'A livestream-kalauzod a Twitchhez és a YouTube-hoz.',
+      copyrightTail: 'Streamer Times — a livestream-kalauzod.',
+      appStoreAria: 'Letöltés az App Store-ból',
+      playStoreAria: 'Szerezd meg a Google Playen',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Az oldal nem található',
+      body: 'Nem találtuk ezt az oldalt. Lehet, hogy elköltözött, vagy a link hibás. Próbáld meg ezek egyikét:',
+      home: 'Főoldal',
+      liveNow: 'Ki van most élőben',
+      browseStreamers: 'Streamerek böngészése',
+      games: 'Játékok',
+      getApp: 'Töltsd le az appot',
+    },
+  },
+  pl: {
+    nav: {
+      live: 'Na żywo',
+      streamers: 'Streamerzy',
+      games: 'Gry',
+      rankings: 'Rankingi',
+      getApp: 'Pobierz aplikację',
+      openMenu: 'Otwórz menu',
+      closeMenu: 'Zamknij menu',
+      searchPlaceholder: 'Szukaj streamerów…',
+      searchResults: 'Wyniki wyszukiwania',
+      home: 'Strona główna Streamer Times',
+    },
+    footer: {
+      discover: 'Odkrywaj',
+      developers: 'Dla deweloperów',
+      legal: 'Informacje prawne',
+      languages: 'Języki',
+      liveNow: 'Teraz na żywo',
+      allStreamers: 'Wszyscy streamerzy',
+      allGames: 'Wszystkie gry',
+      rankings: 'Rankingi streamerów',
+      popularStreamers: 'Popularni streamerzy',
+      getTheApp: 'Pobierz aplikację',
+      publicApi: 'Publiczne API',
+      support: 'Pomoc',
+      privacy: 'Polityka prywatności',
+      terms: 'Warunki korzystania',
+      impressum: 'Impressum',
+      tagline: 'Twój przewodnik po livestreamach na Twitchu i YouTube.',
+      copyrightTail: 'Streamer Times — Twój przewodnik po livestreamach.',
+      appStoreAria: 'Pobierz w App Store',
+      playStoreAria: 'Pobierz z Google Play',
+    },
+    notFound: {
+      kicker: '404',
+      title: 'Nie znaleziono strony',
+      body: 'Nie mogliśmy znaleźć tej strony. Być może została przeniesiona albo link jest uszkodzony. Spróbuj jednej z tych:',
+      home: 'Strona główna',
+      liveNow: 'Kto jest teraz na żywo',
+      browseStreamers: 'Przeglądaj streamerów',
+      games: 'Gry',
+      getApp: 'Pobierz aplikację',
+    },
+  },
+};
+
+/** Chrome lexicon for a resolved page locale. */
+export function chromeLexFor(locale: UiLang): ChromeLex {
+  return CHROME_STRINGS[locale] ?? CHROME_STRINGS.en;
+}
+
+/** Native display name of each UI language, for the language switcher. */
+export const LANGUAGE_NATIVE_NAMES: Record<UiLang, string> = {
+  en: 'English',
+  de: 'Deutsch',
+  es: 'Español',
+  fr: 'Français',
+  pt: 'Português',
+  it: 'Italiano',
+  ru: 'Русский',
+  ja: '日本語',
+  uk: 'Українська',
+  ar: 'العربية',
+  hu: 'Magyar',
+  pl: 'Polski',
+};

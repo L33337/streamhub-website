@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { PublicStreamer, PublicStreamerRankings } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
-import { resolveUiLang } from '@/lib/i18n-core';
+import { localeHref, resolveUiLang, type UiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import {
   buildStreamerRankingRows,
@@ -11,6 +11,9 @@ import {
 interface Props {
   streamer: PublicStreamer;
   rankings: PublicStreamerRankings | null;
+  // M22 (D6): UI strings follow the viewer's locale; defaults to the
+  // streamer's language for pre-M22 call sites.
+  uiLanguage?: string | null;
 }
 
 /**
@@ -21,9 +24,10 @@ interface Props {
  * rank lookup failed — same "no data, no section" rule as ChannelStats. The
  * ordering and filtering live in lib/streamer-rankings.ts; this file is markup.
  */
-export function StreamerRankings({ streamer, rankings }: Props) {
-  const lang = resolveUiLang(streamer.language);
-  const L = uiLexFor(streamer.language).streamerRankings;
+export function StreamerRankings({ streamer, rankings, uiLanguage }: Props) {
+  const ui = uiLanguage ?? streamer.language;
+  const lang = resolveUiLang(ui);
+  const L = uiLexFor(ui).streamerRankings;
   const rows = buildStreamerRankingRows(rankings, { metric: L.metric });
   if (rows.length === 0) return null;
 
@@ -72,7 +76,7 @@ function RankRow({
   L,
 }: {
   row: StreamerRankingRow;
-  lang: string;
+  lang: UiLang;
   L: Lex;
 }) {
   const total = formatCompactNumber(row.total, lang);
@@ -96,7 +100,7 @@ function RankRow({
     <li>
       {row.href ? (
         <Link
-          href={row.href}
+          href={localeHref(lang, row.href)}
           aria-label={L.rowAria(row.rank, total, row.label)}
           className={`${className} hover:bg-background-elevated/70 hover:ring-1 hover:ring-accent-cyan/40`}
         >

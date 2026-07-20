@@ -31,6 +31,22 @@ export type UiLang = (typeof UI_LANGS)[number];
 
 const UI_LANG_SET: ReadonlySet<string> = new Set(UI_LANGS);
 
+/** Exact lexicon-language check (no BCP-47 resolution — 'de-AT' is NOT a UiLang). */
+export function isUiLang(value: string | null | undefined): value is UiLang {
+  return value != null && UI_LANG_SET.has(value);
+}
+
+/**
+ * M22 locale routing: unprefixed URLs are English (`/streamer/foo`), every
+ * other UI language gets a path prefix (`/de/streamer/foo`). Used by every
+ * internal link so the locale a visitor picked survives navigation.
+ * `path` must start with '/'; `localeHref('de', '/')` → '/de'.
+ */
+export function localeHref(locale: UiLang, path: string): string {
+  if (locale === 'en') return path;
+  return path === '/' ? `/${locale}` : `/${locale}${path}`;
+}
+
 /**
  * Resolve a stored broadcaster language (BCP-47, may be null/''/'other'/
  * unknown) to a supported lexicon language. 'de-AT' → 'de'; anything without

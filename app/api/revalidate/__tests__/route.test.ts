@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { POST } from '../route';
+import { UI_LANGS } from '@/lib/i18n-core';
 
 // First route-handler test in the repo: the handler is a plain async function
 // taking a standard Request, so it runs in the node vitest env without any
@@ -54,9 +55,15 @@ describe('POST /api/revalidate', () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it('revalidates the streamer path and returns 204', async () => {
+  it('revalidates the streamer path across every locale variant and returns 204', async () => {
     const res = await POST(makeRequest({ slug: 'illojuan-075649' }, SECRET));
     expect(res.status).toBe(204);
-    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith('/streamer/illojuan-075649');
+    // M22: bare path (belt & braces) + one call per locale tree — the
+    // LIVE-badge pipeline must purge /de/streamer/x too, not only /streamer/x.
+    expect(revalidatePath).toHaveBeenCalledTimes(1 + UI_LANGS.length);
+    expect(revalidatePath).toHaveBeenCalledWith('/streamer/illojuan-075649');
+    for (const locale of UI_LANGS) {
+      expect(revalidatePath).toHaveBeenCalledWith(`/${locale}/streamer/illojuan-075649`);
+    }
   });
 });

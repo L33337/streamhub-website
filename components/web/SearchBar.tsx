@@ -12,6 +12,7 @@ import {
   useTransition,
 } from 'react';
 import type { Platform, PublicStreamer } from '@/lib/server/partner-api';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { LiveBadge, PlatformBadge } from './Badges';
 
 interface SearchResultStreamer extends PublicStreamer {
@@ -29,9 +30,20 @@ const MAX_QUERY_LENGTH = 100;
 
 interface Props {
   className?: string;
+  // M22: viewer locale — search/result links keep the visitor inside their
+  // locale tree; placeholder + results label come pre-localized from the
+  // server layout (chrome lexicon stays out of the client bundle).
+  locale?: UiLang;
+  placeholder?: string;
+  resultsLabel?: string;
 }
 
-export function SearchBar({ className = '' }: Props) {
+export function SearchBar({
+  className = '',
+  locale = 'en',
+  placeholder = 'Search streamers…',
+  resultsLabel = 'Search results',
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const inputId = useId();
@@ -119,10 +131,10 @@ export function SearchBar({ className = '' }: Props) {
       if (trimmed.length < MIN_QUERY_LENGTH) return;
       setIsOpen(false);
       startTransition(() => {
-        router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+        router.push(localeHref(locale, `/search?q=${encodeURIComponent(trimmed)}`));
       });
     },
-    [router],
+    [locale, router],
   );
 
   const onSubmit = useCallback(
@@ -134,13 +146,13 @@ export function SearchBar({ className = '' }: Props) {
         const target = results[focusedIndex];
         setIsOpen(false);
         startTransition(() => {
-          router.push(`/streamer/${encodeURIComponent(target.id)}`);
+          router.push(localeHref(locale, `/streamer/${encodeURIComponent(target.id)}`));
         });
         return;
       }
       navigateToSearch(query);
     },
-    [focusedIndex, navigateToSearch, query, results, router],
+    [focusedIndex, locale, navigateToSearch, query, results, router],
   );
 
   const onKeyDown = useCallback(
@@ -192,7 +204,7 @@ export function SearchBar({ className = '' }: Props) {
         aria-controls={listboxId}
         aria-owns={listboxId}
         onSubmit={onSubmit}
-        action="/search"
+        action={localeHref(locale, '/search')}
         method="GET"
         className="flex items-center"
       >
@@ -231,7 +243,7 @@ export function SearchBar({ className = '' }: Props) {
             }}
             onFocus={() => setIsOpen(true)}
             onKeyDown={onKeyDown}
-            placeholder="Search streamers…"
+            placeholder={placeholder}
             autoComplete="off"
             aria-autocomplete="list"
             aria-activedescendant={activeId}
@@ -254,7 +266,7 @@ export function SearchBar({ className = '' }: Props) {
             <ul
               id={listboxId}
               role="listbox"
-              aria-label="Search results"
+              aria-label={resultsLabel}
               className="flex flex-col gap-1"
             >
               {results.map((s, i) => (
@@ -270,7 +282,7 @@ export function SearchBar({ className = '' }: Props) {
                   }
                   onMouseEnter={() => setFocusedIndex(i)}
                 >
-                  <DropdownResult streamer={s} />
+                  <DropdownResult streamer={s} locale={locale} />
                 </li>
               ))}
             </ul>
@@ -284,10 +296,16 @@ export function SearchBar({ className = '' }: Props) {
   );
 }
 
-function DropdownResult({ streamer }: { streamer: SearchResultStreamer }) {
+function DropdownResult({
+  streamer,
+  locale,
+}: {
+  streamer: SearchResultStreamer;
+  locale: UiLang;
+}) {
   return (
     <Link
-      href={`/streamer/${encodeURIComponent(streamer.id)}`}
+      href={localeHref(locale, `/streamer/${encodeURIComponent(streamer.id)}`)}
       className="flex items-center gap-3 px-3 py-2 hover:bg-background-highlight rounded-md"
     >
       {streamer.avatar_url ? (

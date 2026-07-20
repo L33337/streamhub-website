@@ -3,8 +3,30 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
+import type { ChromeLex } from '@/lib/i18n-chrome';
 
-export function MobileHeaderMenu() {
+interface Props {
+  // M22: viewer locale + pre-localized nav strings from the server layout
+  // (keeps the 12-language chrome lexicon out of the client bundle).
+  locale?: UiLang;
+  strings?: ChromeLex['nav'];
+}
+
+const EN_NAV: ChromeLex['nav'] = {
+  live: 'Live',
+  streamers: 'Streamers',
+  games: 'Games',
+  rankings: 'Rankings',
+  getApp: 'Get the App',
+  openMenu: 'Open menu',
+  closeMenu: 'Close menu',
+  searchPlaceholder: 'Search streamers…',
+  searchResults: 'Search results',
+  home: 'Streamer Times home',
+};
+
+export function MobileHeaderMenu({ locale = 'en', strings = EN_NAV }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -32,7 +54,7 @@ export function MobileHeaderMenu() {
     <div ref={containerRef} className="relative md:hidden">
       <button
         type="button"
-        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-label={open ? strings.closeMenu : strings.openMenu}
         aria-expanded={open}
         aria-controls="mobile-header-menu"
         onClick={() => setOpen((v) => !v)}
@@ -71,44 +93,44 @@ export function MobileHeaderMenu() {
           className="absolute right-0 top-full z-50 mt-2 min-w-[12rem] rounded-xl border border-border-default bg-background-elevated p-2 shadow-lg"
         >
           <Link
-            href="/live"
+            href={localeHref(locale, '/live')}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
           >
-            Live
+            {strings.live}
           </Link>
           <Link
-            href="/streamers"
+            href={localeHref(locale, '/streamers')}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
           >
-            Streamers
+            {strings.streamers}
           </Link>
           <Link
-            href="/games"
+            href={localeHref(locale, '/games')}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
           >
-            Games
+            {strings.games}
           </Link>
           <Link
-            href="/rankings"
+            href={localeHref(locale, '/rankings')}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="mb-1 inline-flex h-10 w-full items-center justify-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors"
           >
-            Rankings
+            {strings.rankings}
           </Link>
           <Link
-            href="/app"
+            href={localeHref(locale, '/app')}
             role="menuitem"
             onClick={() => setOpen(false)}
             className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
           >
-            Get the App
+            {strings.getApp}
           </Link>
         </div>
       )}

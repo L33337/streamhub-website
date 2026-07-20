@@ -1,19 +1,34 @@
 import type { MetadataRoute } from 'next';
+import { UI_LANGS } from '@/lib/i18n-core';
 
 const SITE_URL = 'https://streamertimes.tv';
 
 export const revalidate = 86400;
 
+// M22: every private path class exists once unprefixed (English) and once per
+// non-English locale prefix (/de/settings, …). robots matching is
+// prefix-based, so each variant needs its own entry. /en/* 308s to unprefixed
+// and /api/ lives outside the locale tree — neither needs locale variants.
+function withLocaleVariants(paths: string[]): string[] {
+  return paths.flatMap((path) => [
+    path,
+    ...UI_LANGS.filter((lang) => lang !== 'en').map((lang) => `/${lang}${path}`),
+  ]);
+}
+
 // Disallows every group repeats: a crawler reads ONLY its most specific
 // matching group, so nothing is inherited from the * group.
-const SHARED_DISALLOWS = ['/api/', '/auth/', '/settings', '/favorites', '/feed'];
+const SHARED_DISALLOWS = [
+  '/api/',
+  ...withLocaleVariants(['/auth/', '/settings', '/favorites', '/feed']),
+];
 
 // Search crawlers additionally skip /schedule/<id>: those URLs churn every
 // prediction cycle (ai_slot_pred_* ids embed a timestamp) and expired slots
 // 308 to the streamer page — Google burned ~500 crawls/day on them (GSC
 // "Page with redirect" noise) before the Googlebot group existed; Bing was
 // still crawling them until it got its own group (2026-07-20).
-const SEARCH_CRAWLER_DISALLOWS = [...SHARED_DISALLOWS, '/schedule/'];
+const SEARCH_CRAWLER_DISALLOWS = [...SHARED_DISALLOWS, ...withLocaleVariants(['/schedule/'])];
 
 export default function robots(): MetadataRoute.Robots {
   return {

@@ -6,6 +6,7 @@ import {
   type PublicStreamer,
 } from '@/lib/server/partner-api';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
+import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { InitialsAvatar } from './InitialsAvatar';
 
@@ -14,8 +15,13 @@ const MIN_BEFORE_FALLBACK = 4;
 
 interface Props {
   currentId: string;
-  /** Streamer's broadcaster language (BCP-47, e.g. "en", "de"); may be null. */
+  /** Streamer's broadcaster language (BCP-47, e.g. "en", "de"); may be null.
+   *  Drives the RELATION QUERY (same-language streamers) — content semantics,
+   *  NOT the viewer locale. */
   language: string | null;
+  // M22 (D6): heading/aria + link locale follow the viewer's locale; defaults
+  // to the streamer's language for pre-M22 call sites.
+  uiLanguage?: string | null;
 }
 
 type Settled<T> = { ok: true; value: T } | { ok: false; error: unknown };
@@ -48,7 +54,8 @@ function settle<T>(promise: Promise<T>): Promise<Settled<T>> {
  * Async server component. Degrades to null on any Partner API error so it can
  * never break the host page.
  */
-export async function RelatedStreamers({ currentId, language }: Props) {
+export async function RelatedStreamers({ currentId, language, uiLanguage }: Props) {
+  const ui = uiLanguage ?? language;
   const api = getPartnerApi();
   const related: PublicStreamer[] = [];
   const seen = new Set<string>([currentId]);
@@ -113,16 +120,16 @@ export async function RelatedStreamers({ currentId, language }: Props) {
         id="related-heading"
         className="text-sm font-bold uppercase tracking-widest text-text-muted"
       >
-        {uiLexFor(language).related.heading}
+        {uiLexFor(ui).related.heading}
       </h2>
       <nav
-        aria-label={uiLexFor(language).related.heading}
+        aria-label={uiLexFor(ui).related.heading}
         className="mt-4 flex flex-wrap gap-2"
       >
         {related.map((s) => (
           <Link
             key={s.id}
-            href={`/streamer/${encodeURIComponent(s.id)}`}
+            href={localeHref(resolveUiLang(ui), `/streamer/${encodeURIComponent(s.id)}`)}
             className="inline-flex items-center gap-2 rounded-full border border-border-default bg-background-elevated py-1 pl-1 pr-3 text-sm text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-text-primary"
           >
             {s.avatar_url ? (

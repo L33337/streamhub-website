@@ -100,11 +100,15 @@ export function buildStreamerFaqItems(
   liveSlots: PublicStreamSlot[],
   upcomingSlots: PublicStreamSlot[],
   stats: PublicStreamerStats | null = null,
+  // M22 (D6): FAQ copy follows the viewer's locale; defaults to the
+  // streamer's language for pre-M22 callers.
+  uiLanguage: string | null = null,
 ): FaqItem[] {
   const items: FaqItem[] = [];
   const name = streamer.name;
-  const lang = resolveUiLang(streamer.language);
-  const lex = uiLexFor(streamer.language);
+  const ui = uiLanguage ?? streamer.language;
+  const lang = resolveUiLang(ui);
+  const lex = uiLexFor(ui);
   const L = lex.faq;
   const platforms = platformsLabel(streamer.platforms, lang);
   // Schedule-entry times render in the streamer's fixed home timezone (matches
@@ -132,7 +136,7 @@ export function buildStreamerFaqItems(
   // it does not depend on anything being scheduled, so it keeps answering the
   // highest-volume query ("when does X stream") on otherwise quiet pages.
   if (stats && !streamer.is_always_on) {
-    let answer = statsLeadSentence(name, stats, streamer.language);
+    let answer = statsLeadSentence(name, stats, ui);
     if (stats.typical_duration_minutes !== null) {
       answer += ` ${L.typicallyLast(formatDuration(stats.typical_duration_minutes))}`;
     }
@@ -180,7 +184,7 @@ export function buildStreamerFaqItems(
       answer += ` ${L.outsideDates(
         name,
         stats.typical_start,
-        statsTimezoneLabel(stats, streamer.language),
+        statsTimezoneLabel(stats, ui),
       )}`;
     }
     items.push({ question: L.qSchedule(name), answer });

@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import { UI_LANGS } from '@/lib/i18n-core';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid slug' }, { status: 400 });
   }
 
+  // M22 locale routing: the cached route lives once per locale
+  // (/[locale]/streamer/[slug]; unprefixed URLs are middleware-rewritten to
+  // /en). Purge every variant — a live/offline flip changes all of them.
+  // The bare path is kept first for safety across rewrite/cache-key semantics
+  // (belt & braces; verified on the Vercel preview).
   revalidatePath(`/streamer/${slug}`);
-  console.log(`[revalidate] /streamer/${slug}`);
+  for (const locale of UI_LANGS) {
+    revalidatePath(`/${locale}/streamer/${slug}`);
+  }
+  console.log(`[revalidate] /streamer/${slug} (+${UI_LANGS.length} locale variants)`);
   return new Response(null, { status: 204 });
 }

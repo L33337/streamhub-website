@@ -10,21 +10,24 @@ import { channelUrls } from './WatchButtons';
 interface Props {
   streamer: PublicStreamer;
   liveSlot: PublicStreamSlot | null;
+  // M22 (D6 keying rule): UI strings follow the VIEWER's locale; the bio and
+  // stream title keep the streamer's language marking. Defaults to the
+  // streamer's language for pre-M22 call sites.
+  uiLanguage?: string | null;
 }
 
-export function StreamerHero({ streamer, liveSlot }: Props) {
+export function StreamerHero({ streamer, liveSlot, uiLanguage }: Props) {
   const isLive = liveSlot !== null;
   const isAlwaysOn = liveSlot?.is_always_on === true;
+  const ui = uiLanguage ?? streamer.language;
 
-  // Mark broadcaster-language text (bio, stream title) so browsers/screen readers
-  // treat it correctly. Kept although the surrounding body is now localized to
-  // the same language: for languages WITHOUT a lexicon (resolveUiLang → 'en')
-  // the chrome stays English while the bio is still native — these spans are
-  // load-bearing exactly then. dir flips only for RTL.
+  // Mark broadcaster-language text (bio, stream title) so browsers/screen
+  // readers treat it correctly: the surrounding page is localized to the
+  // VIEWER's locale, so native-language content needs its own lang/dir.
   const code = langCode(streamer.language); // 'en' when null/unknown
-  const nativeLang = code !== 'en' ? code : undefined;
+  const nativeLang = code !== langCode(ui) ? code : undefined;
   const nativeDir = dirFor(streamer.language);
-  const L = uiLexFor(streamer.language);
+  const L = uiLexFor(ui);
 
   // The channel links now live behind the Twitch/YouTube platform badges under
   // the name (replacing the removed inline "Twitch ↗ · YouTube ↗" links). A null
@@ -62,7 +65,7 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
               streamerName={streamer.name}
               size="md"
               className="mt-1 shrink-0"
-              language={streamer.language ?? undefined}
+              language={ui ?? undefined}
             />
           </div>
 
@@ -72,10 +75,10 @@ export function StreamerHero({ streamer, liveSlot }: Props) {
                 key={p}
                 platform={p}
                 href={channelHref(p)}
-                language={streamer.language ?? undefined}
+                language={ui ?? undefined}
               />
             ))}
-            {isLive && <LiveBadge language={streamer.language ?? undefined} />}
+            {isLive && <LiveBadge language={ui ?? undefined} />}
             {isAlwaysOn && <AlwaysOnBadge />}
           </div>
 

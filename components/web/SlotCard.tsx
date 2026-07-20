@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
 import { slotLexFor } from '@/lib/i18n-slot';
+import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import {
   AlwaysOnBadge,
   ConfidenceBadge,
@@ -37,7 +38,7 @@ export function SlotCard({
 
   return (
     <Link
-      href={`/schedule/${encodeURIComponent(slot.id)}`}
+      href={localeHref(resolveUiLang(language), `/schedule/${encodeURIComponent(slot.id)}`)}
       prefetch={false}
       className="block transition-transform hover:scale-[1.01] focus-visible:scale-[1.01] focus-visible:outline-none"
       aria-label={`${slot.streamer_name}: ${slot.title}`}

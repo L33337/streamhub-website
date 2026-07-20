@@ -13,6 +13,9 @@ import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
 interface Props {
   streamer: PublicStreamer;
   stats: PublicStreamerStats;
+  // M22 (D6): UI strings follow the viewer's locale; defaults to the
+  // streamer's language for pre-M22 call sites.
+  uiLanguage?: string | null;
 }
 
 // ISO order Mon→Sun; labels come from Intl (weekdayLong) in the streamer's
@@ -41,11 +44,12 @@ const WEEKDAY_KEYS: StatsWeekday[] = [
  * Callers only render this when stats are available (`getStreamerStats`
  * collapses has_stats:false and errors to null), so no empty state here.
  */
-export function StreamerStatsBlock({ streamer, stats }: Props) {
-  const lang = resolveUiLang(streamer.language);
-  const L = uiLexFor(streamer.language).stats;
-  const proseDir = dirFor(streamer.language);
-  const tzLabel = statsTimezoneLabel(stats, streamer.language);
+export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
+  const ui = uiLanguage ?? streamer.language;
+  const lang = resolveUiLang(ui);
+  const L = uiLexFor(ui).stats;
+  const proseDir = dirFor(ui);
+  const tzLabel = statsTimezoneLabel(stats, ui);
   const byWeekday = new Map<StatsWeekday, PublicStreamerStatsWeekday>(
     stats.weekdays.map((d) => [d.weekday, d]),
   );
@@ -60,7 +64,7 @@ export function StreamerStatsBlock({ streamer, stats }: Props) {
         {L.heading(streamer.name)}
       </h2>
       <p className="mt-3 text-text-secondary" dir={proseDir}>
-        {statsLeadSentence(streamer.name, stats, streamer.language)}
+        {statsLeadSentence(streamer.name, stats, ui)}
       </p>
 
       {stats.weekdays.length > 0 && (

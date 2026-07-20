@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import robots from '../robots';
+import { UI_LANGS } from '@/lib/i18n-core';
 
 // Freezes the three-group structure of robots.txt. The split is load-bearing:
 // search crawlers (Googlebot, Bingbot) must not crawl the churning
@@ -11,7 +12,16 @@ import robots from '../robots';
 
 // /feed covers /feed/interests too (path-prefix match) — like /settings and
 // /favorites it always redirects anonymous crawlers, so no bot should fetch it.
-const SHARED_DISALLOWS = ['/api/', '/auth/', '/settings', '/favorites', '/feed'];
+// M22: each private class repeats per non-English locale prefix (/de/settings…);
+// /api/ lives outside the locale tree and /en/* 308s to unprefixed.
+const NON_EN = UI_LANGS.filter((lang) => lang !== 'en');
+const localeVariants = (paths: string[]) =>
+  paths.flatMap((p) => [p, ...NON_EN.map((lang) => `/${lang}${p}`)]);
+const SHARED_DISALLOWS = [
+  '/api/',
+  ...localeVariants(['/auth/', '/settings', '/favorites', '/feed']),
+];
+const SCHEDULE_DISALLOWS = localeVariants(['/schedule/']);
 
 function ruleFor(userAgent: string) {
   const rules = robots().rules;
@@ -25,14 +35,14 @@ describe('robots.txt rules', () => {
     expect(googlebot).toBeDefined();
     // A crawler reads only its most specific matching group, so the Googlebot
     // group must contain the shared disallows itself — not inherit from *.
-    expect(googlebot?.disallow).toEqual([...SHARED_DISALLOWS, '/schedule/']);
+    expect(googlebot?.disallow).toEqual([...SHARED_DISALLOWS, ...SCHEDULE_DISALLOWS]);
     expect(googlebot?.allow).toBe('/');
   });
 
   it('blocks /schedule/ for Bingbot, repeating every shared disallow', () => {
     const bingbot = ruleFor('Bingbot');
     expect(bingbot).toBeDefined();
-    expect(bingbot?.disallow).toEqual([...SHARED_DISALLOWS, '/schedule/']);
+    expect(bingbot?.disallow).toEqual([...SHARED_DISALLOWS, ...SCHEDULE_DISALLOWS]);
     expect(bingbot?.allow).toBe('/');
   });
 
@@ -41,6 +51,7 @@ describe('robots.txt rules', () => {
     expect(wildcard).toBeDefined();
     expect(wildcard?.disallow).toEqual(SHARED_DISALLOWS);
     expect(wildcard?.disallow).not.toContain('/schedule/');
+    expect(wildcard?.disallow).not.toContain('/de/schedule/');
     expect(wildcard?.allow).toBe('/');
   });
 

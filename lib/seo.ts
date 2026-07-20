@@ -2,11 +2,36 @@ import type { Metadata } from 'next';
 import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
 import { localizedNextLabel, safeTimeZone, timezoneCityLabel } from '@/lib/format/time';
 import { uiLexFor } from '@/lib/i18n-ui';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
 
 const SITE_URL = 'https://streamertimes.tv';
 
 export function streamerCanonicalUrl(slug: string): string {
   return `${SITE_URL}/streamer/${encodeURIComponent(slug)}`;
+}
+
+/**
+ * M22 P2 interim locale gate — until P3 ships hreflang clusters + the
+ * indexability matrix, every NON-English locale variant is viewable but
+ * `noindex,follow` with a SELF-canonical (its prefixed URL; a foreign
+ * canonical next to noindex sends conflicting signals). English (unprefixed)
+ * metadata passes through untouched. Call this LAST in a page's
+ * generateMetadata: `return applyLocaleSeo(meta, locale, '/live')` where
+ * `path` is the unprefixed route path.
+ *
+ * P3 replaces the body of this function with the real per-page-class
+ * indexability matrix + `alternates.languages` — call sites stay unchanged.
+ */
+export function applyLocaleSeo(metadata: Metadata, locale: UiLang, path: string): Metadata {
+  if (locale === 'en') return metadata;
+  return {
+    ...metadata,
+    alternates: {
+      ...metadata.alternates,
+      canonical: `${SITE_URL}${localeHref(locale, path)}`,
+    },
+    robots: { index: false, follow: true },
+  };
 }
 
 /**
@@ -470,15 +495,22 @@ function cleanField(value: string | null | undefined): string | null {
 export function buildStreamerMetadata(
   streamer: PublicStreamer,
   slug: string,
-  opts?: { liveSlot?: PublicStreamSlot | null; nextSlot?: PublicStreamSlot | null },
+  opts?: {
+    liveSlot?: PublicStreamSlot | null;
+    nextSlot?: PublicStreamSlot | null;
+    // M22 (D6): meta copy follows the VIEWER's locale (the [locale] route
+    // param). Omitted → pre-M22 behavior (streamer's language) for old callers.
+    viewerLocale?: UiLang;
+  },
 ): Metadata {
   const platforms =
     streamer.platforms.length > 0
       ? streamer.platforms.map((p) => p[0].toUpperCase() + p.slice(1)).join(' + ')
       : 'Twitch & YouTube';
   const url = streamerCanonicalUrl(slug);
-  const L = lexFor(streamer.language);
-  const lang = langCode(streamer.language);
+  const uiLanguage = opts?.viewerLocale ?? streamer.language;
+  const L = lexFor(uiLanguage);
+  const lang = langCode(uiLanguage);
   const name = streamer.name;
 
   const live = opts?.liveSlot ?? null;
@@ -514,7 +546,7 @@ export function buildStreamerMetadata(
       timeZone: tz ?? undefined,
     });
     if (tz) {
-      label += ` (${uiLexFor(streamer.language).stats.cityTime(timezoneCityLabel(tz))})`;
+      label += ` (${uiLexFor(uiLanguage).stats.cityTime(timezoneCityLabel(tz))})`;
     }
     titleCore = L.nextTitle(name);
     description = buildNextDesc(L, name, label, cat, title, !!next.is_predicted);
@@ -552,9 +584,10 @@ export function buildStreamerMetadata(
       url,
       type: 'profile',
       siteName: 'Streamer Times',
-      // Honest per-streamer locale (e.g. de_DE). With the lexicon now covering
-      // every stored language, the og text and this locale always agree.
-      locale: langToLocale(streamer.language),
+      // Honest per-variant locale: og text renders in the viewer locale (M22)
+      // — or the streamer's language for pre-M22 callers — so text and locale
+      // always agree.
+      locale: langToLocale(uiLanguage),
     },
     twitter: {
       card: 'summary_large_image',

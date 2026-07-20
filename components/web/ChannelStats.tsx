@@ -6,6 +6,9 @@ import { uiLexFor } from '@/lib/i18n-ui';
 interface Props {
   streamer: PublicStreamer;
   stats: PublicStreamerStats | null;
+  // M22 (D6): UI strings follow the viewer's locale; defaults to the
+  // streamer's language for pre-M22 call sites.
+  uiLanguage?: string | null;
 }
 
 interface Tile {
@@ -23,9 +26,10 @@ interface Tile {
  * the whole section disappears when nothing is known. Tile styling matches
  * StreamerStatsBlock's existing stat tiles.
  */
-export function ChannelStats({ streamer, stats }: Props) {
-  const lang = resolveUiLang(streamer.language);
-  const L = uiLexFor(streamer.language).channelStats;
+export function ChannelStats({ streamer, stats, uiLanguage }: Props) {
+  const ui = uiLanguage ?? streamer.language;
+  const lang = resolveUiLang(ui);
+  const L = uiLexFor(ui).channelStats;
 
   // Twitch counts followers, YouTube counts subscribers; a Twitch presence
   // wins the label because the backend fetches the primary channel's count

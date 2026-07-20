@@ -10,6 +10,7 @@ import {
 import { InitialsAvatar } from './InitialsAvatar';
 import { LocalTime } from './LocalTime';
 import { WatchButtons } from './WatchButtons';
+import { slotLexFor } from '@/lib/i18n-slot';
 
 function formatDuration(minutes: number): string | null {
   if (minutes <= 0) return null;
@@ -19,7 +20,15 @@ function formatDuration(minutes: number): string | null {
   return remainder === 0 ? `${hours}h` : `${hours}h ${remainder}min`;
 }
 
-export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
+export function StreamSlotDetail({
+  slot,
+  language = 'en',
+}: {
+  slot: PublicStreamSlot;
+  // M22: viewer locale — localizes the reasoning-box heading; the default
+  // keeps every pre-M22 caller byte-identical.
+  language?: string;
+}) {
   const isLive = slot.status === 'live';
   const isAlwaysOn = slot.is_always_on;
   const durationLabel = isAlwaysOn ? null : formatDuration(slot.duration_minutes);
@@ -86,7 +95,9 @@ export function StreamSlotDetail({ slot }: { slot: PublicStreamSlot }) {
         {!isLive && <ConfidenceBadge level={slot.confidence} />}
       </div>
 
-      {!isLive && slot.reasoning && <ReasoningBox reasoning={slot.reasoning} />}
+      {!isLive && slot.reasoning && (
+        <ReasoningBox reasoning={slot.reasoning} language={language} />
+      )}
 
       <WatchButtons
         twitchLogin={slot.twitch_login}
@@ -182,7 +193,7 @@ function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; classNa
   );
 }
 
-function ReasoningBox({ reasoning }: { reasoning: string }) {
+function ReasoningBox({ reasoning, language }: { reasoning: string; language: string }) {
   return (
     <section
       aria-labelledby="reasoning-heading"
@@ -192,7 +203,7 @@ function ReasoningBox({ reasoning }: { reasoning: string }) {
         id="reasoning-heading"
         className="text-sm font-semibold uppercase tracking-wider text-accent-cyan mb-2"
       >
-        Why this prediction?
+        {slotLexFor(language).whyThisPrediction}
       </h3>
       <div className="space-y-3 text-sm leading-relaxed text-text-secondary">
         {reasoning
