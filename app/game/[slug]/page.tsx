@@ -32,11 +32,15 @@ export const revalidate = 300;
 const SITE_URL = 'https://streamertimes.tv';
 
 // "Most followed" ranking: fetch a few extra (some may have null follower_count
-// and get filtered out), display the top 12. follower_count is refreshed daily,
+// and get filtered out), display the top 5. follower_count is refreshed daily,
 // so a 1h data-cache revalidate keeps the extra call cheap (deduped with the
 // streamer pages, which fetch the same streamer rows).
 const RANK_FETCH_LIMIT = 16;
-const RANK_DISPLAY_LIMIT = 12;
+const RANK_DISPLAY_LIMIT = 5;
+// "Watching {category} now": only the biggest live channels by viewer count —
+// popular categories can have dozens of live slots, which buried the sections
+// below.
+const LIVE_DISPLAY_LIMIT = 4;
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -281,11 +285,14 @@ export default async function GamePage({ params }: Props) {
         imageUrl: game.box_art_url,
       })
     : null;
-  // Structured list leads with the most-followed streamers, then the long tail.
-  const itemListStreamers = [
-    ...ranked.map((r) => ({ id: r.streamer.id, name: r.streamer.name })),
-    ...moreStreamers.map((s) => ({ id: s.id, name: s.name })),
-  ].slice(0, 20);
+  // Structured list mirrors exactly what the page renders: the ranking table
+  // when there is one, otherwise the roster grid (which is only shown as a
+  // fallback for categories with no follower data).
+  const itemListStreamers = (
+    ranked.length > 0
+      ? ranked.map((r) => ({ id: r.streamer.id, name: r.streamer.name }))
+      : moreStreamers.map((s) => ({ id: s.id, name: s.name }))
+  ).slice(0, 20);
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -428,6 +435,7 @@ export default async function GamePage({ params }: Props) {
           <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-label={`Live ${category} streams`}>
             {[...liveSlots]
               .sort((a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1))
+              .slice(0, LIVE_DISPLAY_LIMIT)
               .map((slot) => (
                 <li key={slot.id}>
                   <SlotCard slot={slot} />
@@ -530,20 +538,14 @@ export default async function GamePage({ params }: Props) {
         </section>
       )}
 
-      {moreStreamers.length > 0 && (
+      {ranked.length === 0 && moreStreamers.length > 0 && (
         <section aria-labelledby="streamers-heading" className="mt-10">
           <h2 id="streamers-heading" className="text-xl font-bold text-white">
-            {ranked.length > 0
-              ? `More ${category} streamers`
-              : `Streamers who stream ${category}`}
+            Streamers who stream {category}
           </h2>
           <ul
             className="mt-4 grid gap-3 sm:grid-cols-2"
-            aria-label={
-              ranked.length > 0
-                ? `More ${category} streamers`
-                : `Streamers who stream ${category}`
-            }
+            aria-label={`Streamers who stream ${category}`}
           >
             {moreStreamers.map((s) => (
             <li key={s.id}>
