@@ -65,6 +65,12 @@ function TrendBadge({ delta }: { delta: number }) {
  * Box-art card for the /games catalog grid. Every stat renders only when its
  * (nullable) source field is present — an old-API deploy or a cold aggregate
  * simply shows fewer numbers.
+ *
+ * The card is NOT one big <Link>: the top-streamer names are their own links to
+ * /streamer/<id> (SEO — ~200 crawlable "name + game" anchors that the plain-text
+ * version gave away for free). Nested anchors are invalid HTML, so the card-wide
+ * click target is the stretched title link (`after:absolute after:inset-0`) and
+ * the name links sit above it via `relative z-10`.
  */
 export function GameCard({
   game,
@@ -77,17 +83,13 @@ export function GameCard({
 }) {
   const liveCount = game.live_streamer_count ?? 0;
   const hours = game.hours_28d;
-  // Top-3 most-followed names (nightly aggregate) as crawlable text — people
-  // search "streamer + game". Plain text, never nested links (card IS a link).
-  const topNames = (game.top_streamers ?? []).map((t) => t.name);
-  const moreCount = Math.max(0, game.streamer_count - topNames.length);
+  // Top-3 most-followed streamers (nightly aggregate) — people search
+  // "streamer + game", so each name links to its streamer page.
+  const top = (game.top_streamers ?? []).filter((t) => t?.id && t?.name);
+  const moreCount = Math.max(0, game.streamer_count - top.length);
 
   return (
-    <Link
-      href={`/game/${slug}`}
-      prefetch={false}
-      className="group block rounded-xl border border-border-default bg-background-elevated p-2 transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight"
-    >
+    <article className="group relative rounded-xl border border-border-default bg-background-elevated p-2 transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight">
       <div className="relative">
         <GameBoxArt
           boxArtUrl={game.box_art_url}
@@ -102,18 +104,39 @@ export function GameCard({
         )}
       </div>
       <div className="mt-2 min-w-0">
-        <h3
-          className="truncate text-sm font-semibold text-text-primary group-hover:text-accent-cyan"
-          title={game.category}
-        >
-          {game.category}
-        </h3>
-        {topNames.length > 0 && (
-          <p
-            className="mt-0.5 truncate text-[11px] text-text-secondary"
-            title={topNames.join(', ')}
+        <h3 className="text-sm font-semibold text-text-primary group-hover:text-accent-cyan">
+          <Link
+            href={`/game/${slug}`}
+            prefetch={false}
+            title={game.category}
+            // Stretched link: covers the whole card as the primary click
+            // target without wrapping (and thus swallowing) the name links.
+            // The truncation lives on the inner span, NOT on this anchor or
+            // the h3 — an `overflow:hidden` ancestor between the ::after and
+            // its containing block (the <article>) would clip the overlay
+            // down to the title text.
+            className="block after:absolute after:inset-0 after:z-0 after:content-['']"
           >
-            {topNames.join(', ')}
+            <span className="block truncate">{game.category}</span>
+          </Link>
+        </h3>
+        {top.length > 0 && (
+          <p
+            className="relative z-10 mt-0.5 line-clamp-2 text-[11px] leading-tight text-text-secondary"
+            title={top.map((t) => t.name).join(', ')}
+          >
+            {top.map((t, i) => (
+              <span key={t.id}>
+                {i > 0 && ', '}
+                <Link
+                  href={`/streamer/${encodeURIComponent(t.id)}`}
+                  prefetch={false}
+                  className="hover:text-accent-cyan hover:underline"
+                >
+                  {t.name}
+                </Link>
+              </span>
+            ))}
             {moreCount > 0 && <span className="text-text-muted"> +{moreCount}</span>}
           </p>
         )}
@@ -130,6 +153,6 @@ export function GameCard({
           </p>
         )}
       </div>
-    </Link>
+    </article>
   );
 }

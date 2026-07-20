@@ -108,12 +108,20 @@ export default async function GamesIndexPage() {
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    itemListElement: withSlug.map((g, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      name: g.category,
-      url: `${SITE_URL}/game/${g.slug}`,
-    })),
+    itemListElement: withSlug.map((g, i) => {
+      // Top-streamer names in the structured data too, so the entity link
+      // between category and streamer survives outside the rendered markup.
+      const names = (g.top_streamers ?? []).map((t) => t?.name).filter(Boolean);
+      return {
+        '@type': 'ListItem',
+        position: i + 1,
+        name: g.category,
+        url: `${SITE_URL}/game/${g.slug}`,
+        ...(names.length > 0 && {
+          description: `${g.category} streamers on Twitch and YouTube, including ${names.join(', ')}.`,
+        }),
+      };
+    }),
   };
 
   return (
