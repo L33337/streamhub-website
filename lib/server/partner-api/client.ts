@@ -14,6 +14,7 @@ import type {
   Platform,
   PublicGame,
   PublicStreamer,
+  PublicStreamerRankings,
   PublicStreamerStats,
   PublicStreamHistory,
   PublicStreamSlot,
@@ -196,25 +197,49 @@ class PartnerApiClient {
   }
 
   /**
-   * Bounded leaderboard (max 100 entries, no pagination) for one ranking
-   * metric. The underlying aggregates move nightly, so the fetch defaults to a
-   * 1-hour data-cache revalidate (same reasoning as `getStreamerStats`).
+   * One page of a ranking leaderboard (max 100 entries; pass `offset` for
+   * deeper pages). `rank` is absolute, so page 2 starts at 101, and
+   * `pagination.total` gives the exact pool size the page count derives from.
+   * The underlying aggregates move nightly, so the fetch defaults to a 1-hour
+   * data-cache revalidate (same reasoning as `getStreamerStats`).
    * NOT best-effort — callers on prerendered routes must catch (never throw
    * during prerender) so they can degrade to an empty list AND noindex the
    * thin page.
    */
   async getRankings(
     metric: RankingMetric,
-    opts: FetchOptions & { limit?: number } = {},
+    opts: FetchOptions & { limit?: number; offset?: number } = {},
   ): Promise<RankingsResponse> {
     const params = new URLSearchParams();
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    if (opts.offset) params.set('offset', String(opts.offset));
     const qs = params.toString();
     return this.request<RankingsResponse>(
       'GET',
       `/v1/rankings/${metric}${qs ? `?${qs}` : ''}`,
       { revalidate: 3600, ...opts },
     );
+  }
+
+  /**
+   * Every ranking placement of one streamer (global metrics + game categories),
+   * for the "Rankings" block on the streamer detail page. Best-effort: any
+   * error collapses to null so a failing rank lookup never breaks the page
+   * (mirrors `getStreamerStats`). Ranks move nightly → 1-hour revalidate.
+   */
+  async getStreamerRankings(
+    id: string,
+    opts: FetchOptions = {},
+  ): Promise<PublicStreamerRankings | null> {
+    try {
+      return await this.request<PublicStreamerRankings>(
+        'GET',
+        `/v1/streamers/${encodeURIComponent(id)}/rankings`,
+        { revalidate: 3600, ...opts },
+      );
+    } catch {
+      return null;
+    }
   }
 
   async listSchedules(opts: ListSchedulesOptions = {}): Promise<Paginated<PublicStreamSlot>> {

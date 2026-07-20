@@ -57,6 +57,23 @@ export const ru: UiLex = {
         other: `за последние ${n} дня`,
       }),
   },
+  streamerRankings: {
+    heading: 'Рейтинги',
+    intro: (name) => `Место ${name} в наших рейтингах стримеров.`,
+    ofTotal: (total) => `из ${total}`,
+    metric: {
+      'most-followed': 'Больше всего подписчиков',
+      'most-watched': 'Больше всего зрителей',
+      'most-active': 'Самые активные',
+      'most-reliable': 'Самые пунктуальные',
+      'fastest-growing': 'Быстрее всех растут',
+    },
+    rowAria: (rank, total, label) => `Место ${rank} из ${total} в рейтинге «${label}»`,
+    trendUp: (p) => `поднялся на ${p} за неделю`,
+    trendDown: (p) => `опустился на ${p} за неделю`,
+    byCategory: 'По категориям',
+    summary: (name, parts) => `${name} занимает ${parts.join(' и ')} на Streamer Times.`,
+  },
   stats: {
     heading: (name) => `Когда стримит ${name}?`,
     // `tz` is the cityTime label ("время Berlin") — dash/colon constructions

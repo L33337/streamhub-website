@@ -41,6 +41,23 @@ export const ja: UiLex = {
     hoursStreamed: '配信時間',
     lastNDays: (n) => `直近${n}日間`,
   },
+  streamerRankings: {
+    heading: 'ランキング',
+    intro: (name) => `${name} のランキング順位です。`,
+    ofTotal: (total) => `${total}人中`,
+    metric: {
+      'most-followed': 'フォロワー数',
+      'most-watched': '視聴者数',
+      'most-active': '配信時間',
+      'most-reliable': '時間の正確さ',
+      'fastest-growing': '成長率',
+    },
+    rowAria: (rank, total, label) => `${label} で ${total}人中 ${rank}位`,
+    trendUp: (p) => `先週より ${p} 位上昇`,
+    trendDown: (p) => `先週より ${p} 位下降`,
+    byCategory: 'カテゴリー別',
+    summary: (name, parts) => `Streamer Times での ${name} の順位: ${parts.join('、')}。`,
+  },
   stats: {
     heading: (name) => `${name}の配信はいつ？`,
     caption: (name, tz) => `${name}の曜日別の典型的な配信時間（${tz}で表示）`,

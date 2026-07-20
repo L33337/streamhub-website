@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
   type PublicStreamer,
+  type PublicStreamerRankings,
   type PublicStreamerStats,
   type PublicStreamSlot,
   type PublicStreamHistory,
@@ -20,6 +21,7 @@ import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { ChannelStats } from '@/components/web/ChannelStats';
+import { StreamerRankings } from '@/components/web/StreamerRankings';
 import { StreamerHero } from '@/components/web/StreamerHero';
 import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
@@ -54,6 +56,7 @@ interface StreamerPageData {
   /** Finished broadcasts, newest first ([0] feeds LastStreamCard, the rest the Recent-streams list). */
   history: PublicStreamHistory[];
   stats: PublicStreamerStats | null;
+  rankings: PublicStreamerRankings | null;
   now: Date;
 }
 
@@ -108,19 +111,24 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // Best-effort too: getStreamerStats collapses errors AND has_stats:false to null.
   // Cached for 1h in the data cache (stats move daily at most).
   const statsCall = api.getStreamerStats(slug);
+  // Ranking placements for the Channel-stats "Rankings" block. Best-effort
+  // (collapses every error to null) and 1h-cached like stats — ranks move
+  // nightly at most.
+  const rankingsCall = api.getStreamerRankings(slug);
 
   const streamer = await streamerCall;
   if (!streamer) {
     // 404: discard the in-flight section calls. allSettled attaches a handler to
     // each so a rejected live/upcoming fetch can't surface as an unhandled
     // rejection — but we do NOT await it, so notFound() is not delayed.
-    void Promise.allSettled([liveCall, upcomingCall, historyCall, statsCall]);
+    void Promise.allSettled([liveCall, upcomingCall, historyCall, statsCall, rankingsCall]);
     return {
       streamer: null,
       liveSlots: [],
       upcomingSlots: [],
       history: [],
       stats: null,
+      rankings: null,
       now,
     };
   }
@@ -128,11 +136,12 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // Valid slug: await the section batch. A live/upcoming rejection still
   // propagates here exactly as before (the page errors rather than silently
   // dropping schedule data).
-  const [liveCall_, upcomingCall_, history, stats] = await Promise.all([
+  const [liveCall_, upcomingCall_, history, stats, rankings] = await Promise.all([
     liveCall,
     upcomingCall,
     historyCall,
     statsCall,
+    rankingsCall,
   ]);
 
   return {
@@ -141,6 +150,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     upcomingSlots: upcomingCall_.data,
     history,
     stats,
+    rankings,
     now,
   };
 });
@@ -162,7 +172,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function StreamerPage({ params }: Props) {
   const { slug } = await params;
-  const { streamer, liveSlots, upcomingSlots, history, stats, now } =
+  const { streamer, liveSlots, upcomingSlots, history, stats, rankings, now } =
     await loadStreamerPage(slug);
   if (!streamer) notFound();
 
@@ -330,6 +340,7 @@ export default async function StreamerPage({ params }: Props) {
           when nothing is scheduled and the page would otherwise be empty
           ("when does X usually stream?" stays answered on quiet pages). */}
       <ChannelStats streamer={streamer} stats={stats} />
+      <StreamerRankings streamer={streamer} rankings={rankings} />
 
       {isLive && lastStreamCard}
 

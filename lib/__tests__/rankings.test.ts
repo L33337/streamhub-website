@@ -247,6 +247,28 @@ describe('sanitizeRankingEntries', () => {
     const entries = [entry(1, { follower_count: 2 }), entry(2, { follower_count: 1 })];
     expect(sanitizeRankingEntries(spec, entries)).toEqual(entries);
   });
+
+  it('numbers a deeper page from startRank, not from 1', () => {
+    // Regression: re-ranking page 2 to 1..n made RankingTable emit #rank-1…
+    // while the streamer pages deep-link #rank-101…, so every deep link on a
+    // page-2 rank pointed at a row that did not exist.
+    const entries = [entry(101, { follower_count: 900 }), entry(102, { follower_count: 800 })];
+    const out = sanitizeRankingEntries(spec, entries, 101);
+    expect(out.map((e) => e.rank)).toEqual([101, 102]);
+  });
+
+  it('stays dense from startRank when a row in the middle is dropped', () => {
+    const entries = [
+      entry(101, { follower_count: 900 }),
+      entry(102, { follower_count: 0 }), // dropped
+      entry(103, { follower_count: 700 }),
+    ];
+    const out = sanitizeRankingEntries(spec, entries, 101);
+    expect(out.map((e) => [e.rank, e.streamer.id])).toEqual([
+      [101, 's101'],
+      [102, 's103'],
+    ]);
+  });
 });
 
 describe('buildRankingItemListJsonLd', () => {

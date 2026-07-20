@@ -27,6 +27,8 @@ import {
 } from '@/lib/rankings';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 import { GameRankingExplorer } from '@/components/web/games/GameRankingExplorer';
+import { RankingPagination } from '@/components/web/RankingPagination';
+import { GAME_RANKING_PAGE_SIZE, pageCount } from '@/lib/streamer-rankings';
 
 // 300 (was 3600): the table now carries LIVE badges + live viewer numbers —
 // same freshness class as the game hub (/game/[slug]).
@@ -34,13 +36,21 @@ export const revalidate = 300;
 
 const SITE_URL = 'https://streamertimes.tv';
 
-// Depth-50 ranking (vs. the game hub's compact top 12). Fetch extra because
-// null/0-follower streamers are filtered out before ranking.
-const RANK_FETCH_LIMIT = 60;
-const RANK_DISPLAY_LIMIT = 50;
+/**
+ * Fetch the WHOLE category pool in one request (500 = the partner API's max
+ * limit), then rank and slice into pages server-side.
+ *
+ * Deliberately not offset pagination: rankGameStreamers re-sorts client-side on
+ * (followers, avg viewers, name, id) and drops zero-follower rows, which is NOT
+ * the (followers, id) order the API pages by. Slicing an offset window would
+ * therefore re-sort only within that window and shuffle rows across page
+ * boundaries. Ranking the full pool first makes every rank absolute and exact —
+ * which the streamer-page deep links depend on. Largest category today: 98.
+ */
+const RANK_FETCH_LIMIT = 500;
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; page?: string }>;
 }
 
 interface GameRankingData {
@@ -118,7 +128,7 @@ const loadGameRanking = cache(async (slug: string): Promise<GameRankingData> => 
     return { ...empty, category: game.category, game };
   }
 
-  const ranked = rankGameStreamers(rankedCall.value.data, RANK_DISPLAY_LIMIT);
+  const ranked = rankGameStreamers(rankedCall.value.data, RANK_FETCH_LIMIT);
   const liveSlots: PublicStreamSlot[] =
     liveCall.status === 'fulfilled' ? liveCall.value.data : [];
   const upcomingSlots: PublicStreamSlot[] =
@@ -166,10 +176,17 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, page: rawPage } = await params;
+  const page = parseGamePage(rawPage);
+  if (page === null) {
+    return { title: 'Not found — StreamerTimes', robots: { index: false, follow: false } };
+  }
   const { category, game, rows } = await loadGameRanking(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
-  const url = `${SITE_URL}/rankings/game/${slug}`;
+  const url =
+    page === 1
+      ? `${SITE_URL}/rankings/game/${slug}`
+      : `${SITE_URL}/rankings/game/${slug}/${page}`;
   const top = rows[0];
   // Coarse, slow-moving numbers only — never live viewer counts in metadata
   // (hourly churn hurts SEO more than the numbers help; see /game/[slug]).
@@ -185,7 +202,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `The top ${category} streamers ranked by channel followers across Twitch and YouTube — full leaderboard with live status, hours streamed and next streams, updated daily.` +
     hoursSentence;
   const meta: Metadata = {
-    title: `Top ${category} Streamers — Ranked by Followers`,
+    title:
+      page === 1
+        ? `Top ${category} Streamers — Ranked by Followers`
+        : `Top ${category} Streamers — Ranked by Followers — Page ${page}`,
     description,
     alternates: { canonical: url },
     openGraph: {
@@ -207,17 +227,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Thin-content gate: a depth ranking with a handful of rows would be a
   // near-duplicate of the game hub's own table — keep it out of the index
   // (and out of the sitemap, which mirrors this via streamer_count >= 10).
-  if (!isRankingIndexable(rows.length)) {
+  // Pages 2+ are always noindex,follow — near-duplicate list pages, but still
+  // a crawl path to the streamer pages they link to.
+  if (page > 1 || !isRankingIndexable(rows.length)) {
     meta.robots = { index: false, follow: true };
   }
   return meta;
 }
 
+/**
+ * Optional trailing page segment. `undefined` (the flat route) is page 1;
+ * anything that is not a plain positive integer >= 2 is rejected, so page 1
+ * never gains a "/1" twin and "/01" style duplicates 404.
+ */
+function parseGamePage(raw: string | undefined): number | null {
+  if (raw === undefined) return 1;
+  if (!/^[1-9][0-9]*$/.test(raw)) return null;
+  const n = Number(raw);
+  return Number.isSafeInteger(n) && n >= 2 ? n : null;
+}
+
 export default async function GameRankingPage({ params }: Props) {
-  const { slug } = await params;
-  const { category, game, ranked, rows, liveCount, liveViewerTotal, related } =
+  const { slug, page: rawPage } = await params;
+  const page = parseGamePage(rawPage);
+  if (page === null) notFound();
+  const { category, game, ranked, rows: allRows, liveCount, liveViewerTotal, related } =
     await loadGameRanking(slug);
   if (!category || !game) notFound();
+
+  const pages = pageCount(allRows.length, GAME_RANKING_PAGE_SIZE);
+  const rows = allRows.slice(
+    (page - 1) * GAME_RANKING_PAGE_SIZE,
+    page * GAME_RANKING_PAGE_SIZE,
+  );
+  // A deep page past the end is a URL that should not exist. Page 1 is exempt:
+  // it legitimately renders the warming-up state during cold start and must
+  // never 404 a canonical URL over a transient fetch failure.
+  if (page > 1 && rows.length === 0) notFound();
 
   const top = rows[0];
 
@@ -247,10 +293,12 @@ export default async function GameRankingPage({ params }: Props) {
     : null;
 
   const intro =
-    `The top ${rows.length} ${category} streamer${rows.length === 1 ? '' : 's'} we track, ranked by channel followers and subscribers.` +
-    (top
-      ? ` ${top.name} tops the list with ${formatCompactNumber(top.followerCount, 'en')} ${top.platforms.includes('twitch') ? 'followers' : 'subscribers'}.`
-      : '');
+    page === 1
+      ? `The top ${allRows.length} ${category} streamer${allRows.length === 1 ? '' : 's'} we track, ranked by channel followers and subscribers.` +
+        (top
+          ? ` ${top.name} tops the list with ${formatCompactNumber(top.followerCount, 'en')} ${top.platforms.includes('twitch') ? 'followers' : 'subscribers'}.`
+          : '')
+      : `Ranks ${(page - 1) * GAME_RANKING_PAGE_SIZE + 1}–${(page - 1) * GAME_RANKING_PAGE_SIZE + rows.length} of ${allRows.length} ${category} streamers we track, ranked by channel followers and subscribers.`;
 
   const followerRefreshLabel = formatRefreshedAt(
     latestFollowerRefresh(ranked.map((r) => r.streamer)),
@@ -274,7 +322,8 @@ export default async function GameRankingPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
       />
-      {rows.length > 0 && (
+      {/* Page 1 only: pages 2+ are noindex, so structured data there is dead weight. */}
+      {page === 1 && rows.length > 0 && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
@@ -383,6 +432,14 @@ export default async function GameRankingPage({ params }: Props) {
           <div className="mt-6">
             <GameRankingExplorer rows={rows} category={category} />
           </div>
+          <RankingPagination
+            page={page}
+            pages={pages}
+            hrefFor={(n) =>
+              n === 1 ? `/rankings/game/${slug}` : `/rankings/game/${slug}/${n}`
+            }
+            label={`${category} ranking pages`}
+          />
           {hasMissing && (
             <p className="mt-2 text-xs text-text-muted">
               — means we haven&apos;t collected enough data for that channel yet, for

@@ -51,6 +51,23 @@ export const pl: UiLex = {
     hoursStreamed: 'Godziny streamowania',
     lastNDays: (n) => `ostatnie ${n} dni`,
   },
+  streamerRankings: {
+    heading: 'Rankingi',
+    intro: (name) => `Miejsce ${name} w naszych rankingach streamerów.`,
+    ofTotal: (total) => `z ${total}`,
+    metric: {
+      'most-followed': 'Najwięcej obserwujących',
+      'most-watched': 'Najczęściej oglądani',
+      'most-active': 'Najbardziej aktywni',
+      'most-reliable': 'Najbardziej punktualni',
+      'fastest-growing': 'Najszybciej rosnący',
+    },
+    rowAria: (rank, total, label) => `Miejsce ${rank} z ${total} w kategorii ${label}`,
+    trendUp: (p) => `w górę o ${p} od zeszłego tygodnia`,
+    trendDown: (p) => `w dół o ${p} od zeszłego tygodnia`,
+    byCategory: 'Według kategorii',
+    summary: (name, parts) => `${name} zajmuje ${parts.join(' i ')} na Streamer Times.`,
+  },
   stats: {
     heading: (name) => `Kiedy streamuje ${name}?`,
     // `tz` is the cityTime label ("czas Berlin") — parenthetical/colon

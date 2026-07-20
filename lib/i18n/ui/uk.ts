@@ -56,6 +56,23 @@ export const uk: UiLex = {
         other: `за останні ${n} дня`,
       }),
   },
+  streamerRankings: {
+    heading: 'Рейтинги',
+    intro: (name) => `Місце ${name} в наших рейтингах стримерів.`,
+    ofTotal: (total) => `з ${total}`,
+    metric: {
+      'most-followed': 'Найбільше підписників',
+      'most-watched': 'Найбільше глядачів',
+      'most-active': 'Найактивніші',
+      'most-reliable': 'Найпунктуальніші',
+      'fastest-growing': 'Найшвидше зростають',
+    },
+    rowAria: (rank, total, label) => `Місце ${rank} з ${total} у рейтингу «${label}»`,
+    trendUp: (p) => `піднявся на ${p} за тиждень`,
+    trendDown: (p) => `опустився на ${p} за тиждень`,
+    byCategory: 'За категоріями',
+    summary: (name, parts) => `${name} посідає ${parts.join(' і ')} на Streamer Times.`,
+  },
   stats: {
     heading: (name) => `Коли стрімить ${name}?`,
     // `tz` is the cityTime label ("час Kyiv") — dash/colon constructions avoid
