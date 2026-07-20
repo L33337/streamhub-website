@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo } from '@/lib/format/time';
+import { historyPlatforms, historyVodLinks } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
@@ -42,7 +43,14 @@ interface Props {
  * duration). Server-rendered: the relative-time label is computed once at
  * request time, so there is no client hydration of a drifting value.
  *
- * Links to the VOD when one is available; otherwise renders as a static card.
+ * One card = one broadcast SESSION. A simulcast arrives from the API as a
+ * single item carrying both platforms, so the card shows two badges and both
+ * recordings rather than one arbitrary platform's copy of the same stream.
+ *
+ * Linking depends on how many recordings exist, because an anchor may not nest
+ * inside another anchor: with at most one VOD the whole card is the link (the
+ * big click target we want); with two, the card stays static and each platform
+ * badge links to its own VOD.
  */
 export function LastStreamCard({ stream, streamerName, avatarUrl, language = null }: Props) {
   const L = uiLexFor(language).lastStream;
@@ -52,6 +60,13 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
     stream.duration_minutes != null ? formatDuration(stream.duration_minutes) : '';
   const meta = [aired, duration].filter(Boolean).join(' · ');
   const thumbnailUrl = usableThumbnail(stream.thumbnail_url);
+
+  const platforms = historyPlatforms(stream);
+  const vodLinks = historyVodLinks(stream);
+  const perBadgeLinks = vodLinks.length > 1;
+  const cardHref = perBadgeLinks ? null : (vodLinks[0]?.url ?? null);
+  const hrefFor = (platform: (typeof platforms)[number]) =>
+    perBadgeLinks ? vodLinks.find((v) => v.platform === platform)?.url : undefined;
 
   const card = (
     <article className="flex gap-3 rounded-xl bg-background-elevated p-3 gradient-border glow-cyan">
@@ -94,8 +109,20 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          <PlatformBadge platform={stream.platform} size="sm" />
-          {stream.vod_url ? (
+          <div className="flex flex-wrap items-center gap-1">
+            {platforms.map((p) => (
+              <PlatformBadge
+                key={p}
+                platform={p}
+                size="sm"
+                href={hrefFor(p)}
+                language={language ?? 'en'}
+              />
+            ))}
+          </div>
+          {/* Only meaningful while the whole card is the link — with per-badge
+              links the badges themselves are the call to action. */}
+          {cardHref ? (
             <span className="text-[10px] font-semibold uppercase tracking-wider text-accent-cyan">
               {L.watchVod}
             </span>
@@ -108,9 +135,9 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
   return (
     <section className="mt-6">
       <h2 className="text-2xl font-bold text-white mb-4">{L.heading}</h2>
-      {stream.vod_url ? (
+      {cardHref ? (
         <a
-          href={stream.vod_url}
+          href={cardHref}
           target="_blank"
           rel="noopener noreferrer"
           className="block transition-transform hover:scale-[1.01] focus-visible:scale-[1.01] focus-visible:outline-none"

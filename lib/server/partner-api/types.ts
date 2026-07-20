@@ -114,22 +114,39 @@ export interface PublicGame {
   top_streamers?: { id: string; name: string; followers: number | null }[] | null;
 }
 
+// One platform's recording of a session, as carried in `PublicStreamHistory.vods`.
+export interface PublicStreamHistoryVod {
+  platform: Platform;
+  vod_url: string | null;
+}
+
 // Mirror of supabase/functions/_shared/partner-dto.ts `PublicStreamHistory`.
-// A finished stream (VOD) from a streamer's broadcast history — feed item for
-// `/v1/streamers/{id}/history`, newest-first. Fields may be null when the
-// source platform did not provide them (Twitch VODs carry no `category`;
-// `thumbnail_url` is briefly null while a VOD is still processing).
+// ONE finished broadcast session — feed item for `/v1/streamers/{id}/history`,
+// newest-first. A Twitch+YouTube simulcast is a single item listing both
+// platforms, not two items. Fields may be null when the source platform did not
+// provide them (Twitch VODs carry no `category`; `thumbnail_url` is briefly
+// null while a VOD is still processing).
+//
+// `platforms` / `vods` are additive: optional in this mirror for deploy skew
+// (old API, new site) — read them through `lib/history.ts`, which applies the
+// legacy `platform` / `vod_url` fallback.
 export interface PublicStreamHistory {
+  // Primary platform's row id (Twitch when the session went out on Twitch).
   id: string;
   streamer_id: string;
+  // Primary platform. The scalar fields below are its metadata, per-field
+  // filled from the other platform when it has none. Prefer `platforms`.
   platform: Platform;
+  platforms?: Platform[];
   title: string | null;
   category: string | null;
   thumbnail_url: string | null;
+  // Span of the session across its platforms (earliest start, latest end).
   started_at: string;
   ended_at: string | null;
   duration_minutes: number | null;
   vod_url: string | null;
+  vods?: PublicStreamHistoryVod[];
 }
 
 export type StatsWeekday =
