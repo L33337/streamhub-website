@@ -41,6 +41,23 @@ export const en: UiLex = {
     hoursStreamed: 'Hours streamed',
     lastNDays: (n) => `last ${n} days`,
   },
+  streamerRankings: {
+    heading: 'Rankings',
+    intro: (name) => `Where ${name} places in our streamer rankings.`,
+    ofTotal: (total) => `of ${total}`,
+    metric: {
+      'most-followed': 'Most followed',
+      'most-watched': 'Most watched',
+      'most-active': 'Most active',
+      'most-reliable': 'Most punctual',
+      'fastest-growing': 'Fastest growing',
+    },
+    rowAria: (rank, total, label) => `Rank ${rank} of ${total} in ${label}`,
+    trendUp: (p) => `up ${p} ${p === 1 ? 'place' : 'places'} since last week`,
+    trendDown: (p) => `down ${p} ${p === 1 ? 'place' : 'places'} since last week`,
+    byCategory: 'By category',
+    summary: (name, parts) => `${name} ranks ${parts.join(' and ')} on Streamer Times.`,
+  },
   stats: {
     heading: (name) => `When does ${name} stream?`,
     caption: (name, tz) => `Typical streaming times for ${name} by weekday, shown in ${tz}`,

@@ -51,6 +51,30 @@ export interface UiLex {
     hoursStreamed: string;
     lastNDays(n: number): string;
   };
+  /** "Rankings" block inside Channel stats — where this streamer places. */
+  streamerRankings: {
+    heading: string;
+    intro(name: string): string;
+    /** Denominator line under a placement, e.g. "of 236 streamers". */
+    ofTotal(total: string): string;
+    /** Leaderboard labels; keys match RankingMetric. */
+    metric: {
+      'most-followed': string;
+      'most-watched': string;
+      'most-active': string;
+      'most-reliable': string;
+      'fastest-growing': string;
+    };
+    /** Accessible name of a placement link, e.g. "#3 of 236 in Most followed". */
+    rowAria(rank: number, total: string, label: string): string;
+    /** Screen-reader text for the trend arrows (delta is always >= 1). */
+    trendUp(places: number): string;
+    trendDown(places: number): string;
+    /** Grouping label above the per-category placements. */
+    byCategory: string;
+    /** Meta-description sentence, parts like ["#3 Most followed", "#1 Minecraft"]. */
+    summary(name: string, parts: string[]): string;
+  };
   stats: {
     heading(name: string): string;
     /** sr-only <caption> of the weekday table. */

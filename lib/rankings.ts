@@ -446,12 +446,21 @@ export function getRankingPageSpec(slug: string): RankingPageSpec | null {
 /**
  * Defensive filter over API entries: drops rows without a streamer or without
  * a positive primary metric value (the server already excludes them, but the
- * pages must never render a "0"/empty leaderboard row), then re-ranks 1..n so
- * positions stay dense after any drop.
+ * pages must never render a "0"/empty leaderboard row), then re-ranks densely
+ * so positions stay gap-free after any drop.
+ *
+ * `startRank` is the absolute rank of the first entry of this page — pass
+ * `offset + 1` when paginating. It must NOT default to a page-local 1..n on
+ * page 2+: RankingTable ids each row `#rank-<entry.rank>`, and the streamer
+ * detail page deep-links into exactly those anchors using the absolute rank
+ * the API reports. Re-numbering page 2 to 1..100 silently pointed every
+ * "#rank-142" link at a row that did not exist (caught in end-to-end
+ * verification, 2026-07-20).
  */
 export function sanitizeRankingEntries(
   spec: RankingPageSpec,
   entries: PublicRankingEntry[],
+  startRank = 1,
 ): PublicRankingEntry[] {
   return entries
     .filter((e) => {
@@ -461,7 +470,7 @@ export function sanitizeRankingEntries(
       const v = spec.primaryValue(e);
       return v != null && Number.isFinite(v) && v > 0;
     })
-    .map((e, i) => (e.rank === i + 1 ? e : { ...e, rank: i + 1 }));
+    .map((e, i) => (e.rank === startRank + i ? e : { ...e, rank: startRank + i }));
 }
 
 /**

@@ -32,4 +32,8 @@ export type {
   RankingValues,
   PublicRankingEntry,
   RankingsResponse,
+  RankingsPagination,
+  PublicStreamerRankings,
+  PublicRankingPlacement,
+  PublicGamePlacement,
 } from './types';

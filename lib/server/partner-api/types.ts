@@ -223,7 +223,7 @@ export interface RankingValues {
 }
 
 export interface PublicRankingEntry {
-  rank: number; // 1-based, best first
+  rank: number; // 1-based ABSOLUTE position; page 2 (offset=100) starts at 101
   values: RankingValues;
   streamer: PublicStreamer;
   // Streamer's main game over the last 28 days (most streamed hours).
@@ -231,15 +231,60 @@ export interface PublicRankingEntry {
   top_category?: { category: string; share_percent: number };
 }
 
-// Envelope of GET /v1/rankings/{metric}. Bounded top-list (max 100), no
-// pagination. `window_days` is the aggregation window (28/90) or null for
-// most-followed; `refreshed_at` is the last nightly refresh of the underlying
-// aggregate (null for the table-backed metrics).
+// Envelope of GET /v1/rankings/{metric}. `window_days` is the aggregation
+// window (28/90) or null for most-followed; `refreshed_at` is the last nightly
+// refresh of the underlying aggregate (null for the table-backed metrics).
 export interface RankingsResponse {
   metric: RankingMetric;
   window_days: number | null;
   refreshed_at: string | null;
   data: PublicRankingEntry[];
+  // Offset pagination. Optional so a response from an older API deployment
+  // still type-checks; call sites fall back to the page-length behaviour.
+  pagination?: RankingsPagination;
+}
+
+export interface RankingsPagination {
+  offset: number;
+  limit: number;
+  // Exact pool size — the page count and the "#312 of 740" copy derive from it.
+  total: number;
+  has_more: boolean;
+}
+
+// ============================================
+// Streamer rankings (GET /v1/streamers/{id}/rankings)
+// ============================================
+
+// One global leaderboard placement of a single streamer. Ranks here are exact
+// and unbounded (not capped at the top 100 the leaderboard page shows).
+export interface PublicRankingPlacement {
+  metric: RankingMetric;
+  rank: number;
+  total: number; // denominator of "#7 of 236"
+  value: number | null;
+  window_days: number | null;
+  // Rank ~7 days ago, or null when no honest baseline exists (cold start, or
+  // the streamer sat outside the snapshot depth). null means "trend unknown" —
+  // it must NOT be rendered as a "new entry" badge.
+  previous_rank: number | null;
+}
+
+// Placement within one game category. The backend only returns categories that
+// have a public page (>= 3 tracked streamers), so every entry is safe to link.
+export interface PublicGamePlacement {
+  category: string;
+  rank: number;
+  total: number;
+  value: number | null;
+  share_percent: number | null;
+  previous_rank: number | null;
+}
+
+export interface PublicStreamerRankings {
+  streamer_id: string;
+  rankings: PublicRankingPlacement[];
+  games: PublicGamePlacement[];
 }
 
 export interface PaginationInfo {

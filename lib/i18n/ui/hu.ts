@@ -41,6 +41,23 @@ export const hu: UiLex = {
     hoursStreamed: 'Streamelt órák',
     lastNDays: (n) => `az elmúlt ${n} napban`,
   },
+  streamerRankings: {
+    heading: 'Ranglisták',
+    intro: (name) => `${name} helyezései a streamer-ranglistáinkon.`,
+    ofTotal: (total) => `/ ${total}`,
+    metric: {
+      'most-followed': 'Legtöbb követő',
+      'most-watched': 'Legtöbb néző',
+      'most-active': 'Legaktívabb',
+      'most-reliable': 'Legpontosabb',
+      'fastest-growing': 'Leggyorsabban növekvő',
+    },
+    rowAria: (rank, total, label) => `${rank}. hely a(z) ${total} közül – ${label}`,
+    trendUp: (p) => `${p} hellyel feljebb a múlt héthez képest`,
+    trendDown: (p) => `${p} hellyel lejjebb a múlt héthez képest`,
+    byCategory: 'Kategória szerint',
+    summary: (name, parts) => `${name} helyezései a Streamer Timeson: ${parts.join(', ')}.`,
+  },
   stats: {
     heading: (name) => `Mikor streamel ${name}?`,
     caption: (name, tz) =>

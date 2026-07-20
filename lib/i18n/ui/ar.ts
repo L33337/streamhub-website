@@ -54,6 +54,23 @@ export const ar: UiLex = {
     hoursStreamed: 'ساعات البث',
     lastNDays: (n) => `آخر ${n} يومًا`,
   },
+  streamerRankings: {
+    heading: 'التصنيفات',
+    intro: (name) => `ترتيب ${name} في تصنيفات المذيعين لدينا.`,
+    ofTotal: (total) => `من ${total}`,
+    metric: {
+      'most-followed': 'الأكثر متابعة',
+      'most-watched': 'الأكثر مشاهدة',
+      'most-active': 'الأكثر نشاطاً',
+      'most-reliable': 'الأكثر التزاماً بالمواعيد',
+      'fastest-growing': 'الأسرع نمواً',
+    },
+    rowAria: (rank, total, label) => `المرتبة ${rank} من ${total} في ${label}`,
+    trendUp: (p) => `ارتفع ${p} مراكز منذ الأسبوع الماضي`,
+    trendDown: (p) => `انخفض ${p} مراكز منذ الأسبوع الماضي`,
+    byCategory: 'حسب الفئة',
+    summary: (name, parts) => `${name} في ${parts.join(' و ')} على Streamer Times.`,
+  },
   stats: {
     heading: (name) => `متى يبث ${name}؟`,
     // `tz` already contains "توقيت …" (cityTime) — no extra بتوقيت prefix,
