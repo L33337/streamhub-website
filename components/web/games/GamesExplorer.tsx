@@ -1,45 +1,45 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { PublicGame } from '@/lib/server/partner-api';
-import { filterGames, sortGames, type GamesSortMode } from '@/lib/games-sort';
+import { filterGames, type GamesSortMode } from '@/lib/games-sort';
+import { GAMES_HUB_VIEWS, gamesHubPath } from '@/lib/games-hub';
 import { GameCard } from './GameCard';
 
-const SORT_OPTIONS: { mode: GamesSortMode; label: string }[] = [
-  { mode: 'streamers', label: 'Most streamers' },
-  { mode: 'watched', label: 'Most watched' },
-  { mode: 'trending', label: 'Trending' },
-];
-
 /**
- * Interactive catalog grid for /games: client-side search + sort over the
- * full server-fetched list. Rendered on the server too (SSR) — the default
- * sort ('streamers') matches the API order, so the crawlable HTML equals the
- * initial client view (no hydration mismatch, no SEO loss).
+ * Catalog grid for the /games hub views.
+ *
+ * Sorting is NOT client state: each mode is its own indexable URL
+ * (/games, /games/most-streamed, /games/trending), so the switcher is a row of
+ * real links and the server hands us the already-sorted list. That fixes two
+ * things at once — the sorted views were previously invisible to crawlers, and
+ * the switcher now works with JavaScript disabled.
+ *
+ * Search stays client-side: it is a pure narrowing of an already-rendered set,
+ * has no standalone search intent worth indexing, and a server round trip per
+ * keystroke would be worse UX.
  */
 export function GamesExplorer({
   games,
   slugs,
+  activeMode,
   priorityCount = 0,
 }: {
+  /** Already sorted by the server for `activeMode`. */
   games: PublicGame[];
   // Pre-computed on the server (gameSlug is deterministic, but computing it
   // once server-side keeps the client bundle from needing the games list twice).
   slugs: Record<string, string>;
-  // LCP hint: the first N cards of the UNSORTED input get priority box art.
-  // The server passes > 0 only when this grid is the first image section on
-  // the page (nothing live above it). Keyed off `games` — not the visible
-  // render order — so re-sorting/searching never reassigns priority to new
-  // cards and fires useless late preloads.
+  activeMode: GamesSortMode;
+  // LCP hint: the first N cards get priority box art. Keyed off `games` — not
+  // the filtered render order — so typing in the search box never reassigns
+  // priority to new cards and fires useless late preloads.
   priorityCount?: number;
 }) {
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<GamesSortMode>('streamers');
 
-  const visible = useMemo(
-    () => sortGames(filterGames(games, query), mode),
-    [games, query, mode]
-  );
+  const visible = useMemo(() => filterGames(games, query), [games, query]);
 
   const prioritized = useMemo(
     () => new Set(games.slice(0, priorityCount).map((g) => g.category)),
@@ -47,29 +47,29 @@ export function GamesExplorer({
   );
 
   return (
-    <section aria-label="All games and categories">
+    <section aria-label="All games and categories" className="mt-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div
-          role="group"
-          aria-label="Sort games"
-          className="flex overflow-hidden rounded-lg border border-border-default"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.mode}
-              type="button"
-              onClick={() => setMode(opt.mode)}
-              aria-pressed={mode === opt.mode}
-              className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
-                mode === opt.mode
-                  ? 'bg-accent-cyan/20 text-accent-cyan'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <nav aria-label="Sort games" className="flex overflow-hidden rounded-lg border border-border-default">
+          {GAMES_HUB_VIEWS.map((v) => {
+            const active = v.mode === activeMode;
+            return (
+              <Link
+                key={v.mode}
+                href={gamesHubPath(v)}
+                // The active view links to itself; mark it as current rather
+                // than emitting a self-referential navigation link.
+                aria-current={active ? 'page' : undefined}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active
+                    ? 'bg-accent-cyan/20 text-accent-cyan'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {v.navLabel}
+              </Link>
+            );
+          })}
+        </nav>
         <input
           type="search"
           value={query}

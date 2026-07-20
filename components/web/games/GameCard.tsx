@@ -30,6 +30,14 @@ export function GameBoxArt({
   // preload. Everything below the fold stays lazy (the default).
   priority?: boolean;
 }) {
+  // The <Image> below is deliberately NOT `unoptimized`, unlike every other
+  // remote <Image> on the site. Box art is the one safe exception to that
+  // convention: it is a small, closed set (~260 categories) whose URLs stay
+  // stable for the lifetime of a game, so the optimizer cache is hit almost
+  // every time. Avatars and stream thumbnails change per stream and would
+  // churn the cache for no gain — leave those unoptimized. Measured 2026-07-20
+  // at the w=384 bucket this grid actually requests: 25.3 KB JPEG -> 12.1 KB
+  // AVIF (12.7 KB WebP), and the page renders 70+ of them.
   return (
     <div className="relative aspect-[285/380] w-full overflow-hidden rounded-lg bg-background-highlight">
       {boxArtUrl ? (
@@ -37,7 +45,6 @@ export function GameBoxArt({
           src={boxArtUrl}
           alt={`${name} box art`}
           fill
-          unoptimized
           sizes={sizes}
           priority={priority}
           className="object-cover"
