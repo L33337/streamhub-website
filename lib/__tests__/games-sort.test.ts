@@ -19,8 +19,8 @@ describe('sortGames', () => {
     expect(out).toEqual(['Art', 'Fortnite', 'Pokémon', 'Valorant']);
   });
 
-  it('watched mode sorts by hours_28d desc with nulls/undefined last', () => {
-    const out = sortGames(GAMES, 'watched').map((g) => g.category);
+  it('hours mode sorts by hours_28d desc (hours BROADCAST, not watched) with nulls/undefined last', () => {
+    const out = sortGames(GAMES, 'hours').map((g) => g.category);
     // Valorant 500 > Fortnite 300 > (null/undefined) Art 20 streamers > Pokémon 8
     expect(out).toEqual(['Valorant', 'Fortnite', 'Art', 'Pokémon']);
   });
@@ -35,12 +35,12 @@ describe('sortGames', () => {
       game({ category: 'Beta', streamer_count: 5, hours_28d: 100 }),
       game({ category: 'Alpha', streamer_count: 5, hours_28d: 100 }),
     ];
-    expect(sortGames(tied, 'watched').map((g) => g.category)).toEqual(['Alpha', 'Beta']);
+    expect(sortGames(tied, 'hours').map((g) => g.category)).toEqual(['Alpha', 'Beta']);
   });
 
   it('does not mutate the input array', () => {
     const input = [...GAMES];
-    sortGames(input, 'watched');
+    sortGames(input, 'hours');
     expect(input.map((g) => g.category)).toEqual(GAMES.map((g) => g.category));
   });
 });

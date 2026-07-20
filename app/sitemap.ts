@@ -3,6 +3,7 @@ import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
 import { isIndexableStreamerSlug, latestChange } from '@/lib/seo';
 import { MIN_INDEXABLE_GAME_STREAMERS } from '@/lib/rankings';
+import { gamesHubSegments } from '@/lib/games-hub';
 import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
 export const revalidate = 3600;
@@ -49,6 +50,16 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     changeFrequency: 'daily',
     priority: 0.6,
   },
+  // Sorted hub views. Separate URLs with their own titles, copy and orderings
+  // (not duplicates of /games — each is self-canonical), so they belong in the
+  // sitemap. Generated from the same registry that defines the routes, so a
+  // new view can never be added without its sitemap entry.
+  ...gamesHubSegments().map((segment) => ({
+    url: `${SITE_URL}/games/${segment}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.5,
+  })),
   {
     url: `${SITE_URL}/rankings`,
     // Honest per-render "now": the leaderboards move with each nightly refresh
