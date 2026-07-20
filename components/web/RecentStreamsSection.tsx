@@ -1,5 +1,6 @@
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo, formatUtcDateShort } from '@/lib/format/time';
+import { historyPlatforms, historyVodLinks } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
@@ -20,6 +21,11 @@ interface Props {
  * which keeps answering "what has {name} streamed lately?" even on pages with
  * nothing scheduled. Server-rendered from props; the parent guards against an
  * empty list.
+ *
+ * One row = one broadcast SESSION: a simulcast arrives as a single item with
+ * both platforms, so the same stream no longer appears twice under two badges.
+ * When a session has a recording on both platforms the badges become the VOD
+ * links (one each); a single recording keeps the plain "VOD →" link.
  */
 export function RecentStreamsSection({ streams, now, language = null }: Props) {
   if (streams.length === 0) return null;
@@ -36,6 +42,9 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
           const title = s.title?.trim() || L.lastStream.pastStream;
           const duration =
             s.duration_minutes != null ? formatDuration(s.duration_minutes) : '';
+          const platforms = historyPlatforms(s);
+          const vodLinks = historyVodLinks(s);
+          const perBadgeLinks = vodLinks.length > 1;
           return (
             <li
               key={s.id}
@@ -59,10 +68,24 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2 self-center">
-                <PlatformBadge platform={s.platform} size="sm" />
-                {s.vod_url ? (
+                <div className="flex items-center gap-1">
+                  {platforms.map((p) => (
+                    <PlatformBadge
+                      key={p}
+                      platform={p}
+                      size="sm"
+                      href={
+                        perBadgeLinks
+                          ? vodLinks.find((v) => v.platform === p)?.url
+                          : undefined
+                      }
+                      language={language ?? 'en'}
+                    />
+                  ))}
+                </div>
+                {!perBadgeLinks && vodLinks[0] ? (
                   <a
-                    href={s.vod_url}
+                    href={vodLinks[0].url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] font-semibold uppercase tracking-wider text-accent-cyan hover:text-text-primary"

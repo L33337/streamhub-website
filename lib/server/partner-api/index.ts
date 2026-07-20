@@ -22,6 +22,7 @@ export type {
   PublicStreamSlot,
   PublicGame,
   PublicStreamHistory,
+  PublicStreamHistoryVod,
   PublicStreamerStats,
   PublicStreamerStatsWeekday,
   PublicStreamerStatsCategory,

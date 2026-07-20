@@ -104,6 +104,11 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // — the rejection handler here is load-bearing so a failing history lookup never
   // rejects or breaks the page. Newest first; [0] feeds LastStreamCard, [1..8] the
   // Recent-streams list.
+  //
+  // `limit` counts broadcast SESSIONS, so 9 really is 9 distinct streams: the API
+  // folds a Twitch+YouTube simulcast into one item. Before that merge landed, a
+  // simulcasting streamer got ~4 actual broadcasts out of these 9 slots, each
+  // listed twice under two platform badges.
   const historyCall = api.getStreamerHistory(slug, { limit: 9 }).then(
     (page) => page.data,
     () => [] as PublicStreamHistory[],
