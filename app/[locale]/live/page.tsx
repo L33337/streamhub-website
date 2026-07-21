@@ -7,7 +7,7 @@ import {
   type PublicGame,
   type PublicStreamSlot,
 } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
@@ -200,12 +200,12 @@ export default async function LivePage({ params }: PageProps) {
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       {liveCount > 0 && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(itemList) }}
         />
       )}
 

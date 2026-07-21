@@ -7,7 +7,7 @@ import {
   SearchResultCard,
   type SearchResultStreamer,
 } from '@/components/web/SearchResultCard';
-import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 
@@ -149,7 +149,7 @@ export async function StreamersIndexView({
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
 
       <h1 className="text-3xl font-bold text-white">{L.streamers.h1}</h1>

@@ -11,7 +11,7 @@ import {
   type PublicRankingEntry,
   type RankingMetric,
 } from '@/lib/server/partner-api';
-import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
 import {
   buildRankingItemListJsonLd,
   formatRefreshedAt,
@@ -164,13 +164,13 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       {/* Page 1 only: pages 2+ are noindex, so structured data there is dead weight. */}
       {page === 1 && entries.length > 0 && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(itemList) }}
         />
       )}
 

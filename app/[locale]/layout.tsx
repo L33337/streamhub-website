@@ -9,6 +9,7 @@ import { SearchBar } from "@/components/web/SearchBar";
 import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
 import { HeaderUserMenu } from "@/components/web/HeaderUserMenu";
 import { AUTH_ENABLED } from "@/lib/auth-flag";
+import { jsonLdHtml } from "@/lib/seo";
 import { Providers } from "@/components/web/Providers";
 import { FloatingGetAppButton } from "@/components/web/FloatingGetAppButton";
 import { SiteFooter } from "@/components/web/SiteFooter";
@@ -108,7 +109,7 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonLdHtml({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               name: "Streamer Times",

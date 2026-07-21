@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { jsonLdHtml } from "@/lib/seo";
 import {
   Brain,
   Monitor,
@@ -352,7 +353,7 @@ export default async function AppPromoPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildFaqJsonLd()),
+          __html: jsonLdHtml(buildFaqJsonLd()),
         }}
       />
 

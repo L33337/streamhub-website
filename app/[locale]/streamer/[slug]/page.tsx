@@ -18,6 +18,7 @@ import {
   buildProfilePageJsonLd,
   buildStreamerMetadata,
   streamerIndexableLocales,
+  jsonLdHtml,
 } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
@@ -286,27 +287,27 @@ export default async function StreamerPage({ params }: Props) {
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       {/* ProfilePage wraps the Person as mainEntity; the Person keeps its
           #person @id so the BroadcastEvent broadcaster refs below resolve. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildProfilePageJsonLd(streamer, slug, locale)),
+          __html: jsonLdHtml(buildProfilePageJsonLd(streamer, slug, locale)),
         }}
       />
       {liveVideoJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(liveVideoJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(liveVideoJsonLd) }}
         />
       )}
       {broadcastEvents.map((evt, i) => (
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(evt) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(evt) }}
         />
       ))}
 

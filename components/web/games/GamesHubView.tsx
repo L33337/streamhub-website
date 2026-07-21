@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
 import {
   buildGamesCollectionPageJsonLd,
   buildGamesHubFaq,
@@ -120,11 +120,11 @@ export async function GamesHubView({
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPage) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(collectionPage) }}
       />
 
       {/* Visible breadcrumb: the BreadcrumbList above had no rendered

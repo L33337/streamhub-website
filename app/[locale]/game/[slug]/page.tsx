@@ -9,7 +9,7 @@ import {
   type PublicStreamSlot,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, buildVideoGameJsonLd } from '@/lib/seo';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, buildVideoGameJsonLd, jsonLdHtml } from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
@@ -344,16 +344,16 @@ export default async function GamePage({ params }: Props) {
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(itemList) }}
       />
       {videoGameJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(videoGameJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(videoGameJsonLd) }}
         />
       )}
 

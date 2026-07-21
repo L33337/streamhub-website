@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getPartnerApi, type PublicGame } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
+import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
@@ -158,11 +158,11 @@ export default async function RankingsHubPage({ params }: Props) {
     <main className="container mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPage) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(collectionPage) }}
       />
 
       <h1 className="text-3xl font-bold text-white md:text-4xl">{L.rankings.h1}</h1>

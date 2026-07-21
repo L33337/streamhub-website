@@ -7,7 +7,7 @@ import { HomeHero } from '@/components/web/HomeHero';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
-import { applyLocaleSeo, INDEXABLE_HUB_LOCALES } from '@/lib/seo';
+import { applyLocaleSeo, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
 import { UpcomingGrid } from '@/components/web/UpcomingGrid';
 import { PopularStreamersFooter } from '@/components/web/PopularStreamersFooter';
 import { ApiPromo } from '@/components/web/ApiPromo';
@@ -118,7 +118,7 @@ export default async function HomePage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildWebSiteJsonLd()),
+          __html: jsonLdHtml(buildWebSiteJsonLd()),
         }}
       />
 

@@ -8,6 +8,7 @@ import {
   buildStreamerMetadata,
   buildVideoGameJsonLd,
   isIndexableStreamerSlug,
+  jsonLdHtml,
   langToLocale,
   latestChange,
 } from '../seo';
@@ -431,5 +432,27 @@ describe('buildVideoGameJsonLd', () => {
       imageUrl: null,
     }) as Record<string, unknown>;
     expect('image' in ld).toBe(false);
+  });
+});
+
+describe('jsonLdHtml (XSS-safe JSON-LD serialization)', () => {
+  it('escapes < so a closing script tag cannot break out', () => {
+    const html = jsonLdHtml({ name: "</script><img src=x onerror=alert(1)>" });
+    expect(html).not.toContain("</script>");
+    expect(html).not.toContain("<img");
+    expect(html).toContain("\\u003c");
+  });
+
+  it('escapes U+2028 / U+2029 line separators', () => {
+    const html = jsonLdHtml({ a: String.fromCharCode(0x2028), b: String.fromCharCode(0x2029) });
+    expect(html).not.toContain(String.fromCharCode(0x2028));
+    expect(html).not.toContain(String.fromCharCode(0x2029));
+    expect(html).toContain("\\u2028");
+    expect(html).toContain("\\u2029");
+  });
+
+  it('round-trips back to the original object via JSON.parse', () => {
+    const obj = { name: "</script>", note: 'a' + String.fromCharCode(0x2028) + 'b' };
+    expect(JSON.parse(jsonLdHtml(obj))).toEqual(obj);
   });
 });

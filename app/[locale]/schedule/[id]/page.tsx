@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { expiredPredictionStreamerSlug } from '@/lib/prediction-redirect';
-import { buildBreadcrumbJsonLd, streamerCanonicalUrl } from '@/lib/seo';
+import { buildBreadcrumbJsonLd, streamerCanonicalUrl, jsonLdHtml } from '@/lib/seo';
 import { StreamSlotDetail } from '@/components/web/StreamSlotDetail';
 import { BackLink } from '@/components/web/BackLink';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
@@ -88,7 +88,7 @@ export default async function SlotPage({ params }: Props) {
     <main className="container mx-auto max-w-3xl px-6 pb-16 pt-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
       />
       <BackLink />
       <StreamSlotDetail slot={slot} language={locale} />

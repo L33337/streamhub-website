@@ -6,6 +6,23 @@ import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 
 const SITE_URL = 'https://streamertimes.tv';
 
+/**
+ * Safe serializer for inline <script type="application/ld+json"> blocks.
+ * JSON.stringify escapes quotes/backslashes but NOT `<`, so streamer-provided
+ * text containing `</script>` (or `<!--`, or the U+2028/2029 line separators)
+ * can break out of the script element and inject live HTML → stored XSS.
+ * Escaping `<` alone closes the breakout; the line separators are belt-and-braces
+ * (they are valid in JSON strings but illegal in JS source, and also let a
+ * payload terminate the script context in some parsers).
+ * Every JSON-LD dangerouslySetInnerHTML MUST go through this.
+ */
+export function jsonLdHtml(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 export function streamerCanonicalUrl(slug: string): string {
   return `${SITE_URL}/streamer/${encodeURIComponent(slug)}`;
 }
