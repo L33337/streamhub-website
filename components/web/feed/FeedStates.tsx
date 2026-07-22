@@ -51,13 +51,22 @@ export function EmptyFavoritesCard() {
 }
 
 /** Rendered when an active category chip filters every content section empty. */
-export function EmptyFilterHint() {
+export function EmptyFilterHint({ onClear }: { onClear?: () => void }) {
   return (
     <div className="mt-6 rounded-xl border border-border-default bg-background-elevated p-8 text-center">
       <h2 className="text-lg font-bold text-text-primary">Nothing in this category</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
-        None of the current feed items match this filter. Tap the chip again to clear it.
+        None of the current feed items match this filter.
       </p>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="mt-4 inline-flex items-center rounded-full border border-accent-cyan px-5 py-2 text-sm font-semibold text-accent-cyan transition-colors hover:bg-accent-cyan/10"
+        >
+          Show everything
+        </button>
+      )}
     </div>
   );
 }

@@ -6,9 +6,16 @@
 // live/upNext/recent/clips, REORDER discover), feed-event logging, refresh
 // (client refetch with the session-fixed `since`), the last-seen watermark
 // cookie, and the 5-minute auto-refresh.
+//
+// Feed UX round 2026-07-22 (website-only, no app counterpart yet):
+// sticky chips, RailScroller affordances, dismiss-undo with delayed event
+// logging, "updated ago" + new-live pill, Up Next day grouping + relative
+// time + .ics export, inline info-card cap, 2-col density grids, lightbox
+// playlist navigation, trending-game tiles → internal /game hubs.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshCw, X } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { RefreshCw, X, CalendarPlus } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loadFeed, loadVolatileFeed } from '@/lib/feed/loadFeed';
 import { fetchRecentStreams } from '@/lib/feed/service';
@@ -23,9 +30,12 @@ import {
   buildReliabilityLabel,
   formatPeak,
   deriveChipCategories,
+  relativeStartLabel,
+  groupUpNextSlots,
+  updatedAgoLabel,
 } from '@/lib/feed/logic';
+import { downloadSlotIcs } from '@/lib/feed/ics';
 import { toPublicStreamSlot } from '@/lib/feed/transforms';
-import { pickReasoning } from '@/lib/slot-copy';
 import type {
   FeedData,
   HomeLiveEntry,
@@ -49,10 +59,18 @@ import { ClipCard } from './ClipCard';
 import { ClipLightbox } from './ClipLightbox';
 import { DiscoverCard } from './DiscoverCard';
 import { FeedInfoCard } from './FeedInfoCard';
+import { RailScroller } from './RailScroller';
+import { FeedSnackbar } from './FeedSnackbar';
 import { SectionErrorRow, EmptyFavoritesCard, EmptyFilterHint } from './FeedStates';
 import { BriefingOverlay, type BriefingCard } from './BriefingOverlay';
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
+/** Re-render cadence for relative-time labels (countdowns, "updated ago"). */
+const TICK_MS = 30 * 1000;
+/** Undo window for dismisses — the dismiss event is only logged after it. */
+const UNDO_WINDOW_MS = 5 * 1000;
+/** Max inline info cards per page view — the rest waits for the next visit. */
+const MAX_INLINE_INFO_CARDS = 3;
 
 // Canonical feed section order for impressions + scroll depth (M18 Phase 0).
 // Keep in sync with the app's home.tsx and docs/feed-kpis.md (StreamHub repo).
@@ -63,29 +81,32 @@ function writeSeenCookie(): void {
   document.cookie = `${SEEN_COOKIE}=${encodeURIComponent(new Date().toISOString())}; path=/; max-age=${SEEN_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
 }
 
+interface SnackbarState {
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
 /**
- * Reasoning teaser + schedule-adherence pill under an Up Next card
- * (M18 Phase 2 — app parity: StreamCard teaser + ReliabilityBadge).
+ * Meta row under an Up Next card: relative start time (client-only — depends
+ * on the viewer's clock) + schedule-adherence pill + .ics calendar export.
+ * The AI reasoning teaser is NOT rendered here — SlotCard already renders it
+ * inside the card (2026-07-22 fix: it used to appear twice).
  */
 function UpNextMeta({
   slot,
   reliability,
+  nowMs,
 }: {
   slot: StreamSlot;
   reliability?: StreamerReliability;
+  /** Ticking timestamp; null until mounted (SSR renders no relative label). */
+  nowMs: number | null;
 }) {
   const label = reliability ? buildReliabilityLabel(reliability) : null;
-  // M22 P3: the feed chrome is English — foreign-language reasoning copy
-  // swaps to the always-English generic summary when available.
-  const picked = pickReasoning(
-    {
-      reasoning: slot.reasoning,
-      generic_reasoning: slot.genericReasoning,
-      copy_language: slot.copyLanguage,
-    },
-    'en',
-  );
-  if (!picked && !label) return null;
+  const rel = nowMs !== null ? relativeStartLabel(slot.startTime, new Date(nowMs)) : null;
+  const isImminent =
+    nowMs !== null && new Date(slot.startTime).getTime() - nowMs <= 60 * 60_000;
 
   const tierClass =
     reliability?.timeTier === 'reliable'
@@ -95,24 +116,45 @@ function UpNextMeta({
         : 'bg-rose-500/15 text-rose-400';
 
   return (
-    <div className="mt-1 flex items-start justify-between gap-3 px-1">
-      {picked ? (
-        <p
-          className="line-clamp-2 text-xs italic text-text-muted"
-          lang={picked.lang && picked.lang !== 'en' ? picked.lang : undefined}
+    <div className="mt-1 flex items-center justify-between gap-3 px-1">
+      <span
+        className={`flex items-center gap-1.5 text-xs font-semibold ${
+          isImminent ? 'text-accent-cyan' : 'text-text-muted'
+        }`}
+      >
+        {isImminent && (
+          <span
+            aria-hidden="true"
+            className="inline-block h-1.5 w-1.5 rounded-full bg-accent-cyan motion-safe:animate-pulse"
+          />
+        )}
+        {rel ?? ''}
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        {label && (
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${tierClass}`}>
+            {label}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            downloadSlotIcs(slot);
+            logFeedEvent({
+              event: 'tap',
+              itemType: 'upcoming',
+              itemId: `ics:${slot.id}`,
+              streamerId: slot.streamerId,
+              category: slot.category,
+            });
+          }}
+          aria-label={`Add ${slot.streamerName}'s stream to your calendar`}
+          title="Add to calendar (.ics)"
+          className="flex h-6 w-6 items-center justify-center rounded-full border border-border-default text-text-muted transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
         >
-          {picked.text}
-        </p>
-      ) : (
-        <span />
-      )}
-      {label && (
-        <span
-          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${tierClass}`}
-        >
-          {label}
-        </span>
-      )}
+          <CalendarPlus size={12} />
+        </button>
+      </span>
     </div>
   );
 }
@@ -120,7 +162,9 @@ function UpNextMeta({
 /**
  * Hover/focus-revealed "Not interested" affordance (M18 Phase 0 dismiss).
  * Web deviation from the app (documented): direct dismiss on click instead of
- * the app's long-press + confirm dialog.
+ * the app's long-press + confirm dialog. On touch devices (no hover) the
+ * button is always visible — cards navigate on tap, so hover-reveal would
+ * make dismissing impossible there.
  */
 function Dismissable({
   onDismiss,
@@ -141,7 +185,7 @@ function Dismissable({
         }}
         aria-label="Not interested"
         title="Not interested"
-        className="absolute right-2 top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full bg-black/70 text-text-secondary transition-colors hover:text-white group-focus-within:flex group-hover:flex"
+        className="absolute right-2 top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full bg-black/70 text-text-secondary transition-colors hover:text-white group-focus-within:flex group-hover:flex [@media(pointer:coarse)]:flex"
       >
         <X size={12} />
       </button>
@@ -154,18 +198,47 @@ export function FeedClient({
   sinceIso,
   userId,
   analyticsEnabled,
+  gameHubSlugs = {},
 }: {
   initial: FeedData;
   sinceIso: string;
   userId: string;
   analyticsEnabled: boolean;
+  /** Category name → /game/<slug> for games with a hub page (server-resolved). */
+  gameHubSlugs?: Record<string, string>;
 }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const router = useRouter();
   const [data, setData] = useState<FeedData>(initial);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
-  const [lightboxClip, setLightboxClip] = useState<FeedClip | null>(null);
+  const [lightbox, setLightbox] = useState<{ clip: FeedClip; playlist: FeedClip[] } | null>(
+    null,
+  );
+
+  // Hydration gate: relative-time labels and day grouping depend on the
+  // VIEWER's clock/timezone, which the server render cannot know. Pre-mount
+  // the feed renders without them (flat Up Next list, no countdowns).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // 30s tick drives countdowns + the "updated ago" label.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), TICK_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(() => Date.now());
+  const [newLiveCount, setNewLiveCount] = useState(0);
+  const [srMessage, setSrMessage] = useState('');
+  const [snackbar, setSnackbar] = useState<SnackbarState | null>(null);
+  const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Dismiss events pending their undo window: key → cancel/commit handles.
+  const pendingDismissRef = useRef<
+    Map<string, { timeout: ReturnType<typeof setTimeout>; commit: () => void }>
+  >(new Map());
 
   // M18 P7: Daily Briefing overlay + per-day seen state (localStorage).
   const [briefingOpen, setBriefingOpen] = useState(false);
@@ -190,6 +263,15 @@ export function FeedClient({
   const lastLoadedRef = useRef(Date.now());
   const loggedDiscoverIdsRef = useRef('');
   const tokenRef = useRef<string | null>(null);
+
+  // Live streamer ids of the CURRENT data — lets the volatile refresh detect
+  // freshly-live streamers for the "went live" pill.
+  const liveIdsRef = useRef<Set<string>>(
+    new Set(initial.liveNow.map((entry) => entry.slot.streamerId)),
+  );
+  useEffect(() => {
+    liveIdsRef.current = new Set(data.liveNow.map((entry) => entry.slot.streamerId));
+  }, [data.liveNow]);
 
   // Section impressions + scroll depth (M18 Phase 0): one impression per
   // section per page mount; the deepest section reached is logged on leave.
@@ -223,6 +305,18 @@ export function FeedClient({
     });
   }, [userId, analyticsEnabled]);
 
+  const showSnackbar = useCallback((next: SnackbarState, ttlMs = UNDO_WINDOW_MS) => {
+    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    setSnackbar(next);
+    snackbarTimerRef.current = setTimeout(() => setSnackbar(null), ttlMs);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    };
+  }, []);
+
   // Manual refresh (button + section-error retries): re-runs the whole feed.
   const fullRefresh = useCallback(async () => {
     if (refreshingRef.current) return;
@@ -232,6 +326,9 @@ export function FeedClient({
       const next = await loadFeed(supabase, { since: sinceRef.current });
       setData(next);
       lastLoadedRef.current = Date.now();
+      setLastUpdatedAt(Date.now());
+      setNewLiveCount(0);
+      setSrMessage(`Feed updated at ${new Date().toLocaleTimeString()}`);
     } catch (err) {
       // loadFeed isolates section failures internally; this only fires on
       // unexpected errors. Keep the current content.
@@ -253,6 +350,14 @@ export function FeedClient({
     refreshingRef.current = true;
     try {
       const v = await loadVolatileFeed(supabase, { since: sinceRef.current });
+      // "Went live" pill: streamers live now that weren't before this tick.
+      // Only shown when the user has scrolled past the Live rail — at the top
+      // the rail itself communicates the change.
+      const prevLiveIds = liveIdsRef.current;
+      const freshLive = v.liveNow.filter((entry) => !prevLiveIds.has(entry.slot.streamerId));
+      if (freshLive.length > 0 && window.scrollY > 300) {
+        setNewLiveCount(freshLive.length);
+      }
       setData((prev) => ({
         ...prev,
         liveNow: v.liveNow,
@@ -276,6 +381,7 @@ export function FeedClient({
         },
       }));
       lastLoadedRef.current = Date.now();
+      setLastUpdatedAt(Date.now());
     } catch (err) {
       console.error('[feed] volatile refresh failed:', err);
     } finally {
@@ -314,6 +420,12 @@ export function FeedClient({
   useEffect(() => {
     const leave = () => {
       writeSeenCookie();
+      // Commit dismiss events still inside their undo window — leaving the
+      // page forfeits the undo, and the event must not be lost.
+      pendingDismissRef.current.forEach(({ timeout, commit }) => {
+        clearTimeout(timeout);
+        commit();
+      });
       let depth = -1;
       SECTION_ORDER.forEach((section, index) => {
         if (seenSectionsRef.current.has(section)) depth = index;
@@ -411,9 +523,11 @@ export function FeedClient({
   }, []);
 
   // M18 Phase 1: intercept the card's <a> click and play in the lightbox;
-  // clips without a slug keep the link-out behavior.
+  // clips without a slug keep the link-out behavior. `sourceList` = the rail
+  // the clip was opened from — its embeddable clips become the lightbox
+  // playlist (prev/next navigation).
   const handleClipOpen = useCallback(
-    (clip: FeedClip, event: React.MouseEvent<HTMLAnchorElement>) => {
+    (clip: FeedClip, event: React.MouseEvent<HTMLAnchorElement>, sourceList: FeedClip[]) => {
       logFeedEvent({
         event: 'clip_open',
         itemType: 'clip',
@@ -423,11 +537,25 @@ export function FeedClient({
       });
       if (clip.externalClipId) {
         event.preventDefault();
-        setLightboxClip(clip);
+        setLightbox({
+          clip,
+          playlist: sourceList.filter((candidate) => !!candidate.externalClipId),
+        });
       }
     },
     [],
   );
+
+  const handleLightboxNavigate = useCallback((next: FeedClip) => {
+    logFeedEvent({
+      event: 'clip_open',
+      itemType: 'clip',
+      itemId: next.id,
+      streamerId: next.streamerId,
+      category: next.category,
+    });
+    setLightbox((prev) => (prev ? { ...prev, clip: next } : prev));
+  }, []);
 
   const handleDiscoverOpen = useCallback((rec: DiscoverRecommendation) => {
     logFeedEvent({
@@ -447,9 +575,13 @@ export function FeedClient({
           streamerId: rec.streamerId,
           category: rec.topCategory,
         });
+        // Reinforce the mental model: favorites drive the feed.
+        showSnackbar({
+          message: `Added ${rec.name} — their streams will show up in your feed.`,
+        });
       }
     },
-    [],
+    [showSnackbar],
   );
 
   // M18 P5: upload tap → new tab (the card is an <a>); log like a VOD watch.
@@ -462,11 +594,18 @@ export function FeedClient({
     });
   }, []);
 
-  // M18 P5: trending-game tap → chip filter when the category exists in the
-  // feed, otherwise the Twitch directory in a new tab.
+  // M18 P5 / 2026-07-22: trending-game tap → our own /game/<slug> hub when
+  // one exists (app parity — the app opens its in-app game hub since 07-22).
+  // Fallbacks: chip filter when the category is in the feed, else the Twitch
+  // directory in a new tab.
   const handleTrendingGameClick = useCallback(
     (game: TrendingGame) => {
       logFeedEvent({ event: 'tap', itemType: 'chip', itemId: game.gameName, category: game.gameName });
+      const slug = gameHubSlugs[game.gameName];
+      if (slug) {
+        router.push(`/game/${slug}`);
+        return;
+      }
       if (data.chipCategories.includes(game.gameName)) {
         setSelectedCategory(game.gameName);
         return;
@@ -477,7 +616,7 @@ export function FeedClient({
         'noopener,noreferrer',
       );
     },
-    [data.chipCategories],
+    [data.chipCategories, gameHubSlugs, router],
   );
 
   // M18 P3: expand the "More" region (idempotent — the button disappears).
@@ -498,22 +637,46 @@ export function FeedClient({
     }
   }, [isLoadingMore, data.nameMap, supabase]);
 
-  // "Not interested" (M18 Phase 0): log dismiss, hide for this page mount.
-  // Ranking suppression comes in Phase 4.
+  // "Not interested" (M18 Phase 0): hide immediately, but log the dismiss
+  // only after the undo window — an undone dismiss must not feed the Phase-4
+  // rank suppression. Leaving the page commits pending dismisses (see leave).
   const handleDismiss = useCallback(
     (
       key: string,
       itemType: 'clip' | 'discover' | 'info',
       ids: { itemId?: string; streamerId?: string; category?: string },
     ) => {
-      logFeedEvent({ event: 'dismiss', itemType, ...ids });
       setDismissedKeys((prev) => {
         const next = new Set(prev);
         next.add(key);
         return next;
       });
+      const commit = () => {
+        pendingDismissRef.current.delete(key);
+        logFeedEvent({ event: 'dismiss', itemType, ...ids });
+      };
+      const timeout = setTimeout(commit, UNDO_WINDOW_MS);
+      pendingDismissRef.current.set(key, { timeout, commit });
+      showSnackbar({
+        message: 'Hidden from your feed.',
+        actionLabel: 'Undo',
+        onAction: () => {
+          const pending = pendingDismissRef.current.get(key);
+          if (pending) {
+            clearTimeout(pending.timeout);
+            pendingDismissRef.current.delete(key);
+          }
+          setDismissedKeys((prev) => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+          if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+          setSnackbar(null);
+        },
+      });
     },
-    [],
+    [showSnackbar],
   );
 
   // Section composition — exact order and gating of the app's Home screen.
@@ -536,6 +699,28 @@ export function FeedClient({
     (rec) => !dismissedKeys.has(`discover:${rec.streamerId}`),
   );
   const orderedDiscover = reorderDiscover(visibleDiscover, selectedCategory);
+
+  // Up Next day grouping (client-only: buckets follow the viewer's timezone).
+  const upNextGroups: Array<{ label: string | null; slots: StreamSlot[] }> = mounted
+    ? groupUpNextSlots(upNext, new Date(nowTick))
+    : upNext.length > 0
+      ? [{ label: null, slots: upNext }]
+      : [];
+
+  // Live-gap bridge: nothing live (unfiltered!) but something coming up —
+  // keep the top of the feed alive instead of silently dropping the section.
+  const liveBridgeSlot =
+    selectedCategory === null &&
+    data.liveNow.length === 0 &&
+    !data.sectionErrors.slots &&
+    data.hasFavorites &&
+    upNext.length > 0
+      ? upNext[0]
+      : null;
+  const liveBridgeRel =
+    liveBridgeSlot && mounted
+      ? relativeStartLabel(liveBridgeSlot.startTime, new Date(nowTick))
+      : null;
 
   // M18 P2: "schedule change" cards — one per streamer, max 2 (app parity).
   const scheduleChangeCards: ScheduleChange[] = [];
@@ -663,6 +848,7 @@ export function FeedClient({
     }
   }
   const briefingAvailable = briefingCards.length >= 2;
+  const briefingThumb = briefingCards.find((card) => card.thumbnailUrl)?.thumbnailUrl;
 
   const openBriefing = () => {
     logFeedEvent({ event: 'story_open', itemType: 'info', itemId: 'briefing' });
@@ -695,47 +881,99 @@ export function FeedClient({
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
   const topTrend = data.trending[0];
 
+  // Inline info-card budget (2026-07-22): at most MAX_INLINE_INFO_CARDS info
+  // cards per view, in render order — the feed should read as content with a
+  // few notices, not a notification pile. The briefing overlay still carries
+  // the full digest. Dismissing a card frees budget for the next candidate.
+  const interestsInviteVisible =
+    !!data.profile?.isDerivedFromSeedOnly &&
+    data.hasFavorites &&
+    !dismissedKeys.has('info:interests-invite');
+  const funFactVisible = !!(data.funFact && funFactName) && !dismissedKeys.has('info:funfact');
+  const trendingHintVisible =
+    !!(topTrend && topTrend.deltaPercent > 0) && !dismissedKeys.has('info:trending');
+  const inlineInfoCandidates: string[] = [
+    ...scheduleChangeCards.map((change) => `info:schedule-${change.scheduleId}`),
+    ...breakCards.map((brk) => `info:break-${brk.streamerId}`),
+    ...(showMissed && missed ? [`info:missed-${missed.id}`] : []),
+    ...(fanMoment ? [`info:fanmoment-${fanMoment.id}`] : []),
+    ...(interestsInviteVisible ? ['info:interests-invite'] : []),
+    ...(funFactVisible ? ['info:funfact'] : []),
+    ...(trendingHintVisible ? ['info:trending'] : []),
+    ...(recap ? ['info:recap'] : []),
+    ...(record ? [`info:milestone-${record.streamerId}`] : []),
+    ...(announcement ? [`info:newstreamer-${announcement.streamerId}`] : []),
+  ];
+  const visibleInfoKeys = new Set(inlineInfoCandidates.slice(0, MAX_INLINE_INFO_CARDS));
+
   return (
     <div ref={rootRef}>
+      <p aria-live="polite" role="status" className="sr-only">
+        {srMessage}
+      </p>
+
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-white">My feed</h1>
-        <button
-          type="button"
-          onClick={() => void fullRefresh()}
-          disabled={isRefreshing}
-          aria-label="Refresh feed"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan disabled:opacity-60"
-        >
-          <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : undefined} />
-        </button>
+        <div className="flex items-center gap-3">
+          {mounted && (
+            <span
+              className="text-[11px] text-text-muted"
+              title="The feed refreshes automatically every 5 minutes"
+            >
+              {updatedAgoLabel(lastUpdatedAt, nowTick)}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => void fullRefresh()}
+            disabled={isRefreshing}
+            aria-label="Refresh feed"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan disabled:opacity-60"
+          >
+            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : undefined} />
+          </button>
+        </div>
       </header>
 
       {briefingAvailable && (
         <button
           type="button"
           onClick={openBriefing}
-          className={`mt-4 block w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+          className={`mt-4 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
             briefingSeen
               ? 'border-border-default bg-background-elevated opacity-75 hover:opacity-100'
-              : 'border-accent-cyan bg-background-elevated hover:bg-background-highlight'
+              : 'border-accent-cyan bg-background-elevated glow-cyan hover:bg-background-highlight'
           }`}
         >
-          <span className="block text-[15px] font-bold text-accent-cyan">Your day ▸</span>
-          <span className="block text-xs text-text-secondary" suppressHydrationWarning>
-            {briefingSeen
-              ? 'Catch up again'
-              : `${briefingCards.length} cards · what you missed & what's next`}
+          {briefingThumb && (
+            <span
+              className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-full ${
+                briefingSeen ? '' : 'ring-2 ring-accent-cyan ring-offset-2 ring-offset-background'
+              }`}
+            >
+              <Image src={briefingThumb} alt="" fill unoptimized sizes="48px" className="object-cover" />
+            </span>
+          )}
+          <span className="min-w-0">
+            <span className="block text-[15px] font-bold text-accent-cyan">Your day ▸</span>
+            <span className="block text-xs text-text-secondary" suppressHydrationWarning>
+              {briefingSeen
+                ? 'Catch up again'
+                : `${briefingCards.length} cards · what you missed & what's next`}
+            </span>
           </span>
         </button>
       )}
 
       {data.chipCategories.length > 0 && (
-        <div className="mt-4">
-          <CategoryChips
-            categories={data.chipCategories}
-            selectedCategory={selectedCategory}
-            onSelect={handleSelectCategory}
-          />
+        <div className="sticky top-[var(--header-height)] z-30 -mx-4 mt-4 bg-background/95 px-4 py-2 backdrop-blur">
+          <RailScroller>
+            <CategoryChips
+              categories={data.chipCategories}
+              selectedCategory={selectedCategory}
+              onSelect={handleSelectCategory}
+            />
+          </RailScroller>
         </div>
       )}
 
@@ -743,83 +981,124 @@ export function FeedClient({
 
       {liveEntries.length > 0 ? (
         <section aria-label="Live now" data-feed-section="live">
-          <FeedSectionHeader title="Live Now" />
-          <LiveRail entries={liveEntries} onSlotTap={handleLiveTap} />
+          <FeedSectionHeader title="Live Now" count={liveEntries.length} live />
+          <RailScroller>
+            <LiveRail entries={liveEntries} onSlotTap={handleLiveTap} />
+          </RailScroller>
         </section>
       ) : data.sectionErrors.slots ? (
         <SectionErrorRow label="Couldn't load live streams" onRetry={() => void fullRefresh()} />
+      ) : liveBridgeSlot ? (
+        <div className="mt-8 flex items-center gap-2.5 rounded-xl border border-border-default bg-background-elevated px-4 py-3 text-sm text-text-secondary">
+          <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full bg-text-muted" />
+          <span>
+            No one is live right now — next up:{' '}
+            <span className="font-semibold text-text-primary">{liveBridgeSlot.streamerName}</span>
+            {liveBridgeRel ? (
+              <span className="text-text-muted"> · {liveBridgeRel.toLowerCase()}</span>
+            ) : null}
+          </span>
+        </div>
       ) : null}
 
       {upNext.length > 0 && (
         <section aria-label="Up next" data-feed-section="upnext">
-          <FeedSectionHeader title="Up Next" actionLabel="See all" actionHref="/" />
-          <ul className="flex flex-col gap-3">
-            {upNext.map((slot) => (
-              <li key={`upnext-${slot.id}`} onClickCapture={() => handleUpNextTap(slot)}>
-                <SlotCard slot={toPublicStreamSlot(slot)} />
-                <UpNextMeta slot={slot} reliability={data.reliabilityMap[slot.streamerId]} />
-              </li>
+          <FeedSectionHeader
+            title="Up Next"
+            count={upNext.length}
+            actionLabel="See all"
+            actionHref="/program"
+          />
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {upNextGroups.map((group, groupIndex) => (
+              <Fragment key={group.label ?? 'all'}>
+                {group.label && (
+                  <li
+                    className={`text-xs font-bold uppercase tracking-wider text-text-muted md:col-span-2 ${
+                      groupIndex > 0 ? 'mt-2' : ''
+                    }`}
+                  >
+                    {group.label}
+                  </li>
+                )}
+                {group.slots.map((slot) => (
+                  <li key={`upnext-${slot.id}`}>
+                    <div onClickCapture={() => handleUpNextTap(slot)}>
+                      <SlotCard slot={toPublicStreamSlot(slot)} compact />
+                    </div>
+                    <UpNextMeta
+                      slot={slot}
+                      reliability={data.reliabilityMap[slot.streamerId]}
+                      nowMs={mounted ? nowTick : null}
+                    />
+                  </li>
+                ))}
+              </Fragment>
             ))}
           </ul>
         </section>
       )}
 
-      {scheduleChangeCards.map((change) => {
-        const when = new Date(change.scheduledStartTime).toLocaleString(undefined, {
-          weekday: 'short',
-          hour: 'numeric',
-          minute: '2-digit',
-        });
-        return (
-          <div key={`schedule-${change.scheduleId}`} data-feed-section="info">
-            <Dismissable
-              onDismiss={() =>
-                handleDismiss(`info:schedule-${change.scheduleId}`, 'info', {
-                  itemId: `schedule-${change.scheduleId}`,
-                  streamerId: change.streamerId,
-                  category: change.category ?? undefined,
-                })
-              }
-            >
-              <FeedInfoCard
-                variant="schedule-change"
-                headline={`${data.nameMap[change.streamerId]} cancelled a stream`}
-                body={`The announced stream on ${when}${change.category ? ` (${change.category})` : ''} was taken off the schedule.`}
-              />
-            </Dismissable>
-          </div>
-        );
-      })}
+      {scheduleChangeCards
+        .filter((change) => visibleInfoKeys.has(`info:schedule-${change.scheduleId}`))
+        .map((change) => {
+          const when = new Date(change.scheduledStartTime).toLocaleString(undefined, {
+            weekday: 'short',
+            hour: 'numeric',
+            minute: '2-digit',
+          });
+          return (
+            <div key={`schedule-${change.scheduleId}`} data-feed-section="info">
+              <Dismissable
+                onDismiss={() =>
+                  handleDismiss(`info:schedule-${change.scheduleId}`, 'info', {
+                    itemId: `schedule-${change.scheduleId}`,
+                    streamerId: change.streamerId,
+                    category: change.category ?? undefined,
+                  })
+                }
+              >
+                <FeedInfoCard
+                  variant="schedule-change"
+                  headline={`${data.nameMap[change.streamerId]} cancelled a stream`}
+                  body={`The announced stream on ${when}${change.category ? ` (${change.category})` : ''} was taken off the schedule.`}
+                />
+              </Dismissable>
+            </div>
+          );
+        })}
 
-      {breakCards.map((brk) => {
-        const until = new Date(brk.vacationUntil).toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-        });
-        return (
-          <div key={`break-${brk.streamerId}`} data-feed-section="info">
-            <Dismissable
-              onDismiss={() =>
-                handleDismiss(`info:break-${brk.streamerId}`, 'info', {
-                  itemId: `break-${brk.streamerId}`,
-                  streamerId: brk.streamerId,
-                })
-              }
-            >
-              <FeedInfoCard
-                variant="break"
-                headline={`${data.nameMap[brk.streamerId]} is on break`}
-                body={`Announced on Twitch: back around ${until}.`}
-              />
-            </Dismissable>
-          </div>
-        );
-      })}
+      {breakCards
+        .filter((brk) => visibleInfoKeys.has(`info:break-${brk.streamerId}`))
+        .map((brk) => {
+          const until = new Date(brk.vacationUntil).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+          });
+          return (
+            <div key={`break-${brk.streamerId}`} data-feed-section="info">
+              <Dismissable
+                onDismiss={() =>
+                  handleDismiss(`info:break-${brk.streamerId}`, 'info', {
+                    itemId: `break-${brk.streamerId}`,
+                    streamerId: brk.streamerId,
+                  })
+                }
+              >
+                <FeedInfoCard
+                  variant="break"
+                  headline={`${data.nameMap[brk.streamerId]} is on break`}
+                  body={`Announced on Twitch: back around ${until}.`}
+                />
+              </Dismissable>
+            </div>
+          );
+        })}
 
       {recent.length > 0 ? (
         <section aria-label="New for you" data-feed-section="recent">
-          <FeedSectionHeader title="New for you" />
-          <ul className="flex flex-col gap-3">
+          <FeedSectionHeader title="New for you" count={recent.length} />
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {recent.map((stream) => (
               <li key={`vod-${stream.id}`}>
                 <FeedVodCard stream={stream} onWatch={() => handleVodWatch(stream)} />
@@ -831,7 +1110,7 @@ export function FeedClient({
         <SectionErrorRow label="Couldn't load recent streams" onRetry={() => void fullRefresh()} />
       ) : null}
 
-      {showMissed && missed && (
+      {showMissed && missed && visibleInfoKeys.has(`info:missed-${missed.id}`) && (
         <div data-feed-section="info">
           <Dismissable
             onDismiss={() =>
@@ -859,31 +1138,30 @@ export function FeedClient({
 
       {clips.length > 0 ? (
         <section aria-label="Highlights" data-feed-section="clips">
-          <FeedSectionHeader title="Highlights" />
-          <ul
-            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label="Clip highlights"
-          >
-            {clips.map((clip) => (
-              <li key={`clip-${clip.id}`} className="shrink-0">
-                <Dismissable
-                  onDismiss={() =>
-                    handleDismiss(`clip:${clip.id}`, 'clip', {
-                      itemId: clip.id,
-                      streamerId: clip.streamerId,
-                      category: clip.category,
-                    })
-                  }
-                >
-                  <ClipCard
-                    clip={clip}
-                    streamerName={data.nameMap[clip.streamerId]}
-                    onOpen={(event) => handleClipOpen(clip, event)}
-                  />
-                </Dismissable>
-              </li>
-            ))}
-          </ul>
+          <FeedSectionHeader title="Highlights" count={clips.length} />
+          <RailScroller>
+            <ul className="flex gap-3 pb-2" aria-label="Clip highlights">
+              {clips.map((clip) => (
+                <li key={`clip-${clip.id}`} className="shrink-0">
+                  <Dismissable
+                    onDismiss={() =>
+                      handleDismiss(`clip:${clip.id}`, 'clip', {
+                        itemId: clip.id,
+                        streamerId: clip.streamerId,
+                        category: clip.category,
+                      })
+                    }
+                  >
+                    <ClipCard
+                      clip={clip}
+                      streamerName={data.nameMap[clip.streamerId]}
+                      onOpen={(event) => handleClipOpen(clip, event, clips)}
+                    />
+                  </Dismissable>
+                </li>
+              ))}
+            </ul>
+          </RailScroller>
         </section>
       ) : data.sectionErrors.clips ? (
         <SectionErrorRow label="Couldn't load highlights" onRetry={() => void fullRefresh()} />
@@ -892,24 +1170,23 @@ export function FeedClient({
       {selectedCategory === null && data.uploads.length > 0 && (
         <section aria-label="New videos">
           <FeedSectionHeader title="New videos" />
-          <ul
-            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label="Recent YouTube uploads"
-          >
-            {data.uploads.map((upload) => (
-              <li key={`upload-${upload.id}`} className="shrink-0">
-                <UploadCard
-                  upload={upload}
-                  streamerName={data.nameMap[upload.streamerId]}
-                  onOpen={() => handleUploadOpen(upload)}
-                />
-              </li>
-            ))}
-          </ul>
+          <RailScroller>
+            <ul className="flex gap-3 pb-2" aria-label="Recent YouTube uploads">
+              {data.uploads.map((upload) => (
+                <li key={`upload-${upload.id}`} className="shrink-0">
+                  <UploadCard
+                    upload={upload}
+                    streamerName={data.nameMap[upload.streamerId]}
+                    onOpen={() => handleUploadOpen(upload)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </RailScroller>
         </section>
       )}
 
-      {fanMoment && (
+      {fanMoment && visibleInfoKeys.has(`info:fanmoment-${fanMoment.id}`) && (
         <div data-feed-section="info">
           <Dismissable
             onDismiss={() =>
@@ -928,27 +1205,25 @@ export function FeedClient({
         </div>
       )}
 
-      {allFilteredEmpty && <EmptyFilterHint />}
+      {allFilteredEmpty && <EmptyFilterHint onClear={() => handleSelectCategory(null)} />}
 
-      {data.profile?.isDerivedFromSeedOnly &&
-        data.hasFavorites &&
-        !dismissedKeys.has('info:interests-invite') && (
-          <div data-feed-section="info">
-            <Dismissable
-              onDismiss={() =>
-                handleDismiss('info:interests-invite', 'info', { itemId: 'interests-invite' })
-              }
-            >
-              <FeedInfoCard
-                variant="interests-invite"
-                headline="Make it yours"
-                body="Pick a few categories you enjoy and your feed gets personal right away."
-                ctaLabel="Choose interests"
-                ctaHref="/feed/interests"
-              />
-            </Dismissable>
-          </div>
-        )}
+      {interestsInviteVisible && visibleInfoKeys.has('info:interests-invite') && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() =>
+              handleDismiss('info:interests-invite', 'info', { itemId: 'interests-invite' })
+            }
+          >
+            <FeedInfoCard
+              variant="interests-invite"
+              headline="Make it yours"
+              body="Pick a few categories you enjoy and your feed gets personal right away."
+              ctaLabel="Choose interests"
+              ctaHref="/feed/interests"
+            />
+          </Dismissable>
+        </div>
+      )}
 
       {orderedDiscover.length > 0 ? (
         <section aria-label={discoverTitle} data-feed-section="discover">
@@ -979,7 +1254,7 @@ export function FeedClient({
         <SectionErrorRow label="Couldn't load suggestions" onRetry={() => void fullRefresh()} />
       ) : null}
 
-      {data.funFact && funFactName && !dismissedKeys.has('info:funfact') && (
+      {funFactVisible && data.funFact && visibleInfoKeys.has('info:funfact') && (
         <div data-feed-section="info">
           <Dismissable
             onDismiss={() => handleDismiss('info:funfact', 'info', { itemId: 'funfact' })}
@@ -993,7 +1268,7 @@ export function FeedClient({
         </div>
       )}
 
-      {topTrend && topTrend.deltaPercent > 0 && !dismissedKeys.has('info:trending') && (
+      {trendingHintVisible && topTrend && visibleInfoKeys.has('info:trending') && (
         <div data-feed-section="info">
           <Dismissable
             onDismiss={() => handleDismiss('info:trending', 'info', { itemId: 'trending' })}
@@ -1012,56 +1287,61 @@ export function FeedClient({
       {selectedCategory === null && data.trendingGames.length > 0 && (
         <section aria-label="Big on Twitch right now">
           <FeedSectionHeader title="Big on Twitch right now" />
-          <ul
-            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label="Trending Twitch categories"
-          >
-            {data.trendingGames.map((game) => (
-              <li key={`trending-game-${game.rank}`} className="w-24 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleTrendingGameClick(game)}
-                  className="block w-full text-left focus-visible:outline-none"
-                  aria-label={`Trending on Twitch: ${game.gameName}, rank ${game.rank}`}
-                >
-                  <div className="relative h-32 w-24 overflow-hidden rounded-lg bg-background-highlight transition-transform hover:scale-[1.03]">
-                    {game.boxArtUrl ? (
-                      <Image
-                        src={game.boxArtUrl}
-                        alt=""
-                        fill
-                        unoptimized
-                        sizes="96px"
-                        className="object-cover"
-                      />
-                    ) : null}
-                    <span className="absolute left-1 top-1 rounded bg-black/70 px-1 py-px text-[10px] font-bold text-white">
-                      #{game.rank}
-                    </span>
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-text-secondary">
-                    {game.gameName}
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <RailScroller>
+            <ul className="flex gap-3 pb-2" aria-label="Trending Twitch categories">
+              {data.trendingGames.map((game) => (
+                <li key={`trending-game-${game.rank}`} className="w-24 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleTrendingGameClick(game)}
+                    className="block w-full text-left focus-visible:outline-none"
+                    aria-label={`Trending on Twitch: ${game.gameName}, rank ${game.rank}`}
+                  >
+                    <div className="relative h-32 w-24 overflow-hidden rounded-lg bg-background-highlight transition-transform motion-safe:hover:scale-[1.03]">
+                      {game.boxArtUrl ? (
+                        <Image
+                          src={game.boxArtUrl}
+                          alt=""
+                          fill
+                          unoptimized
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      ) : null}
+                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1 py-px text-[10px] font-bold text-white">
+                        #{game.rank}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-text-secondary">
+                      {game.gameName}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </RailScroller>
         </section>
       )}
 
-      {recap && (
+      {recap && visibleInfoKeys.has('info:recap') && (
         <div data-feed-section="info">
           <Dismissable onDismiss={() => handleDismiss('info:recap', 'info', { itemId: 'recap' })}>
             <FeedInfoCard
               variant="recap"
               headline="Your week in streams"
-              body={`Your streamers were live ${recap.totalHours}h across ${recap.streams} streams this week${recap.topCategory ? ` — top category: ${recap.topCategory}` : ''}.`}
+              stats={[
+                { value: `${recap.totalHours}h`, label: 'live time' },
+                { value: String(recap.streams), label: 'streams' },
+                ...(recap.topCategory
+                  ? [{ value: recap.topCategory, label: 'top category' }]
+                  : []),
+              ]}
             />
           </Dismissable>
         </div>
       )}
 
-      {record && (
+      {record && visibleInfoKeys.has(`info:milestone-${record.streamerId}`) && (
         <div data-feed-section="info">
           <Dismissable
             onDismiss={() =>
@@ -1080,7 +1360,7 @@ export function FeedClient({
         </div>
       )}
 
-      {announcement && (
+      {announcement && visibleInfoKeys.has(`info:newstreamer-${announcement.streamerId}`) && (
         <div data-feed-section="info">
           <Dismissable
             onDismiss={() =>
@@ -1118,37 +1398,36 @@ export function FeedClient({
       {moreExpanded && moreClipsVisible.length > 0 && (
         <section aria-label="More highlights" data-feed-section="clips">
           <FeedSectionHeader title="More highlights" />
-          <ul
-            className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label="More clip highlights"
-          >
-            {moreClipsVisible.map((clip) => (
-              <li key={`clip-more-${clip.id}`} className="shrink-0">
-                <Dismissable
-                  onDismiss={() =>
-                    handleDismiss(`clip:${clip.id}`, 'clip', {
-                      itemId: clip.id,
-                      streamerId: clip.streamerId,
-                      category: clip.category,
-                    })
-                  }
-                >
-                  <ClipCard
-                    clip={clip}
-                    streamerName={data.nameMap[clip.streamerId]}
-                    onOpen={(event) => handleClipOpen(clip, event)}
-                  />
-                </Dismissable>
-              </li>
-            ))}
-          </ul>
+          <RailScroller>
+            <ul className="flex gap-3 pb-2" aria-label="More clip highlights">
+              {moreClipsVisible.map((clip) => (
+                <li key={`clip-more-${clip.id}`} className="shrink-0">
+                  <Dismissable
+                    onDismiss={() =>
+                      handleDismiss(`clip:${clip.id}`, 'clip', {
+                        itemId: clip.id,
+                        streamerId: clip.streamerId,
+                        category: clip.category,
+                      })
+                    }
+                  >
+                    <ClipCard
+                      clip={clip}
+                      streamerName={data.nameMap[clip.streamerId]}
+                      onOpen={(event) => handleClipOpen(clip, event, moreClipsVisible)}
+                    />
+                  </Dismissable>
+                </li>
+              ))}
+            </ul>
+          </RailScroller>
         </section>
       )}
 
       {moreExpanded && moreRecentVisible.length > 0 && (
         <section aria-label="Earlier this week" data-feed-section="recent">
           <FeedSectionHeader title="Earlier this week" />
-          <ul className="flex flex-col gap-3">
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {moreRecentVisible.map((stream) => (
               <li key={`vod-more-${stream.id}`}>
                 <FeedVodCard stream={stream} onWatch={() => handleVodWatch(stream)} />
@@ -1191,26 +1470,63 @@ export function FeedClient({
           <p className="mt-6 text-center text-xs text-text-muted">You&apos;re all caught up.</p>
         )}
 
+      {newLiveCount > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setNewLiveCount(0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="glow-green fixed left-1/2 top-28 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-full border border-live/60 bg-background-highlight px-4 py-1.5 text-sm font-bold text-live shadow-lg shadow-black/40"
+        >
+          <span
+            aria-hidden="true"
+            className="inline-block h-2 w-2 rounded-full bg-live motion-safe:animate-pulse"
+          />
+          {newLiveCount === 1 ? '1 streamer went live' : `${newLiveCount} streamers went live`}
+        </button>
+      )}
+
       {briefingOpen && (
         <BriefingOverlay
           cards={briefingCards}
           onClose={() => setBriefingOpen(false)}
           onWatchClip={(clipId) => {
             const clip = data.clips.find((candidate) => candidate.id === clipId);
-            if (clip) {
+            if (clip?.externalClipId) {
               setBriefingOpen(false);
-              setLightboxClip(clip);
+              setLightbox({
+                clip,
+                playlist: data.clips.filter((candidate) => !!candidate.externalClipId),
+              });
+            } else if (clip) {
+              setBriefingOpen(false);
+              window.open(clip.url, '_blank', 'noopener,noreferrer');
             }
           }}
         />
       )}
 
-      {lightboxClip && (
+      {lightbox && (
         <ClipLightbox
-          key={lightboxClip.id}
-          clip={lightboxClip}
-          streamerName={data.nameMap[lightboxClip.streamerId]}
-          onClose={() => setLightboxClip(null)}
+          key={lightbox.clip.id}
+          clip={lightbox.clip}
+          playlist={lightbox.playlist}
+          streamerName={data.nameMap[lightbox.clip.streamerId]}
+          onClose={() => setLightbox(null)}
+          onNavigate={handleLightboxNavigate}
+        />
+      )}
+
+      {snackbar && (
+        <FeedSnackbar
+          message={snackbar.message}
+          actionLabel={snackbar.actionLabel}
+          onAction={snackbar.onAction}
+          onClose={() => {
+            if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+            setSnackbar(null);
+          }}
         />
       )}
     </div>

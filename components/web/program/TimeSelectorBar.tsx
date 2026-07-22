@@ -52,7 +52,7 @@ export function TimeSelectorBar({
   return (
     <nav
       aria-label="Jump to time"
-      className="sticky top-16 z-20 -mx-4 border-b border-border-default bg-background-base/95 px-4 py-3 backdrop-blur"
+      className="sticky top-[var(--header-height)] z-20 -mx-4 border-b border-border-default bg-background/95 px-4 py-3 backdrop-blur"
     >
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className={chipClass(selectedChip === 'now')} onClick={onSelectNow}>

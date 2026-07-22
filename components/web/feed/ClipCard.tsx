@@ -30,7 +30,7 @@ export function ClipCard({
       target="_blank"
       rel="noopener noreferrer"
       onClick={onOpen}
-      className="block w-[200px] shrink-0 overflow-hidden rounded-xl bg-background-elevated transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none"
+      className="block w-[200px] shrink-0 overflow-hidden rounded-xl bg-background-elevated transition-transform focus-visible:outline-none motion-safe:hover:scale-[1.02] motion-safe:focus-visible:scale-[1.02]"
       aria-label={`Clip: ${clip.title ?? 'Untitled'}${streamerName ? `, ${streamerName}` : ''}, ${formatViews(clip.viewCount)} views`}
     >
       <div className="relative aspect-video w-full bg-background-highlight">

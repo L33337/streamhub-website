@@ -17,11 +17,10 @@ export function LiveRail({
   entries: HomeLiveEntry[];
   onSlotTap: (entry: HomeLiveEntry) => void;
 }) {
+  // Overflow scrolling lives in the RailScroller wrapper (FeedClient) since
+  // the 2026-07-22 UX round — this list only lays the cards out.
   return (
-    <ul
-      className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      aria-label="Live now"
-    >
+    <ul className="flex gap-3 pb-2" aria-label="Live now">
       {entries.map((entry) => (
         <li
           key={`live-${entry.slot.id}`}

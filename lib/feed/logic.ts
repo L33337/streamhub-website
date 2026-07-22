@@ -615,3 +615,72 @@ export function formatPeak(count: number): string {
   if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
   return String(count);
 }
+
+// ============================================
+// Feed UX round 2026-07-22 — Up Next grouping + relative time
+// (client-side only: labels depend on the viewer's local timezone, so the
+// caller must gate rendering behind a post-hydration `mounted` flag)
+// ============================================
+
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * "In 45 min" / "In 2h 05m" for an upcoming slot. Slots already inside the
+ * −15min Up Next window (or with an unparsable start) return "Starting now" /
+ * null respectively.
+ */
+export function relativeStartLabel(startTime: string, now: Date): string | null {
+  const diffMs = new Date(startTime).getTime() - now.getTime();
+  if (Number.isNaN(diffMs)) return null;
+  if (diffMs <= MINUTE_MS) return 'Starting now';
+  const totalMinutes = Math.round(diffMs / MINUTE_MS);
+  if (totalMinutes < 60) return `In ${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0 ? `In ${hours}h` : `In ${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+/**
+ * Day bucket for an Up Next slot in the VIEWER's local timezone. Slots whose
+ * start already passed (−15min window) count as Today. The weekday branch is
+ * defensive — the 12h Up Next window can only ever span Today/Tomorrow.
+ */
+export function upNextDayLabel(startTime: string, now: Date): string {
+  const start = new Date(startTime);
+  const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dayDiff = Math.round((midnight(start) - midnight(now)) / DAY_MS);
+  if (dayDiff <= 0) return 'Today';
+  if (dayDiff === 1) return 'Tomorrow';
+  return start.toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+export interface UpNextGroup {
+  label: string;
+  slots: StreamSlot[];
+}
+
+/**
+ * Groups the (already start-sorted) Up Next slots into consecutive day
+ * buckets. Consecutive-run grouping keeps the original order stable even if
+ * an input ever arrived unsorted.
+ */
+export function groupUpNextSlots(slots: StreamSlot[], now: Date): UpNextGroup[] {
+  const groups: UpNextGroup[] = [];
+  for (const slot of slots) {
+    const label = upNextDayLabel(slot.startTime, now);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) {
+      last.slots.push(slot);
+    } else {
+      groups.push({ label, slots: [slot] });
+    }
+  }
+  return groups;
+}
+
+/** "Updated just now" / "Updated 4 min ago" for the feed header. */
+export function updatedAgoLabel(lastUpdatedMs: number, nowMs: number): string {
+  const minutes = Math.floor(Math.max(0, nowMs - lastUpdatedMs) / MINUTE_MS);
+  if (minutes < 1) return 'Updated just now';
+  return `Updated ${minutes} min ago`;
+}
