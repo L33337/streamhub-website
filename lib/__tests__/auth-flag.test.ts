@@ -56,6 +56,34 @@ describe('signInGateRedirect / AUTH_ENABLED (env-dependent, fresh import per cas
   });
 });
 
+describe('AUTH_UI_VISIBLE / stealth mode (env-dependent, fresh import per case)', () => {
+  it('auth on, stealth unset → entry points visible', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_AUTH_LINKS_HIDDEN', '');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.AUTH_UI_VISIBLE).toBe(true);
+  });
+
+  it('auth on, stealth=true → entry points hidden but gates still point to sign-in', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_AUTH_LINKS_HIDDEN', 'true');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.AUTH_ENABLED).toBe(true);
+    expect(mod.AUTH_UI_VISIBLE).toBe(false);
+    expect(mod.signInGateRedirect('/feed')).toBe('/auth/login?next=%2Ffeed');
+  });
+
+  it('auth dormant → never visible, regardless of the stealth var', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', '');
+    vi.stubEnv('NEXT_PUBLIC_AUTH_LINKS_HIDDEN', '');
+    vi.resetModules();
+    const mod = await import('../auth-flag');
+    expect(mod.AUTH_UI_VISIBLE).toBe(false);
+  });
+});
+
 describe('EMAIL_AUTH_ENABLED / emailAuthGateRedirect (env-dependent, fresh import per case)', () => {
   it('both flags true → email auth enabled', async () => {
     vi.stubEnv('NEXT_PUBLIC_AUTH_ENABLED', 'true');

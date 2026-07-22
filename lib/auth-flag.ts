@@ -29,6 +29,16 @@
 
 export const AUTH_ENABLED = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'true';
 
+// Stealth mode for quiet production testing: NEXT_PUBLIC_AUTH_LINKS_HIDDEN=true
+// (only meaningful while AUTH_ENABLED is true) keeps every signed-out entry
+// point dormant — no "Sign in" link in the header, FavoriteButton's signed-out
+// state keeps pointing to /app — while /auth/login and the gated pages remain
+// fully functional via direct URL. Signed-IN UI (header avatar menu) is NOT
+// affected, so a tester can navigate and sign out normally after logging in.
+// Unset the var (+ redeploy) to make auth publicly visible.
+export const AUTH_UI_VISIBLE =
+  AUTH_ENABLED && process.env.NEXT_PUBLIC_AUTH_LINKS_HIDDEN !== 'true';
+
 export const EMAIL_AUTH_ENABLED =
   AUTH_ENABLED && process.env.NEXT_PUBLIC_EMAIL_AUTH_ENABLED === 'true';
 

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthProvider';
+import { AUTH_UI_VISIBLE } from '@/lib/auth-flag';
 import { initialsFromName } from './InitialsAvatar';
 
 function avatarUrlFromUser(user: ReturnType<typeof useAuth>['user']): string | null {
@@ -43,6 +44,9 @@ export function HeaderUserMenu() {
   }, []);
 
   if (!user) {
+    // Stealth mode (NEXT_PUBLIC_AUTH_LINKS_HIDDEN): auth works via direct URL
+    // but signed-out visitors get no entry point in the header.
+    if (!AUTH_UI_VISIBLE) return null;
     return (
       <Link
         href="/auth/login"

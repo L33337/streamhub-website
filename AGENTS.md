@@ -48,10 +48,12 @@ Flag OFF (default) — exact dormant behavior: `/auth/login` redirects to `/app`
 Flag ON: `/auth/login` renders the Twitch/Google sign-in UI, the header mounts `HeaderUserMenu` (Sign-in link → avatar dropdown with My feed / My favorites / Settings / Sign out), gated pages redirect to `/auth/login?next=<page>` and return there after login (the `next` path survives the OAuth round-trip via the callback's `?next=` param), FavoriteButton's signed-out state leads to sign-in with a return path. `next` values are sanitized against open redirects (`safeNextPath`: same-site absolute paths only) in the login page, the server actions, and the callback route.
 
 **Activation checklist (in order):**
-1. Supabase dashboard: Twitch + Google OAuth providers configured, `https://streamertimes.tv/auth/callback` in the redirect allowlist, site URL correct.
+1. Supabase dashboard: Twitch + Google OAuth providers configured, `https://streamertimes.tv/auth/callback` AND `https://streamertimes.tv/auth/callback?next=*` in the redirect allowlist (the second entry covers the gated-page return path — `next` is URL-encoded so `*` matches it; GoTrue matches query strings literally), site URL correct.
 2. Vercel: set `NEXT_PUBLIC_AUTH_ENABLED=true` → redeploy.
 3. Smoke-test: `/auth/login` renders; complete one Twitch and one Google login; `/feed` loads and `st_feed_seen`/`feed_events` behave; sign-out works.
 4. Rollback = unset the env var + redeploy (fully reversible, no data impact).
+
+**Stealth mode (`NEXT_PUBLIC_AUTH_LINKS_HIDDEN=true`)** — for quiet production testing on top of `NEXT_PUBLIC_AUTH_ENABLED=true` (no effect while auth is dormant): auth is fully functional via direct URL (`/auth/login` renders, gated pages redirect to sign-in, OAuth round-trip works), but signed-OUT visitors see no entry point — the header renders no "Sign in" link (`HeaderUserMenu` returns null when signed out) and FavoriteButton's signed-out state keeps the dormant `/app?from=favorite` behavior. Signed-IN UI is unaffected: after logging in the header shows the avatar dropdown (My feed / My favorites / Settings / Sign out). Source: `AUTH_UI_VISIBLE` in `lib/auth-flag.ts`. Go fully public by unsetting the var + redeploy.
 
 # Email auth sub-flag (`NEXT_PUBLIC_EMAIL_AUTH_ENABLED`)
 

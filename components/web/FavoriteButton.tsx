@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthProvider';
 import { useFavorites } from '@/hooks/useFavorites';
 import { slotLexFor } from '@/lib/i18n-slot';
-import { AUTH_ENABLED } from '@/lib/auth-flag';
+import { AUTH_UI_VISIBLE } from '@/lib/auth-flag';
 
 type Size = 'sm' | 'md';
 
@@ -65,24 +65,25 @@ export function FavoriteButton({
 
   const label = L.favoriteAria(streamerName);
 
-  // Signed-out users: with auth enabled the heart leads to sign-in (returning
-  // here afterwards); while auth is dormant it points to the mobile app, where
-  // favoriting actually works. Must be a <button> (not <Link>) because this
-  // component is often rendered inside a card-wide <Link>, and nested <a>
-  // elements are invalid HTML.
+  // Signed-out users: with auth enabled (and not in stealth mode) the heart
+  // leads to sign-in (returning here afterwards); while auth is dormant or
+  // stealth-hidden it points to the mobile app, where favoriting actually
+  // works. Must be a <button> (not <Link>) because this component is often
+  // rendered inside a card-wide <Link>, and nested <a> elements are invalid
+  // HTML.
   if (!user) {
-    const target = AUTH_ENABLED
+    const target = AUTH_UI_VISIBLE
       ? `/auth/login?next=${encodeURIComponent(pathname)}`
       : '/app?from=favorite';
     return (
       <button
         type="button"
         aria-label={
-          AUTH_ENABLED
+          AUTH_UI_VISIBLE
             ? L.signInToFavoriteAria(streamerName)
             : L.saveInAppAria(streamerName)
         }
-        title={AUTH_ENABLED ? L.signInTitle : L.saveInAppTitle}
+        title={AUTH_UI_VISIBLE ? L.signInTitle : L.saveInAppTitle}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
