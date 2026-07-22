@@ -19,7 +19,7 @@ const localeVariants = (paths: string[]) =>
   paths.flatMap((p) => [p, ...NON_EN.map((lang) => `/${lang}${p}`)]);
 const SHARED_DISALLOWS = [
   '/api/',
-  ...localeVariants(['/auth/', '/settings', '/favorites', '/feed', '/program']),
+  ...localeVariants(['/auth/', '/settings', '/favorites', '/feed', '/program', '/onboarding']),
 ];
 const SCHEDULE_DISALLOWS = localeVariants(['/schedule/']);
 

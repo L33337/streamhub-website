@@ -46,12 +46,19 @@ describe('confirmResultRedirect', () => {
     expect(confirmResultRedirect('recovery', null, true)).toBe('/auth/reset-password');
   });
 
-  it('successful signup confirm → sanitized next or homepage', () => {
+  it('successful signup confirm → sanitized next or the onboarding wizard', () => {
     expect(confirmResultRedirect('signup', '/feed', true)).toBe('/feed');
-    expect(confirmResultRedirect('signup', null, true)).toBe('/');
+    // a confirmed signup is by definition a brand-new account
+    expect(confirmResultRedirect('signup', null, true)).toBe('/onboarding');
     // open-redirect guard runs through safeNextPath
-    expect(confirmResultRedirect('signup', 'https://evil.example', true)).toBe('/');
-    expect(confirmResultRedirect('signup', '//evil.example', true)).toBe('/');
+    expect(confirmResultRedirect('signup', 'https://evil.example', true)).toBe('/onboarding');
+    expect(confirmResultRedirect('signup', '//evil.example', true)).toBe('/onboarding');
+  });
+
+  it('successful non-signup confirms keep the homepage default', () => {
+    expect(confirmResultRedirect('email', null, true)).toBe('/');
+    expect(confirmResultRedirect('magiclink', '/feed', true)).toBe('/feed');
+    expect(confirmResultRedirect('email_change', null, true)).toBe('/');
   });
 
   it('failed recovery → forgot-password with error code', () => {

@@ -69,7 +69,9 @@ export function SignUpForm({ next }: Props) {
       }
       if (data.session) {
         // Auto-confirm is on (local dev) — the user is already signed in.
-        window.location.assign(next ?? '/');
+        // Fresh signups land on the onboarding wizard, mirroring the
+        // confirmed-email path (lib/auth-email.ts confirmResultRedirect).
+        window.location.assign(next ?? '/onboarding');
         return;
       }
       setPanel('sent');

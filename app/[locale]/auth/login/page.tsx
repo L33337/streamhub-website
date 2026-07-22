@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { AUTH_ENABLED, EMAIL_AUTH_ENABLED, safeNextPath } from '@/lib/auth-flag';
+import { TWITCH_IMPORT_SCOPES } from '@/lib/twitch-scopes';
 import { EmailLoginForm } from '@/components/web/auth/EmailLoginForm';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,10 @@ async function signInWithTwitch(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'twitch',
-    options: { redirectTo: callbackUrl(formData) },
+    // user:read:follows makes the provider token usable for the follows
+    // import (Settings + onboarding) — without it Twitch's /channels/followed
+    // returns 401 and the import silently loads zero follows.
+    options: { redirectTo: callbackUrl(formData), scopes: TWITCH_IMPORT_SCOPES },
   });
   if (error) {
     redirect(`/auth/login?error=${encodeURIComponent(error.message)}`);
