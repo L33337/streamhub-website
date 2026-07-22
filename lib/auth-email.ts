@@ -46,9 +46,11 @@ export function parseConfirmableOtpType(raw: string | null): ConfirmableOtpType 
 
 /**
  * Maps a /auth/confirm verifyOtp outcome to its redirect destination.
- * Recovery links continue to the password form; everything else lands on the
- * (sanitized) ?next= target or the homepage. Failed recovery links go back to
- * the forgot-password page for a fresh email; other failures go to the login
+ * Recovery links continue to the password form; a confirmed SIGNUP is by
+ * definition a brand-new account and lands on the onboarding wizard (an
+ * explicit ?next still wins); everything else lands on the (sanitized)
+ * ?next= target or the homepage. Failed recovery links go back to the
+ * forgot-password page for a fresh email; other failures go to the login
  * page (an unconfirmed account re-offers "resend" there).
  */
 export function confirmResultRedirect(
@@ -62,5 +64,6 @@ export function confirmResultRedirect(
       : '/auth/login?error=confirm_failed';
   }
   if (type === 'recovery') return '/auth/reset-password';
+  if (type === 'signup') return safeNextPath(next) ?? '/onboarding';
   return safeNextPath(next) ?? '/';
 }

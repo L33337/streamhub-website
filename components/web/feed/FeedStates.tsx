@@ -32,12 +32,20 @@ export function EmptyFavoritesCard() {
       <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
         Add streamers you follow and your feed fills up with their streams, VODs and highlights.
       </p>
-      <Link
-        href="/search"
-        className="mt-4 inline-flex items-center rounded-full border border-accent-cyan px-5 py-2 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/10 transition-colors"
-      >
-        Find streamers
-      </Link>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/onboarding"
+          className="inline-flex items-center rounded-full border border-accent-cyan px-5 py-2 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/10 transition-colors"
+        >
+          Set up your feed
+        </Link>
+        <Link
+          href="/search"
+          className="inline-flex items-center rounded-full border border-border-default px-5 py-2 text-sm font-semibold text-text-secondary hover:border-accent-cyan/40 hover:text-accent-cyan transition-colors"
+        >
+          Find streamers
+        </Link>
+      </div>
     </div>
   );
 }
