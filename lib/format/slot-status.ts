@@ -163,6 +163,12 @@ export function getStatusText(
       : L.statusYourTime(localizedHourLabel(start.getHours(), lang));
     const streamerHour = formatZoneHour(slot.start_time, slot.streamer_timezone, lang);
     const suffix = useUtc && streamerHour === utcHour ? '' : ` · ${streamerHour}`;
+    // M15 cancelled prediction: the streamer announced NO stream at this
+    // usually-regular time — never phrase it as an upcoming stream. No date
+    // prefix (app parity; day sections carry the date where it matters).
+    if (slot.slot_kind === 'cancelled') {
+      return L.statusNoStreamExpected(`${localHour}${suffix}`);
+    }
     if (slot.is_predicted && new Date() >= start) {
       return L.statusWasExpected(`${localHour}${suffix}`);
     }

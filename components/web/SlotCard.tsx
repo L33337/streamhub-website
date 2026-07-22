@@ -28,30 +28,25 @@ function PlaceholderThumbnail({ name }: { name: string }) {
 
 // `language` localizes the card chrome (status line, confidence) on the
 // streamer page; the default 'en' keeps every existing caller (home, /live,
-// /game, feed) byte-identical. `appearance`/`topBadges`/`statusOverride` are
-// Program-page extensions (cancelled/new/uncertain slot rendering) — defaults
-// leave all other callers untouched.
+// /game, feed) byte-identical. `topBadges` is a Program-page extension
+// (CANCELLED/NEW/UNCERTAIN badge row) — the default leaves all other callers
+// untouched.
 export function SlotCard({
   slot,
   language = 'en',
-  appearance = 'default',
   topBadges,
-  statusOverride,
 }: {
   slot: PublicStreamSlot;
   language?: string;
-  /** 'cancelled' greys the card out with a red left border (app parity). */
-  appearance?: 'default' | 'cancelled';
   /** Extra badges rendered next to the status line (CANCELLED/NEW/UNCERTAIN). */
   topBadges?: React.ReactNode;
-  /** Replaces SlotStatusText, e.g. "No stream expected (usually around 8pm)". */
-  statusOverride?: string;
 }) {
   const isLive = slot.status === 'live';
-  // Cancelled treatment comes either from the caller (Program page, which
-  // derives it from the raw feed slot) or straight from the Partner-API DTO
-  // (streamer page / anywhere the API carries slot_kind).
-  const isCancelled = appearance === 'cancelled' || slot.slot_kind === 'cancelled';
+  // Cancelled treatment comes straight from the Partner-API DTO field (also
+  // set by the feed/Program adapter toPublicStreamSlot): greyed card, red
+  // border, badge; SlotStatusText renders the localized "No stream expected"
+  // line from the same field.
+  const isCancelled = slot.slot_kind === 'cancelled';
   // Auto-badge for API-driven cancelled slots; callers passing topBadges
   // (Program page) own the badge row themselves.
   const badges =
@@ -113,7 +108,7 @@ export function SlotCard({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="truncate text-xs text-text-secondary">
-                {statusOverride ?? <SlotStatusText slot={slot} language={language} />}
+                <SlotStatusText slot={slot} language={language} />
               </span>
               {isLive && slot.is_always_on && <AlwaysOnBadge />}
               {badges}

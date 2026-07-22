@@ -5,7 +5,7 @@
 
 import { SlotCard } from '@/components/web/SlotCard';
 import { CancelledBadge, NewBadge, UncertainBadge } from '@/components/web/Badges';
-import { getHourLabel, toProgramPublicSlot } from '@/lib/program/logic';
+import { toProgramPublicSlot } from '@/lib/program/logic';
 import type { StreamSlot } from '@/lib/feed/types';
 
 export function ProgramSlotCard({ slot, now }: { slot: StreamSlot; now: Date }) {
@@ -13,17 +13,13 @@ export function ProgramSlotCard({ slot, now }: { slot: StreamSlot; now: Date }) 
   const isNew = slot.slotKind === 'new';
   const showUncertain = slot.isUncertain && !isCancelled;
   const hasBadges = isCancelled || isNew || showUncertain;
-  const localHour = new Date(slot.startTime).getHours();
 
+  // slot_kind travels through toProgramPublicSlot, so SlotCard derives the
+  // cancelled styling and SlotStatusText the localized "No stream expected
+  // (usually around …)" line — no overrides needed here.
   return (
     <SlotCard
       slot={toProgramPublicSlot(slot, now)}
-      appearance={isCancelled ? 'cancelled' : 'default'}
-      statusOverride={
-        isCancelled
-          ? `No stream expected (usually around ${getHourLabel(localHour)})`
-          : undefined
-      }
       topBadges={
         hasBadges ? (
           <span className="flex shrink-0 items-center gap-1">
