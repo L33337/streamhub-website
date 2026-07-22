@@ -7,6 +7,7 @@ import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { pickReasoning } from '@/lib/slot-copy';
 import {
   AlwaysOnBadge,
+  CancelledBadge,
   ConfidenceBadge,
   LiveBadge,
   PlatformBadge,
@@ -27,15 +28,29 @@ function PlaceholderThumbnail({ name }: { name: string }) {
 
 // `language` localizes the card chrome (status line, confidence) on the
 // streamer page; the default 'en' keeps every existing caller (home, /live,
-// /game, feed) byte-identical.
+// /game, feed) byte-identical. `topBadges` is a Program-page extension
+// (CANCELLED/NEW/UNCERTAIN badge row) — the default leaves all other callers
+// untouched.
 export function SlotCard({
   slot,
   language = 'en',
+  topBadges,
 }: {
   slot: PublicStreamSlot;
   language?: string;
+  /** Extra badges rendered next to the status line (CANCELLED/NEW/UNCERTAIN). */
+  topBadges?: React.ReactNode;
 }) {
   const isLive = slot.status === 'live';
+  // Cancelled treatment comes straight from the Partner-API DTO field (also
+  // set by the feed/Program adapter toPublicStreamSlot): greyed card, red
+  // border, badge; SlotStatusText renders the localized "No stream expected"
+  // line from the same field.
+  const isCancelled = slot.slot_kind === 'cancelled';
+  // Auto-badge for API-driven cancelled slots; callers passing topBadges
+  // (Program page) own the badge row themselves.
+  const badges =
+    topBadges ?? (isCancelled ? <CancelledBadge /> : undefined);
 
   return (
     <Link
@@ -46,9 +61,11 @@ export function SlotCard({
     >
       <article
         className={`flex gap-3 rounded-xl bg-background-elevated p-3 ${
-          isLive
-            ? 'border-l-[3px] border-live glow-green-strong'
-            : 'gradient-border glow-cyan'
+          isCancelled
+            ? 'border-l-[3px] border-confidence-low opacity-55'
+            : isLive
+              ? 'border-l-[3px] border-live glow-green-strong'
+              : 'gradient-border glow-cyan'
         }`}
       >
         <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
@@ -94,6 +111,7 @@ export function SlotCard({
                 <SlotStatusText slot={slot} language={language} />
               </span>
               {isLive && slot.is_always_on && <AlwaysOnBadge />}
+              {badges}
             </div>
             <h3
               className="mt-1 text-sm font-bold uppercase tracking-wide text-text-primary line-clamp-2"

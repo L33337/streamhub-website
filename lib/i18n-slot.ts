@@ -34,6 +34,8 @@ export interface SlotLex {
   statusYourTime(hour: string): string;
   /** "Was expected around {hour}" — predicted start already passed. */
   statusWasExpected(hour: string): string;
+  /** "No stream expected (usually around {hour})" — cancelled slot_kind. */
+  statusNoStreamExpected(hour: string): string;
   statusOffline: string;
   /** "Confidence:" prefix before the confidence badge. */
   confidencePrefix: string;
@@ -69,6 +71,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Around ${h}`,
     statusYourTime: (h) => `${h} your time`,
     statusWasExpected: (h) => `Was expected around ${h}`,
+    statusNoStreamExpected: (h) => `No stream expected (usually around ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Confidence:',
     confidenceLabels: { high: 'HIGH', medium: 'MEDIUM', low: 'LOW' },
@@ -99,6 +102,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     // Prefix form: `h` carries the "· 23:00 CEST" suffix on the client, which
     // would break a verb-final German sentence frame.
     statusWasExpected: (h) => `Erwartet gegen ${h}`,
+    statusNoStreamExpected: (h) => `Kein Stream erwartet (sonst meist gegen ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Wahrscheinlichkeit:',
     confidenceLabels: { high: 'HOCH', medium: 'MITTEL', low: 'NIEDRIG' },
@@ -129,6 +133,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Sobre las ${h}`,
     statusYourTime: (h) => `${h} (tu hora)`,
     statusWasExpected: (h) => `Se esperaba sobre las ${h}`,
+    statusNoStreamExpected: (h) => `No se espera stream (normalmente sobre las ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Probabilidad:',
     confidenceLabels: { high: 'ALTA', medium: 'MEDIA', low: 'BAJA' },
@@ -160,6 +165,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Vers ${h}`,
     statusYourTime: (h) => `${h} (ton heure)`,
     statusWasExpected: (h) => `Était attendu vers ${h}`,
+    statusNoStreamExpected: (h) => `Aucun stream prévu (habituellement vers ${h})`,
     statusOffline: 'Hors ligne',
     confidencePrefix: 'Probabilité :',
     confidenceLabels: { high: 'ÉLEVÉE', medium: 'MOYENNE', low: 'FAIBLE' },
@@ -191,6 +197,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Por volta das ${h}`,
     statusYourTime: (h) => `${h} (seu horário)`,
     statusWasExpected: (h) => `Era esperado por volta das ${h}`,
+    statusNoStreamExpected: (h) => `Nenhum stream previsto (normalmente por volta das ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Probabilidade:',
     confidenceLabels: { high: 'ALTA', medium: 'MÉDIA', low: 'BAIXA' },
@@ -221,6 +228,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Verso le ${h}`,
     statusYourTime: (h) => `${h} (la tua ora)`,
     statusWasExpected: (h) => `Era previsto verso le ${h}`,
+    statusNoStreamExpected: (h) => `Nessuno stream previsto (di solito verso le ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Probabilità:',
     confidenceLabels: { high: 'ALTA', medium: 'MEDIA', low: 'BASSA' },
@@ -253,6 +261,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Примерно в ${h}`,
     statusYourTime: (h) => `${h} (ваше время)`,
     statusWasExpected: (h) => `Ожидался примерно в ${h}`,
+    statusNoStreamExpected: (h) => `Стрим не ожидается (обычно примерно в ${h})`,
     statusOffline: 'Не в эфире',
     confidencePrefix: 'Вероятность:',
     confidenceLabels: { high: 'ВЫСОКАЯ', medium: 'СРЕДНЯЯ', low: 'НИЗКАЯ' },
@@ -290,6 +299,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `開始予定 ${h}`,
     statusYourTime: (h) => `${h}（あなたの時間）`,
     statusWasExpected: (h) => `予想開始時刻: ${h}`,
+    statusNoStreamExpected: (h) => `配信予定なし（いつもは${h}頃）`,
     statusOffline: 'オフライン',
     confidencePrefix: '確度:',
     confidenceLabels: { high: '高', medium: '中', low: '低' },
@@ -320,6 +330,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Приблизно о ${h}`,
     statusYourTime: (h) => `${h} (ваш час)`,
     statusWasExpected: (h) => `Очікувався приблизно о ${h}`,
+    statusNoStreamExpected: (h) => `Стрім не очікується (зазвичай приблизно о ${h})`,
     statusOffline: 'Не в ефірі',
     confidencePrefix: 'Ймовірність:',
     confidenceLabels: { high: 'ВИСОКА', medium: 'СЕРЕДНЯ', low: 'НИЗЬКА' },
@@ -359,6 +370,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `حوالي ${h}`,
     statusYourTime: (h) => `${h} (بتوقيتك)`,
     statusWasExpected: (h) => `كان متوقعًا حوالي ${h}`,
+    statusNoStreamExpected: (h) => `لا يُتوقع بث (عادةً حوالي ${h})`,
     statusOffline: 'غير متصل',
     confidencePrefix: 'الاحتمالية:',
     confidenceLabels: { high: 'مرتفعة', medium: 'متوسطة', low: 'منخفضة' },
@@ -400,6 +412,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Kezdés kb. ${h}`,
     statusYourTime: (h) => `${h} (a te idődben)`,
     statusWasExpected: (h) => `Várt kezdés: ${h}`,
+    statusNoStreamExpected: (h) => `Nem várható stream (általában kb. ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Valószínűség:',
     confidenceLabels: { high: 'MAGAS', medium: 'KÖZEPES', low: 'ALACSONY' },
@@ -433,6 +446,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     statusAround: (h) => `Około ${h}`,
     statusYourTime: (h) => `${h} (twój czas)`,
     statusWasExpected: (h) => `Oczekiwany około ${h}`,
+    statusNoStreamExpected: (h) => `Brak przewidywanego streamu (zwykle około ${h})`,
     statusOffline: 'Offline',
     confidencePrefix: 'Prawdopodobieństwo:',
     confidenceLabels: { high: 'WYSOKIE', medium: 'ŚREDNIE', low: 'NISKIE' },

@@ -54,7 +54,8 @@ const STREAM_SLOT_COLUMNS =
   'id, streamer_id, streamer_name, platforms, stream_title, category, ' +
   'thumbnail_url, avatar_url, start_time, duration, status, confidence, ' +
   'reasoning, copy_language, generic_reasoning, ' +
-  'is_ai_prediction, visible, ai_prediction_id, slot_kind, is_always_on';
+  'is_ai_prediction, visible, ai_prediction_id, slot_kind, is_always_on, ' +
+  'is_uncertain, viewer_count, viewer_count_updated_at';
 const STREAM_CLIP_COLUMNS =
   'id, streamer_id, external_clip_id, title, url, thumbnail_url, ' +
   'duration_seconds, view_count, category, clip_created_at, creator_name';

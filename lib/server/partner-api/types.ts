@@ -71,6 +71,12 @@ export interface PublicStreamSlot {
   status: SlotStatus;
   is_predicted: boolean;
   confidence: ConfidenceLevel;
+  // M15 slot kind: 'regular' (usual day / every real slot), 'new' (prediction
+  // on an unusual day), 'cancelled' (streamer announced NO stream at this
+  // usually-regular time — render as a cancellation, no watch links).
+  // Optional in this mirror for deploy skew (old API, new site) — treat
+  // undefined like 'regular'.
+  slot_kind?: 'regular' | 'new' | 'cancelled';
   is_always_on: boolean;
   // External channel identifiers — populated only when the corresponding
   // platform is in `platforms`. Build watch URLs:

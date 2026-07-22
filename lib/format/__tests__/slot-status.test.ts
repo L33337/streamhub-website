@@ -79,6 +79,31 @@ describe('getStatusText — English default (bleed guard, byte-identical legacy 
   it('offline slot', () => {
     expect(getStatusText(makeSlot({ status: 'offline' }), true)).toBe('Offline');
   });
+
+  it('cancelled slot never phrases as upcoming', () => {
+    const slot = makeSlot({ is_predicted: true, slot_kind: 'cancelled' });
+    expect(getStatusText(slot, true)).toBe('No stream expected (usually around 9pm UTC)');
+  });
+
+  it('cancelled beats the overdue "was expected" branch', () => {
+    const slot = makeSlot({
+      is_predicted: true,
+      slot_kind: 'cancelled',
+      start_time: '2026-07-11T10:00:00Z', // start already passed
+    });
+    expect(getStatusText(slot, true)).toBe('No stream expected (usually around 10am UTC)');
+  });
+
+  it('cancelled slot with streamer timezone appends the zone hour', () => {
+    const slot = makeSlot({
+      is_predicted: true,
+      slot_kind: 'cancelled',
+      streamer_timezone: 'Europe/Berlin',
+    });
+    expect(getStatusText(slot, true)).toBe(
+      'No stream expected (usually around 9pm UTC · 11pm CEST)',
+    );
+  });
 });
 
 describe('getStatusText — localized', () => {
@@ -110,6 +135,14 @@ describe('getStatusText — localized', () => {
 
   it('unknown language tags fall back to English', () => {
     expect(getStatusText(makeSlot({ status: 'offline' }), true, 'other')).toBe('Offline');
+  });
+
+  it('cancelled status is localized (de/ja) and every language provides it', () => {
+    const slot = makeSlot({ is_predicted: true, slot_kind: 'cancelled' });
+    expect(getStatusText(slot, true, 'de')).toBe(
+      'Kein Stream erwartet (sonst meist gegen 21:00 UTC)',
+    );
+    expect(getStatusText(slot, true, 'ja')).toContain('配信予定なし');
   });
 });
 

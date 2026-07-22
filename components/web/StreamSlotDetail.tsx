@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   AlwaysOnBadge,
+  CancelledBadge,
   ConfidenceBadge,
   LiveBadge,
   PlatformBadge,
@@ -33,8 +34,11 @@ export function StreamSlotDetail({
 }) {
   const isLive = slot.status === 'live';
   const isAlwaysOn = slot.is_always_on;
+  // M15 cancelled prediction: the streamer announced they will NOT stream at
+  // this usually-regular time — no watch buttons, "Usually streams" label.
+  const isCancelled = slot.slot_kind === 'cancelled';
   const durationLabel = isAlwaysOn ? null : formatDuration(slot.duration_minutes);
-  const startLabel = isLive ? 'Started:' : 'Scheduled:';
+  const startLabel = isCancelled ? 'Usually streams:' : isLive ? 'Started:' : 'Scheduled:';
   const durationPrefix = isLive ? '' : '~';
 
   return (
@@ -89,20 +93,30 @@ export function StreamSlotDetail({
         )}
       </dl>
 
+      {isCancelled && (
+        <p className="mt-3 text-sm text-text-secondary">
+          No stream expected — the streamer announced they will not stream at
+          this usually-regular time.
+        </p>
+      )}
+
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {slot.platforms.map((p) => (
           <PlatformBadge key={p} platform={p} />
         ))}
         {isAlwaysOn && <AlwaysOnBadge />}
+        {isCancelled && <CancelledBadge />}
         {!isLive && <ConfidenceBadge level={slot.confidence} />}
       </div>
 
       {!isLive && <ReasoningBox slot={slot} language={language} />}
 
-      <WatchButtons
-        twitchLogin={slot.twitch_login}
-        youtubeChannelId={slot.youtube_channel_id}
-      />
+      {!isCancelled && (
+        <WatchButtons
+          twitchLogin={slot.twitch_login}
+          youtubeChannelId={slot.youtube_channel_id}
+        />
+      )}
     </article>
   );
 }

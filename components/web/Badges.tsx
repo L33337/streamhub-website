@@ -97,3 +97,34 @@ export function AlwaysOnBadge() {
     </span>
   );
 }
+
+// Program-page slot-kind badges (app SlotKindBadge.tsx / UncertainBadge port).
+// Visible texts stay untranslated like LIVE/24/7 — the gated Program page
+// renders English chrome.
+
+/** Streamer announced they will NOT stream on this usually-regular day. */
+export function CancelledBadge() {
+  return (
+    <span className="inline-flex items-center rounded bg-confidence-low/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-confidence-low">
+      Cancelled
+    </span>
+  );
+}
+
+/** Prediction on a day the streamer does not normally stream. */
+export function NewBadge() {
+  return (
+    <span className="inline-flex items-center rounded bg-accent-cyan/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-accent-cyan">
+      New
+    </span>
+  );
+}
+
+/** Streak demotion: the streamer missed their last 2+ predicted streams. */
+export function UncertainBadge() {
+  return (
+    <span className="inline-flex items-center rounded bg-confidence-medium/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-confidence-medium">
+      Uncertain
+    </span>
+  );
+}
