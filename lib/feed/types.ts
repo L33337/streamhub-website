@@ -31,7 +31,12 @@ export interface StreamSlot {
   visible: boolean;
   aiPredictionId?: string;
   slotKind: SlotKind;
+  /** Streak demotion: streamer missed 2+ consecutive scored predictions. */
+  isUncertain: boolean;
   isAlwaysOn: boolean;
+  /** Live concurrent viewers — only meaningful while live and fresh (<25 min). */
+  viewerCount?: number;
+  viewerCountUpdatedAt?: string;
 }
 
 export interface FeedRecentStream {
@@ -318,7 +323,10 @@ export interface StreamSlotRow {
   visible: boolean;
   ai_prediction_id: string | null;
   slot_kind: string | null;
+  is_uncertain: boolean | null;
   is_always_on: boolean;
+  viewer_count: number | null;
+  viewer_count_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }

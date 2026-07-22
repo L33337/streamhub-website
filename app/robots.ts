@@ -20,7 +20,7 @@ function withLocaleVariants(paths: string[]): string[] {
 // matching group, so nothing is inherited from the * group.
 const SHARED_DISALLOWS = [
   '/api/',
-  ...withLocaleVariants(['/auth/', '/settings', '/favorites', '/feed']),
+  ...withLocaleVariants(['/auth/', '/settings', '/favorites', '/feed', '/program']),
 ];
 
 // Search crawlers additionally skip /schedule/<id>: those URLs churn every

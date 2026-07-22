@@ -50,6 +50,7 @@ function slot(overrides: Partial<StreamSlot>): StreamSlot {
     isAiPrediction: false,
     visible: true,
     slotKind: 'regular',
+    isUncertain: false,
     isAlwaysOn: false,
     ...overrides,
   };

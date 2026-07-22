@@ -63,7 +63,10 @@ export function transformStreamSlot(row: StreamSlotRow): StreamSlot {
     aiPredictionId: row.ai_prediction_id ?? undefined,
     // Rows written before the M15 slot_kind migration carry null.
     slotKind: (row.slot_kind as SlotKind) ?? 'regular',
+    isUncertain: row.is_uncertain === true,
     isAlwaysOn: row.is_always_on,
+    viewerCount: row.viewer_count ?? undefined,
+    viewerCountUpdatedAt: row.viewer_count_updated_at ?? undefined,
   };
 }
 
