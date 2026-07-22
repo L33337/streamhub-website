@@ -30,7 +30,6 @@ import type {
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
 
 /**
  * Current status of a slot. The database 'live' status is trusted (the
@@ -148,74 +147,95 @@ export function deriveLiveAndUpNext(
 }
 
 /**
- * Client-side ranking of the Highlights rail.
- * M13 weights (0.45 views / 0.30 affinity / 0.25 recency) shifted in M18 P4 to
- *   0.35 views / 0.25 affinity / 0.20 recency / 0.20 engagement
- * where engagement = the user's own per-category interaction share from the
- * nightly feed_engagement_stats aggregation (neutral 0.5 until data exists).
- * Dismissed streamers/categories are rank-suppressed (× 0.5), never hidden.
+ * Ordering of the Highlights rail (reworked 2026-07-22 — replaced the
+ * M13/M18-P4 interest-score formula with a deterministic view-count
+ * round-robin): each streamer's clips sort by viewCount desc, streamers
+ * order by their most-viewed clip, and the rail interleaves them —
+ * top clip of streamer X, top clip of Y, ..., then X's second, Y's second.
+ * Dismissed streamers/categories (M18 P0 dismiss) sink to the end of the
+ * order (suppressed, never hidden). CLIPS_PER_STREAMER still caps the top
+ * rail; the remainder continues the same order in the load-more region.
  * Mirrored in the app's useHomeFeed — keep in sync.
  */
 export function rankClips(
   clips: FeedClip[],
-  profile: UserInterestProfile | null,
-  now: Date = new Date(),
   engagement: FeedEngagementStats | null = null,
 ): FeedClip[] {
-  return rankClipsSplit(clips, profile, now, engagement).top;
+  return rankClipsSplit(clips, engagement).top;
+}
+
+function compareClipsByViews(a: FeedClip, b: FeedClip): number {
+  return (
+    b.viewCount - a.viewCount ||
+    new Date(b.clipCreatedAt).getTime() - new Date(a.clipCreatedAt).getTime() ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+function interleaveClipsByStreamer(pool: FeedClip[]): FeedClip[] {
+  const groups = new Map<string, FeedClip[]>();
+  for (const clip of pool) {
+    const group = groups.get(clip.streamerId);
+    if (group) group.push(clip);
+    else groups.set(clip.streamerId, [clip]);
+  }
+  const ordered = [...groups.values()]
+    .map((group) => group.sort(compareClipsByViews))
+    .sort((a, b) => compareClipsByViews(a[0], b[0]));
+
+  const result: FeedClip[] = [];
+  for (let pass = 0; ; pass++) {
+    let pushedAny = false;
+    for (const group of ordered) {
+      if (pass < group.length) {
+        result.push(group[pass]);
+        pushedAny = true;
+      }
+    }
+    if (!pushedAny) break;
+  }
+  return result;
 }
 
 /**
- * M18 P3: same ranking, but also returns the remainder for the load-more
- * region — everything score-ordered that did not make the top rail (either
- * beyond the cap or blocked by the per-streamer limit).
+ * The full round-robin order without rail caps: streamers by their
+ * most-viewed clip, clips per streamer by views, dismissed content sinking
+ * to the end. Used by rankClipsSplit and for the non-favorite discovery
+ * clips appended to "More highlights" (2026-07-22).
+ */
+export function orderClipsByPopularity(
+  clips: FeedClip[],
+  engagement: FeedEngagementStats | null = null,
+): FeedClip[] {
+  const dismissedStreamers = new Set(engagement?.dismissedStreamers ?? []);
+  const dismissedCategories = new Set(engagement?.dismissedCategories ?? []);
+  const isSuppressed = (clip: FeedClip) =>
+    dismissedStreamers.has(clip.streamerId) ||
+    (!!clip.category && dismissedCategories.has(clip.category));
+
+  return [
+    ...interleaveClipsByStreamer(clips.filter((clip) => !isSuppressed(clip))),
+    ...interleaveClipsByStreamer(clips.filter(isSuppressed)),
+  ];
+}
+
+/**
+ * M18 P3: same ordering, but also returns the remainder for the load-more
+ * region — everything that did not make the top rail (either beyond the
+ * total cap or blocked by the per-streamer limit), same interleaved order.
  */
 export function rankClipsSplit(
   clips: FeedClip[],
-  profile: UserInterestProfile | null,
-  now: Date = new Date(),
   engagement: FeedEngagementStats | null = null,
 ): { top: FeedClip[]; more: FeedClip[] } {
   if (clips.length === 0) return { top: [], more: [] };
 
-  const maxLogViews = Math.max(...clips.map((clip) => Math.log1p(clip.viewCount)), 1);
-  const affinity = profile?.categoryAffinity ?? {};
-  const engagementCounts = engagement?.categoryEngagement ?? null;
-  const maxEngagement =
-    engagementCounts && Object.keys(engagementCounts).length > 0
-      ? Math.max(...Object.values(engagementCounts), 1)
-      : null;
-  const dismissedStreamers = new Set(engagement?.dismissedStreamers ?? []);
-  const dismissedCategories = new Set(engagement?.dismissedCategories ?? []);
-
-  const scored = clips
-    .map((clip) => {
-      const days = Math.max((now.getTime() - new Date(clip.clipCreatedAt).getTime()) / DAY_MS, 0);
-      const engagementTerm =
-        maxEngagement === null
-          ? 0.5 // no aggregation yet → neutral constant, ordering unaffected
-          : clip.category
-            ? (engagementCounts?.[clip.category] ?? 0) / maxEngagement
-            : 0.25;
-      let score =
-        0.35 * (Math.log1p(clip.viewCount) / maxLogViews) +
-        0.25 * (clip.category ? (affinity[clip.category] ?? 0) : 0) +
-        0.2 * Math.exp(-days / 3) +
-        0.2 * engagementTerm;
-      if (
-        dismissedStreamers.has(clip.streamerId) ||
-        (clip.category && dismissedCategories.has(clip.category))
-      ) {
-        score *= 0.5;
-      }
-      return { clip, score };
-    })
-    .sort((a, b) => b.score - a.score);
+  const ordered = orderClipsByPopularity(clips, engagement);
 
   const perStreamer = new Map<string, number>();
   const top: FeedClip[] = [];
   const pickedIds = new Set<string>();
-  for (const { clip } of scored) {
+  for (const clip of ordered) {
     const count = perStreamer.get(clip.streamerId) ?? 0;
     if (count >= CLIPS_PER_STREAMER) continue;
     perStreamer.set(clip.streamerId, count + 1);
@@ -223,7 +243,7 @@ export function rankClipsSplit(
     pickedIds.add(clip.id);
     if (top.length >= CLIPS_LIMIT) break;
   }
-  const more = scored.map(({ clip }) => clip).filter((clip) => !pickedIds.has(clip.id));
+  const more = ordered.filter((clip) => !pickedIds.has(clip.id));
   return { top, more };
 }
 

@@ -10,6 +10,12 @@ export const UP_NEXT_LIMIT = 5;
 /** Highlights rail: max clips shown / max per streamer. */
 export const CLIPS_LIMIT = 10;
 export const CLIPS_PER_STREAMER = 2;
+/**
+ * "More highlights" (2026-07-22): cap on the favorites' remainder when
+ * discovery clips of other streamers exist — the UI shows 20, so this
+ * guarantees at least 8 visible slots for non-favorites.
+ */
+export const MORE_FAV_CLIPS_MAX = 12;
 /** Discover: candidates fetched from the RPC vs. shown after diversity pass. */
 export const DISCOVER_CANDIDATES = 12;
 export const DISCOVER_SHOWN = 5;

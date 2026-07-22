@@ -194,6 +194,51 @@ export async function fetchClipsForStreamers(
 }
 
 /**
+ * Top clips of the week from streamers OUTSIDE the given set — discovery
+ * content for the "More highlights" region (2026-07-22). Embeds the streamer
+ * name because non-favorites are not in the feed's nameMap; hidden/unapproved
+ * streamers are excluded in the query.
+ */
+export async function fetchTopClipsExcluding(
+  supabase: SupabaseClient,
+  excludeStreamerIds: string[],
+  sinceDays = 7,
+  limit = 20,
+): Promise<{ clips: FeedClip[]; names: Record<string, string> }> {
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+
+  let query = supabase
+    .from('stream_clips')
+    .select(`${STREAM_CLIP_COLUMNS}, streamers!inner(name, is_hidden, approved)`)
+    .gte('clip_created_at', since.toISOString())
+    .eq('streamers.is_hidden', false)
+    .eq('streamers.approved', true)
+    .order('view_count', { ascending: false })
+    .limit(limit);
+  if (excludeStreamerIds.length > 0) {
+    // Streamer ids are text slugs — quote each value for the PostgREST list.
+    const quoted = excludeStreamerIds
+      .slice(0, MAX_STREAMER_IDS)
+      .map((id) => `"${id.replace(/"/g, '')}"`)
+      .join(',');
+    query = query.not('streamer_id', 'in', `(${quoted})`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`Failed to fetch discovery clips: ${error.message}`);
+  }
+
+  type RowWithStreamer = StreamClipRow & { streamers: { name: string } | null };
+  const rows = (data ?? []) as unknown as RowWithStreamer[];
+  const names: Record<string, string> = {};
+  rows.forEach((row) => {
+    if (row.streamers?.name) names[row.streamer_id] = row.streamers.name;
+  });
+  return { clips: rows.map(transformFeedClip), names };
+}
+
+/**
  * Interest profile of the current user. SECURITY INVOKER RPC over auth.uid()
  * — must be called with the user's session (server client with cookies, or
  * browser client). Returns the empty-profile default when signed out.

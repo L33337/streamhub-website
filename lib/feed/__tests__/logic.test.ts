@@ -5,6 +5,8 @@ import {
   sortSlotsByStartTime,
   deriveLiveAndUpNext,
   rankClips,
+  rankClipsSplit,
+  orderClipsByPopularity,
   diversityPass,
   deriveChipCategories,
   buildDiscoverReasonLabel,
@@ -244,67 +246,89 @@ describe('deriveLiveAndUpNext', () => {
   });
 });
 
-describe('rankClips', () => {
-  it('scores with the 0.45/0.30/0.25 formula (hand-computed ordering)', () => {
-    const affinity = profile({ categoryAffinity: { FPS: 0.5, Chess: 1.0 } });
-    const a = clip({ id: 'a', streamerId: 's1', viewCount: 1000, category: 'FPS' });
-    const b = clip({
-      id: 'b',
-      streamerId: 's2',
+describe('rankClips (2026-07-22 view-count round-robin)', () => {
+  it('interleaves streamers round-robin, ordered by their most-viewed clip', () => {
+    const clips = [
+      clip({ id: 'x2', streamerId: 'x', viewCount: 2000 }),
+      clip({ id: 'y1', streamerId: 'y', viewCount: 2500 }),
+      clip({ id: 'x1', streamerId: 'x', viewCount: 3000 }),
+      clip({ id: 'z1', streamerId: 'z', viewCount: 100 }),
+    ];
+    // streamer order by top clip: x (3000), y (2500), z (100);
+    // pass 1 = each streamer's best, pass 2 = each streamer's second
+    expect(rankClips(clips).map((c) => c.id)).toEqual(['x1', 'y1', 'z1', 'x2']);
+  });
+
+  it('orders within a streamer strictly by views — recency does not outrank clicks', () => {
+    const fresh = clip({ id: 'fresh', streamerId: 's1', viewCount: 10 });
+    const popular = clip({
+      id: 'popular',
+      streamerId: 's1',
+      viewCount: 5000,
+      clipCreatedAt: new Date(NOW.getTime() - 6 * 86_400_000).toISOString(),
+    });
+    expect(rankClips([fresh, popular]).map((c) => c.id)).toEqual(['popular', 'fresh']);
+  });
+
+  it('breaks view-count ties by newer clipCreatedAt, then id (deterministic)', () => {
+    const older = clip({
+      id: 'a-older',
+      streamerId: 's1',
       viewCount: 100,
-      category: 'Chess',
-      clipCreatedAt: new Date(NOW.getTime() - 6 * 86_400_000).toISOString(),
+      clipCreatedAt: new Date(NOW.getTime() - 86_400_000).toISOString(),
     });
-    // a = 0.45*1 + 0.30*0.5 + 0.25*1 = 0.85
-    // b = 0.45*(ln(101)/ln(1001)) + 0.30*1 + 0.25*e^-2 ≈ 0.634
-    expect(rankClips([b, a], affinity, NOW).map((c) => c.id)).toEqual(['a', 'b']);
+    const newer = clip({ id: 'b-newer', streamerId: 's2', viewCount: 100 });
+    expect(rankClips([older, newer]).map((c) => c.id)).toEqual(['b-newer', 'a-older']);
   });
 
-  it('affinity can outrank views when views are equal-ish', () => {
-    const p = profile({ categoryAffinity: { Chess: 1.0 } });
-    const noAffinity = clip({ id: 'x', streamerId: 's1', viewCount: 100, category: 'FPS' });
-    const withAffinity = clip({ id: 'y', streamerId: 's2', viewCount: 100, category: 'Chess' });
-    expect(rankClips([noAffinity, withAffinity], p, NOW)[0].id).toBe('y');
-  });
-
-  it('handles zero-view clips without NaN (maxLogViews floors at 1)', () => {
-    const fresh = clip({ id: 'fresh', streamerId: 's1', viewCount: 0 });
-    const old = clip({
-      id: 'old',
-      streamerId: 's2',
-      viewCount: 0,
-      clipCreatedAt: new Date(NOW.getTime() - 6 * 86_400_000).toISOString(),
-    });
-    expect(rankClips([old, fresh], null, NOW).map((c) => c.id)).toEqual(['fresh', 'old']);
-  });
-
-  it('missing category contributes zero affinity', () => {
-    const p = profile({ categoryAffinity: { Chess: 1.0 } });
-    const noCat = clip({ id: 'x', streamerId: 's1', viewCount: 100, category: undefined });
-    const withCat = clip({ id: 'y', streamerId: 's2', viewCount: 100, category: 'Chess' });
-    expect(rankClips([noCat, withCat], p, NOW)[0].id).toBe('y');
-  });
-
-  it('caps at 2 clips per streamer', () => {
+  it('caps at 2 clips per streamer in the rail; the third goes to the remainder', () => {
     const clips = [
       clip({ id: 'a', streamerId: 'same', viewCount: 3000 }),
       clip({ id: 'b', streamerId: 'same', viewCount: 2000 }),
       clip({ id: 'c', streamerId: 'same', viewCount: 1000 }),
       clip({ id: 'd', streamerId: 'other', viewCount: 1 }),
     ];
-    const result = rankClips(clips, null, NOW);
-    expect(result.map((c) => c.id)).toEqual(['a', 'b', 'd']);
+    const { top, more } = rankClipsSplit(clips);
+    // round-robin: same's best, other's best, same's second — 'c' exceeds the cap
+    expect(top.map((c) => c.id)).toEqual(['a', 'd', 'b']);
+    expect(more.map((c) => c.id)).toEqual(['c']);
   });
 
   it('caps at 10 clips total', () => {
     const clips = Array.from({ length: 14 }, (_, i) =>
       clip({ id: `c-${i}`, streamerId: `s-${i}`, viewCount: 1000 - i }),
     );
-    expect(rankClips(clips, null, NOW)).toHaveLength(10);
+    expect(rankClips(clips)).toHaveLength(10);
   });
 
   it('returns [] for empty input', () => {
-    expect(rankClips([], null, NOW)).toEqual([]);
+    expect(rankClips([])).toEqual([]);
+  });
+});
+
+describe('orderClipsByPopularity (More-highlights discovery pool)', () => {
+  it('applies the full round-robin without rail caps', () => {
+    const clips = [
+      clip({ id: 'x3', streamerId: 'x', viewCount: 1000 }),
+      clip({ id: 'x1', streamerId: 'x', viewCount: 3000 }),
+      clip({ id: 'x2', streamerId: 'x', viewCount: 2000 }),
+      clip({ id: 'y1', streamerId: 'y', viewCount: 500 }),
+    ];
+    // No 2-per-streamer cap here — all of x's clips appear, interleaved.
+    expect(orderClipsByPopularity(clips).map((c) => c.id)).toEqual(['x1', 'y1', 'x2', 'x3']);
+  });
+
+  it('sinks dismissed content to the end, same as the rail', () => {
+    const engagement = {
+      categoryEngagement: {},
+      dismissedStreamers: ['muted'],
+      dismissedCategories: [],
+    };
+    const clips = [
+      clip({ id: 'm1', streamerId: 'muted', viewCount: 9000 }),
+      clip({ id: 'a1', streamerId: 'a', viewCount: 10 }),
+    ];
+    expect(orderClipsByPopularity(clips, engagement).map((c) => c.id)).toEqual(['a1', 'm1']);
   });
 });
 
@@ -719,30 +743,45 @@ describe('M18 P4 engagement ranking', () => {
     dismissedCategories: ['Slots'],
   };
 
-  it('boosts categories the user actually engages with', () => {
+  it('category engagement no longer reorders Highlights (view-count round-robin)', () => {
     const clips = [
       clip({ id: 'jc', streamerId: 's1', category: 'Just Chatting', viewCount: 100 }),
+      clip({ id: 'val', streamerId: 's2', category: 'Valorant', viewCount: 200 }),
+    ];
+    // 'Just Chatting' has less user engagement but more views on 'val' anyway;
+    // flip the views and the order flips with them — engagement is ignored.
+    expect(rankClips(clips, engagement)[0].id).toBe('val');
+    const flipped = [
+      clip({ id: 'jc', streamerId: 's1', category: 'Just Chatting', viewCount: 200 }),
       clip({ id: 'val', streamerId: 's2', category: 'Valorant', viewCount: 100 }),
     ];
-    const ranked = rankClips(clips, null, NOW, engagement);
-    expect(ranked[0].id).toBe('val');
+    expect(rankClips(flipped, engagement)[0].id).toBe('jc');
   });
 
-  it('rank-suppresses dismissed streamers without hiding them', () => {
+  it('sinks dismissed streamers to the end without hiding them', () => {
     const clips = [
+      clip({ id: 'bad', streamerId: 'streamer-bad', viewCount: 9000 }),
       clip({ id: 'good', streamerId: 's1', viewCount: 100 }),
-      clip({ id: 'bad', streamerId: 'streamer-bad', viewCount: 100 }),
     ];
-    const ranked = rankClips(clips, null, NOW, engagement);
+    const ranked = rankClips(clips, engagement);
     expect(ranked.map((c) => c.id)).toEqual(['good', 'bad']);
   });
 
-  it('without engagement data the ordering matches the neutral formula', () => {
+  it('sinks clips of dismissed categories to the end without hiding them', () => {
     const clips = [
-      clip({ id: 'big', streamerId: 's1', viewCount: 10_000 }),
-      clip({ id: 'small', streamerId: 's2', viewCount: 10 }),
+      clip({ id: 'slots', streamerId: 's1', category: 'Slots', viewCount: 9000 }),
+      clip({ id: 'chess', streamerId: 's2', category: 'Chess', viewCount: 100 }),
     ];
-    expect(rankClips(clips, null, NOW).map((c) => c.id)).toEqual(['big', 'small']);
+    const ranked = rankClips(clips, engagement);
+    expect(ranked.map((c) => c.id)).toEqual(['chess', 'slots']);
+  });
+
+  it('without engagement data the ordering is by views alone', () => {
+    const clips = [
+      clip({ id: 'small', streamerId: 's2', viewCount: 10 }),
+      clip({ id: 'big', streamerId: 's1', viewCount: 10_000 }),
+    ];
+    expect(rankClips(clips).map((c) => c.id)).toEqual(['big', 'small']);
   });
 
   it('applyDismissSuppression sinks dismissed candidates below others', () => {

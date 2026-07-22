@@ -10,7 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { listFavoriteStreamers } from '@/lib/supabase/favorites';
-import { DISCOVER_CANDIDATES } from './constants';
+import { DISCOVER_CANDIDATES, MORE_FAV_CLIPS_MAX } from './constants';
 import type {
   FeedData,
   FeedSectionKey,
@@ -37,6 +37,7 @@ import {
   fetchLiveFeaturedSlots,
   fetchRecentStreams,
   fetchClipsForStreamers,
+  fetchTopClipsExcluding,
   fetchInterestProfile,
   fetchDiscoverRecommendations,
   fetchTrendingCategories,
@@ -58,6 +59,7 @@ import {
 import {
   deriveLiveAndUpNext,
   rankClipsSplit,
+  orderClipsByPopularity,
   diversityPass,
   applyDismissSuppression,
   deriveChipCategories,
@@ -114,6 +116,17 @@ export async function loadFeed(
     } catch (err) {
       recordError('clips', err, 'Failed to load highlights');
       return [];
+    }
+  })();
+
+  // 2026-07-22: discovery clips for "More highlights" — top clips of the week
+  // from non-favorited streamers, appended after the favorites' remainder.
+  const otherClipsTask = (async (): Promise<{ clips: FeedClip[]; names: Record<string, string> }> => {
+    try {
+      return await fetchTopClipsExcluding(supabase, favIds, 7, 20);
+    } catch {
+      // Discovery clips silently absent — the favorites' remainder still shows.
+      return { clips: [], names: {} };
     }
   })();
 
@@ -252,6 +265,7 @@ export async function loadFeed(
     engagement,
     uploadsResult,
     trendingGames,
+    otherClipsResult,
   ] = await Promise.all([
     slotsTask,
     recentTask,
@@ -268,6 +282,7 @@ export async function loadFeed(
     engagementTask,
     uploadsTask,
     trendingGamesTask,
+    otherClipsTask,
   ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
@@ -373,7 +388,22 @@ export async function loadFeed(
   ]);
 
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
-  const { top: clips, more: moreClips } = rankClipsSplit(rawClips, profile, now, engagement);
+  const { top: clips, more: favMoreClips } = rankClipsSplit(rawClips, engagement);
+  // "More highlights" = favorites' remainder first, then discovery clips of
+  // other streamers (server-side excluded, guarded again in case favorites
+  // changed between fetches). The favorites' remainder is capped so the
+  // discovery clips fit inside the UI's 20-clip window.
+  const seenClipIds = new Set(rawClips.map((clip) => clip.id));
+  const otherClips = otherClipsResult.clips.filter(
+    (clip) => !favIdSet.has(clip.streamerId) && !seenClipIds.has(clip.id),
+  );
+  const moreClips =
+    otherClips.length > 0
+      ? [
+          ...favMoreClips.slice(0, MORE_FAV_CLIPS_MAX),
+          ...orderClipsByPopularity(otherClips, engagement),
+        ]
+      : favMoreClips;
   const chipCategories = deriveChipCategories(profile, liveNow, upNext, recent, clips);
 
   // M18 P3: Discover candidates 6–12 for the load-more region (already
@@ -390,7 +420,8 @@ export async function loadFeed(
     if (slot.avatarUrl && !avatarMap[slot.streamerId]) avatarMap[slot.streamerId] = slot.avatarUrl;
   });
 
-  const nameMap: Record<string, string> = {};
+  // Discovery-clip names first so favorites always win on collision.
+  const nameMap: Record<string, string> = { ...otherClipsResult.names };
   favorites.forEach((streamer) => {
     nameMap[streamer.id] = streamer.name;
   });
