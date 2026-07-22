@@ -47,7 +47,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!slot) {
     return { title: 'Stream not found — Streamer Times', robots: SLOT_ROBOTS };
   }
-  const verb = slot.status === 'live' ? 'is live' : 'streams';
+  const verb =
+    slot.slot_kind === 'cancelled'
+      ? 'is not streaming'
+      : slot.status === 'live'
+        ? 'is live'
+        : 'streams';
   const platformsText = slot.platforms.length > 0 ? slot.platforms.join(' & ') : 'live';
   return {
     title: `${slot.streamer_name} ${verb}: ${slot.title} | Streamer Times`,

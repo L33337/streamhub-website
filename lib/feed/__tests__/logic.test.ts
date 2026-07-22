@@ -600,6 +600,7 @@ describe('transforms', () => {
       status: 'live',
       is_predicted: true,
       confidence: 'high',
+      slot_kind: 'regular',
       is_always_on: true,
       twitch_login: null,
       youtube_channel_id: null,

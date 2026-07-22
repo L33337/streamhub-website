@@ -197,6 +197,7 @@ export function toPublicStreamSlot(slot: StreamSlot): PublicStreamSlot {
     status: slot.status,
     is_predicted: slot.isAiPrediction,
     confidence: slot.confidence,
+    slot_kind: slot.slotKind,
     is_always_on: slot.isAlwaysOn,
     twitch_login: null,
     youtube_channel_id: null,

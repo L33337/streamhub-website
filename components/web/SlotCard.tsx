@@ -7,6 +7,7 @@ import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { pickReasoning } from '@/lib/slot-copy';
 import {
   AlwaysOnBadge,
+  CancelledBadge,
   ConfidenceBadge,
   LiveBadge,
   PlatformBadge,
@@ -47,7 +48,14 @@ export function SlotCard({
   statusOverride?: string;
 }) {
   const isLive = slot.status === 'live';
-  const isCancelled = appearance === 'cancelled';
+  // Cancelled treatment comes either from the caller (Program page, which
+  // derives it from the raw feed slot) or straight from the Partner-API DTO
+  // (streamer page / anywhere the API carries slot_kind).
+  const isCancelled = appearance === 'cancelled' || slot.slot_kind === 'cancelled';
+  // Auto-badge for API-driven cancelled slots; callers passing topBadges
+  // (Program page) own the badge row themselves.
+  const badges =
+    topBadges ?? (isCancelled ? <CancelledBadge /> : undefined);
 
   return (
     <Link
@@ -108,7 +116,7 @@ export function SlotCard({
                 {statusOverride ?? <SlotStatusText slot={slot} language={language} />}
               </span>
               {isLive && slot.is_always_on && <AlwaysOnBadge />}
-              {topBadges}
+              {badges}
             </div>
             <h3
               className="mt-1 text-sm font-bold uppercase tracking-wide text-text-primary line-clamp-2"
