@@ -48,13 +48,16 @@ export function FeedInfoCard({
   variant,
   headline,
   body,
+  stats,
   ctaLabel,
   ctaHref,
   onCtaClick,
 }: {
   variant: FeedInfoCardVariant;
   headline: string;
-  body: string;
+  body?: string;
+  /** Mini stat tiles (recap card) — rendered instead of / after the body. */
+  stats?: Array<{ value: string; label: string }>;
   ctaLabel?: string;
   ctaHref?: string;
   onCtaClick?: () => void;
@@ -71,9 +74,24 @@ export function FeedInfoCard({
         <h3 className="text-sm font-bold text-text-primary">{headline}</h3>
       </div>
       {/* Time-bearing bodies (schedule-change) format in the viewer's locale */}
-      <p className="mt-1.5 text-sm text-text-secondary" suppressHydrationWarning>
-        {body}
-      </p>
+      {body ? (
+        <p className="mt-1.5 text-sm text-text-secondary" suppressHydrationWarning>
+          {body}
+        </p>
+      ) : null}
+      {stats && stats.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="min-w-[5.5rem] rounded-lg bg-background-highlight px-3 py-2"
+            >
+              <p className="truncate text-base font-bold text-text-primary">{stat.value}</p>
+              <p className="truncate text-[11px] text-text-muted">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
       {ctaLabel && ctaHref ? (
         <Link href={ctaHref} className={ctaClass}>
           {ctaLabel}

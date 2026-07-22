@@ -182,7 +182,18 @@ export function transformUserInterestProfile(row: UserInterestProfileRow): UserI
  * streamer_timezone: null makes SlotStatusText fall back to its UTC label.
  * Pass the slot AFTER status recalculation (calculateStreamStatus).
  */
-export function toPublicStreamSlot(slot: StreamSlot): PublicStreamSlot {
+/** Freshness window for the live viewer badge (partner-API contract). */
+const VIEWER_COUNT_FRESH_MS = 25 * 60 * 1000;
+
+export function toPublicStreamSlot(slot: StreamSlot, now: Date = new Date()): PublicStreamSlot {
+  // The partner API only emits viewer_count on live slots with a fresh
+  // sample — mirror that contract so SlotCard's badge behaves identically
+  // on feed slots (2026-07-22: was never mapped, badge silently missing).
+  const viewerCountFresh =
+    slot.status === 'live' &&
+    slot.viewerCount != null &&
+    slot.viewerCountUpdatedAt != null &&
+    now.getTime() - new Date(slot.viewerCountUpdatedAt).getTime() < VIEWER_COUNT_FRESH_MS;
   return {
     id: slot.id,
     streamer_id: slot.streamerId,
@@ -205,5 +216,6 @@ export function toPublicStreamSlot(slot: StreamSlot): PublicStreamSlot {
     reasoning: slot.reasoning,
     copy_language: slot.copyLanguage ?? null,
     generic_reasoning: slot.genericReasoning,
+    viewer_count: viewerCountFresh ? slot.viewerCount : null,
   };
 }

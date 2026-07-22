@@ -35,13 +35,26 @@ export function SlotCard({
   slot,
   language = 'en',
   topBadges,
+  compact = false,
 }: {
   slot: PublicStreamSlot;
   language?: string;
   /** Extra badges rendered next to the status line (CANCELLED/NEW/UNCERTAIN). */
   topBadges?: React.ReactNode;
+  /**
+   * Caps the thumbnail at its small-viewport size — for two-column layouts
+   * (feed Up Next) where the viewport-based md/lg growth would crowd the
+   * text column. Default keeps every existing caller byte-identical.
+   */
+  compact?: boolean;
 }) {
   const isLive = slot.status === 'live';
+  const thumbWidthClass = compact
+    ? 'w-28 sm:w-36'
+    : 'w-28 sm:w-36 md:w-44 lg:w-56';
+  const thumbSizes = compact
+    ? '(min-width: 640px) 144px, 112px'
+    : '(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px';
   // Cancelled treatment comes straight from the Partner-API DTO field (also
   // set by the feed/Program adapter toPublicStreamSlot): greyed card, red
   // border, badge; SlotStatusText renders the localized "No stream expected"
@@ -56,7 +69,7 @@ export function SlotCard({
     <Link
       href={localeHref(resolveUiLang(language), `/schedule/${encodeURIComponent(slot.id)}`)}
       prefetch={false}
-      className="block transition-transform hover:scale-[1.01] focus-visible:scale-[1.01] focus-visible:outline-none"
+      className="block transition-transform focus-visible:outline-none motion-safe:hover:scale-[1.01] motion-safe:focus-visible:scale-[1.01]"
       aria-label={`${slot.streamer_name}: ${slot.title}`}
     >
       <article
@@ -68,14 +81,16 @@ export function SlotCard({
               : 'gradient-border glow-cyan'
         }`}
       >
-        <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
+        <div
+          className={`relative aspect-[3/2] ${thumbWidthClass} flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight`}
+        >
           {slot.thumbnail_url ? (
             <Image
               src={slot.thumbnail_url}
               alt=""
               fill
               unoptimized
-              sizes="(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px"
+              sizes={thumbSizes}
               className="object-cover"
             />
           ) : slot.avatar_url ? (
@@ -84,7 +99,7 @@ export function SlotCard({
               alt=""
               fill
               unoptimized
-              sizes="(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px"
+              sizes={thumbSizes}
               className="object-cover"
             />
           ) : (

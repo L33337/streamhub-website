@@ -25,6 +25,10 @@ import {
   computeWeeklyRecap,
   findPeakRecord,
   formatPeak,
+  relativeStartLabel,
+  upNextDayLabel,
+  groupUpNextSlots,
+  updatedAgoLabel,
 } from '../logic';
 import { sanitizeThumbnailUrl, toPublicStreamSlot } from '../transforms';
 import type {
@@ -608,7 +612,30 @@ describe('transforms', () => {
       reasoning: 'because',
       copy_language: null,
       generic_reasoning: undefined,
+      viewer_count: null,
     });
+  });
+
+  it('toPublicStreamSlot maps viewer_count only for live slots with a fresh sample', () => {
+    const base = {
+      status: 'live' as const,
+      viewerCount: 4200,
+      viewerCountUpdatedAt: new Date(NOW.getTime() - 10 * 60_000).toISOString(),
+    };
+    expect(toPublicStreamSlot(slot(base), NOW).viewer_count).toBe(4200);
+    // stale sample (>25 min) → null
+    expect(
+      toPublicStreamSlot(
+        slot({ ...base, viewerCountUpdatedAt: new Date(NOW.getTime() - 30 * 60_000).toISOString() }),
+        NOW,
+      ).viewer_count,
+    ).toBeNull();
+    // not live → null
+    expect(toPublicStreamSlot(slot({ ...base, status: 'upcoming' }), NOW).viewer_count).toBeNull();
+    // no timestamp → null
+    expect(
+      toPublicStreamSlot(slot({ ...base, viewerCountUpdatedAt: undefined }), NOW).viewer_count,
+    ).toBeNull();
   });
 });
 
@@ -800,5 +827,52 @@ describe('M18 P4 engagement ranking', () => {
   it('applyDismissSuppression is a no-op without engagement data', () => {
     const candidates = [rec({ streamerId: 'a', score: 0.9 }), rec({ streamerId: 'b', score: 0.8 })];
     expect(applyDismissSuppression(candidates, null).map((c) => c.streamerId)).toEqual(['a', 'b']);
+  });
+});
+
+describe('feed UX round 2026-07-22 — Up Next grouping + relative time', () => {
+  // Local-time constructor so the tests are timezone-independent (the
+  // helpers bucket by the VIEWER's local day).
+  const localNow = new Date(2026, 6, 22, 20, 0, 0); // Wed Jul 22, 20:00 local
+
+  it('relativeStartLabel formats minutes, hours and the started case', () => {
+    const at = (minutesFromNow: number) =>
+      new Date(localNow.getTime() + minutesFromNow * 60_000).toISOString();
+    expect(relativeStartLabel(at(45), localNow)).toBe('In 45 min');
+    expect(relativeStartLabel(at(125), localNow)).toBe('In 2h 05m');
+    expect(relativeStartLabel(at(120), localNow)).toBe('In 2h');
+    expect(relativeStartLabel(at(0.5), localNow)).toBe('Starting now');
+    expect(relativeStartLabel(at(-10), localNow)).toBe('Starting now');
+    expect(relativeStartLabel('not-a-date', localNow)).toBeNull();
+  });
+
+  it('upNextDayLabel buckets by the local calendar day', () => {
+    const sameEvening = new Date(2026, 6, 22, 23, 30).toISOString();
+    const afterMidnight = new Date(2026, 6, 23, 0, 30).toISOString();
+    const startedSlot = new Date(2026, 6, 22, 19, 50).toISOString();
+    expect(upNextDayLabel(sameEvening, localNow)).toBe('Today');
+    expect(upNextDayLabel(afterMidnight, localNow)).toBe('Tomorrow');
+    expect(upNextDayLabel(startedSlot, localNow)).toBe('Today');
+  });
+
+  it('groupUpNextSlots keeps order and merges consecutive same-day runs', () => {
+    const slots = [
+      slot({ id: 'a', startTime: new Date(2026, 6, 22, 21, 0).toISOString() }),
+      slot({ id: 'b', startTime: new Date(2026, 6, 22, 23, 0).toISOString() }),
+      slot({ id: 'c', startTime: new Date(2026, 6, 23, 1, 0).toISOString() }),
+    ];
+    const groups = groupUpNextSlots(slots, localNow);
+    expect(groups.map((g) => g.label)).toEqual(['Today', 'Tomorrow']);
+    expect(groups[0].slots.map((s) => s.id)).toEqual(['a', 'b']);
+    expect(groups[1].slots.map((s) => s.id)).toEqual(['c']);
+    expect(groupUpNextSlots([], localNow)).toEqual([]);
+  });
+
+  it('updatedAgoLabel clamps to "just now" and counts whole minutes', () => {
+    const base = localNow.getTime();
+    expect(updatedAgoLabel(base, base + 30_000)).toBe('Updated just now');
+    expect(updatedAgoLabel(base, base + 4 * 60_000)).toBe('Updated 4 min ago');
+    // clock skew (last update "in the future") clamps to just now
+    expect(updatedAgoLabel(base + 60_000, base)).toBe('Updated just now');
   });
 });

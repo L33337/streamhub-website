@@ -16,12 +16,10 @@ export function CategoryChips({
         : 'border-border-default bg-background-elevated text-text-secondary hover:border-accent-cyan/40 hover:text-text-primary'
     }`;
 
+  // Overflow scrolling lives in the RailScroller wrapper (FeedClient) since
+  // the 2026-07-22 UX round — this row only lays the chips out.
   return (
-    <div
-      className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      role="group"
-      aria-label="Filter feed by category"
-    >
+    <div className="flex gap-2 py-0.5" role="group" aria-label="Filter feed by category">
       <button
         type="button"
         className={chipClass(selectedCategory === null)}
