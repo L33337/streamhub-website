@@ -28,17 +28,16 @@ export function toIcsUtc(date: Date): string {
 }
 
 /**
- * Builds a single-event VCALENDAR for a predicted/announced slot.
- * STATUS:TENTATIVE on purpose — these are predictions, and calendar apps
- * render tentative events distinctly. Lines are not folded (RFC recommends
- * ≤75 octets, but every mainstream client accepts long lines).
- *
- * `now` is injectable for tests (DTSTAMP).
+ * The VEVENT block for one slot — shared by the single-slot export and the
+ * Program page's whole-day export (lib/program/ics.ts). STATUS:TENTATIVE on
+ * purpose — these are predictions, and calendar apps render tentative events
+ * distinctly.
  */
-export function buildSlotIcs(
+export function slotVeventLines(
   slot: IcsSlot,
-  { now = new Date(), siteUrl = 'https://streamertimes.tv' }: { now?: Date; siteUrl?: string } = {},
-): string {
+  now: Date,
+  siteUrl = 'https://streamertimes.tv',
+): string[] {
   const start = new Date(slot.startTime);
   const minutes =
     Number.isFinite(slot.duration) && slot.duration > 0 ? slot.duration : DEFAULT_DURATION_MINUTES;
@@ -47,12 +46,7 @@ export function buildSlotIcs(
   const summary = `${slot.streamerName} live${slot.category ? `: ${slot.category}` : ''}`;
   const description = `${slot.streamTitle}\nPredicted by Streamer Times — times can shift.`;
 
-  const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Streamer Times//Feed//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
+  return [
     'BEGIN:VEVENT',
     `UID:${slot.id}@streamertimes.tv`,
     `DTSTAMP:${toIcsUtc(now)}`,
@@ -63,10 +57,36 @@ export function buildSlotIcs(
     `URL:${siteUrl}/schedule/${encodeURIComponent(slot.id)}`,
     'STATUS:TENTATIVE',
     'END:VEVENT',
+  ];
+}
+
+/** VCALENDAR wrapper shared by both exports. */
+export function wrapVcalendar(eventLines: string[]): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Streamer Times//Feed//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    ...eventLines,
     'END:VCALENDAR',
   ];
   // RFC 5545 requires CRLF line endings.
   return lines.join('\r\n') + '\r\n';
+}
+
+/**
+ * Builds a single-event VCALENDAR for a predicted/announced slot. Lines are
+ * not folded (RFC recommends ≤75 octets, but every mainstream client accepts
+ * long lines).
+ *
+ * `now` is injectable for tests (DTSTAMP).
+ */
+export function buildSlotIcs(
+  slot: IcsSlot,
+  { now = new Date(), siteUrl = 'https://streamertimes.tv' }: { now?: Date; siteUrl?: string } = {},
+): string {
+  return wrapVcalendar(slotVeventLines(slot, now, siteUrl));
 }
 
 /** "papaplatte-2026-07-22.ics" — safe cross-platform filename. */
