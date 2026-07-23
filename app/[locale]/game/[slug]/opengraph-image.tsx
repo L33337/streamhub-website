@@ -48,22 +48,38 @@ export async function generateImageMetadata({ params }: Props) {
 const MAX_BOX_ART_BYTES = 400_000;
 
 /**
+ * MIME from the magic bytes, NOT the Content-Type header: Twitch's CDN serves
+ * some box arts as JPEG bytes labelled `image/png` (seen live with VALORANT's
+ * 516575-285x380.jpg, 2026-07-23) — a data URI built from the header makes
+ * Satori decode JPEG as PNG and silently draw nothing. Only the two formats
+ * Satori can decode are accepted; anything else (webp, gif, html error page)
+ * degrades to the text-only card.
+ */
+function sniffImageMime(buf: ArrayBuffer): string | null {
+  const b = new Uint8Array(buf);
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length > 7 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47)
+    return 'image/png';
+  return null;
+}
+
+/**
  * Fetches the Twitch box art into a data URI for the Satori renderer (which
- * fetches nothing itself). Every failure path — timeout, non-image response,
- * oversized body — returns null and degrades the card to text-only. MUST
- * never throw: this runs during prerender for every game slug (build-abort
- * rule, see the page loader).
+ * fetches nothing itself). Every failure path — timeout, unrecognized image
+ * bytes, oversized body — returns null and degrades the card to text-only.
+ * MUST never throw: this runs during prerender for every game slug
+ * (build-abort rule, see the page loader).
  */
 async function fetchBoxArtDataUri(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return null;
-    const type = res.headers.get('content-type') ?? 'image/jpeg';
-    if (!type.startsWith('image/')) return null;
     const buf = await res.arrayBuffer();
     if (buf.byteLength === 0 || buf.byteLength > MAX_BOX_ART_BYTES) return null;
-    return `data:${type};base64,${Buffer.from(buf).toString('base64')}`;
+    const mime = sniffImageMime(buf);
+    if (!mime) return null;
+    return `data:${mime};base64,${Buffer.from(buf).toString('base64')}`;
   } catch {
     return null;
   }
