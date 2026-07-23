@@ -13,6 +13,18 @@ import {
   isViewerCountFresh,
   findScrollTargetSection,
   toProgramPublicSlot,
+  toLocalDateInputValue,
+  fromLocalDateInputValue,
+  buildStripDays,
+  formatDayButtonLabel,
+  findNextExpectedSlot,
+  formatNextExpectedLabel,
+  findNextDayWithStreams,
+  nowLineIndex,
+  activeChipForSection,
+  programRelativeStartLabel,
+  formatUpdatedAgo,
+  buildWatchLinks,
 } from '../logic';
 import type { StreamSlot } from '@/lib/feed/types';
 import type { FavoriteStreamerRow } from '@/lib/supabase/favorites';
@@ -57,6 +69,8 @@ function favorite(overrides: Partial<FavoriteStreamerRow>): FavoriteStreamerRow 
     is_featured: false,
     is_always_on: false,
     favorited_at: NOW.toISOString(),
+    twitch_login: null,
+    youtube_channel_id: null,
     ...overrides,
   };
 }
@@ -349,5 +363,216 @@ describe('findScrollTargetSection', () => {
 
   it('returns null with no upcoming sections', () => {
     expect(findScrollTargetSection([sections[0]], 16)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// UX round 2026-07-23 helpers
+// ---------------------------------------------------------------------------
+
+describe('toLocalDateInputValue / fromLocalDateInputValue', () => {
+  it('round-trips a local date with zero-padding', () => {
+    const d = new Date(2026, 0, 5); // Jan 5
+    expect(toLocalDateInputValue(d)).toBe('2026-01-05');
+    expect(fromLocalDateInputValue('2026-01-05').getTime()).toBe(d.getTime());
+  });
+});
+
+describe('buildStripDays', () => {
+  it('builds 7 consecutive local days starting today', () => {
+    const days = buildStripDays(NOW);
+    expect(days).toHaveLength(7);
+    expect(days[0].label).toBe('Today');
+    expect(days[0].key).toBe('2026-07-07');
+    expect(days[1].label).toBe('Tomorrow');
+    expect(days[1].key).toBe('2026-07-08');
+    // Jul 9 2026 is a Thursday
+    expect(days[2].label).toBe('Thu 9');
+    expect(days[6].key).toBe('2026-07-13');
+  });
+
+  it('crosses a month boundary correctly', () => {
+    const days = buildStripDays(new Date(2026, 6, 30, 9, 0)); // Jul 30
+    expect(days[2].key).toBe('2026-08-01');
+  });
+});
+
+describe('formatDayButtonLabel', () => {
+  it('labels today, tomorrow and later days', () => {
+    expect(formatDayButtonLabel(new Date(2026, 6, 7, 23), NOW)).toBe('Today');
+    expect(formatDayButtonLabel(new Date(2026, 6, 8), NOW)).toBe('Tomorrow');
+    expect(formatDayButtonLabel(new Date(2026, 6, 10), NOW)).toBe('Fri, Jul 10');
+  });
+});
+
+describe('findNextExpectedSlot', () => {
+  it('picks the earliest future upcoming slot of the streamer', () => {
+    const later = slot({ id: 'later', startTime: iso(2026, 6, 9, 20) });
+    const sooner = slot({ id: 'sooner', startTime: iso(2026, 6, 8, 18) });
+    expect(findNextExpectedSlot([later, sooner], 'streamer-1', NOW)?.id).toBe('sooner');
+  });
+
+  it('skips cancelled slots, past slots and other streamers', () => {
+    const cancelled = slot({ id: 'c', slotKind: 'cancelled', startTime: iso(2026, 6, 8, 18) });
+    const past = slot({ id: 'p', startTime: iso(2026, 6, 7, 8) });
+    const other = slot({ id: 'o', streamerId: 's2', startTime: iso(2026, 6, 8, 18) });
+    expect(findNextExpectedSlot([cancelled, past, other], 'streamer-1', NOW)).toBeNull();
+  });
+
+  it('keeps uncertain slots (still a prediction)', () => {
+    const uncertain = slot({ id: 'u', isUncertain: true, startTime: iso(2026, 6, 8, 18) });
+    expect(findNextExpectedSlot([uncertain], 'streamer-1', NOW)?.id).toBe('u');
+  });
+});
+
+describe('formatNextExpectedLabel', () => {
+  it('labels tomorrow with an approximate hour', () => {
+    expect(formatNextExpectedLabel(slot({ startTime: iso(2026, 6, 8, 20) }), NOW)).toBe(
+      'Tomorrow ~8pm',
+    );
+  });
+
+  it('labels days within a week with a short weekday', () => {
+    // Jul 10 2026 is a Friday
+    expect(formatNextExpectedLabel(slot({ startTime: iso(2026, 6, 10, 18) }), NOW)).toBe(
+      'Fri ~6pm',
+    );
+  });
+
+  it('labels a week+ out with the date only', () => {
+    expect(formatNextExpectedLabel(slot({ startTime: iso(2026, 6, 20, 18) }), NOW)).toBe(
+      'Jul 20',
+    );
+  });
+});
+
+describe('findNextDayWithStreams', () => {
+  it('finds the earliest day after the selected one with an upcoming slot', () => {
+    const slots = [
+      slot({ id: 'far', startTime: iso(2026, 6, 11, 20) }),
+      slot({ id: 'near', startTime: iso(2026, 6, 9, 18) }),
+    ];
+    const next = findNextDayWithStreams(slots, TODAY, NOW);
+    expect(next?.getTime()).toBe(new Date(2026, 6, 9).getTime());
+  });
+
+  it('ignores cancelled slots and days at/before the selected date', () => {
+    const slots = [
+      slot({ id: 'c', slotKind: 'cancelled', startTime: iso(2026, 6, 9, 18) }),
+      slot({ id: 'today', startTime: iso(2026, 6, 7, 20) }),
+    ];
+    expect(findNextDayWithStreams(slots, TODAY, NOW)).toBeNull();
+  });
+
+  it('searches relative to the SELECTED date, not today', () => {
+    const slots = [slot({ startTime: iso(2026, 6, 9, 18) })];
+    expect(findNextDayWithStreams(slots, new Date(2026, 6, 9), NOW)).toBeNull();
+    expect(
+      findNextDayWithStreams(slots, new Date(2026, 6, 8), NOW)?.getTime(),
+    ).toBe(new Date(2026, 6, 9).getTime());
+  });
+});
+
+describe('nowLineIndex', () => {
+  const live = { id: 'live', title: 'Live Now', type: 'live' as const, hour: null, slots: [] };
+  const h9 = { id: 'hour-9', title: '9am', type: 'upcoming' as const, hour: 9, slots: [] };
+  const h16 = { id: 'hour-16', title: '4pm', type: 'upcoming' as const, hour: 16, slots: [] };
+  const h20 = { id: 'hour-20', title: '8pm', type: 'upcoming' as const, hour: 20, slots: [] };
+
+  it('returns null when not viewing today or with no sections', () => {
+    expect(nowLineIndex([h16], TOMORROW, NOW)).toBeNull();
+    expect(nowLineIndex([], TODAY, NOW)).toBeNull();
+  });
+
+  it('sits after live + past-hour sections (NOW is 12:00)', () => {
+    expect(nowLineIndex([live, h9, h16, h20], TODAY, NOW)).toBe(2);
+  });
+
+  it('sits before everything when all sections are later', () => {
+    expect(nowLineIndex([h16, h20], TODAY, NOW)).toBe(0);
+  });
+
+  it('sits after everything when all sections are earlier', () => {
+    expect(nowLineIndex([live, h9], TODAY, NOW)).toBe(2);
+  });
+});
+
+describe('activeChipForSection', () => {
+  const sections = [
+    { id: 'live', title: 'Live Now', type: 'live' as const, hour: null, slots: [] },
+    { id: 'hour-9', title: '9am', type: 'upcoming' as const, hour: 9, slots: [] },
+    { id: 'hour-17', title: '5pm', type: 'upcoming' as const, hour: 17, slots: [] },
+    { id: 'hour-21', title: '9pm', type: 'upcoming' as const, hour: 21, slots: [] },
+  ];
+
+  it('maps live and early hours to Now (today only)', () => {
+    expect(activeChipForSection('live', sections, true)).toBe('now');
+    expect(activeChipForSection('hour-9', sections, true)).toBe('now');
+    expect(activeChipForSection(null, sections, true)).toBe('now');
+    expect(activeChipForSection('hour-9', sections, false)).toBeNull();
+    expect(activeChipForSection(null, sections, false)).toBeNull();
+  });
+
+  it('maps 16–19 to 4pm and 20+ to 8pm regardless of the day', () => {
+    expect(activeChipForSection('hour-17', sections, true)).toBe('hour-16');
+    expect(activeChipForSection('hour-17', sections, false)).toBe('hour-16');
+    expect(activeChipForSection('hour-21', sections, false)).toBe('hour-20');
+  });
+});
+
+describe('programRelativeStartLabel', () => {
+  it('labels an imminent start', () => {
+    expect(programRelativeStartLabel(iso(2026, 6, 7, 12, 45), NOW)).toBe('In 45 min');
+  });
+
+  it('returns null outside the 12h window', () => {
+    expect(programRelativeStartLabel(iso(2026, 6, 8, 12, 30), NOW)).toBeNull();
+  });
+
+  it('says Starting now around the start, null once clearly overdue', () => {
+    const in30s = new Date(NOW.getTime() + 30_000).toISOString();
+    expect(programRelativeStartLabel(in30s, NOW)).toBe('Starting now');
+    expect(programRelativeStartLabel(iso(2026, 6, 7, 11, 30), NOW)).toBeNull();
+  });
+});
+
+describe('formatUpdatedAgo', () => {
+  const base = NOW.getTime();
+
+  it('says just now under a minute', () => {
+    expect(formatUpdatedAgo(base - 30_000, base)).toBe('just now');
+  });
+
+  it('counts minutes and hours', () => {
+    expect(formatUpdatedAgo(base - 3 * 60_000, base)).toBe('3 min ago');
+    expect(formatUpdatedAgo(base - 60 * 60_000, base)).toBe('1h ago');
+    expect(formatUpdatedAgo(base - 65 * 60_000, base)).toBe('1h 05m ago');
+  });
+});
+
+describe('buildWatchLinks', () => {
+  const channel = { twitch_login: 'teststreamer', youtube_channel_id: 'UCabc' };
+
+  it('builds links only for the platforms the slot is live on', () => {
+    const links = buildWatchLinks(slot({ platforms: ['twitch'] }), channel);
+    expect(links).toEqual([
+      { platform: 'twitch', url: 'https://twitch.tv/teststreamer' },
+    ]);
+  });
+
+  it('deep-links YouTube via /live', () => {
+    const links = buildWatchLinks(slot({ platforms: ['twitch', 'youtube'] }), channel);
+    expect(links).toHaveLength(2);
+    expect(links[1].url).toBe('https://youtube.com/channel/UCabc/live');
+  });
+
+  it('skips platforms with missing channel ids and handles no channel', () => {
+    expect(
+      buildWatchLinks(slot({ platforms: ['twitch'] }), {
+        twitch_login: null,
+        youtube_channel_id: 'UCabc',
+      }),
+    ).toEqual([]);
+    expect(buildWatchLinks(slot({ platforms: ['twitch'] }), undefined)).toEqual([]);
   });
 });

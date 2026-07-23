@@ -1,6 +1,10 @@
 // "Offline today" row — port of the app's OfflineStreamerCard: a favorite
 // with no stream (real or predicted) on the current day. Links to the
 // streamer's public page (the app opens a detail modal instead).
+//
+// UX round 2026-07-23: when a future prediction exists, the dead-end
+// "No stream today" becomes "Next: Tomorrow ~8pm" (findNextExpectedSlot) —
+// the row now carries the product's actual value, the forecast.
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,7 +12,14 @@ import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { PlatformBadge } from '@/components/web/Badges';
 import type { FavoriteStreamerRow } from '@/lib/supabase/favorites';
 
-export function OfflineFavoriteRow({ streamer }: { streamer: FavoriteStreamerRow }) {
+export function OfflineFavoriteRow({
+  streamer,
+  nextExpectedLabel,
+}: {
+  streamer: FavoriteStreamerRow;
+  /** 'Tomorrow ~8pm' (formatNextExpectedLabel) or null when no prediction. */
+  nextExpectedLabel?: string | null;
+}) {
   return (
     <Link
       href={`/streamer/${encodeURIComponent(streamer.id)}`}
@@ -39,7 +50,13 @@ export function OfflineFavoriteRow({ streamer }: { streamer: FavoriteStreamerRow
         </div>
       </div>
 
-      <span className="shrink-0 text-xs text-text-muted">No stream today</span>
+      {nextExpectedLabel ? (
+        <span className="shrink-0 text-xs font-semibold text-text-secondary">
+          Next: <span className="text-accent-cyan">{nextExpectedLabel}</span>
+        </span>
+      ) : (
+        <span className="shrink-0 text-xs text-text-muted">No stream today</span>
+      )}
     </Link>
   );
 }

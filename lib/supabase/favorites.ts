@@ -9,6 +9,9 @@ export interface FavoriteStreamerRow {
   is_featured: boolean;
   is_always_on: boolean;
   favorited_at: string;
+  /** Canonical twitch.tv login — null for pre-2026-05 rows without backfill. */
+  twitch_login: string | null;
+  youtube_channel_id: string | null;
 }
 
 /**
@@ -79,6 +82,8 @@ interface JoinedFavoriteRow {
     avatar_url: string | null;
     is_featured: boolean | null;
     is_always_on: boolean | null;
+    twitch_login: string | null;
+    youtube_channel_id: string | null;
   };
 }
 
@@ -94,7 +99,7 @@ export async function listFavoriteStreamers(
   const { data, error } = await supabase
     .from('user_favorites')
     .select(
-      'streamer_id, created_at, streamers!inner(id, name, platforms, avatar_url, is_featured, is_always_on, approved)',
+      'streamer_id, created_at, streamers!inner(id, name, platforms, avatar_url, is_featured, is_always_on, twitch_login, youtube_channel_id, approved)',
     )
     .eq('streamers.approved', true)
     .order('created_at', { ascending: false });
@@ -110,5 +115,7 @@ export async function listFavoriteStreamers(
     is_featured: row.streamers.is_featured === true,
     is_always_on: row.streamers.is_always_on === true,
     favorited_at: row.created_at,
+    twitch_login: row.streamers.twitch_login ?? null,
+    youtube_channel_id: row.streamers.youtube_channel_id ?? null,
   }));
 }
