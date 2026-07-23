@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChevronRight } from 'lucide-react';
 import {
   getPartnerApi,
   type PublicGame,
@@ -16,16 +17,23 @@ import { isVideoGameCategory } from '@/lib/game-categories';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { formatCompactNumber } from '@/lib/format/number';
 import {
+  buildGameRankingRows,
   rankGameStreamers,
   topGameStreamerNames,
   formatNameList,
 } from '@/lib/game-ranking';
 import { isGameHubIndexable } from '@/lib/rankings';
-import { DaySection } from '@/components/web/DaySection';
+import { schedulePlatforms } from '@/lib/game-schedule';
+import { isUsableHistogram } from '@/lib/game-heatmap';
+import { StreamTimesHeatmap } from '@/components/web/games/StreamTimesHeatmap';
+import { FollowGameButton } from '@/components/web/games/FollowGameButton';
+import { GameDaySection } from '@/components/web/games/GameDaySection';
+import { ScheduleFilters } from '@/components/web/games/ScheduleFilters';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { GameBoxArt } from '@/components/web/games/GameCard';
+import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { SlotCard } from '@/components/web/SlotCard';
 
 export const revalidate = 300;
@@ -42,6 +50,11 @@ const RANK_DISPLAY_LIMIT = 5;
 // popular categories can have dozens of live slots, which buried the sections
 // below.
 const LIVE_DISPLAY_LIMIT = 4;
+// UX round 2026-07-23: the live slots beyond the cap render inside a closed
+// <details> expander (progressive disclosure keeps the section budget), itself
+// capped so a mega-category can't inflate the HTML; the tail links to the full
+// ranking, which carries live badges for everyone.
+const LIVE_EXPAND_LIMIT = 20;
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
@@ -61,6 +74,9 @@ interface GamePageData {
   // that have a hub page — never emits internal 404 links. Feeds the
   // "Related games" chips (the internal mesh between game pages).
   related: { category: string; slug: string }[];
+  // UTC weekday-hour histogram (168 minutes cells) for the "When is {game}
+  // streamed?" heatmap; null while the aggregate warms up or on API error.
+  hourHistogram: number[] | null;
   now: Date;
 }
 
@@ -80,6 +96,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     upcomingSlots: [],
     rankedStreamers: [],
     related: [],
+    hourHistogram: null,
     now,
   };
 
@@ -107,7 +124,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
 
-  const [liveCall, upcomingCall, rankedCall] = await Promise.allSettled([
+  const [liveCall, upcomingCall, rankedCall, histogramCall] = await Promise.allSettled([
     api.listSchedules({
       category: game.category,
       status: ['live'],
@@ -132,7 +149,22 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
       limit: RANK_FETCH_LIMIT,
       revalidate: 3600,
     }),
+    // "When is {game} streamed?" heatmap — single-row lookup with the opt-in
+    // histogram field (nightly aggregate; 1h data cache is plenty fresh).
+    // Degrades to null against an older API that rejects the params.
+    api.listGames({
+      category: game.category,
+      include: 'hour_histogram',
+      limit: 1,
+      revalidate: 3600,
+    }),
   ]);
+
+  let hourHistogram: number[] | null = null;
+  if (histogramCall.status === 'fulfilled') {
+    const value = histogramCall.value.data[0]?.hour_histogram;
+    if (isUsableHistogram(value)) hourHistogram = value;
+  }
 
   return {
     category: game.category,
@@ -141,6 +173,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     upcomingSlots: upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [],
     rankedStreamers: rankedCall.status === 'fulfilled' ? rankedCall.value.data : [],
     related,
+    hourHistogram,
     now,
   };
 });
@@ -239,8 +272,16 @@ interface GameStreamer {
 
 export default async function GamePage({ params }: Props) {
   const { slug } = await params;
-  const { category, game, liveSlots, upcomingSlots, rankedStreamers, related, now } =
-    await loadGamePage(slug);
+  const {
+    category,
+    game,
+    liveSlots,
+    upcomingSlots,
+    rankedStreamers,
+    related,
+    hourHistogram,
+    now,
+  } = await loadGamePage(slug);
   if (!category || !game) notFound();
 
   // Dedupe streamers across live + upcoming; live first, then alphabetical.
@@ -271,6 +312,26 @@ export default async function GamePage({ params }: Props) {
   const moreStreamers = streamers.filter((s) => !rankedIds.has(s.id));
   const topStreamer = ranked[0]?.streamer ?? null;
 
+  // UX round 2026-07-23: the ranking table reuses the /rankings/game/[slug]
+  // view model — live status, earliest next stream and 28d hours per row all
+  // derive from data already fetched for this page.
+  const rankingRows = buildGameRankingRows(ranked, liveSlots, upcomingSlots);
+
+  // Live section: top slots by viewers stay visible, the rest collapses.
+  const sortedLive = [...liveSlots].sort(
+    (a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1),
+  );
+  const liveShown = sortedLive.slice(0, LIVE_DISPLAY_LIMIT);
+  const liveMore = sortedLive.slice(
+    LIVE_DISPLAY_LIMIT,
+    LIVE_DISPLAY_LIMIT + LIVE_EXPAND_LIMIT,
+  );
+  const liveOverflow = sortedLive.length - LIVE_DISPLAY_LIMIT - liveMore.length;
+
+  // Quiet category: nothing live and nothing scheduled — the page renders an
+  // explanatory empty state with the related-games chips pulled into it.
+  const isQuiet = liveSlots.length === 0 && upcomingSlots.length === 0;
+
   // Schedule grid (upcoming only, grouped by UTC date) — same shape as the
   // streamer page so it can reuse DayNavBar + DaySection. Live slots have
   // their own "Watching now" section above and would duplicate here.
@@ -281,6 +342,12 @@ export default async function GamePage({ params }: Props) {
     sevenDays.push(new Date(now.getTime() + i * 86_400_000).toISOString().slice(0, 10));
   }
   const hasSchedule = upcomingSlots.length > 0;
+  // Day sections that actually render — the ranking's "Next stream" cell only
+  // deep-links days the schedule shows (a slot exactly on the 7-day boundary
+  // can carry an 8th UTC date that has no section).
+  const renderedDayKeys = new Set(
+    sevenDays.filter((d) => (grouped.get(d)?.length ?? 0) > 0),
+  );
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: SITE_URL },
@@ -435,36 +502,111 @@ export default async function GamePage({ params }: Props) {
               </li>
             )}
           </ul>
+          <FollowGameButton category={category} />
         </div>
       </div>
 
+      {(liveSlots.length > 0 ||
+        ranked.length > 0 ||
+        hasSchedule ||
+        (related.length > 0 && !isQuiet)) && (
+        <nav aria-label="On this page" className="mt-5 flex flex-wrap gap-2 text-xs">
+          {liveSlots.length > 0 && (
+            <a href="#watching-now" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
+              Live now
+            </a>
+          )}
+          {ranked.length > 0 && (
+            <a href="#most-followed" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
+              Top streamers
+            </a>
+          )}
+          {hourHistogram && (
+            <a href="#stream-times" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
+              Best times
+            </a>
+          )}
+          {hasSchedule && (
+            <a href="#schedule" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
+              Schedule
+            </a>
+          )}
+          {related.length > 0 && !isQuiet && (
+            <a href="#related-games" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
+              Related games
+            </a>
+          )}
+        </nav>
+      )}
+
       {liveSlots.length > 0 && (
-        <section aria-labelledby="watching-now-heading" className="mt-8">
+        <section
+          aria-labelledby="watching-now-heading"
+          id="watching-now"
+          className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+        >
           <h2 id="watching-now-heading" className="text-xl font-bold text-white">
             Watching {category} now
           </h2>
           <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-label={`Live ${category} streams`}>
-            {[...liveSlots]
-              .sort((a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1))
-              .slice(0, LIVE_DISPLAY_LIMIT)
-              .map((slot) => (
-                <li key={slot.id}>
-                  <SlotCard slot={slot} />
-                </li>
-              ))}
+            {liveShown.map((slot) => (
+              <li key={slot.id}>
+                <SlotCard slot={slot} />
+              </li>
+            ))}
           </ul>
+          {liveMore.length > 0 && (
+            <details className="group mt-3">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-border-default/60 bg-background-elevated/40 px-3 py-2 text-sm text-text-muted transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan [&::-webkit-details-marker]:hidden">
+                <ChevronRight
+                  size={14}
+                  aria-hidden="true"
+                  className="shrink-0 transition-transform group-open:rotate-90"
+                />
+                Show {liveMore.length} more live channel{liveMore.length === 1 ? '' : 's'}
+              </summary>
+              <ul
+                className="mt-3 grid gap-3 lg:grid-cols-2"
+                aria-label={`More live ${category} streams`}
+              >
+                {liveMore.map((slot) => (
+                  <li key={slot.id}>
+                    <SlotCard slot={slot} />
+                  </li>
+                ))}
+              </ul>
+              {liveOverflow > 0 && (
+                <p className="mt-2 text-xs">
+                  <Link
+                    href={`/rankings/game/${slug}`}
+                    className="text-accent-cyan hover:text-text-primary"
+                  >
+                    {liveOverflow} more live in the full {category} ranking →
+                  </Link>
+                </p>
+              )}
+            </details>
+          )}
+          <p className="mt-2 text-xs text-text-muted">
+            Live status and viewer counts update every few minutes.
+          </p>
         </section>
       )}
 
       {ranked.length > 0 && (
-        <section aria-labelledby="most-followed-heading" className="mt-8">
+        <section
+          aria-labelledby="most-followed-heading"
+          id="most-followed"
+          className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+        >
           <h2 id="most-followed-heading" className="text-xl font-bold text-white">
             Most followed {category} streamers
           </h2>
           <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
             <table className="w-full text-sm">
               <caption className="sr-only">
-                {category} streamers ranked by follower count
+                {category} streamers ranked by follower count, with their next
+                expected stream
               </caption>
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
@@ -474,30 +616,39 @@ export default async function GamePage({ params }: Props) {
                   <th scope="col" className="px-3 py-2 font-semibold">
                     Streamer
                   </th>
+                  <th scope="col" className="px-3 py-2 font-semibold">
+                    Next stream
+                  </th>
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
                     Followers
                   </th>
-                  <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    Avg viewers
+                  <th scope="col" className="hidden px-3 py-2 text-right font-semibold sm:table-cell">
+                    Hours / 28d
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {ranked.map(({ rank, streamer }) => {
-                  const avg = streamer.avg_view_count;
+                {rankingRows.map((row) => {
+                  const nextDay = row.nextStreamAt?.slice(0, 10) ?? null;
+                  const nextLabel = row.nextStreamAt ? (
+                    <NextStreamTime
+                      startTime={row.nextStreamAt}
+                      isPredicted={row.nextIsPredicted}
+                    />
+                  ) : null;
                   return (
-                    <tr key={streamer.id} className="border-t border-divider">
+                    <tr key={row.id} className="border-t border-divider">
                       <td className="px-3 py-2 font-bold tabular-nums text-text-muted">
-                        {rank}
+                        {row.rank}
                       </td>
                       <th scope="row" className="px-3 py-2 text-left font-medium">
                         <Link
-                          href={`/streamer/${encodeURIComponent(streamer.id)}`}
+                          href={`/streamer/${encodeURIComponent(row.id)}`}
                           className="group flex items-center gap-3"
                         >
-                          {streamer.avatar_url ? (
+                          {row.avatarUrl ? (
                             <Image
-                              src={streamer.avatar_url}
+                              src={row.avatarUrl}
                               alt=""
                               width={36}
                               height={36}
@@ -506,7 +657,7 @@ export default async function GamePage({ params }: Props) {
                             />
                           ) : (
                             <InitialsAvatar
-                              name={streamer.name}
+                              name={row.name}
                               size={36}
                               className="shrink-0"
                             />
@@ -514,23 +665,41 @@ export default async function GamePage({ params }: Props) {
                           <span className="flex min-w-0 flex-col">
                             <span className="flex items-center gap-2">
                               <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
-                                {streamer.name}
+                                {row.name}
                               </span>
-                              {liveIds.has(streamer.id) && <LiveBadge />}
+                              {row.isLive && <LiveBadge />}
                             </span>
                             <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                              {streamer.platforms.map((p) => (
+                              {row.platforms.map((p) => (
                                 <PlatformBadge key={p} platform={p} size="sm" />
                               ))}
                             </span>
                           </span>
                         </Link>
                       </th>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
-                        {formatCompactNumber(streamer.follower_count, 'en')}
+                      <td className="whitespace-nowrap px-3 py-2 text-xs text-text-secondary">
+                        {row.isLive ? (
+                          <a
+                            href="#watching-now"
+                            className="font-semibold text-live hover:underline"
+                          >
+                            Live now
+                          </a>
+                        ) : nextDay && renderedDayKeys.has(nextDay) ? (
+                          <a href={`#day-${nextDay}`} className="hover:text-accent-cyan">
+                            {nextLabel}
+                          </a>
+                        ) : (
+                          nextLabel ?? '—'
+                        )}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
-                        {avg != null && avg > 0 ? formatCompactNumber(avg, 'en') : '—'}
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
+                        {formatCompactNumber(row.followerCount, 'en')}
+                      </td>
+                      <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
+                        {row.hours28d != null && row.hours28d > 0
+                          ? `${formatCompactNumber(Math.round(row.hours28d), 'en')}h`
+                          : '—'}
                       </td>
                     </tr>
                   );
@@ -596,29 +765,107 @@ export default async function GamePage({ params }: Props) {
         </section>
       )}
 
-      {hasSchedule && (
-        <section aria-label={`${category} stream schedule`} className="mt-10">
-          <h2 className="text-xl font-bold text-white">
-            Upcoming {category} streams
+      {hourHistogram && (
+        <section
+          aria-labelledby="stream-times-heading"
+          id="stream-times"
+          className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+        >
+          <h2 id="stream-times-heading" className="text-xl font-bold text-white">
+            When is {category} streamed?
           </h2>
-          <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
-          {sevenDays.map((dateKey) => {
-            const slots = grouped.get(dateKey) ?? [];
-            if (slots.length === 0) return null;
-            return (
-              <DaySection
-                key={dateKey}
-                dateKey={dateKey}
-                label={utcDateLabel(dateKey, todayUtc)}
-                slots={slots}
-              />
-            );
-          })}
+          <StreamTimesHeatmap category={category} histogram={hourHistogram} />
         </section>
       )}
 
-      {related.length > 0 && (
-        <section aria-labelledby="related-games-heading" className="mt-12">
+      {isQuiet && (
+        <section
+          aria-labelledby="quiet-heading"
+          className="mt-10 rounded-xl border border-border-default bg-background-elevated p-6"
+        >
+          <h2 id="quiet-heading" className="text-lg font-bold text-white">
+            No {category} streams right now
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-text-secondary">
+            None of the {category} streamers we track are live or expected in
+            the next 7 days. Schedules and AI predictions refresh several times
+            a day — check back soon.
+          </p>
+          {related.length > 0 && (
+            <>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                In the meantime
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Related games">
+                {related.map((r) => (
+                  <li key={r.category}>
+                    <Link
+                      href={`/game/${r.slug}`}
+                      prefetch={false}
+                      className="inline-block rounded-full border border-border-default bg-background px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
+                    >
+                      {r.category} streamers
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <p className="mt-4 text-sm">
+            <Link href="/live" className="text-accent-cyan hover:text-text-primary">
+              See who&apos;s live now →
+            </Link>
+            {'  ·  '}
+            <Link href="/games" className="text-accent-cyan hover:text-text-primary">
+              Browse all games
+            </Link>
+          </p>
+        </section>
+      )}
+
+      {hasSchedule && (
+        <section
+          aria-label={`${category} stream schedule`}
+          id="schedule"
+          className="mt-10 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+        >
+          <h2 className="text-xl font-bold text-white">
+            Upcoming {category} streams
+          </h2>
+          <p className="mt-1 text-xs text-text-muted">
+            Times adjust to your local timezone, with the streamer&apos;s own
+            time alongside. Days follow the UTC calendar, so a late-night
+            stream can appear under the next day.
+          </p>
+          <ScheduleFilters
+            platforms={schedulePlatforms(upcomingSlots)}
+            hasLow={upcomingSlots.some(
+              (s) => s.confidence === 'low' && s.slot_kind !== 'cancelled',
+            )}
+          >
+            <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
+            {sevenDays.map((dateKey) => {
+              const slots = grouped.get(dateKey) ?? [];
+              if (slots.length === 0) return null;
+              return (
+                <GameDaySection
+                  key={dateKey}
+                  dateKey={dateKey}
+                  label={utcDateLabel(dateKey, todayUtc)}
+                  slots={slots}
+                />
+              );
+            })}
+          </ScheduleFilters>
+        </section>
+      )}
+
+      {related.length > 0 && !isQuiet && (
+        <section
+          aria-labelledby="related-games-heading"
+          id="related-games"
+          className="mt-12 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+        >
           <h2
             id="related-games-heading"
             className="text-sm font-semibold uppercase tracking-wider text-text-muted"

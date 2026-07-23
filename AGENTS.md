@@ -52,6 +52,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **No completion flag** (deviation from the app's AsyncStorage step persistence): auto-entry only ever happens right after signup, so a revisit-by-URL just shows the wizard again — harmless. Step state is URL-mirrored (`?step=`, history.replaceState) so refreshes and the Connect-Twitch round-trip resume the right step.
 - Local E2E: dev-login loop + auth flags in `.env.development.local`; real Twitch OAuth is NOT locally testable (validate + capture paths need prod) — after deploying, smoke-test one fresh Twitch signup (lands on import with follows listed), one Google signup (choice → Connect Twitch), one email signup (confirm link → wizard).
 
+# Game hub UX round (2026-07-23)
+
+`/game/[slug]` invariants an agent must not accidentally undo:
+
+- **Schedule density**: `GameDaySection` renders high/medium slots as full SlotCards and collapses low-confidence upcoming predictions into compact rows behind a closed `<details data-low-bucket>` (crawlable, no reasoning teasers — LOW copy is the weakest and must not get a full card again). Cancelled slots ALWAYS keep the full card. Split logic is pure in `lib/game-schedule.ts` (unit-tested).
+- **Filters without payload duplication**: the schedule stays fully server-rendered; `ScheduleFilters` (client) receives it as `children` and toggles the `hidden` attribute on `li[data-slot]`/`section[data-day]`/`details[data-low-bucket]` markers. Do NOT convert the schedule into client props (200 slots would double into the flight payload). Known accepted staleness: DayNavBar/day-heading counts describe the unfiltered schedule.
+- **Per-slot `.ics`**: `SlotIcsButton` reuses `lib/feed/ics.ts` (same UIDs as feed/Program exports) and renders as a SIBLING of the SlotCard link (absolute overlay / row-end) — never a nested interactive. Eligibility: upcoming + not cancelled (`isIcsExportable`).
+- **Ranking table** reuses `buildGameRankingRows` (same view model as `/rankings/game/[slug]`): Next-stream cell via `NextStreamTime` deep-links `#day-<utc-date>` only when that day section renders (`renderedDayKeys` guard); Hours/28d column hidden on mobile.
+- **Heatmap** (`StreamTimesHeatmap` + pure `lib/game-heatmap.ts`): data from `/v1/games?category=&include=hour_histogram` (168 UTC minutes cells, weekday 0 = Monday), fetched failure-isolated in the page loader — degrades to a hidden section against an older API. SSR renders the UTC frame; the viewer-local shift happens post-hydration via `useSyncExternalStore` (never emit local-time markup from the server). Sequential single-hue cyan with sqrt intensity — keep it one hue.
+- **Follow this game**: `FollowGameButton` renders NOTHING while auth is dormant or signed out (stealth rule — game pages are public/ISR, the session check is client-side only). Persists to `user_game_follows` via `lib/supabase/gameFollows.ts` (RLS); `/settings` lists follows in `FollowedGamesSection`.
+- **Live section budget**: 4 visible live cards, up to 20 more inside a closed `<details>`, tail links to the full ranking. The ItemList JSON-LD still mirrors only the ranking/roster — the live expander must not feed it.
+- **OG box art**: `renderOgFrame({ sideImage })` switches to the two-column card; the game OG route fetches box art into a data URI with timeout/size guards and MUST degrade to the text card on any failure (build-abort rule).
+- **DayNavBar scroll-spy** (shared with the streamer page): IntersectionObserver band highlights the active day; SSR output renders no active state (hydration stays clean).
+
 # Performance baseline (M20 Phase 0)
 
 Web-Vitals tooling for the perf-health runbook (`StreamHub/docs/performance-health.md`):

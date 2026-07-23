@@ -43,11 +43,38 @@ export async function generateImageMetadata({ params }: Props) {
   ];
 }
 
+// Box art above this size is suspicious (the 285x380 JPEGs are ~20-40 KB) and
+// would bloat the Satori input — degrade to the text-only card instead.
+const MAX_BOX_ART_BYTES = 400_000;
+
+/**
+ * Fetches the Twitch box art into a data URI for the Satori renderer (which
+ * fetches nothing itself). Every failure path — timeout, non-image response,
+ * oversized body — returns null and degrades the card to text-only. MUST
+ * never throw: this runs during prerender for every game slug (build-abort
+ * rule, see the page loader).
+ */
+async function fetchBoxArtDataUri(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    const type = res.headers.get('content-type') ?? 'image/jpeg';
+    if (!type.startsWith('image/')) return null;
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength === 0 || buf.byteLength > MAX_BOX_ART_BYTES) return null;
+    return `data:${type};base64,${Buffer.from(buf).toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
 export default async function Image({ params }: Props) {
   const { slug } = await params;
 
   let category: string | null = null;
   let topNames: string[] = [];
+  let boxArtUrl: string | null = null;
   try {
     const games = await getPartnerApi().listGames({ limit: 500 });
     const game = findGameBySlug(games.data, slug);
@@ -55,11 +82,15 @@ export default async function Image({ params }: Props) {
     // Nightly top-3 most-followed names, straight from the games row (no extra
     // API call). Absent against an older API / cold aggregate → generic line.
     topNames = (game?.top_streamers ?? []).slice(0, 3).map((t) => t.name);
+    boxArtUrl = game?.box_art_url ?? null;
   } catch {
     category = null;
   }
 
   const title = category ?? prettifySlug(slug);
+  // Game-hub UX round 2026-07-23: embed the box art (visual anchor for social
+  // unfurls). Null keeps the classic centered text card.
+  const sideImage = await fetchBoxArtDataUri(boxArtUrl);
 
   return new ImageResponse(
     renderOgFrame({
@@ -68,6 +99,7 @@ export default async function Image({ params }: Props) {
         topNames.length > 0
           ? `${topNames.join(' · ')} — live now & schedule`
           : 'Live now · Upcoming schedule · AI predictions',
+      sideImage: sideImage ?? undefined,
     }),
     { ...OG_SIZE },
   );

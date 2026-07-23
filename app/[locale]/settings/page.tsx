@@ -3,7 +3,10 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { signInGateRedirect } from '@/lib/auth-flag';
 import { getFeedAnalyticsEnabled } from '@/lib/feed/preferences';
+import { listGameFollows } from '@/lib/supabase/gameFollows';
+import { gameSlug } from '@/lib/game-slug';
 import { AccountInfoSection } from '@/components/web/AccountInfoSection';
+import { FollowedGamesSection } from '@/components/web/FollowedGamesSection';
 import { SignOutSection } from '@/components/web/SignOutSection';
 import { DeleteAccountButton } from '@/components/web/DeleteAccountButton';
 import { TwitchImportButton } from '@/components/web/TwitchImportButton';
@@ -28,6 +31,12 @@ export default async function SettingsPage() {
   }
 
   const feedAnalyticsEnabled = await getFeedAnalyticsEnabled(supabase, user.id);
+  // Followed games (game-hub UX round 2026-07-23) — slug per row for the hub
+  // link; a category whose name doesn't slugify renders as plain text.
+  const followedGames = (await listGameFollows(supabase)).map((row) => ({
+    category: row.category,
+    slug: gameSlug(row.category),
+  }));
 
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const provider =
@@ -59,6 +68,8 @@ export default async function SettingsPage() {
       />
 
       {provider === 'twitch' ? <TwitchImportButton /> : null}
+
+      <FollowedGamesSection initial={followedGames} />
 
       <FeedAnalyticsToggle userId={user.id} initialEnabled={feedAnalyticsEnabled} />
 

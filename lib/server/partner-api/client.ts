@@ -73,6 +73,10 @@ export interface ListSchedulesOptions extends FetchOptions {
 
 export interface ListGamesOptions extends FetchOptions {
   limit?: number;
+  /** Exact-match category filter — narrows the list to that single row. */
+  category?: string;
+  /** Opt-in enrichments; 'hour_histogram' adds the weekday-hour heatmap data. */
+  include?: 'hour_histogram';
 }
 
 export interface ListHistoryOptions extends FetchOptions {
@@ -104,6 +108,8 @@ class PartnerApiClient {
   async listGames(opts: ListGamesOptions = {}): Promise<Paginated<PublicGame>> {
     const params = new URLSearchParams();
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    if (opts.category) params.set('category', opts.category);
+    if (opts.include) params.set('include', opts.include);
     const qs = params.toString();
     return this.request<Paginated<PublicGame>>('GET', `/v1/games${qs ? `?${qs}` : ''}`, opts);
   }

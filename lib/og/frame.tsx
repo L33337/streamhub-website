@@ -34,6 +34,14 @@ export interface OgFrameOptions {
   subtitle?: string;
   eyebrow?: string;
   pills?: OgPill[];
+  /**
+   * Optional portrait artwork (data URI — the CSP-free Satori renderer fetches
+   * nothing itself) shown left of the text block, e.g. a game's Twitch box art
+   * (3:4). When set, the layout switches to a two-column card with
+   * left-aligned text; when absent, the classic centered layout is
+   * byte-identical for every existing caller.
+   */
+  sideImage?: string;
 }
 
 export function renderOgFrame({
@@ -41,7 +49,11 @@ export function renderOgFrame({
   subtitle,
   eyebrow = 'Streamer Times',
   pills = [],
+  sideImage,
 }: OgFrameOptions): ReactElement {
+  const align: CSSProperties = sideImage
+    ? { alignItems: 'flex-start', textAlign: 'left' }
+    : { alignItems: 'center', textAlign: 'center' };
   return (
     <div
       style={{
@@ -94,72 +106,97 @@ export function renderOgFrame({
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
-          maxWidth: 960,
+          gap: sideImage ? 56 : 0,
+          maxWidth: sideImage ? 1020 : 960,
         }}
       >
-        <div
-          style={{
-            fontSize: 24,
-            color: '#7A7A90',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            display: 'flex',
-          }}
-        >
-          {eyebrow}
-        </div>
-        <div
-          style={{
-            fontSize: 68,
-            fontWeight: 700,
-            color: '#FFFFFF',
-            letterSpacing: '-0.02em',
-            marginTop: 12,
-            lineHeight: 1.05,
-            textAlign: 'center',
-            display: 'flex',
-          }}
-        >
-          {title}
-        </div>
-
-        {pills.length > 0 && (
-          <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
-            {pills.map((p) => (
-              <div
-                key={p.label}
-                style={{
-                  display: 'flex',
-                  padding: '8px 20px',
-                  borderRadius: 999,
-                  border: `1px solid ${p.border ?? 'rgba(0,240,255,0.3)'}`,
-                  backgroundColor: p.bg ?? 'rgba(0,240,255,0.08)',
-                  color: p.color ?? '#00F0FF',
-                  fontSize: 22,
-                  fontWeight: 600,
-                }}
-              >
-                {p.label}
-              </div>
-            ))}
-          </div>
+        {sideImage && (
+          // eslint-disable-next-line @next/next/no-img-element -- Satori (ImageResponse) renders plain elements; next/image cannot run there.
+          <img
+            src={sideImage}
+            width={270}
+            height={360}
+            alt=""
+            style={{
+              borderRadius: 16,
+              border: '2px solid rgba(0,240,255,0.35)',
+              objectFit: 'cover',
+              flexShrink: 0,
+            }}
+          />
         )}
-
-        {subtitle && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: align.alignItems,
+            maxWidth: sideImage ? 620 : 960,
+          }}
+        >
           <div
             style={{
-              fontSize: 26,
-              color: '#A0A0B0',
-              marginTop: 28,
-              textAlign: 'center',
+              fontSize: 24,
+              color: '#7A7A90',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
               display: 'flex',
             }}
           >
-            {subtitle}
+            {eyebrow}
           </div>
-        )}
+          <div
+            style={{
+              fontSize: sideImage ? 58 : 68,
+              fontWeight: 700,
+              color: '#FFFFFF',
+              letterSpacing: '-0.02em',
+              marginTop: 12,
+              lineHeight: 1.05,
+              textAlign: align.textAlign,
+              display: 'flex',
+            }}
+          >
+            {title}
+          </div>
+
+          {pills.length > 0 && (
+            <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
+              {pills.map((p) => (
+                <div
+                  key={p.label}
+                  style={{
+                    display: 'flex',
+                    padding: '8px 20px',
+                    borderRadius: 999,
+                    border: `1px solid ${p.border ?? 'rgba(0,240,255,0.3)'}`,
+                    backgroundColor: p.bg ?? 'rgba(0,240,255,0.08)',
+                    color: p.color ?? '#00F0FF',
+                    fontSize: 22,
+                    fontWeight: 600,
+                  }}
+                >
+                  {p.label}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {subtitle && (
+            <div
+              style={{
+                fontSize: 26,
+                color: '#A0A0B0',
+                marginTop: 28,
+                textAlign: align.textAlign,
+                display: 'flex',
+              }}
+            >
+              {subtitle}
+            </div>
+          )}
+        </div>
       </div>
 
       <div

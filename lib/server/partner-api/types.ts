@@ -129,6 +129,10 @@ export interface PublicGame {
   // excluded), most followers first. Powers the hub-card name line and the
   // game OG-image subtitle; never an empty array (null instead).
   top_streamers?: { id: string; name: string; followers: number | null }[] | null;
+  // Present ONLY when requested via include=hour_histogram: minutes streamed
+  // per UTC weekday-hour cell over 28d (168 ints, index = weekday*24+hour,
+  // weekday 0 = Monday). Null while the nightly aggregate warms up.
+  hour_histogram?: number[] | null;
 }
 
 // One platform's recording of a session, as carried in `PublicStreamHistory.vods`.
