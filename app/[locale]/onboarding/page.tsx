@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { safeNextPath, signInGateRedirect } from '@/lib/auth-flag';
 import { parseOnboardingStep } from '@/lib/onboarding';
 import {
@@ -8,6 +9,7 @@ import {
   fetchHiddenStreamerIds,
   fetchInterestProfile,
 } from '@/lib/feed/service';
+import { getPartnerApi } from '@/lib/server/partner-api';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { OnboardingClient } from '@/components/web/onboarding/OnboardingClient';
 import type { OnboardingSuggestion } from '@/components/web/onboarding/types';
@@ -29,6 +31,57 @@ interface Props {
   searchParams: Promise<{ step?: string; next?: string; connect_error?: string }>;
 }
 
+const SUGGESTION_LIMIT = 24;
+
+/**
+ * Default grid of the manual pick step: the most-followed streamers we track
+ * (Partner API — the same source as the wizard's /api/search, is_hidden
+ * filtered server-side, follower_count DESC NULLS LAST). Deterministic and
+ * always populated, unlike the Discover RPC, whose featured-only pool can
+ * come up (near-)empty for brand-new accounts.
+ */
+async function loadMostFollowedSuggestions(): Promise<OnboardingSuggestion[]> {
+  const [resp, liveIds] = await Promise.all([
+    getPartnerApi().listStreamers({
+      order: 'followers',
+      limit: SUGGESTION_LIMIT,
+      revalidate: 3600,
+    }),
+    getLiveStreamerIdSet().catch(() => new Set<string>()),
+  ]);
+  return resp.data.map((s) => ({
+    id: s.id,
+    name: s.name,
+    avatarUrl: s.avatar_url ?? null,
+    platforms: s.platforms,
+    isLive: liveIds.has(s.id),
+  }));
+}
+
+/** Fallback when the Partner API is unavailable: Discover recommendations
+ * (featured streamers; popularity fallback for users without favorites). */
+async function loadDiscoverSuggestions(
+  supabase: SupabaseClient,
+): Promise<OnboardingSuggestion[]> {
+  const profile = await fetchInterestProfile(supabase);
+  const recommendations = await fetchDiscoverRecommendations(supabase, profile, SUGGESTION_LIMIT);
+  const [hidden, liveIds] = await Promise.all([
+    fetchHiddenStreamerIds(supabase, recommendations.map((r) => r.streamerId)).catch(
+      () => new Set<string>(),
+    ),
+    getLiveStreamerIdSet().catch(() => new Set<string>()),
+  ]);
+  return recommendations
+    .filter((r) => !hidden.has(r.streamerId))
+    .map((r) => ({
+      id: r.streamerId,
+      name: r.name,
+      avatarUrl: r.avatarUrl ?? null,
+      platforms: r.platforms,
+      isLive: liveIds.has(r.streamerId),
+    }));
+}
+
 export default async function OnboardingPage({ searchParams }: Props) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -41,32 +94,23 @@ export default async function OnboardingPage({ searchParams }: Props) {
   const { step, next: rawNext, connect_error: connectError } = await searchParams;
   const next = safeNextPath(rawNext);
 
-  // Suggestions for the manual pick step — the Discover recommendation RPC
-  // falls back to "popular right now" for brand-new users without favorites.
-  // Error-isolated: the wizard works search-only when any of this fails.
-  const suggestions: OnboardingSuggestion[] = await (async () => {
+  // Suggestions for the manual pick step: most-followed first, Discover RPC
+  // as fallback. Error-isolated: the wizard works search-only when both fail.
+  let suggestions: OnboardingSuggestion[] = [];
+  let suggestionsLabel = 'Most followed';
+  try {
+    suggestions = await loadMostFollowedSuggestions();
+  } catch {
+    suggestions = [];
+  }
+  if (suggestions.length === 0) {
+    suggestionsLabel = 'Popular right now';
     try {
-      const profile = await fetchInterestProfile(supabase);
-      const recommendations = await fetchDiscoverRecommendations(supabase, profile, 24);
-      const [hidden, liveIds] = await Promise.all([
-        fetchHiddenStreamerIds(supabase, recommendations.map((r) => r.streamerId)).catch(
-          () => new Set<string>(),
-        ),
-        getLiveStreamerIdSet().catch(() => new Set<string>()),
-      ]);
-      return recommendations
-        .filter((r) => !hidden.has(r.streamerId))
-        .map((r) => ({
-          id: r.streamerId,
-          name: r.name,
-          avatarUrl: r.avatarUrl ?? null,
-          platforms: r.platforms,
-          isLive: liveIds.has(r.streamerId),
-        }));
+      suggestions = await loadDiscoverSuggestions(supabase);
     } catch {
-      return [];
+      suggestions = [];
     }
-  })();
+  }
 
   const hasTwitchIdentity = (user.identities ?? []).some(
     (identity) => identity.provider === 'twitch',
@@ -80,6 +124,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
         connectError={connectError ?? null}
         hasTwitchIdentity={hasTwitchIdentity}
         suggestions={suggestions}
+        suggestionsLabel={suggestionsLabel}
       />
     </main>
   );

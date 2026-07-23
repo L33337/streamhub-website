@@ -1,9 +1,10 @@
 'use client';
 
-// Manual favorites picker of the onboarding wizard: Discover-based
-// suggestions ("popular right now" for brand-new users) + a debounced
-// streamer search over /api/search. Cards toggle favorites immediately via
-// the FavoritesProvider (optimistic, idempotent), so Continue only navigates.
+// Manual favorites picker of the onboarding wizard: a default grid of the
+// most-followed streamers (server-fetched; Discover fallback — see
+// app/[locale]/onboarding/page.tsx) + a debounced streamer search over
+// /api/search. Cards toggle favorites immediately via the FavoritesProvider
+// (optimistic, idempotent), so Continue only navigates.
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -26,6 +27,8 @@ interface ApiSearchResult {
 
 interface Props {
   suggestions: OnboardingSuggestion[];
+  /** Heading over the default (non-search) grid. */
+  suggestionsLabel: string;
   onContinue: () => void;
   onBack: () => void;
 }
@@ -92,7 +95,7 @@ function PickCard({ streamer }: { streamer: OnboardingSuggestion }) {
   );
 }
 
-export function OnboardingPickStep({ suggestions, onContinue, onBack }: Props) {
+export function OnboardingPickStep({ suggestions, suggestionsLabel, onContinue, onBack }: Props) {
   const { favorites } = useFavorites();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<OnboardingSuggestion[] | null>(null);
@@ -152,7 +155,7 @@ export function OnboardingPickStep({ suggestions, onContinue, onBack }: Props) {
       </h1>
       <p className="mt-3 text-text-secondary">
         Tap streamers to add them to your favorites. Search for anyone we
-        track, or start from what&apos;s popular right now.
+        track, or start from the list below.
       </p>
 
       <input
@@ -184,7 +187,7 @@ export function OnboardingPickStep({ suggestions, onContinue, onBack }: Props) {
           <>
             {!showingSearch && (
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-text-muted">
-                Popular right now
+                {suggestionsLabel}
               </p>
             )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

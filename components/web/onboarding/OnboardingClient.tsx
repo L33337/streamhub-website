@@ -33,6 +33,8 @@ interface Props {
   connectError: string | null;
   hasTwitchIdentity: boolean;
   suggestions: OnboardingSuggestion[];
+  /** Heading over the pick step's default grid ("Most followed" / fallback). */
+  suggestionsLabel: string;
 }
 
 function connectErrorCopy(code: string): string {
@@ -47,6 +49,7 @@ export function OnboardingClient({
   connectError,
   hasTwitchIdentity,
   suggestions,
+  suggestionsLabel,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -184,7 +187,8 @@ export function OnboardingClient({
                     Pick favorites manually
                   </span>
                   <span className="mt-0.5 block text-sm text-text-secondary">
-                    Browse popular streamers or search for the ones you follow.
+                    Browse the most-followed streamers or search for the ones
+                    you follow.
                   </span>
                 </span>
               </span>
@@ -319,6 +323,7 @@ export function OnboardingClient({
       {step === 'pick' && (
         <OnboardingPickStep
           suggestions={suggestions}
+          suggestionsLabel={suggestionsLabel}
           onContinue={() => goTo('done')}
           onBack={() => goTo('choice')}
         />
