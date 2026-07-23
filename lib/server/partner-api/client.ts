@@ -26,6 +26,42 @@ const USER_AGENT = 'streamertimes-web/1.0';
 const DEFAULT_TIMEOUT_MS = 15_000;
 const DEFAULT_REVALIDATE_SECONDS = 300;
 
+/**
+ * Total attempts per request (1 original + retries). All partner-API calls in
+ * this client are idempotent GETs, so a retry is always safe. One retry is
+ * enough to absorb the fast transient failures we actually see in production
+ * (gateway 502 on a cold worker, a transient 503 from a saturated DB pooler, an
+ * ECONNRESET) without meaningfully inflating tail latency on a real outage.
+ */
+const MAX_ATTEMPTS = 2;
+/** Linear backoff between attempts (attempt n waits n * this). Small on purpose — the retry is SSR-blocking. */
+const RETRY_BACKOFF_MS = 300;
+/** 5xx statuses worth a retry. 500 is excluded: it usually signals a deterministic server bug, not a blip. */
+const RETRYABLE_STATUS = new Set([502, 503, 504]);
+
+/**
+ * Whether an error thrown by {@link PartnerApiClient.request} is worth retrying.
+ * Pure + exported so the policy is unit-testable in isolation.
+ *
+ * Retryable: transient transport failures (network error, but NOT a timeout /
+ * caller-abort) and 502/503/504. NOT retryable: 4xx (auth, not-found, quota),
+ * plain 500, and timeouts — retrying those either can't help or just doubles the
+ * wait.
+ */
+export function isRetryableError(err: unknown): boolean {
+  if (err instanceof PartnerApiNetworkError) return err.retryable;
+  if (err instanceof PartnerApiServerError) return RETRYABLE_STATUS.has(err.status);
+  return false;
+}
+
+/** Injectable deps — real code uses the defaults; tests pass fakes for determinism. */
+export interface PartnerApiClientDeps {
+  fetchImpl?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const defaultSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 export interface FetchOptions {
   /** Next.js ISR cache duration in seconds. `false` disables caching (`no-store`). */
   revalidate?: number | false;
@@ -85,10 +121,17 @@ export interface ListHistoryOptions extends FetchOptions {
 }
 
 class PartnerApiClient {
+  private readonly fetchImpl: typeof fetch;
+  private readonly sleep: (ms: number) => Promise<void>;
+
   constructor(
     private readonly baseUrl: string,
     private readonly apiKey: string,
-  ) {}
+    deps: PartnerApiClientDeps = {},
+  ) {
+    this.fetchImpl = deps.fetchImpl ?? fetch;
+    this.sleep = deps.sleep ?? defaultSleep;
+  }
 
   async listStreamers(opts: ListStreamersOptions = {}): Promise<Paginated<PublicStreamer>> {
     const params = new URLSearchParams();
@@ -268,16 +311,45 @@ class PartnerApiClient {
     return this.request<Paginated<PublicStreamSlot>>('GET', `/v1/schedules?${params}`, opts);
   }
 
+  /**
+   * Retry wrapper around {@link attempt}. Retries only transient failures (see
+   * {@link isRetryableError}), up to {@link MAX_ATTEMPTS} total, with a short
+   * linear backoff. A caller-aborted signal short-circuits the loop so a
+   * cancelled request is never retried.
+   */
   private async request<T>(method: string, path: string, opts: FetchOptions): Promise<T> {
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        return await this.attempt<T>(method, path, opts);
+      } catch (err) {
+        lastErr = err;
+        const isLastAttempt = attempt >= MAX_ATTEMPTS;
+        const callerAborted = opts.signal?.aborted ?? false;
+        if (isLastAttempt || callerAborted || !isRetryableError(err)) {
+          throw err;
+        }
+        await this.sleep(RETRY_BACKOFF_MS * attempt);
+      }
+    }
+    // Unreachable (the loop either returns or throws), but keeps TS happy.
+    throw lastErr;
+  }
+
+  private async attempt<T>(method: string, path: string, opts: FetchOptions): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
     const noCache = opts.revalidate === false;
 
     let res: Response;
     try {
-      res = await fetch(url, {
+      res = await this.fetchImpl(url, {
         method,
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -290,8 +362,13 @@ class PartnerApiClient {
           : { next: { revalidate: opts.revalidate ?? DEFAULT_REVALIDATE_SECONDS } }),
       });
     } catch (err) {
+      // Distinguish a transient transport failure (retryable) from our own
+      // timeout firing or a caller cancelling (both non-retryable): retrying a
+      // request that already ran the full timeout would only double the wait.
+      const callerAborted = opts.signal?.aborted ?? false;
+      const retryable = !timedOut && !callerAborted;
       const message = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
-      throw new PartnerApiNetworkError(message, err);
+      throw new PartnerApiNetworkError(message, err, retryable);
     } finally {
       clearTimeout(timeout);
     }
@@ -360,4 +437,6 @@ export function getPartnerApi(): PartnerApiClient {
   return _singleton;
 }
 
-export type { PartnerApiClient };
+// Exported as a value (not type-only) so unit tests can construct a client with
+// injected fetch/sleep deps. The barrel re-exports it as a type for consumers.
+export { PartnerApiClient };

@@ -45,9 +45,19 @@ export class PartnerApiServerError extends PartnerApiError {
 }
 
 export class PartnerApiNetworkError extends PartnerApiError {
-  constructor(message: string, cause?: unknown) {
+  /**
+   * Whether a retry could plausibly succeed. `true` for transient transport
+   * failures (ECONNRESET, "fetch failed", DNS blips). `false` when the failure
+   * was our own request timeout firing or a caller-supplied AbortSignal — those
+   * mean "we gave up / the caller cancelled", so retrying only doubles latency
+   * (or re-cancels) without changing the outcome.
+   */
+  readonly retryable: boolean;
+
+  constructor(message: string, cause?: unknown, retryable = true) {
     super(message, 0, 'network_error');
     this.name = 'PartnerApiNetworkError';
+    this.retryable = retryable;
     if (cause !== undefined) {
       (this as { cause?: unknown }).cause = cause;
     }

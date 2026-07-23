@@ -86,23 +86,40 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // which would exclude currently-live slots that started hours ago and always-on
   // slots whose start_time is days in the past. Splitting keeps the upcoming
   // window tight while still capturing live.
-  const liveCall = api.listSchedules({
-    streamerIds: [slug],
-    status: ['live'],
-    includeAlwaysOn: true,
-    from: oneYearAgo.toISOString(),
-    to: sixHoursFromNow.toISOString(),
-    limit: 10,
-  });
-  const upcomingCall = api.listSchedules({
-    streamerIds: [slug],
-    status: ['upcoming'],
-    includePredictions: true,
-    includeAlwaysOn: true,
-    from: now.toISOString(),
-    to: sevenDaysFromNow.toISOString(),
-    limit: 100,
-  });
+  //
+  // Both are best-effort (like history/stats/rankings below): a rejection
+  // degrades to an empty slot list rather than 500ing the whole page. Once the
+  // streamer itself has loaded, a transient schedule blip must not throw away a
+  // page that can still render the hero, channel stats, recent streams and FAQ —
+  // the client already retries transient failures once, so reaching this
+  // fallback means a genuine outage, and an empty schedule beats an error page.
+  const liveCall = api
+    .listSchedules({
+      streamerIds: [slug],
+      status: ['live'],
+      includeAlwaysOn: true,
+      from: oneYearAgo.toISOString(),
+      to: sixHoursFromNow.toISOString(),
+      limit: 10,
+    })
+    .then(
+      (page) => page.data,
+      () => [] as PublicStreamSlot[],
+    );
+  const upcomingCall = api
+    .listSchedules({
+      streamerIds: [slug],
+      status: ['upcoming'],
+      includePredictions: true,
+      includeAlwaysOn: true,
+      from: now.toISOString(),
+      to: sevenDaysFromNow.toISOString(),
+      limit: 100,
+    })
+    .then(
+      (page) => page.data,
+      () => [] as PublicStreamSlot[],
+    );
   // Best-effort: unlike getLastStream, getStreamerHistory does NOT swallow errors
   // — the rejection handler here is load-bearing so a failing history lookup never
   // rejects or breaks the page. Newest first; [0] feeds LastStreamCard, [1..8] the
@@ -141,10 +158,10 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     };
   }
 
-  // Valid slug: await the section batch. A live/upcoming rejection still
-  // propagates here exactly as before (the page errors rather than silently
-  // dropping schedule data).
-  const [liveCall_, upcomingCall_, history, stats, rankings] = await Promise.all([
+  // Valid slug: await the section batch. Every call is now best-effort (each
+  // has its own rejection handler that degrades to []/null), so this Promise.all
+  // can no longer reject — a partial outage renders a degraded page, not a 500.
+  const [liveSlots, upcomingSlots, history, stats, rankings] = await Promise.all([
     liveCall,
     upcomingCall,
     historyCall,
@@ -154,8 +171,8 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
 
   return {
     streamer,
-    liveSlots: liveCall_.data,
-    upcomingSlots: upcomingCall_.data,
+    liveSlots,
+    upcomingSlots,
     history,
     stats,
     rankings,
