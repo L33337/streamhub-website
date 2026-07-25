@@ -7,9 +7,19 @@
 // (optimistic, idempotent), so Continue only navigates.
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useExternalStreamerSearch } from '@/hooks/useExternalStreamerSearch';
+import { useStreamerAdd } from '@/hooks/useStreamerAdd';
+import { signInGateRedirect } from '@/lib/auth-flag';
 import type { Platform } from '@/lib/server/partner-api';
+import {
+  ADD_STREAMER_COPY,
+  getResultKey,
+  type ExternalSearchResult,
+  type SearchPlatform,
+} from '@/lib/web/streamerSearch';
 import { LiveBadge, PlatformBadge } from '../Badges';
 import { InitialsAvatar } from '../InitialsAvatar';
 import type { OnboardingSuggestion } from './types';
@@ -95,12 +105,116 @@ function PickCard({ streamer }: { streamer: OnboardingSuggestion }) {
   );
 }
 
+/** Compact grid card for an external (not-in-DB-yet) result with an Add
+ * control — the pick-step sibling of components/web/search/AddStreamerCard. */
+function AddPickCard({
+  result,
+  pending,
+  error,
+  onAdd,
+  signInHref,
+}: {
+  result: ExternalSearchResult;
+  pending: boolean;
+  error: { message: string; retryable: boolean; signIn?: boolean } | null;
+  onAdd: (result: ExternalSearchResult) => void;
+  signInHref: string;
+}) {
+  const C = ADD_STREAMER_COPY;
+  return (
+    <div
+      className={`relative flex flex-col items-center gap-2 rounded-xl border p-4 text-center ${
+        error
+          ? 'border-accent-pink/60 bg-background-elevated'
+          : 'border-border-default bg-background-elevated'
+      }`}
+    >
+      {result.avatarUrl ? (
+        <Image
+          src={result.avatarUrl}
+          alt=""
+          width={56}
+          height={56}
+          unoptimized
+          className="rounded-full border border-border-default"
+        />
+      ) : (
+        <InitialsAvatar name={result.displayName} size={56} />
+      )}
+      <span className="w-full truncate text-sm font-semibold text-text-primary">
+        {result.displayName}
+      </span>
+      <span className="flex flex-wrap items-center justify-center gap-1">
+        <PlatformBadge platform={result.platform} />
+        {result.isLive && <LiveBadge />}
+      </span>
+      <button
+        type="button"
+        onClick={() => onAdd(result)}
+        disabled={pending}
+        aria-busy={pending}
+        className={`inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition-colors ${
+          pending
+            ? 'cursor-wait border-border-default bg-background text-text-muted'
+            : 'border-accent-cyan/60 bg-accent-cyan/10 text-accent-cyan hover:bg-accent-cyan/20'
+        }`}
+      >
+        {pending ? (
+          <>
+            <span
+              aria-hidden="true"
+              className="mr-1.5 inline-block h-3 w-3 animate-spin rounded-full border-2 border-text-muted border-t-transparent"
+            />
+            {C.addPending}
+          </>
+        ) : (
+          <>+ {C.addButton}</>
+        )}
+      </button>
+      {error && (
+        <p className="text-xs text-accent-pink" role="alert">
+          {error.message}{' '}
+          {error.signIn && (
+            <Link href={signInHref} className="font-semibold underline">
+              {C.signInAgain}
+            </Link>
+          )}
+          {error.retryable && !pending && (
+            <button
+              type="button"
+              onClick={() => onAdd(result)}
+              className="ml-1 font-semibold text-accent-cyan underline"
+            >
+              {C.tryAgain}
+            </button>
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const ONBOARDING_SIGNIN_HREF = signInGateRedirect('/onboarding?step=pick');
+
 export function OnboardingPickStep({ suggestions, suggestionsLabel, onContinue, onBack }: Props) {
   const { favorites } = useFavorites();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<OnboardingSuggestion[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
+  // External add-streamer flow (app parity): search Twitch/YouTube for
+  // channels not tracked yet and add+favorite them inline.
+  const [extPlatform, setExtPlatform] = useState<SearchPlatform>('twitch');
+  const [addedSuggestions, setAddedSuggestions] = useState<OnboardingSuggestion[]>([]);
+  const external = useExternalStreamerSearch({ query, platform: extPlatform });
+  const {
+    pendingKeys,
+    addedByKey,
+    errorByKey,
+    noHistoryNames,
+    addAndFavorite,
+    dismissNoHistory,
+  } = useStreamerAdd();
 
   useEffect(() => {
     const q = query.trim();
@@ -146,7 +260,40 @@ export function OnboardingPickStep({ suggestions, suggestionsLabel, onContinue, 
   }, [query]);
 
   const showingSearch = results !== null || searching || searchFailed;
-  const grid = results ?? suggestions;
+  // Freshly-added streamers are merged into the grid locally: the Partner API
+  // that backs /api/search caches for ~60s, so a refetch would not show them
+  // yet — the local merge keeps them visible as normal picked cards.
+  const baseGrid = results ?? suggestions;
+  const grid = useMemo(() => {
+    const ids = new Set(baseGrid.map((s) => s.id));
+    return [...baseGrid, ...addedSuggestions.filter((s) => !ids.has(s.id))];
+  }, [baseGrid, addedSuggestions]);
+
+  const handleAdd = async (r: ExternalSearchResult) => {
+    const added = await addAndFavorite(r);
+    if (added) {
+      setAddedSuggestions((prev) =>
+        prev.some((s) => s.id === added.id)
+          ? prev
+          : [
+              ...prev,
+              {
+                id: added.id,
+                name: added.name,
+                avatarUrl: r.avatarUrl,
+                platforms: [r.platform],
+                isLive: r.isLive,
+              },
+            ],
+      );
+    }
+  };
+
+  // Added results move from the external sub-grid into the main grid.
+  const externalVisible = external.results.filter(
+    (r) => !addedByKey.has(getResultKey(r)),
+  );
+  const showExternal = query.trim().length >= 2;
 
   return (
     <section>
@@ -155,7 +302,8 @@ export function OnboardingPickStep({ suggestions, suggestionsLabel, onContinue, 
       </h1>
       <p className="mt-3 text-text-secondary">
         Tap streamers to add them to your favorites. Search for anyone we
-        track, or start from the list below.
+        track — or add any Twitch or YouTube streamer and we&apos;ll start
+        tracking them — or start from the list below.
       </p>
 
       <input
@@ -198,6 +346,88 @@ export function OnboardingPickStep({ suggestions, suggestionsLabel, onContinue, 
           </>
         )}
       </div>
+
+      {showExternal && (
+        <div className="mt-8">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-text-muted">
+              {ADD_STREAMER_COPY.pickSectionTitle}
+            </p>
+            <div className="flex gap-1" role="group" aria-label="Search platform">
+              {(['twitch', 'youtube'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={extPlatform === p}
+                  onClick={() => setExtPlatform(p)}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    extPlatform === p
+                      ? 'border-accent-cyan/60 bg-accent-cyan/15 text-accent-cyan'
+                      : 'border-border-default bg-background-elevated text-text-secondary hover:border-accent-cyan/40'
+                  }`}
+                >
+                  {p === 'twitch' ? 'Twitch' : 'YouTube'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {noHistoryNames.map((name) => (
+            <p
+              key={name}
+              className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-4 py-3 text-sm text-text-secondary"
+              role="status"
+            >
+              <span>{ADD_STREAMER_COPY.noHistoryNotice(name)}</span>
+              <button
+                type="button"
+                onClick={() => dismissNoHistory(name)}
+                aria-label="Dismiss"
+                className="shrink-0 font-bold text-text-muted hover:text-text-primary"
+              >
+                ✕
+              </button>
+            </p>
+          ))}
+
+          {external.isSearching && (
+            <p className="mt-3 py-2 text-sm text-text-muted">
+              {ADD_STREAMER_COPY.searchingExternal(extPlatform)}
+            </p>
+          )}
+          {!external.isSearching && external.error && (
+            <p className="mt-3 py-2 text-sm text-accent-pink" role="alert">
+              {external.error}
+            </p>
+          )}
+          {!external.isSearching &&
+            !external.error &&
+            externalVisible.length === 0 && (
+              <p className="mt-3 py-2 text-sm text-text-muted">
+                {ADD_STREAMER_COPY.externalNoMatches(extPlatform)}
+              </p>
+            )}
+          {!external.isSearching &&
+            !external.error &&
+            externalVisible.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {externalVisible.map((r) => {
+                  const key = getResultKey(r);
+                  return (
+                    <AddPickCard
+                      key={`${r.platform}:${key}`}
+                      result={r}
+                      pending={pendingKeys.has(key)}
+                      error={errorByKey.get(key) ?? null}
+                      onAdd={(res) => void handleAdd(res)}
+                      signInHref={ONBOARDING_SIGNIN_HREF}
+                    />
+                  );
+                })}
+              </div>
+            )}
+        </div>
+      )}
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <button
