@@ -14,6 +14,8 @@ import {
 } from '@/components/web/SearchResultCard';
 import { SearchFilters } from '@/components/web/SearchFilters';
 import { GetAppLink } from '@/components/web/GetAppLink';
+import { ExternalResultsSection } from '@/components/web/search/ExternalResultsSection';
+import { EXTERNAL_QUERY_MAX } from '@/lib/web/streamerSearch';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,6 +120,12 @@ export default async function SearchPage({ searchParams }: Props) {
   }));
   const filtered = liveOnly ? enriched.filter((r) => r.is_live) : enriched;
 
+  // Signed-in add-streamer flow (client island). The search-streamers Edge
+  // Function caps queries at 50 chars — longer queries skip the section
+  // entirely (the page itself allows up to 100).
+  const externalPlatform =
+    query.length <= EXTERNAL_QUERY_MAX ? (activePlatform ?? 'twitch') : null;
+
   return (
     <PageShell>
       <h1 className="text-3xl font-bold text-white">
@@ -131,15 +139,25 @@ export default async function SearchPage({ searchParams }: Props) {
           query={query}
           liveOnly={liveOnly}
           hasDbMatches={enriched.length > 0}
+          externalPlatform={externalPlatform}
         />
       ) : (
-        <ul className="mt-6 grid gap-3" aria-label={`Streamers matching ${query}`}>
-          {filtered.map((s) => (
-            <li key={s.id}>
-              <SearchResultCard streamer={s} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="mt-6 grid gap-3" aria-label={`Streamers matching ${query}`}>
+            {filtered.map((s) => (
+              <li key={s.id}>
+                <SearchResultCard streamer={s} />
+              </li>
+            ))}
+          </ul>
+          {externalPlatform && (
+            <ExternalResultsSection
+              query={query}
+              platform={externalPlatform}
+              variant="below-results"
+            />
+          )}
+        </>
       )}
 
       {results.pagination.has_more && results.pagination.next_cursor && (
@@ -185,11 +203,29 @@ function NoResultsState({
   query,
   liveOnly,
   hasDbMatches,
+  externalPlatform,
 }: {
   query: string;
   liveOnly: boolean;
   hasDbMatches: boolean;
+  externalPlatform: Platform | null;
 }) {
+  // Signed-out (or auth-dormant) visitors keep the pre-existing app-promo box;
+  // signed-in users get the add-streamer flow in its place.
+  const getAppFallback = (
+    <div className="mt-6 border-t border-divider pt-6">
+      <p className="mx-auto max-w-xl text-text-secondary">
+        Don&apos;t see them here? Add any Twitch or YouTube streamer right in
+        the app — we&apos;ll start tracking their schedule and AI predictions.
+      </p>
+      <div className="mt-4 flex justify-center">
+        <GetAppLink className="inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan transition-colors hover:bg-accent-cyan/20">
+          Get the app →
+        </GetAppLink>
+      </div>
+    </div>
+  );
+
   return (
     <div className="mt-8 gradient-border p-8 text-center">
       <h2 className="text-xl font-bold text-text-primary">
@@ -201,19 +237,17 @@ function NoResultsState({
         {liveOnly ? ', or remove the "Live only" filter' : ''}.
       </p>
 
-      {!hasDbMatches && (
-        <div className="mt-6 border-t border-divider pt-6">
-          <p className="mx-auto max-w-xl text-text-secondary">
-            Don&apos;t see them here? Add any Twitch or YouTube streamer right in
-            the app — we&apos;ll start tracking their schedule and AI predictions.
-          </p>
-          <div className="mt-4 flex justify-center">
-            <GetAppLink className="inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan transition-colors hover:bg-accent-cyan/20">
-              Get the app →
-            </GetAppLink>
-          </div>
-        </div>
-      )}
+      {!hasDbMatches &&
+        (externalPlatform ? (
+          <ExternalResultsSection
+            query={query}
+            platform={externalPlatform}
+            variant="no-results"
+            fallback={getAppFallback}
+          />
+        ) : (
+          getAppFallback
+        ))}
     </div>
   );
 }
