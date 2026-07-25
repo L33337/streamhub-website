@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ad-hoc local self-test scripts (never commit)
+scripts/*.local.mjs
+prod-selftest-cookies*.txt
