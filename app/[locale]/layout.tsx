@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "../globals.css";
 import { SearchBar } from "@/components/web/SearchBar";
 import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
@@ -34,6 +35,10 @@ const geistMono = Geist_Mono({
   // become invalid wholesale if the variable is undefined.
   preload: false,
 });
+
+// GA4 Measurement ID (format "G-XXXXXXXXXX"). Public + build-time inlined via
+// the NEXT_PUBLIC_ prefix, so referencing it here keeps the layout static.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   title: "Streamer Times - Your Livestream Guide for Twitch & YouTube",
@@ -182,6 +187,13 @@ export default async function RootLayout({
         </Providers>
         <Analytics />
         <SpeedInsights />
+        {/* Google Analytics 4 — gated on the build-time NEXT_PUBLIC_GA_ID env
+            var (static-safe, inlined at `next build`). Renders nothing when the
+            var is unset, so local/preview builds without the ID stay clean.
+            <GoogleAnalytics> uses next/script (afterInteractive) + a route-change
+            listener for SPA pageviews; it never reads request-scoped APIs, so
+            the K1 static-rendering rule is preserved. */}
+        {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
       </body>
     </html>
   );

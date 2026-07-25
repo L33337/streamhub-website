@@ -44,11 +44,13 @@ const nextConfig: NextConfig = {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      // Google Analytics (gtag.js) is served from googletagmanager.com; its
+      // beacons post to google-analytics.com / *.analytics.google.com.
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://static-cdn.jtvnw.net https://i.ytimg.com https://*.ytimg.com https://yt3.googleusercontent.com https://*.ggpht.com",
+      "img-src 'self' data: blob: https://static-cdn.jtvnw.net https://i.ytimg.com https://*.ytimg.com https://yt3.googleusercontent.com https://*.ggpht.com https://www.googletagmanager.com https://www.google-analytics.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://ypebfgtxythamjwgvoci.supabase.co wss://ypebfgtxythamjwgvoci.supabase.co https://api.streamertimes.com",
+      "connect-src 'self' https://ypebfgtxythamjwgvoci.supabase.co wss://ypebfgtxythamjwgvoci.supabase.co https://api.streamertimes.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
       "upgrade-insecure-requests",
     ].join("; ");
 
