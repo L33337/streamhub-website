@@ -114,6 +114,9 @@ export function RankingSpotlight({
                 startTime={nextSlot.start_time}
                 isPredicted={nextSlot.is_predicted}
               />
+              {nextSlot.slot_kind !== 'cancelled' && nextSlot.category && (
+                <span className="text-text-muted"> · {nextSlot.category}</span>
+              )}
             </span>
           )}
         </span>

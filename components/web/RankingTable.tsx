@@ -116,7 +116,23 @@ function NextStreamCell({
     return <span title="Always-on channel — live around the clock">24/7</span>;
   }
   if (!slot) return <>—</>;
-  return <NextStreamTime startTime={slot.start_time} isPredicted={slot.is_predicted} />;
+  // The predicted/announced category of THIS upcoming stream — often differs
+  // from the streamer's 28d "Main game", so it's shown per next-slot. Skipped
+  // for cancelled slots, where a game name would be misleading.
+  const category = slot.slot_kind === 'cancelled' ? null : slot.category;
+  return (
+    <span className="flex flex-col items-end leading-tight">
+      <NextStreamTime startTime={slot.start_time} isPredicted={slot.is_predicted} />
+      {category && (
+        <span
+          className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
+          title={category}
+        >
+          {category}
+        </span>
+      )}
+    </span>
+  );
 }
 
 /**

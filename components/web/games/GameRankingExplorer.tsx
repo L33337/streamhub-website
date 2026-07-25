@@ -299,10 +299,20 @@ export function GameRankingExplorer({
                             )}
                           </span>
                         ) : row.nextStreamAt ? (
-                          <NextStreamTime
-                            startTime={row.nextStreamAt}
-                            isPredicted={row.nextIsPredicted}
-                          />
+                          <span className="flex flex-col items-end leading-tight">
+                            <NextStreamTime
+                              startTime={row.nextStreamAt}
+                              isPredicted={row.nextIsPredicted}
+                            />
+                            {row.nextCategory && (
+                              <span
+                                className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
+                                title={row.nextCategory}
+                              >
+                                {row.nextCategory}
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           '—'
                         )}

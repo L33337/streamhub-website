@@ -35,6 +35,7 @@ import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { SlotCard } from '@/components/web/SlotCard';
+import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 
 export const revalidate = 300;
 
@@ -315,7 +316,19 @@ export default async function GamePage({ params }: Props) {
   // UX round 2026-07-23: the ranking table reuses the /rankings/game/[slug]
   // view model — live status, earliest next stream and 28d hours per row all
   // derive from data already fetched for this page.
-  const rankingRows = buildGameRankingRows(ranked, liveSlots, upcomingSlots);
+  //
+  // "Next stream" means "when is this streamer next live", INDEPENDENT of game:
+  // the category-filtered upcomingSlots above only carry slots predicted for
+  // THIS category, so a top-follower streamer whose next stream is a different
+  // game (e.g. KaiCenat on /game/just-chatting) would show a blank cell despite
+  // a valid prediction. Fetch the earliest upcoming slot per ranked streamer
+  // WITHOUT a category filter, matching the /rankings/most-followed leaderboard.
+  const nextStreamByStreamer = await getNextSlotByStreamer(
+    ranked.map((r) => r.streamer.id),
+  );
+  const rankingRows = buildGameRankingRows(ranked, liveSlots, [
+    ...nextStreamByStreamer.values(),
+  ]);
 
   // Live section: top slots by viewers stay visible, the rest collapses.
   const sortedLive = [...liveSlots].sort(
@@ -631,10 +644,20 @@ export default async function GamePage({ params }: Props) {
                 {rankingRows.map((row) => {
                   const nextDay = row.nextStreamAt?.slice(0, 10) ?? null;
                   const nextLabel = row.nextStreamAt ? (
-                    <NextStreamTime
-                      startTime={row.nextStreamAt}
-                      isPredicted={row.nextIsPredicted}
-                    />
+                    <span className="flex flex-col leading-tight">
+                      <NextStreamTime
+                        startTime={row.nextStreamAt}
+                        isPredicted={row.nextIsPredicted}
+                      />
+                      {row.nextCategory && (
+                        <span
+                          className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
+                          title={row.nextCategory}
+                        >
+                          {row.nextCategory}
+                        </span>
+                      )}
+                    </span>
                   ) : null;
                   return (
                     <tr key={row.id} className="border-t border-divider">

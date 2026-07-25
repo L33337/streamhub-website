@@ -93,6 +93,8 @@ export interface GameRankingRow {
   /** ISO start of the streamer's next upcoming stream in this category. */
   nextStreamAt: string | null;
   nextIsPredicted: boolean;
+  /** Expected game of that next stream; null when unknown or cancelled. */
+  nextCategory: string | null;
 }
 
 interface LiveSlotLike {
@@ -104,6 +106,8 @@ interface UpcomingSlotLike {
   streamer_id: string;
   start_time: string;
   is_predicted: boolean;
+  category?: string | null;
+  slot_kind?: 'regular' | 'new' | 'cancelled';
 }
 
 /**
@@ -160,6 +164,8 @@ export function buildGameRankingRows(
       liveViewerCount: liveViewers.get(streamer.id) ?? null,
       nextStreamAt: next?.start_time ?? null,
       nextIsPredicted: next?.is_predicted ?? false,
+      // Cancelled next slots have no meaningful game (it's a "no stream" marker).
+      nextCategory: next && next.slot_kind !== 'cancelled' ? next.category ?? null : null,
     };
   });
 }

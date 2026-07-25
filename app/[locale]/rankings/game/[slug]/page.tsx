@@ -26,6 +26,7 @@ import {
   formatRefreshedAt,
   isRankingIndexable,
 } from '@/lib/rankings';
+import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 import { GameRankingExplorer } from '@/components/web/games/GameRankingExplorer';
 import { RankingPagination } from '@/components/web/RankingPagination';
@@ -95,11 +96,10 @@ const loadGameRanking = cache(async (slug: string): Promise<GameRankingData> => 
   const now = new Date();
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
-  const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
 
-  // Ranking is the page's backbone; live + upcoming slots are decoration
-  // (badges, next-stream cells) — each degrades independently.
-  const [rankedCall, liveCall, upcomingCall] = await Promise.allSettled([
+  // Ranking is the page's backbone; live slots are decoration (LIVE badge +
+  // viewers) — each degrades independently.
+  const [rankedCall, liveCall] = await Promise.allSettled([
     api.listStreamers({
       category: game.category,
       order: 'followers',
@@ -114,14 +114,6 @@ const loadGameRanking = cache(async (slug: string): Promise<GameRankingData> => 
       to: sixHoursFromNow.toISOString(),
       limit: 100,
     }),
-    api.listSchedules({
-      category: game.category,
-      status: ['upcoming'],
-      includePredictions: true,
-      from: now.toISOString(),
-      to: sevenDaysFromNow.toISOString(),
-      limit: 200,
-    }),
   ]);
 
   if (rankedCall.status === 'rejected') {
@@ -132,9 +124,17 @@ const loadGameRanking = cache(async (slug: string): Promise<GameRankingData> => 
   const ranked = rankGameStreamers(rankedCall.value.data, RANK_FETCH_LIMIT);
   const liveSlots: PublicStreamSlot[] =
     liveCall.status === 'fulfilled' ? liveCall.value.data : [];
-  const upcomingSlots: PublicStreamSlot[] =
-    upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [];
-  const rows = buildGameRankingRows(ranked, liveSlots, upcomingSlots);
+  // "Next stream" means "when is this streamer next live", INDEPENDENT of game.
+  // A category-filtered upcoming fetch would blank the cell for a top-follower
+  // streamer whose next predicted stream is a different game (the bug this
+  // replaces). Earliest upcoming slot per ranked streamer, category-agnostic —
+  // degrades to an empty map on failure (column renders "—"), never throws.
+  const nextStreamByStreamer = await getNextSlotByStreamer(
+    ranked.map((r) => r.streamer.id),
+  );
+  const rows = buildGameRankingRows(ranked, liveSlots, [
+    ...nextStreamByStreamer.values(),
+  ]);
 
   // Live banner numbers derived from the SAME slot fetch as the row badges,
   // so banner and badges can never disagree (game.live_* is cached longer).

@@ -246,6 +246,21 @@ describe('buildGameRankingRows', () => {
     );
     expect(rows[0].nextStreamAt).toBeNull();
   });
+
+  it('carries the next slot category, but nulls it for cancelled slots', () => {
+    const rows = buildGameRankingRows(
+      [ranked('a', 1), ranked('b', 2)],
+      [],
+      [
+        { streamer_id: 'a', start_time: '2026-07-26T20:00:00Z', is_predicted: true, category: 'Deadlock', slot_kind: 'regular' },
+        { streamer_id: 'b', start_time: '2026-07-26T18:00:00Z', is_predicted: true, category: 'Just Chatting', slot_kind: 'cancelled' },
+      ],
+    );
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get('a')?.nextCategory).toBe('Deadlock');
+    expect(byId.get('b')?.nextCategory).toBeNull();
+    expect(byId.get('b')?.nextStreamAt).toBe('2026-07-26T18:00:00Z');
+  });
 });
 
 function row(over: Partial<GameRankingRow> & { id: string; rank: number }): GameRankingRow {
@@ -265,6 +280,7 @@ function row(over: Partial<GameRankingRow> & { id: string; rank: number }): Game
     liveViewerCount: null,
     nextStreamAt: null,
     nextIsPredicted: false,
+    nextCategory: null,
     ...over,
   };
 }

@@ -9,6 +9,7 @@ import { gameSlug } from '@/lib/game-slug';
 import { formatRefreshedAt, RANKING_PAGES, sanitizeRankingEntries } from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
+import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 
 // 300 (not 3600): live badges + the "live right now" stat need a fresh live
 // set; the ranking fetches themselves stay data-cached for an hour (fetch-level
@@ -91,6 +92,13 @@ export default async function RankingsHubPage({ params }: Props) {
     const raw = call?.status === 'fulfilled' ? call.value.data : [];
     return { spec, entries: sanitizeRankingEntries(spec, raw) };
   }).filter((s) => s.entries.length > 0);
+
+  // "Next stream" (+ its category) for every previewed streamer across all
+  // sections — one deduped, chunked fetch. Degrades to an empty map on failure
+  // (the column then renders "—"), never throws.
+  const nextSlots = await getNextSlotByStreamer(
+    sections.flatMap((s) => s.entries.map((e) => e.streamer.id)),
+  );
 
   // Latest aggregate refresh across the leaderboards — one visible freshness
   // line for the whole hub (refreshed_at is null for table-backed metrics).
@@ -206,6 +214,7 @@ export default async function RankingsHubPage({ params }: Props) {
               columns={spec.columns}
               entries={entries}
               liveIds={liveIds}
+              nextSlots={nextSlots}
             />
           </div>
         </section>

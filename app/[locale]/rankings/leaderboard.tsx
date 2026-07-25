@@ -250,7 +250,7 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
           />
           <p className="mt-2 text-xs text-text-muted">
             Next stream: announced schedule or AI-predicted (~) start within the next
-            7 days, shown in your local time.
+            7 days, shown in your local time, with the expected game below it.
           </p>
           {hasMissingValues(spec, entries) && (
             <p className="mt-2 text-xs text-text-muted">
