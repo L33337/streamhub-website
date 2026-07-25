@@ -112,17 +112,12 @@ export default async function OnboardingPage({ searchParams }: Props) {
     }
   }
 
-  const hasTwitchIdentity = (user.identities ?? []).some(
-    (identity) => identity.provider === 'twitch',
-  );
-
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8">
       <OnboardingClient
         initialStep={parseOnboardingStep(step)}
         nextPath={next}
         connectError={connectError ?? null}
-        hasTwitchIdentity={hasTwitchIdentity}
         suggestions={suggestions}
         suggestionsLabel={suggestionsLabel}
       />

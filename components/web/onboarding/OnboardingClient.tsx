@@ -10,7 +10,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { onboardingFinishTarget, type OnboardingStep } from '@/lib/onboarding';
-import { connectTwitchForImport } from '@/lib/web/twitchConnect';
+import { startTwitchFollowImport } from '@/lib/web/twitchConnect';
+import { connectErrorCopy } from '@/lib/web/twitchImportReturn';
 import { TwitchImportPhaseView } from '../twitch-import/TwitchImportPhaseView';
 import { useTwitchImport } from '../twitch-import/useTwitchImport';
 import { OnboardingPickStep } from './OnboardingPickStep';
@@ -31,23 +32,15 @@ interface Props {
   nextPath: string | null;
   /** Provider error code from a declined "Connect Twitch" round-trip. */
   connectError: string | null;
-  hasTwitchIdentity: boolean;
   suggestions: OnboardingSuggestion[];
   /** Heading over the pick step's default grid ("Most followed" / fallback). */
   suggestionsLabel: string;
-}
-
-function connectErrorCopy(code: string): string {
-  return code === 'access_denied'
-    ? 'Twitch connection was cancelled. You can try again or pick favorites manually.'
-    : 'Connecting to Twitch failed. You can try again or pick favorites manually.';
 }
 
 export function OnboardingClient({
   initialStep,
   nextPath,
   connectError,
-  hasTwitchIdentity,
   suggestions,
   suggestionsLabel,
 }: Props) {
@@ -87,13 +80,13 @@ export function OnboardingClient({
     }
   }, [step, hasToken, phase, start]);
 
-  async function handleConnectTwitch() {
+  function handleConnectTwitch() {
     if (connecting) return;
     setConnecting(true);
     setConnectFailure(null);
-    // Returns into ?step=import; /auth/callback captures the fresh token on
-    // the way back. Only the error case resolves here.
-    const { error } = await connectTwitchForImport(stepUrl('import'));
+    // Navigates to Twitch and returns into ?step=import via /auth/twitch-import,
+    // which captures the fresh token. Only the pre-flight error case resolves.
+    const { error } = startTwitchFollowImport(stepUrl('import'));
     if (error) {
       setConnectFailure(error);
       setConnecting(false);
@@ -136,7 +129,7 @@ export function OnboardingClient({
               type="button"
               onClick={() => {
                 if (importState.hasToken) goTo('import');
-                else void handleConnectTwitch();
+                else handleConnectTwitch();
               }}
               disabled={connecting}
               className="group rounded-xl border border-border-default bg-background-elevated p-5 text-left transition-colors hover:border-twitch/60 disabled:opacity-60"
@@ -154,9 +147,7 @@ export function OnboardingClient({
                   <span className="mt-0.5 block text-sm text-text-secondary">
                     {importState.hasToken
                       ? 'Your Twitch connection is ready — bring your follows over in one go.'
-                      : hasTwitchIdentity
-                        ? 'Reconnect with Twitch and bring your follows over in one go.'
-                        : 'Connect your Twitch account and bring your follows over in one go.'}
+                      : 'Connect your Twitch account and bring your follows over in one go.'}
                   </span>
                 </span>
               </span>
@@ -226,7 +217,7 @@ export function OnboardingClient({
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => void handleConnectTwitch()}
+                  onClick={() => handleConnectTwitch()}
                   disabled={connecting}
                   className={TWITCH_BTN}
                 >

@@ -100,6 +100,13 @@ describe('root route handlers + assets are never rewritten', () => {
     const res = await middleware(req('/auth/login'));
     expect(rewriteTarget(res)).toBe('/en/auth/login');
   });
+
+  it('rewrites the Twitch-import return PAGE into the locale tree', async () => {
+    // It lives under app/[locale]/auth/twitch-import (needs the root layout);
+    // the token arrives in the URL fragment, which never reaches middleware.
+    const res = await middleware(req('/auth/twitch-import'));
+    expect(rewriteTarget(res)).toBe('/en/auth/twitch-import');
+  });
 });
 
 describe('session-cookie survival (compose contract)', () => {

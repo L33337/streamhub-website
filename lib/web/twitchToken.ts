@@ -33,6 +33,25 @@ export function readTwitchToken(): string | null {
   }
 }
 
+/**
+ * Persist a freshly-obtained Twitch access token for the follows import. Used
+ * by the /auth/twitch-import return page (implicit-grant flow); the OAuth
+ * callback captures Twitch-first sign-in tokens the same way via an inline
+ * script. TTL matches a Twitch user access token's ~4h lifetime.
+ */
+export function writeTwitchToken(
+  token: string,
+  ttlMs: number = TWITCH_TOKEN_TTL_MS,
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: StoredToken = { token, expiresAt: Date.now() + ttlMs };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore quota / disabled-storage errors */
+  }
+}
+
 export function clearTwitchToken(): void {
   if (typeof window === 'undefined') return;
   try {
