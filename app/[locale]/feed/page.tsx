@@ -10,6 +10,9 @@ import { SEEN_COOKIE } from '@/lib/feed/constants';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
 import { FeedClient } from '@/components/web/feed/FeedClient';
+import { FeedNavTabs } from '@/components/web/FeedNavTabs';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { chromeLexFor } from '@/lib/i18n-chrome';
 
 /**
  * Category name → hub slug for every game with a /game/<slug> page, so
@@ -42,7 +45,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function FeedPage() {
+export default async function FeedPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const nav = chromeLexFor(locale).feedNav;
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -62,7 +73,9 @@ export default async function FeedPage() {
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
+      <FeedNavTabs locale={locale} active="feed" className="mb-6" />
       <FeedClient
+        title={nav.feed}
         initial={feedData}
         sinceIso={since.toISOString()}
         userId={user.id}

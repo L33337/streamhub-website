@@ -44,6 +44,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **UX round 2026-07-23 invariants**: `listFavoriteStreamers` now selects `twitch_login`/`youtube_channel_id` — the live-card watch pills (`buildWatchLinks`) depend on them and render as SIBLINGS of the SlotCard link (never nested anchors). Upcoming cards get a meta row (feed UpNextMeta pattern): `programRelativeStartLabel` (≤12h window, null when >1min overdue) + per-slot `.ics` (reuses `lib/feed/ics.ts`; `slotVeventLines`/`wrapVcalendar` are shared with the whole-day export in `lib/program/ics.ts` — same UIDs, re-imports update). Offline rows show `findNextExpectedSlot`→"Next: Tomorrow ~8pm" (cancelled slots never count as next-expected). The empty day state offers `findNextDayWithStreams`. The now line (`nowLineIndex`) is section-granular and today-only. Section titles are real `h2`s (screen-reader navigation) + `aria-live` feedback on manual refresh. All helpers are pure in `lib/program/logic.ts` (unit-tested).
 - Local E2E: same dev-login loop as `/feed` (the seeded user's favorites have slot fixtures).
 
+# Signed-in section switcher (2026-07-25)
+
+`FeedNavTabs` (`components/web/FeedNavTabs.tsx`) is an underline tab strip rendered ABOVE the `<h1>` on the three signed-in pages — `/feed`, `/program`, `/favorites` — so users can jump between them and always see where they are. Key facts:
+
+- **Pure server component**: the active tab is passed in per page (`active="feed" | "program" | "favorites"`) — no client-side `usePathname`, no `'use client'`. Links are locale-aware via `localeHref` so the picked locale survives navigation (`/de/feed` → `/de/program`). Active tab carries `aria-current="page"`; `<nav aria-label>` is localized. Horizontal-scrolls (`-mx-4 overflow-x-auto px-4` + `min-w-max`) instead of wrapping on narrow screens.
+- **Labels double as the page `<h1>`** so the active tab always matches the title. They live in the shared chrome lexicon (`lib/i18n-chrome.ts` → `feedNav`: `sections`/`feed`/`program`/`favorites`, all 12 UI languages) — this also localized the three headings, which were English-only before. The feed heading is passed into `FeedClient` via the new optional `title` prop (default `'My Feed'`).
+- Each page now resolves `locale` from `params` (`isUiLang(rawLocale) ? rawLocale : 'en'`) — these were the only signed-in pages not already reading the route locale.
+- **Not** wired into the header/mobile menu (those already list the three pages in the account dropdown); this is the on-page switcher only. The favorites/program `"N streamers"` count line stays English (pre-existing, out of scope).
+
 # New-user onboarding (2026-07-22)
 
 `/onboarding` is the post-signup wizard (app-onboarding port): choice → import Twitch follows OR pick favorites manually → done. Same gated-page conventions as `/feed` (force-dynamic, noindex, `signInGateRedirect`, robots.txt disallow). Key facts:

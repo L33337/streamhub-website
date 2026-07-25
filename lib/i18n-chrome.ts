@@ -38,6 +38,18 @@ export interface ChromeLex {
     /** aria-label on the footer wordmark link. */
     home: string;
   };
+  /**
+   * Section switcher shown above the heading on the three signed-in pages
+   * (/feed, /program, /favorites). The three labels double as each page's
+   * <h1>, so the active tab always matches the page title.
+   */
+  feedNav: {
+    /** aria-label on the <nav> switcher. */
+    sections: string;
+    feed: string;
+    program: string;
+    favorites: string;
+  };
   footer: {
     /** Column heading. */
     discover: string;
@@ -92,6 +104,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Search results',
       home: 'Streamer Times home',
     },
+    feedNav: {
+      sections: 'Your sections',
+      feed: 'My Feed',
+      program: 'Program',
+      favorites: 'My Favorites',
+    },
     footer: {
       discover: 'Discover',
       developers: 'Developers',
@@ -136,6 +154,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchPlaceholder: 'Streamer suchen…',
       searchResults: 'Suchergebnisse',
       home: 'Streamer Times Startseite',
+    },
+    feedNav: {
+      sections: 'Deine Bereiche',
+      feed: 'Mein Feed',
+      program: 'Programm',
+      favorites: 'Meine Favoriten',
     },
     footer: {
       discover: 'Entdecken',
@@ -182,6 +206,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Resultados de búsqueda',
       home: 'Inicio de Streamer Times',
     },
+    feedNav: {
+      sections: 'Tus secciones',
+      feed: 'Mi feed',
+      program: 'Programación',
+      favorites: 'Mis favoritos',
+    },
     footer: {
       discover: 'Descubre',
       developers: 'Desarrolladores',
@@ -226,6 +256,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchPlaceholder: 'Rechercher un streamer…',
       searchResults: 'Résultats de recherche',
       home: 'Accueil Streamer Times',
+    },
+    feedNav: {
+      sections: 'Tes sections',
+      feed: 'Mon fil',
+      program: 'Programme',
+      favorites: 'Mes favoris',
     },
     footer: {
       discover: 'Découvrir',
@@ -272,6 +308,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Resultados da busca',
       home: 'Página inicial do Streamer Times',
     },
+    feedNav: {
+      sections: 'Suas seções',
+      feed: 'Meu feed',
+      program: 'Programação',
+      favorites: 'Meus favoritos',
+    },
     footer: {
       discover: 'Descubra',
       developers: 'Desenvolvedores',
@@ -316,6 +358,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchPlaceholder: 'Cerca streamer…',
       searchResults: 'Risultati della ricerca',
       home: 'Home di Streamer Times',
+    },
+    feedNav: {
+      sections: 'Le tue sezioni',
+      feed: 'Il mio feed',
+      program: 'Programma',
+      favorites: 'I miei preferiti',
     },
     footer: {
       discover: 'Scopri',
@@ -362,6 +410,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Результаты поиска',
       home: 'Главная Streamer Times',
     },
+    feedNav: {
+      sections: 'Ваши разделы',
+      feed: 'Моя лента',
+      program: 'Программа',
+      favorites: 'Избранное',
+    },
     footer: {
       discover: 'Обзор',
       developers: 'Разработчикам',
@@ -406,6 +460,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchPlaceholder: 'ストリーマーを検索…',
       searchResults: '検索結果',
       home: 'Streamer Times ホーム',
+    },
+    feedNav: {
+      sections: 'セクション',
+      feed: 'マイフィード',
+      program: '番組表',
+      favorites: 'お気に入り',
     },
     footer: {
       discover: '見つける',
@@ -452,6 +512,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Результати пошуку',
       home: 'Головна Streamer Times',
     },
+    feedNav: {
+      sections: 'Ваші розділи',
+      feed: 'Моя стрічка',
+      program: 'Програма',
+      favorites: 'Обране',
+    },
     footer: {
       discover: 'Огляд',
       developers: 'Розробникам',
@@ -496,6 +562,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchPlaceholder: 'ابحث عن ستريمر…',
       searchResults: 'نتائج البحث',
       home: 'الصفحة الرئيسية لـ Streamer Times',
+    },
+    feedNav: {
+      sections: 'أقسامك',
+      feed: 'خلاصتي',
+      program: 'البرنامج',
+      favorites: 'المفضلة',
     },
     footer: {
       discover: 'استكشف',
@@ -542,6 +614,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Keresési találatok',
       home: 'Streamer Times főoldal',
     },
+    feedNav: {
+      sections: 'Szakaszaid',
+      feed: 'Saját feed',
+      program: 'Műsor',
+      favorites: 'Kedvencek',
+    },
     footer: {
       discover: 'Fedezd fel',
       developers: 'Fejlesztőknek',
@@ -586,6 +664,12 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchPlaceholder: 'Szukaj streamerów…',
       searchResults: 'Wyniki wyszukiwania',
       home: 'Strona główna Streamer Times',
+    },
+    feedNav: {
+      sections: 'Twoje sekcje',
+      feed: 'Mój kanał',
+      program: 'Program',
+      favorites: 'Ulubione',
     },
     footer: {
       discover: 'Odkrywaj',

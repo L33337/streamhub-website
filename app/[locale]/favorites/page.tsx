@@ -12,6 +12,9 @@ import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { FeedNavTabs } from '@/components/web/FeedNavTabs';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { chromeLexFor } from '@/lib/i18n-chrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +24,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function FavoritesPage() {
+export default async function FavoritesPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const nav = chromeLexFor(locale).feedNav;
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -37,8 +48,9 @@ export default async function FavoritesPage() {
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
+      <FeedNavTabs locale={locale} active="favorites" className="mb-6" />
       <header className="flex items-baseline justify-between flex-wrap gap-3">
-        <h1 className="text-3xl font-bold text-white">My favorites</h1>
+        <h1 className="text-3xl font-bold text-white">{nav.favorites}</h1>
         <span className="text-sm text-text-muted">
           {favorites.length} {favorites.length === 1 ? 'streamer' : 'streamers'}
         </span>

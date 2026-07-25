@@ -194,12 +194,15 @@ function Dismissable({
 }
 
 export function FeedClient({
+  title = 'My Feed',
   initial,
   sinceIso,
   userId,
   analyticsEnabled,
   gameHubSlugs = {},
 }: {
+  /** Localized page heading (the <h1>); server-resolved from the page locale. */
+  title?: string;
   initial: FeedData;
   sinceIso: string;
   userId: string;
@@ -913,7 +916,7 @@ export function FeedClient({
       </p>
 
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold text-white">My feed</h1>
+        <h1 className="text-3xl font-bold text-white">{title}</h1>
         <div className="flex items-center gap-3">
           {mounted && (
             <span

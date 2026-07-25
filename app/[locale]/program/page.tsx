@@ -5,6 +5,9 @@ import { signInGateRedirect } from '@/lib/auth-flag';
 import { listFavoriteStreamers } from '@/lib/supabase/favorites';
 import { fetchStreamSlots, fetchHiddenStreamerIds } from '@/lib/feed/service';
 import { ProgramClient } from '@/components/web/program/ProgramClient';
+import { FeedNavTabs } from '@/components/web/FeedNavTabs';
+import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { chromeLexFor } from '@/lib/i18n-chrome';
 
 // Personalized page — reads the session cookie on every request; never
 // ISR-cached, never indexed. Same protected-page convention as /feed and
@@ -18,7 +21,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function ProgramPage() {
+export default async function ProgramPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const nav = chromeLexFor(locale).feedNav;
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -58,8 +69,9 @@ export default async function ProgramPage() {
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-8">
+      <FeedNavTabs locale={locale} active="program" className="mb-6" />
       <header className="flex items-baseline justify-between flex-wrap gap-3">
-        <h1 className="text-3xl font-bold text-white">Program</h1>
+        <h1 className="text-3xl font-bold text-white">{nav.program}</h1>
         <span className="text-sm text-text-muted">
           {favorites.length} {favorites.length === 1 ? 'streamer' : 'streamers'}
         </span>
