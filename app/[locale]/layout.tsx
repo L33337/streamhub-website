@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { ConsentGatedAnalytics } from "@/components/web/ConsentGatedAnalytics";
+import { ConsentBanner } from "@/components/web/ConsentBanner";
 import "../globals.css";
 import { SearchBar } from "@/components/web/SearchBar";
 import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
@@ -111,6 +112,20 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <head>
+        {/* Google Consent Mode v2 default — set BEFORE any gtag command so
+            analytics_storage starts denied. gtag.js itself is not loaded until
+            the visitor grants consent (see ConsentGatedAnalytics), so this
+            only matters as the correct baseline the granted-update flips. Ad
+            signals stay denied: the site runs no ads. Rendered inline in the
+            static <head> (CSP allows 'unsafe-inline' script), gated on GA. */}
+        {GA_MEASUREMENT_ID && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});",
+            }}
+          />
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -188,12 +203,18 @@ export default async function RootLayout({
         <Analytics />
         <SpeedInsights />
         {/* Google Analytics 4 — gated on the build-time NEXT_PUBLIC_GA_ID env
-            var (static-safe, inlined at `next build`). Renders nothing when the
-            var is unset, so local/preview builds without the ID stay clean.
-            <GoogleAnalytics> uses next/script (afterInteractive) + a route-change
-            listener for SPA pageviews; it never reads request-scoped APIs, so
-            the K1 static-rendering rule is preserved. */}
-        {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
+            var (static-safe, inlined at `next build`) AND on the visitor's
+            consent: ConsentGatedAnalytics injects gtag.js only after "Accept",
+            so nothing loads for undecided or opted-out visitors (TTDSG opt-in).
+            Both components read state client-side; the K1 static-rendering rule
+            is preserved. Vercel Analytics/Speed Insights above are cookieless
+            and need no consent. */}
+        {GA_MEASUREMENT_ID && (
+          <>
+            <ConsentGatedAnalytics gaId={GA_MEASUREMENT_ID} />
+            <ConsentBanner locale={locale} />
+          </>
+        )}
       </body>
     </html>
   );

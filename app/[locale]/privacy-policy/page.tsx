@@ -41,7 +41,7 @@ const sections = [
   {
     heading: "3. Information We Do Not Collect",
     paragraphs: [
-      "We do not collect your location, contacts, photos, payment information, browsing history, or any other personal data beyond what is described above. We do not use tracking or advertising SDKs.",
+      "We do not collect your location, contacts, photos, payment information, browsing history, or any other personal data beyond what is described above. The mobile App contains no tracking or advertising SDKs. Our website uses Google Analytics for anonymous, aggregated usage statistics — but only if you consent; see “Cookies and Website Analytics” below.",
     ],
   },
   {
@@ -62,13 +62,22 @@ const sections = [
     ],
   },
   {
-    heading: "6. Data Storage and Security",
+    heading: "6. Cookies and Website Analytics",
+    paragraphs: [
+      "Our website uses Google Analytics 4 (provided by Google Ireland Limited) to understand aggregated, anonymous usage — for example which pages are visited — so we can improve the site. This is the only non-essential cookie we set.",
+      "We ask for your consent first. Analytics cookies are set, and the Google Analytics script is loaded, only after you select “Accept” in the cookie banner. If you select “Reject”, or make no choice, Google Analytics is never loaded and no analytics cookies are stored. We use Google Consent Mode, and no advertising or ad-personalization signals are sent.",
+      "You can change or withdraw your choice at any time via the “Cookie settings” link in the website footer. Your choice is remembered locally in your browser (this local flag is strictly necessary to honor your decision and is itself exempt from consent).",
+      "Google may process this data on servers operated by Google LLC, including in the United States, under Google's data-transfer safeguards. Processing is governed by Google's Privacy Policy (policies.google.com/privacy). The mobile App does not use Google Analytics or any cookies.",
+    ],
+  },
+  {
+    heading: "7. Data Storage and Security",
     paragraphs: [
       "Your data is stored securely on Supabase cloud servers. Authentication tokens are managed by Supabase Auth with industry-standard encryption. We do not sell, trade, or otherwise transfer your personal information to third parties.",
     ],
   },
   {
-    heading: "7. Data Retention",
+    heading: "8. Data Retention",
     paragraphs: [
       "Anonymous accounts: Data is retained until the account is deleted or becomes inactive.",
       "Email accounts: Data is retained until you request deletion of your account.",
@@ -77,25 +86,25 @@ const sections = [
     ],
   },
   {
-    heading: "8. Your Rights",
+    heading: "9. Your Rights",
     paragraphs: [
       "You have the right to: access the personal data we hold about you, request deletion of your account and all associated data, and export your data. To exercise any of these rights, please contact us at the email address below.",
     ],
   },
   {
-    heading: "9. Children's Privacy",
+    heading: "10. Children's Privacy",
     paragraphs: [
       "The App is not directed at children under the age of 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal data, please contact us.",
     ],
   },
   {
-    heading: "10. Changes to This Policy",
+    heading: "11. Changes to This Policy",
     paragraphs: [
       'We may update this Privacy Policy from time to time. Changes will be reflected by updating the "Last updated" date at the top of this page. We encourage you to review this policy periodically.',
     ],
   },
   {
-    heading: "11. Contact Us",
+    heading: "12. Contact Us",
     paragraphs: [
       "If you have any questions about this Privacy Policy, please contact us at: StreamHub.Privacy@icloud.com",
     ],

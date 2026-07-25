@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/get-app-target';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { chromeLexFor } from '@/lib/i18n-chrome';
+import { CONSENT_STRINGS } from '@/lib/i18n-consent';
 import { FooterLanguageSwitcher } from './FooterLanguageSwitcher';
+import { ConsentSettingsLink } from './ConsentSettingsLink';
 
 /**
  * Global site footer. Rendered on every page from the root layout so that the
@@ -23,8 +25,13 @@ import { FooterLanguageSwitcher } from './FooterLanguageSwitcher';
 export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
   const chrome = chromeLexFor(locale);
   const f = chrome.footer;
+  const consentManageLabel = (CONSENT_STRINGS[locale] ?? CONSENT_STRINGS.en).manage;
 
-  const columns: { heading: string; links: { href: string; label: string }[] }[] = [
+  const columns: {
+    heading: string;
+    links: { href: string; label: string }[];
+    extra?: React.ReactNode;
+  }[] = [
     {
       heading: f.discover,
       links: [
@@ -48,6 +55,12 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
         { href: localeHref(locale, '/terms-of-service'), label: f.terms },
         { href: localeHref(locale, '/impressum'), label: f.impressum },
       ],
+      // Consent revocation entry — a button (in-page action), not a link.
+      extra: (
+        <li>
+          <ConsentSettingsLink label={consentManageLabel} />
+        </li>
+      ),
     },
   ];
 
@@ -110,6 +123,7 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
                     </Link>
                   </li>
                 ))}
+                {col.extra}
               </ul>
             </nav>
           ))}
