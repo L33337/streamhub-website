@@ -360,17 +360,18 @@ export async function fetchHiddenStreamerIds(
 
 /**
  * Category options for the interest picker: the actively-streamed categories
- * (partner_games view — 28d window), largest first.
+ * (partner_games matview — 28d window), largest first. Read via the
+ * fetch_category_options RPC because anon/authenticated SELECT on partner_games
+ * was revoked (partner-API bypass hardening, migration 20260721211500); the RPC
+ * is a SECURITY DEFINER reader that exposes only the public category names.
  */
 export async function fetchCategoryOptions(
   supabase: SupabaseClient,
   limit = 30,
 ): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('partner_games')
-    .select('category, streamer_count')
-    .order('streamer_count', { ascending: false })
-    .limit(limit);
+  const { data, error } = await supabase.rpc('fetch_category_options', {
+    p_limit: limit,
+  });
 
   if (error) {
     throw new Error(`Failed to fetch category options: ${error.message}`);
