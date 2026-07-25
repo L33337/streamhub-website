@@ -52,6 +52,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **No completion flag** (deviation from the app's AsyncStorage step persistence): auto-entry only ever happens right after signup, so a revisit-by-URL just shows the wizard again — harmless. Step state is URL-mirrored (`?step=`, history.replaceState) so refreshes and the Connect-Twitch round-trip resume the right step.
 - Local E2E: dev-login loop + auth flags in `.env.development.local`; real Twitch OAuth is NOT locally testable (validate + capture paths need prod) — after deploying, smoke-test one fresh Twitch signup (lands on import with follows listed), one Google signup (choice → Connect Twitch), one email signup (confirm link → wizard).
 
+# Add-streamer flow (2026-07-25)
+
+Signed-in users can add Twitch/YouTube channels that aren't tracked yet, from `/search` and the onboarding pick step (port of the app's M8 flow; NO backend changes — the StreamHub `search-streamers` + `add-streamer` edge functions are called directly with the user JWT, same fetch pattern as the Twitch import: `Authorization: Bearer <session.access_token>`, no apikey header, CORS `*`).
+
+- Service layer `lib/web/streamerSearch.ts` (client-safe, no React — unit-tested): fetchers, `buildAddParams`/`getResultKey`, `addStreamerErrorInfo` (429 daily limit 20 adds/user/day, follower-gate errorCodes `insufficient_followers`/`subscriber_count_hidden_low_videos`/`channel_not_found`/`follower_check_unavailable`, session expiry → sign-in link), centralized English-only copy in `ADD_STREAMER_COPY`.
+- `hooks/useExternalStreamerSearch.ts`: debounced (400ms; 0 on /search) search returning `isNew`-only results (DB matches are already rendered from the Partner API); idle when signed out / auth dormant / query <2 or >50 chars. `hooks/useStreamerAdd.ts`: add+favorite with pending guard, cross-user guard (the add call runs 30–90s: AI discovery, EventSub, history, prediction chain), `alreadyExists` treated as success (idempotent — retry after a dropped response is safe), noHistory notices.
+- `/search`: `ExternalResultsSection` island below the DB results and inside `NoResultsState`; signed-out visitors keep the "Get the app" box byte-identical (the island renders it as fallback). Platform follows the existing filter chips; the section is skipped for queries >50 chars (edge-function limit; the page allows 100).
+- Onboarding pick step: "Not on Streamer Times yet" sub-grid with a Twitch/YouTube toggle; added streamers merge locally into the picked grid (`addedSuggestions`) because the Partner API behind `/api/search` caches ~60s.
+- Gotchas: `search-streamers` has NO per-user rate limit (each authenticated keystroke-pause = one Twitch Search API call — watch quota if usage grows); YouTube search results never carry `isLive`; newly added streamers are immediately visible site-wide (`approved` defaults to true, `is_hidden` false, streamer pages render unknown slugs on first visit).
+
 # Game hub UX round (2026-07-23)
 
 `/game/[slug]` invariants an agent must not accidentally undo:
