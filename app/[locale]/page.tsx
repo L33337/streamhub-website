@@ -5,12 +5,15 @@ import { fetchTrendingRail } from '@/lib/server/trending';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { fetchTopClipsOfWeek } from '@/lib/server/home-clips';
 import { fetchHomeQuickFacts, type HomeQuickFacts } from '@/lib/server/quick-facts';
-import { fetchFeaturedStreamerIds } from '@/lib/server/home-featured';
+import { fetchFeaturedStreamers } from '@/lib/server/home-featured';
 import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
+import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 import {
   countStartingSoon,
   floorToBucket,
   pickLiveRailSlots,
+  preferWithNextSlot,
+  sampleRandom,
   topCategoriesByHours,
 } from '@/lib/home/logic';
 import { gameSlug } from '@/lib/game-slug';
@@ -170,7 +173,7 @@ export default async function HomePage({ params }: Props) {
     api.getRankings('fastest-growing', { limit: 3, revalidate: 3600 }),
     fetchTopClipsOfWeek(12),
     fetchHomeQuickFacts(),
-    fetchFeaturedStreamerIds(),
+    fetchFeaturedStreamers(),
     fetchWeekMostStreamed(3),
   ]);
 
@@ -194,10 +197,29 @@ export default async function HomePage({ params }: Props) {
     factsCall.status === 'fulfilled'
       ? factsCall.value
       : { prediction: null, peak: null, reliable: null, pause: null };
-  const featuredIds =
+  const featuredStreamers =
     featuredIdsCall.status === 'fulfilled' ? featuredIdsCall.value : null;
+  const featuredIds = featuredStreamers
+    ? new Set(featuredStreamers.map((streamer) => streamer.id))
+    : null;
   const mostStreamed =
     mostStreamedCall.status === 'fulfilled' ? mostStreamedCall.value : [];
+
+  // Discover grid: 6 RANDOM featured streamers (rotates with every ISR
+  // regeneration), preferring candidates whose next stream is known — the
+  // cards promise "next stream + category". Oversample 12, resolve their
+  // next slots in one small tail fetch (never throws), then cap. Falls back
+  // to the popular list when the featured pool is unavailable.
+  const discoverPool = featuredStreamers ?? popularStreamers;
+  const discoverSample = sampleRandom(discoverPool, 12, Math.random);
+  const discoverNextSlots = await getNextSlotByStreamer(
+    discoverSample.map((streamer) => streamer.id),
+  );
+  const discoverStreamers = preferWithNextSlot(
+    discoverSample,
+    new Set(discoverNextSlots.keys()),
+    6,
+  );
 
   const liveRailSlots = pickLiveRailSlots(liveSlots, 12);
   // Exact live count from the full sweep; the single-page fetch is the fallback.
@@ -310,7 +332,8 @@ export default async function HomePage({ params }: Props) {
       />
 
       <HomeDiscoverGrid
-        streamers={popularStreamers}
+        streamers={discoverStreamers}
+        nextSlots={discoverNextSlots}
         liveIds={liveIds}
         locale={locale}
       />

@@ -6,8 +6,10 @@ import {
   floorToBucket,
   floorToHourIso,
   pickLiveRailSlots,
+  preferWithNextSlot,
   rankWeekStreamed,
   reliabilityHits,
+  sampleRandom,
   topCategoriesByHours,
 } from '../logic';
 
@@ -152,6 +154,33 @@ describe('buildPredictionAccuracy', () => {
   it('returns null below the minimum sample', () => {
     expect(buildPredictionAccuracy([{ was_accurate: true }], 10)).toBeNull();
     expect(buildPredictionAccuracy([], 10)).toBeNull();
+  });
+});
+
+describe('sampleRandom', () => {
+  it('is a uniform-shuffle sample under an injected RNG, capped at pool size', () => {
+    const items = ['a', 'b', 'c', 'd'];
+    // random() = 0 → every swap picks the current index → original order.
+    expect(sampleRandom(items, 2, () => 0)).toEqual(['a', 'b']);
+    // random() close to 1 → always swaps with the current end of the pool:
+    // first pick 'd' (end), which parks 'a' at the end for the second pick.
+    expect(sampleRandom(items, 2, () => 0.999)).toEqual(['d', 'a']);
+    expect(sampleRandom(items, 10, () => 0)).toEqual(['a', 'b', 'c', 'd']);
+    // Input stays untouched.
+    expect(items).toEqual(['a', 'b', 'c', 'd']);
+  });
+});
+
+describe('preferWithNextSlot', () => {
+  it('moves candidates with a known next slot to the front, keeps order, caps', () => {
+    const candidates = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];
+    expect(
+      preferWithNextSlot(candidates, new Set(['b', 'd']), 3).map((c) => c.id),
+    ).toEqual(['b', 'd', 'a']);
+    expect(preferWithNextSlot(candidates, new Set(), 2).map((c) => c.id)).toEqual([
+      'a',
+      'b',
+    ]);
   });
 });
 

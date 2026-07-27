@@ -122,6 +122,40 @@ export function reliabilityHits(rate: number, sample: number): number {
   return Math.min(sample, Math.max(0, Math.round(rate * sample)));
 }
 
+/**
+ * Uniform random sample of `count` items (partial Fisher–Yates on a copy).
+ * The RNG is injected so tests stay deterministic; callers pass Math.random.
+ */
+export function sampleRandom<T>(
+  items: T[],
+  count: number,
+  random: () => number,
+): T[] {
+  const pool = items.slice();
+  const n = Math.min(count, pool.length);
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(random() * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, n);
+}
+
+/**
+ * Order a sampled candidate list so entries with a known next stream come
+ * first (sample order preserved within each half), then cap. The discover
+ * grid promises "next stream + category" — candidates that can actually
+ * show it should win the six visible cards.
+ */
+export function preferWithNextSlot<T extends { id: string }>(
+  candidates: T[],
+  withSlotIds: ReadonlySet<string>,
+  count: number,
+): T[] {
+  const withSlot = candidates.filter((c) => withSlotIds.has(c.id));
+  const without = candidates.filter((c) => !withSlotIds.has(c.id));
+  return [...withSlot, ...without].slice(0, count);
+}
+
 export interface HistoryIntervalRow {
   streamer_id: string;
   started_at: string;
