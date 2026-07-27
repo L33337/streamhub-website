@@ -164,12 +164,21 @@ describe('pickDescription', () => {
   it('marks RTL original text', () => {
     expect(pickDescription(s('نص', null, 'ar'), 'ar')?.dir).toBe('rtl');
   });
-  it('null language behaves as English (already-English rows keep the original)', () => {
+  it('null language without a translation keeps the original, assumed English', () => {
     expect(pickDescription(s('English text', null, null), 'en')).toEqual({
       text: 'English text',
       lang: 'en',
       dir: undefined,
     });
+  });
+  // Regression (2026-07-27): langCode(null) === 'en' used to make a
+  // NULL-language streamer look like an English one, so English viewers got the
+  // untranslated bio — precisely the YouTube-only cohort P1 translates.
+  it('null language WITH a translation serves the translation to every viewer', () => {
+    const yt = s('Bio en français sans langue connue', 'Bio in English', null);
+    expect(pickDescription(yt, 'en')).toEqual({ text: 'Bio in English', lang: 'en' });
+    expect(pickDescription(yt, 'de')).toEqual({ text: 'Bio in English', lang: 'en' });
+    expect(pickDescription(yt, 'fr')).toEqual({ text: 'Bio in English', lang: 'en' });
   });
   it('returns null without any description', () => {
     expect(pickDescription(s(null, null, 'de'), 'en')).toBeNull();

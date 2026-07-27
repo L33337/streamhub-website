@@ -360,6 +360,26 @@ describe('buildBroadcastEventsJsonLd', () => {
     expect(events[0].startDate).toBe('2026-07-13T18:00:00.000Z');
   });
 
+  // M22 P3 regression (2026-07-27): the event description must be the text the
+  // slot card actually renders, so the English URL never carries foreign prose.
+  it('description follows the viewer locale like the visible card does', () => {
+    const foreign = [
+      makeSlot({
+        id: 'up-9',
+        status: 'upcoming',
+        reasoning: 'Deutsche Begründung',
+        copy_language: 'de',
+        generic_reasoning: 'English template summary',
+      }),
+    ];
+    const en = buildBroadcastEventsJsonLd(makeStreamer(), foreign, 's', undefined, 'en') as Ld[];
+    expect(en[0].description).toBe('English template summary');
+    const de = buildBroadcastEventsJsonLd(makeStreamer(), foreign, 's', undefined, 'de') as Ld[];
+    expect(de[0].description).toBe('Deutsche Begründung');
+    // inLanguage keeps describing the BROADCAST, not the rendered copy.
+    expect(en[0].inLanguage).toBe('de');
+  });
+
   it('caps at 10 events, with the exclusion applied before the cap', () => {
     const many = Array.from({ length: 14 }, (_, i) =>
       makeSlot({ id: `up-${i}`, status: 'upcoming' }),

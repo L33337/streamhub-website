@@ -3,6 +3,7 @@ import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api'
 import { localizedNextLabel, safeTimeZone, timezoneCityLabel } from '@/lib/format/time';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { pickReasoning } from '@/lib/slot-copy';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -218,6 +219,14 @@ export interface PickedDescription {
  * `description_en` is NULL for English streamers and for bios the translator
  * classified as already-English — in both cases the original IS the English
  * text. Always render with the returned `lang`/`dir`, never the viewer's.
+ *
+ * `language IS NULL` (YouTube-only streamers — Twitch supplies the broadcaster
+ * language, YouTube does not) counts as UNKNOWN, not English: the P1 translator
+ * runs on those rows too, so a NULL-language streamer WITH a `description_en`
+ * has a genuinely foreign bio. Keying them to 'en' via langCode() would hand
+ * English viewers the untranslated original — exactly the cohort P1 exists for
+ * (fixed 2026-07-27). Without a translation the original is still rendered
+ * lang="en", the pre-M22 assumption for unknown-language text.
  */
 export function pickDescription(
   streamer: Pick<PublicStreamer, 'description' | 'description_en' | 'language'>,
@@ -225,12 +234,12 @@ export function pickDescription(
 ): PickedDescription | null {
   const own = streamer.description || null;
   const en = streamer.description_en || null;
-  const ownLang = langCode(streamer.language);
-  if (own && viewerLocale === ownLang) {
+  const ownLang = streamer.language ? langCode(streamer.language) : null;
+  if (own && ownLang && viewerLocale === ownLang) {
     return { text: own, lang: ownLang, dir: dirFor(ownLang) };
   }
   if (en) return { text: en, lang: 'en' };
-  if (own) return { text: own, lang: ownLang, dir: dirFor(ownLang) };
+  if (own) return { text: own, lang: ownLang ?? 'en', dir: dirFor(ownLang) };
   return null;
 }
 
@@ -834,6 +843,11 @@ export function buildBroadcastEventsJsonLd(
   // with a *different* endDate would be contradictory duplicate markup. Only
   // pass this when the VideoObject was actually emitted.
   excludeSlotId?: string,
+  // M22 P3 (S3.6, fixed 2026-07-27): the event description must be the SAME
+  // text the slot card renders — markup that contradicts the visible page is a
+  // structured-data mismatch, and on the English URL the raw copy would be
+  // foreign-language prose (the very thing P3 removes from en variants).
+  viewerLocale: UiLang = 'en',
 ): object[] {
   const broadcasterRef = { '@id': personJsonLdId(slug) };
   return slots
@@ -857,11 +871,17 @@ export function buildBroadcastEventsJsonLd(
       // text is the slot copy, so its ACTUAL language (copy_language, persisted
       // by the copywriter) wins over the streamer's broadcast language; slots
       // predating M22 fall back to the old streamer-language guess.
+      // (the broadcast itself stays in the streamer's language even when the
+      // rendered copy falls back to English, so inLanguage keeps tracking the
+      // copy language / broadcast language rather than the viewer's locale)
       const textLang = slot.copy_language ?? streamer.language;
       if (textLang) event.inLanguage = textLang;
-      // Use the AI's reasoning as the event description when available — meaningful
-      // SEO copy that explains why this slot was predicted.
-      if (slot.reasoning) event.description = slot.reasoning;
+      // Use the AI's reasoning as the event description when available —
+      // meaningful SEO copy that explains why this slot was predicted. Same
+      // pick as the visible card: third-language copy yields the always-English
+      // generic summary instead.
+      const picked = pickReasoning(slot, viewerLocale);
+      if (picked) event.description = picked.text;
       return event;
     });
 }

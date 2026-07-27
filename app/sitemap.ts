@@ -182,12 +182,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (s.last_status_change_at === null && !s.is_featured) continue;
 
         // M22 P3 (S3.4): non-English streamers index as an en + own-language
-        // pair — emit BOTH URLs, each carrying the pair's hreflang cluster.
-        // English/unknown-language streamers stay single unprefixed entries.
+        // pair — emit BOTH URLs for discovery. English/unknown-language
+        // streamers stay single unprefixed entries.
+        //
+        // NO hreflang alternates here, deliberately (fixed 2026-07-27 after a
+        // post-deploy review): the sitemap's index-gate above is only a PROXY
+        // (last_status_change_at), while the real gate — live || next ||
+        // featured — lives in buildStreamerMetadata and is evaluated per page.
+        // A streamer that passes the proxy but fails the real gate renders
+        // noindex WITHOUT hreflang tags, so a cluster declared here would have
+        // no return tags and GSC would report an hreflang error. The page-level
+        // cluster is exact and reciprocal, and Google accepts hreflang from
+        // either source — so the pages own it alone.
         const path = `/streamer/${encodeURIComponent(s.id)}`;
-        const locales = streamerIndexableLocales(s.language);
-        const languages = buildAlternates(path, locales);
-        for (const l of locales) {
+        for (const l of streamerIndexableLocales(s.language)) {
           streamerUrls.push({
             url: absoluteLocaleUrl(l, path),
             // Honest <lastmod>: updated_at only moves on metadata writes (avatar,
@@ -197,7 +205,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: latestChange(s.updated_at, s.last_status_change_at),
             changeFrequency: 'daily',
             priority: l === 'en' ? 0.7 : 0.6,
-            ...(languages ? { alternates: { languages } } : {}),
           });
         }
       }

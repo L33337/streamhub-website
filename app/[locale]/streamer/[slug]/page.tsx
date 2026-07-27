@@ -276,6 +276,7 @@ export default async function StreamerPage({ params }: Props) {
     allSlots,
     slug,
     liveVideoJsonLd && heroLiveSlot ? heroLiveSlot.id : undefined,
+    locale,
   );
 
   // Body localization (M22, D6 keying rule): the page body renders in the
