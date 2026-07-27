@@ -23,7 +23,12 @@ import {
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { slotLexFor } from '@/lib/i18n-slot';
-import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
+import {
+  groupSlotsByUtcDate,
+  pickNextRealSlot,
+  sevenDayKeys,
+  utcDateLabel,
+} from '@/lib/format/time';
 import { ChannelStats } from '@/components/web/ChannelStats';
 import { StreamerRankings } from '@/components/web/StreamerRankings';
 import { StreamerHero } from '@/components/web/StreamerHero';
@@ -190,16 +195,20 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, liveSlots, upcomingSlots } = await loadStreamerPage(slug);
+  const { streamer, liveSlots, upcomingSlots, stats, now } = await loadStreamerPage(slug);
   if (!streamer) {
     return { title: 'Streamer not found — StreamerTimes' };
   }
-  // Earliest upcoming slot drives the "next stream" meta text.
-  const nextSlot =
-    [...upcomingSlots].sort((a, b) => a.start_time.localeCompare(b.start_time))[0] ?? null;
+  // Exactly the slot the page below renders as the next stream. Taking the
+  // earliest upcoming slot unfiltered (as this did) let a CANCELLED slot become
+  // the snippet's "next stream" — a SERP promise the page itself contradicts.
+  // `hasUpcoming` keeps the index gate on the old, wider condition.
   const meta = buildStreamerMetadata(streamer, slug, {
     liveSlot: liveSlots[0] ?? null,
-    nextSlot,
+    nextSlot: pickNextRealSlot(upcomingSlots, sevenDayKeys(now)),
+    hasUpcoming: upcomingSlots.length > 0,
+    // Already resolved by the shared cached load — no extra round-trip.
+    stats,
     viewerLocale: locale,
   });
   // M22 P3 (D2): each streamer page indexes as an en + own-language hreflang
@@ -242,11 +251,7 @@ export default async function StreamerPage({ params }: Props) {
   const allSlots = [...liveSlots, ...upcomingSlots];
   const grouped = groupSlotsByUtcDate(allSlots);
 
-  const sevenDays: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(now.getTime() + i * 86_400_000);
-    sevenDays.push(d.toISOString().slice(0, 10));
-  }
+  const sevenDays = sevenDayKeys(now);
 
   // Live slots that started before today's UTC date (always-on channels, but
   // also regular streams crossing midnight) get regrouped under today, so the
@@ -272,28 +277,20 @@ export default async function StreamerPage({ params }: Props) {
   const isLive = heroLiveSlot !== null;
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
 
-  // Forward pointer for an empty "Today" row. Restricted to slots that actually
-  // have a rendered day section (the fetch window can reach one day past the
-  // seven we render) and to real streams — a cancelled slot is the opposite of
-  // a next stream.
-  const nextRealSlot =
-    [...upcomingSlots]
-      .sort((a, b) => a.start_time.localeCompare(b.start_time))
-      .find(
-        (s) =>
-          s.slot_kind !== 'cancelled' && sevenDays.includes(s.start_time.slice(0, 10)),
-      ) ?? null;
+  // Forward pointer for an empty "Today" row — and the same slot generateMetadata
+  // announces, so the snippet and the page can never disagree about it.
+  const nextRealSlot = pickNextRealSlot(upcomingSlots, sevenDays);
   // Per-day slices with their offset into the flattened 7-day slot list, so the
-  // truncation below can be expressed as one global slot index.
-  const scheduleDays = (() => {
-    let cursor = 0;
-    return sevenDays.map((dateKey) => {
-      const slots = grouped.get(dateKey) ?? [];
-      const entry = { dateKey, slots, startIndex: cursor };
-      cursor += slots.length;
-      return entry;
-    });
-  })();
+  // truncation below can be expressed as one global slot index. Quadratic, over
+  // seven days — the running-total version reassigned a captured accumulator
+  // during render, which the React compiler rejects.
+  const scheduleDays = sevenDays.map((dateKey, i) => ({
+    dateKey,
+    slots: grouped.get(dateKey) ?? [],
+    startIndex: sevenDays
+      .slice(0, i)
+      .reduce((n, key) => n + (grouped.get(key)?.length ?? 0), 0),
+  }));
   const renderedSlotCount = scheduleDays.reduce((n, d) => n + d.slots.length, 0);
   // Two whole cards plus a clipped third. Below the threshold the button would
   // hide barely more than it shows, so the week renders in full.
