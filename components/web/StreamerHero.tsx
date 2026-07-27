@@ -13,6 +13,7 @@ import { buildStreamerRankingRows } from '@/lib/streamer-rankings';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from './Badges';
 import { CollapsibleBio } from './CollapsibleBio';
 import { FavoriteButton } from './FavoriteButton';
+import { HeroNextStream } from './HeroNextStream';
 import { InitialsAvatar } from './InitialsAvatar';
 import { channelUrls } from './WatchButtons';
 
@@ -27,6 +28,8 @@ const HERO_RANK_CHIPS = 2;
 interface Props {
   streamer: PublicStreamer;
   liveSlot: PublicStreamSlot | null;
+  /** Earliest real upcoming slot — drives the above-the-fold "next stream" answer. */
+  nextSlot?: PublicStreamSlot | null;
   /** Placements for the hero's teaser chips; the full block renders lower down. */
   rankings?: PublicStreamerRankings | null;
   // M22 (D6 keying rule): UI strings follow the VIEWER's locale; the bio and
@@ -35,7 +38,13 @@ interface Props {
   uiLanguage?: string | null;
 }
 
-export function StreamerHero({ streamer, liveSlot, rankings = null, uiLanguage }: Props) {
+export function StreamerHero({
+  streamer,
+  liveSlot,
+  nextSlot = null,
+  rankings = null,
+  uiLanguage,
+}: Props) {
   const isLive = liveSlot !== null;
   const isAlwaysOn = liveSlot?.is_always_on === true;
   const ui = uiLanguage ?? streamer.language;
@@ -74,7 +83,10 @@ export function StreamerHero({ streamer, liveSlot, rankings = null, uiLanguage }
     .sort((a, b) => a.rank - b.rank)
     .slice(0, HERO_RANK_CHIPS);
 
-  const hasSecondRow = isLive || bioParagraphs.length > 0 || rankChips.length > 0;
+  // The next-stream answer counts too: on an offline streamer with no bio it is
+  // the only thing in the second row, and the most important one.
+  const hasSecondRow =
+    isLive || nextSlot !== null || bioParagraphs.length > 0 || rankChips.length > 0;
 
   return (
     <header className="relative gradient-border p-4 sm:p-6 md:p-8">
@@ -137,8 +149,32 @@ export function StreamerHero({ streamer, liveSlot, rankings = null, uiLanguage }
 
         {hasSecondRow && (
           <div className="col-span-2 min-w-0 md:col-span-1">
+            {isLive && liveSlot && (
+              <p className="text-text-secondary">
+                <span className="font-semibold text-text-primary">
+                  {L.hero.nowStreaming}
+                </span>{' '}
+                <span lang={nativeLang} dir={nativeDir}>
+                  {liveSlot.title}
+                </span>
+                {liveSlot.category ? (
+                  <span className="text-text-muted"> · {liveSlot.category}</span>
+                ) : null}
+              </p>
+            )}
+
+            {/* The page's headline answer: watch action while live, next start
+                time otherwise. Sits above the chips and the bio on purpose. */}
+            <HeroNextStream
+              liveSlot={liveSlot}
+              nextSlot={nextSlot}
+              twitchLogin={streamer.twitch_login}
+              youtubeChannelId={streamer.youtube_channel_id}
+              language={resolveUiLang(ui)}
+            />
+
             {rankChips.length > 0 && (
-              <ul className="mb-3 flex flex-wrap gap-2">
+              <ul className="mt-3 flex flex-wrap gap-2">
                 {rankChips.map((row) => {
                   const body = (
                     <>
@@ -173,22 +209,8 @@ export function StreamerHero({ streamer, liveSlot, rankings = null, uiLanguage }
               </ul>
             )}
 
-            {isLive && liveSlot && (
-              <p className="text-text-secondary">
-                <span className="font-semibold text-text-primary">
-                  {L.hero.nowStreaming}
-                </span>{' '}
-                <span lang={nativeLang} dir={nativeDir}>
-                  {liveSlot.title}
-                </span>
-                {liveSlot.category ? (
-                  <span className="text-text-muted"> · {liveSlot.category}</span>
-                ) : null}
-              </p>
-            )}
-
             {bioParagraphs.length > 0 && picked && (
-              <div className={isLive ? 'mt-4' : undefined}>
+              <div className="mt-3">
                 <CollapsibleBio
                   paragraphs={bioParagraphs}
                   lang={picked.lang !== langCode(ui) ? picked.lang : undefined}

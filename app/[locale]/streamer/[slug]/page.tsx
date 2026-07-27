@@ -380,6 +380,7 @@ export default async function StreamerPage({ params }: Props) {
       <StreamerHero
         streamer={streamer}
         liveSlot={heroLiveSlot}
+        nextSlot={nextRealSlot}
         rankings={rankings}
         uiLanguage={locale}
       />

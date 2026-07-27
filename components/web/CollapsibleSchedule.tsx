@@ -46,7 +46,6 @@ export function CollapsibleSchedule({ moreLabel, lessLabel, children }: Props) {
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
   const expanded = userExpanded ?? deepLinked;
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const id = useId();
 
@@ -61,11 +60,12 @@ export function CollapsibleSchedule({ moreLabel, lessLabel, children }: Props) {
   }, []);
 
   // In-page day links while collapsed. Delegated so the day nav and the day
-  // sections stay server components.
+  // sections stay server components — and bound to the document rather than
+  // this subtree, because such links also live outside it (the hero's
+  // next-stream box). Harmless there: a link whose target is already painted
+  // falls through to the browser untouched.
   useEffect(() => {
     if (expanded) return;
-    const root = containerRef.current;
-    if (!root) return;
 
     const onClick = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) {
@@ -86,8 +86,8 @@ export function CollapsibleSchedule({ moreLabel, lessLabel, children }: Props) {
       history.replaceState(null, '', href);
     };
 
-    root.addEventListener('click', onClick);
-    return () => root.removeEventListener('click', onClick);
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
   }, [expanded]);
 
   function collapse() {
@@ -101,7 +101,6 @@ export function CollapsibleSchedule({ moreLabel, lessLabel, children }: Props) {
     <div ref={rootRef}>
       <div
         id={id}
-        ref={containerRef}
         data-schedule-collapsed={expanded ? 'false' : 'true'}
       >
         {children}
