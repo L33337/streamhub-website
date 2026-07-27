@@ -63,22 +63,23 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  // Title/description come from SITE_META_STRINGS for EVERY locale (the `en`
+  // entry used to be duplicated inline here — two copies of one string that
+  // could drift; i18n-chrome.test.ts pins the English values). They mirror the
+  // H1's three pillars: schedule, highlights, stats.
   const localized = siteMetaFor(locale).home;
   const meta: Metadata = {
-    title:
-      locale === 'en'
-        ? 'Live Streamer Schedule — Twitch & YouTube Stream Guide | StreamerTimes'
-        : localized.title,
-    description:
-      locale === 'en'
-        ? 'Find out when your favorite streamers go live on Twitch and YouTube. Real-time live status, upcoming schedule, and AI-powered predictions.'
-        : localized.description,
+    title: localized.title,
+    description: localized.description,
     alternates: { canonical: SITE_URL },
     openGraph: {
-      title: locale === 'en' ? 'Streamer Times — Live Streamer Schedule' : localized.title,
+      title:
+        locale === 'en'
+          ? 'Streamer Times — Stream Schedule. Highlights. Stats.'
+          : localized.title,
       description:
         locale === 'en'
-          ? 'Real-time Twitch and YouTube live status with AI-powered schedule predictions.'
+          ? 'Schedules, highlights and stats for Twitch and YouTube in one place — with real-time live status and AI-powered predictions.'
           : localized.description,
       url: SITE_URL,
       siteName: 'Streamer Times',
@@ -95,7 +96,7 @@ function buildWebSiteJsonLd(): object {
     url: SITE_URL,
     name: 'Streamer Times',
     description:
-      'Live streamer schedule for Twitch and YouTube with AI-powered predictions.',
+      'Stream schedules, highlights and stats for Twitch and YouTube, with real-time live status and AI-powered predictions.',
     potentialAction: {
       '@type': 'SearchAction',
       target: {

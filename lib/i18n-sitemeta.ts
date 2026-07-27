@@ -27,9 +27,9 @@ export interface SiteMetaLex {
 export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   en: {
     home: {
-      title: 'Live Streamer Schedule — Twitch & YouTube Stream Guide | StreamerTimes',
+      title: 'Stream Schedule, Highlights & Stats — Twitch & YouTube | StreamerTimes',
       description:
-        'Find out when your favorite streamers go live on Twitch and YouTube. Real-time live status, upcoming schedule, and AI-powered predictions.',
+        'Stream schedules, weekly highlights and channel stats for Twitch and YouTube — all in one place. See who is live now and when your favorites go live next.',
     },
     live: {
       title: "Who's Live Now on Twitch & YouTube | StreamerTimes",
@@ -57,9 +57,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   de: {
     home: {
-      title: 'Live-Streamer-Sendeplan — Twitch & YouTube Stream-Guide | StreamerTimes',
+      title: 'Sendeplan, Highlights & Statistiken — Twitch & YouTube | StreamerTimes',
       description:
-        'Finde heraus, wann deine Lieblingsstreamer auf Twitch und YouTube live gehen. Live-Status in Echtzeit, kommende Streams und KI-Prognosen.',
+        'Sendepläne, Highlights der Woche und Kanal-Statistiken für Twitch und YouTube — alles an einem Ort. Sieh, wer gerade live ist und wann deine Favoriten starten.',
     },
     live: {
       title: 'Wer ist jetzt live auf Twitch & YouTube? | StreamerTimes',
@@ -84,9 +84,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   es: {
     home: {
-      title: 'Horarios de streamers en directo — Twitch y YouTube | StreamerTimes',
+      title: 'Programación, clips y estadísticas — Twitch y YouTube | StreamerTimes',
       description:
-        'Descubre cuándo tus streamers favoritos se ponen en directo en Twitch y YouTube. Estado en tiempo real, próximos streams y predicciones con IA.',
+        'Programación de directos, clips de la semana y estadísticas de canales de Twitch y YouTube, todo en un mismo sitio. Mira quién está en directo y cuándo empiezan tus favoritos.',
     },
     live: {
       title: '¿Quién está en directo en Twitch y YouTube? | StreamerTimes',
@@ -111,9 +111,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   fr: {
     home: {
-      title: 'Horaires des streamers en live — Guide Twitch & YouTube | StreamerTimes',
+      title: 'Programme, clips & stats — Twitch & YouTube | StreamerTimes',
       description:
-        'Découvre quand tes streamers préférés passent en live sur Twitch et YouTube. Statut en temps réel, prochains streams et prédictions par IA.',
+        'Programme des streams, clips de la semaine et stats des chaînes Twitch et YouTube, au même endroit. Vois qui est en live et quand tes streamers préférés commencent.',
     },
     live: {
       title: 'Qui est en live sur Twitch & YouTube ? | StreamerTimes',
@@ -138,9 +138,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   pt: {
     home: {
-      title: 'Horários de streamers ao vivo — Twitch e YouTube | StreamerTimes',
+      title: 'Programação, clipes e estatísticas — Twitch e YouTube | StreamerTimes',
       description:
-        'Descubra quando seus streamers favoritos entram ao vivo na Twitch e no YouTube. Status em tempo real, próximos streams e previsões com IA.',
+        'Programação de streams, clipes da semana e estatísticas de canais da Twitch e do YouTube em um só lugar. Veja quem está ao vivo e quando seus favoritos começam.',
     },
     live: {
       title: 'Quem está ao vivo na Twitch e no YouTube? | StreamerTimes',
@@ -165,9 +165,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   it: {
     home: {
-      title: 'Orari dei live streamer — Guida Twitch & YouTube | StreamerTimes',
+      title: 'Programmazione, clip e statistiche — Twitch e YouTube | StreamerTimes',
       description:
-        'Scopri quando i tuoi streamer preferiti vanno in diretta su Twitch e YouTube. Stato live in tempo reale, prossimi stream e previsioni con IA.',
+        'Programmazione degli stream, clip della settimana e statistiche dei canali Twitch e YouTube in un unico posto. Scopri chi è in diretta e quando iniziano i tuoi preferiti.',
     },
     live: {
       title: 'Chi è in diretta su Twitch e YouTube? | StreamerTimes',
@@ -191,9 +191,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   ru: {
     home: {
-      title: 'Расписание стримеров — гид по Twitch и YouTube | StreamerTimes',
+      title: 'Расписание, клипы и статистика — Twitch и YouTube | StreamerTimes',
       description:
-        'Узнайте, когда ваши любимые стримеры выходят в эфир на Twitch и YouTube. Статус в реальном времени, ближайшие стримы и ИИ-прогнозы.',
+        'Расписание стримов, клипы недели и статистика каналов Twitch и YouTube — всё в одном месте. Смотрите, кто в эфире сейчас и когда начнут любимые стримеры.',
     },
     live: {
       title: 'Кто сейчас в эфире на Twitch и YouTube | StreamerTimes',
@@ -218,9 +218,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   ja: {
     home: {
-      title: '配信スケジュール — Twitch & YouTube配信ガイド | StreamerTimes',
+      title: '配信スケジュール・クリップ・統計 — Twitch & YouTube | StreamerTimes',
       description:
-        'お気に入りのストリーマーがTwitchやYouTubeでいつ配信するかをチェック。リアルタイムのライブ状況、今後の配信予定、AIによる予測も。',
+        'TwitchとYouTubeの配信スケジュール、今週のクリップ、チャンネル統計をすべてひとつに。今ライブ中の配信者と、お気に入りが次に配信する時間がわかります。',
     },
     live: {
       title: 'TwitchとYouTubeで今配信中のストリーマー | StreamerTimes',
@@ -245,9 +245,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   uk: {
     home: {
-      title: 'Розклад стримерів — гід по Twitch і YouTube | StreamerTimes',
+      title: 'Розклад, кліпи та статистика — Twitch і YouTube | StreamerTimes',
       description:
-        'Дізнавайтеся, коли ваші улюблені стримери виходять в ефір на Twitch і YouTube. Статус у реальному часі, найближчі стріми та ШІ-прогнози.',
+        'Розклад стрімів, кліпи тижня та статистика каналів Twitch і YouTube — усе в одному місці. Дивіться, хто в ефірі зараз і коли почнуть улюблені стрімери.',
     },
     live: {
       title: 'Хто зараз в ефірі на Twitch і YouTube | StreamerTimes',
@@ -272,9 +272,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   ar: {
     home: {
-      title: 'مواعيد بث الستريمرز — دليل Twitch وYouTube | StreamerTimes',
+      title: 'جدول البث والمقاطع والإحصائيات — Twitch وYouTube | StreamerTimes',
       description:
-        'اعرف متى يبدأ الستريمرز المفضلون لديك البث على Twitch وYouTube. حالة البث لحظة بلحظة، المواعيد القادمة، وتوقعات بالذكاء الاصطناعي.',
+        'جداول البث ومقاطع الأسبوع وإحصائيات القنوات على Twitch وYouTube في مكان واحد. اعرف من يبث الآن ومتى يبدأ صانعو المحتوى المفضلون لديك.',
     },
     live: {
       title: 'من يبث الآن على Twitch وYouTube؟ | StreamerTimes',
@@ -299,9 +299,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   hu: {
     home: {
-      title: 'Élő streamer-műsor — Twitch & YouTube stream-kalauz | StreamerTimes',
+      title: 'Műsorrend, klipek és statisztikák — Twitch & YouTube | StreamerTimes',
       description:
-        'Tudd meg, mikor mennek élőbe a kedvenc streamereid Twitchen és YouTube-on. Valós idejű élő státusz, közelgő adások és MI-előrejelzések.',
+        'Stream-műsorrend, a hét klipjei és csatornastatisztikák a Twitchről és a YouTube-ról, mind egy helyen. Nézd meg, ki van élőben, és mikor kezdenek a kedvenceid.',
     },
     live: {
       title: 'Ki van most élőben Twitchen és YouTube-on? | StreamerTimes',
@@ -326,9 +326,9 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
   },
   pl: {
     home: {
-      title: 'Harmonogram streamów — przewodnik po Twitchu i YouTube | StreamerTimes',
+      title: 'Harmonogram, klipy i statystyki — Twitch i YouTube | StreamerTimes',
       description:
-        'Sprawdź, kiedy Twoi ulubieni streamerzy wchodzą na żywo na Twitchu i YouTube. Status na żywo w czasie rzeczywistym, nadchodzące streamy i prognozy AI.',
+        'Harmonogramy streamów, klipy tygodnia i statystyki kanałów z Twitcha i YouTube w jednym miejscu. Zobacz, kto jest na żywo i kiedy zaczynają twoi ulubieńcy.',
     },
     live: {
       title: 'Kto jest teraz na żywo na Twitchu i YouTube? | StreamerTimes',

@@ -85,10 +85,10 @@ describe('SITE_META_STRINGS', () => {
     const M = SITE_META_STRINGS.en;
     // app/page.tsx
     expect(M.home.title).toBe(
-      'Live Streamer Schedule — Twitch & YouTube Stream Guide | StreamerTimes',
+      'Stream Schedule, Highlights & Stats — Twitch & YouTube | StreamerTimes',
     );
     expect(M.home.description).toBe(
-      'Find out when your favorite streamers go live on Twitch and YouTube. Real-time live status, upcoming schedule, and AI-powered predictions.',
+      'Stream schedules, weekly highlights and channel stats for Twitch and YouTube — all in one place. See who is live now and when your favorites go live next.',
     );
     // app/live/page.tsx
     expect(M.live.title).toBe("Who's Live Now on Twitch & YouTube | StreamerTimes");

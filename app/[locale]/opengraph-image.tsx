@@ -15,8 +15,8 @@ export const contentType = 'image/png';
 export default async function Image() {
   return new ImageResponse(
     renderOgFrame({
-      title: 'Live Streamer Schedule',
-      subtitle: 'Real-time Twitch & YouTube live status, schedules and AI predictions',
+      title: 'Stream Schedule. Highlights. Stats.',
+      subtitle: 'Twitch & YouTube in one place — live status, schedules and AI predictions',
       pills: [
         { label: 'AI Predictions' },
         {
