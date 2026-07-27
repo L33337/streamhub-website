@@ -30,8 +30,8 @@ import { HomeMostStreamed } from '@/components/web/home/HomeMostStreamed';
 import { HomeMostWatched } from '@/components/web/home/HomeMostWatched';
 import { HomeDiscoverGrid } from '@/components/web/home/HomeDiscoverGrid';
 import { HomeEndCap } from '@/components/web/home/HomeEndCap';
+import { HomeTrendingRail } from '@/components/web/home/HomeTrendingRail';
 import { PopularStreamersFooter } from '@/components/web/PopularStreamersFooter';
-import { TrendingRail } from '@/components/web/games/TrendingRail';
 
 export const revalidate = 60;
 
@@ -215,12 +215,13 @@ export default async function HomePage({ params }: Props) {
   ).slice(0, UPCOMING_RENDER_LIMIT);
   const topCategories = topCategoriesByHours(games, 5);
 
-  // Map stays server-side only (never crosses a client boundary).
+  // Maps stay server-side only (never cross a client boundary).
   const catalogSlugByName = new Map(
     games
       .map((g) => [g.category, gameSlug(g.category)] as const)
       .filter(([, slug]) => slug.length > 0),
   );
+  const gamesByName = new Map(games.map((g) => [g.category, g] as const));
 
   const interruptAvatars = popularStreamers
     .map((streamer) => streamer.avatar_url)
@@ -258,11 +259,13 @@ export default async function HomePage({ params }: Props) {
 
       {/* Trending games — the homepage carries the most link equity, so these
           in-body /game/* and /games links matter more than the nav's. Rail
-          degrades to null when trending is empty; cards render unlinked when
-          the catalog call failed (never internal 404s). The /games link stays
-          unconditional so the hub link survives an empty trending cache. */}
-      <TrendingRail
+          degrades to null when trending is empty; cards render unlinked and
+          stat-free when the catalog call failed (never internal 404s). The
+          /games link stays unconditional so the hub link survives an empty
+          trending cache. */}
+      <HomeTrendingRail
         trending={trending}
+        gamesByName={gamesByName}
         catalogSlugByName={catalogSlugByName}
         locale={locale}
       />
