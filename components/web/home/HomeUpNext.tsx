@@ -7,13 +7,17 @@ import { HomeUpNextFilters } from './HomeUpNextFilters';
 import { SlotBellButton } from './SlotBellButton';
 
 const MAX_CATEGORY_CHIPS = 6;
+/** Cards fully visible while collapsed; the next row peeks under a fade. */
+const VISIBLE_COUNT = 4;
 
 /**
- * "Today's lineup" (homepage rebuild 2026-07-27): the next 24 h of upcoming
- * slots incl. AI predictions as SlotCards (confidence badge + reasoning teaser
- * come with the card). Client chips filter by category via hidden-attribute
- * toggling (list stays server-rendered); each card carries a reminder bell
- * (implicit hook I2) as an absolute sibling of the card link.
+ * "Today's lineup" (homepage rebuild 2026-07-27): the next 24 h of FEATURED
+ * streamers' upcoming slots incl. AI predictions as SlotCards (confidence
+ * badge + reasoning teaser come with the card). Four cards show fully, the
+ * rest sits in a clamped peek zone behind a show-all toggle (CollapsibleBio
+ * pattern); client chips filter by category via hidden-attribute toggling.
+ * Each card carries a reminder bell (implicit hook I2) as an absolute
+ * sibling of the card link.
  */
 export function HomeUpNext({
   slots,
@@ -50,6 +54,21 @@ export function HomeUpNext({
     close: L.homeFeed.upsell.close,
   };
 
+  const renderSlot = (slot: PublicStreamSlot) => (
+    <li key={slot.id} data-home-cat={slot.category ?? ''} className="relative">
+      <SlotCard slot={slot} language={locale} />
+      <SlotBellButton
+        ariaLabel={L.homeFeed.bellAria(slot.streamer_name)}
+        strings={bellStrings}
+        className="absolute right-3 top-3 z-10"
+      />
+    </li>
+  );
+
+  const listClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
+  const firstSlots = slots.slice(0, VISIBLE_COUNT);
+  const restSlots = slots.slice(VISIBLE_COUNT);
+
   return (
     <section aria-label={L.homeFeed.upNextTitle}>
       <FeedSectionHeader
@@ -67,20 +86,16 @@ export function HomeUpNext({
           categories={categories}
           allLabel={L.homeFeed.chipAll}
           favoritesLabel={L.homeFeed.chipFavorites}
+          showAllLabel={L.homeFeed.lineupShowAll(slots.length)}
+          showLessLabel={L.homeFeed.lineupShowLess}
           upsellStrings={favoritesStrings}
+          moreChildren={
+            restSlots.length > 0 ? (
+              <ul className={listClass}>{restSlots.map(renderSlot)}</ul>
+            ) : null
+          }
         >
-          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {slots.map((slot) => (
-              <li key={slot.id} data-home-cat={slot.category ?? ''} className="relative">
-                <SlotCard slot={slot} language={locale} />
-                <SlotBellButton
-                  ariaLabel={L.homeFeed.bellAria(slot.streamer_name)}
-                  strings={bellStrings}
-                  className="absolute right-3 top-3 z-10"
-                />
-              </li>
-            ))}
-          </ul>
+          <ul className={listClass}>{firstSlots.map(renderSlot)}</ul>
         </HomeUpNextFilters>
       )}
     </section>

@@ -5,6 +5,8 @@ import { fetchTrendingRail } from '@/lib/server/trending';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { fetchTopClipsOfWeek } from '@/lib/server/home-clips';
 import { fetchHomeQuickFacts, type HomeQuickFacts } from '@/lib/server/quick-facts';
+import { fetchFeaturedStreamerIds } from '@/lib/server/home-featured';
+import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
 import {
   countStartingSoon,
   floorToBucket,
@@ -24,6 +26,7 @@ import { HomeInterruptCard } from '@/components/web/home/HomeInterruptCard';
 import { HomeClipsRail } from '@/components/web/home/HomeClipsRail';
 import { HomeQuickFacts as HomeQuickFactsSection } from '@/components/web/home/HomeQuickFacts';
 import { HomeRisers } from '@/components/web/home/HomeRisers';
+import { HomeMostStreamed } from '@/components/web/home/HomeMostStreamed';
 import { HomeMostWatched } from '@/components/web/home/HomeMostWatched';
 import { HomeDiscoverGrid } from '@/components/web/home/HomeDiscoverGrid';
 import { HomeEndCap } from '@/components/web/home/HomeEndCap';
@@ -140,6 +143,8 @@ export default async function HomePage({ params }: Props) {
     risersCall,
     clipsCall,
     factsCall,
+    featuredIdsCall,
+    mostStreamedCall,
   ] = await Promise.allSettled([
     api.listSchedules({
       status: ['upcoming'],
@@ -165,6 +170,8 @@ export default async function HomePage({ params }: Props) {
     api.getRankings('fastest-growing', { limit: 3, revalidate: 3600 }),
     fetchTopClipsOfWeek(12),
     fetchHomeQuickFacts(),
+    fetchFeaturedStreamerIds(),
+    fetchWeekMostStreamed(3),
   ]);
 
   const upcomingSlots =
@@ -187,11 +194,25 @@ export default async function HomePage({ params }: Props) {
     factsCall.status === 'fulfilled'
       ? factsCall.value
       : { prediction: null, peak: null, reliable: null, pause: null };
+  const featuredIds =
+    featuredIdsCall.status === 'fulfilled' ? featuredIdsCall.value : null;
+  const mostStreamed =
+    mostStreamedCall.status === 'fulfilled' ? mostStreamedCall.value : [];
 
   const liveRailSlots = pickLiveRailSlots(liveSlots, 12);
   // Exact live count from the full sweep; the single-page fetch is the fallback.
   const liveCount = liveIds.size > 0 ? liveIds.size : liveRailSlots.length;
+  // Ticker stays a SITE-WIDE stat (all streamers); only the rendered lineup
+  // below is curated.
   const soonCount = countStartingSoon(upcomingSlots, now, SOON_WINDOW_HOURS);
+  // "Today's lineup" is editorially curated: featured streamers only. When
+  // the featured-id fetch failed, fall back to the unfiltered list — a mixed
+  // lineup beats an empty section.
+  const lineupSlots = (
+    featuredIds
+      ? upcomingSlots.filter((slot) => featuredIds.has(slot.streamer_id))
+      : upcomingSlots
+  ).slice(0, UPCOMING_RENDER_LIMIT);
   const topCategories = topCategoriesByHours(games, 5);
 
   // Map stays server-side only (never crosses a client boundary).
@@ -231,7 +252,7 @@ export default async function HomePage({ params }: Props) {
 
       <HomeLiveRail slots={liveRailSlots} totalLive={liveCount} locale={locale} />
 
-      <HomeUpNext slots={upcomingSlots.slice(0, UPCOMING_RENDER_LIMIT)} locale={locale} />
+      <HomeUpNext slots={lineupSlots} locale={locale} />
 
       <HomeInterruptCard avatarUrls={interruptAvatars} locale={locale} />
 
@@ -262,7 +283,21 @@ export default async function HomePage({ params }: Props) {
 
       <HomeQuickFactsSection facts={quickFacts} locale={locale} />
 
-      <HomeRisers entries={riserEntries} locale={locale} />
+      {/* Risers + Most streamed share a row; each hides independently while
+          its data source is empty/warming up, so the grid only splits when
+          both render. */}
+      <div
+        className={
+          riserEntries.some(
+            (entry) => typeof entry.values.follower_gain_7d === 'number',
+          ) && mostStreamed.length > 0
+            ? 'grid gap-x-6 md:grid-cols-2'
+            : undefined
+        }
+      >
+        <HomeRisers entries={riserEntries} locale={locale} />
+        <HomeMostStreamed entries={mostStreamed} locale={locale} />
+      </div>
 
       <HomeMostWatched
         streamerEntries={mostWatchedEntries}

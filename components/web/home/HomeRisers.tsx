@@ -35,7 +35,7 @@ export function HomeRisers({
         actionLabel={L.homeFeed.risersLink}
         actionHref={localeHref(locale, '/rankings/fastest-growing')}
       />
-      <ul className="grid max-w-2xl gap-2">
+      <ul className="grid gap-2">
         {rows.map((entry) => (
           <li key={entry.streamer.id}>
             <Link

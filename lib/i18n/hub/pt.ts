@@ -34,6 +34,8 @@ export const pt: HubLex = {
     upNextLink: 'Ao vivo e começando em breve →',
     chipAll: 'Todos',
     chipFavorites: 'Meus favoritos',
+    lineupShowAll: (n) => `Mostrar todos os ${n} streams`,
+    lineupShowLess: 'Mostrar menos',
     bellAria: (name) => `Receba um aviso quando ${name} entrar ao vivo`,
     upsell: {
       bellTitle: 'Não perca nenhuma stream',
@@ -70,6 +72,9 @@ export const pt: HubLex = {
     risersTitle: 'Em ascensão esta semana',
     risersLink: 'Todos os rankings →',
     risersGained: (delta) => `${delta} seguidores em 7 dias`,
+    mostStreamedTitle: 'Quem mais streamou esta semana',
+    weekHours: (value) => `${value} h ao vivo · 7 dias`,
+    weekStreams: (n) => `${n} stream${n === 1 ? '' : 's'}`,
     mostWatchedTitle: 'Mais assistidos',
     topStreamersCol: 'Top 5 streamers',
     topCategoriesCol: 'Top 5 categorias',

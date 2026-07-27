@@ -56,6 +56,8 @@ export const ru: HubLex = {
     upNextLink: 'В эфире и скоро →',
     chipAll: 'Все',
     chipFavorites: 'Мои избранные',
+    lineupShowAll: (n) => `Показать все стримы (${n})`,
+    lineupShowLess: 'Свернуть',
     bellAria: (name) => `Получать уведомление, когда ${name} выходит в эфир`,
     upsell: {
       bellTitle: 'Не пропускай ни одного стрима',
@@ -92,6 +94,9 @@ export const ru: HubLex = {
     risersTitle: 'Взлёты недели',
     risersLink: 'Все рейтинги →',
     risersGained: (delta) => `${delta} подписчиков за 7 дней`,
+    mostStreamedTitle: 'Больше всего стримили на этой неделе',
+    weekHours: (value) => `${value} ч в эфире · 7 дней`,
+    weekStreams: (n) => `стримов: ${n}`,
     mostWatchedTitle: 'Самые просматриваемые',
     topStreamersCol: 'Топ-5 стримеров',
     topCategoriesCol: 'Топ-5 категорий',

@@ -56,6 +56,8 @@ export const uk: HubLex = {
     upNextLink: 'В ефірі та незабаром →',
     chipAll: 'Усі',
     chipFavorites: 'Мої улюблені',
+    lineupShowAll: (n) => `Показати всі стрими (${n})`,
+    lineupShowLess: 'Згорнути',
     bellAria: (name) => `Отримати сповіщення, коли ${name} виходить в ефір`,
     upsell: {
       bellTitle: 'Не пропускай жодного стриму',
@@ -92,6 +94,9 @@ export const uk: HubLex = {
     risersTitle: 'Злети тижня',
     risersLink: 'Усі рейтинги →',
     risersGained: (delta) => `${delta} підписників за 7 днів`,
+    mostStreamedTitle: 'Найбільше стримили цього тижня',
+    weekHours: (value) => `${value} год в ефірі · 7 днів`,
+    weekStreams: (n) => `стримів: ${n}`,
     mostWatchedTitle: 'Найбільш переглядувані',
     topStreamersCol: 'Топ-5 стримерів',
     topCategoriesCol: 'Топ-5 категорій',

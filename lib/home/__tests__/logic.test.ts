@@ -6,6 +6,7 @@ import {
   floorToBucket,
   floorToHourIso,
   pickLiveRailSlots,
+  rankWeekStreamed,
   reliabilityHits,
   topCategoriesByHours,
 } from '../logic';
@@ -151,6 +152,59 @@ describe('buildPredictionAccuracy', () => {
   it('returns null below the minimum sample', () => {
     expect(buildPredictionAccuracy([{ was_accurate: true }], 10)).toBeNull();
     expect(buildPredictionAccuracy([], 10)).toBeNull();
+  });
+});
+
+describe('rankWeekStreamed', () => {
+  const since = new Date('2026-07-20T00:00:00.000Z');
+  const now = new Date('2026-07-27T00:00:00.000Z');
+  const row = (streamerId: string, start: string, end: string | null) => ({
+    streamer_id: streamerId,
+    started_at: start,
+    ended_at: end,
+  });
+
+  it('merges simulcast/split-VOD rows into sessions and ranks by hours', () => {
+    const ranked = rankWeekStreamed(
+      [
+        // s1: a simulcast (two identical rows) + a split VOD 10 min later —
+        // ONE session of 3h10m, not three.
+        row('s1', '2026-07-21T18:00:00.000Z', '2026-07-21T20:00:00.000Z'),
+        row('s1', '2026-07-21T18:00:00.000Z', '2026-07-21T20:00:00.000Z'),
+        row('s1', '2026-07-21T20:10:00.000Z', '2026-07-21T21:10:00.000Z'),
+        // s2: two separate evenings, 2h each = 4h total, 2 sessions.
+        row('s2', '2026-07-22T18:00:00.000Z', '2026-07-22T20:00:00.000Z'),
+        row('s2', '2026-07-23T18:00:00.000Z', '2026-07-23T20:00:00.000Z'),
+      ],
+      since,
+      now,
+    );
+    expect(ranked).toEqual([
+      { streamerId: 's2', hours: 4, sessions: 2 },
+      { streamerId: 's1', hours: 3 + 10 / 60, sessions: 1 },
+    ]);
+  });
+
+  it('clamps to the window, drops broken rows, applies the top cap', () => {
+    const ranked = rankWeekStreamed(
+      [
+        // Started before the window: only the in-window half counts.
+        row('s1', '2026-07-19T22:00:00.000Z', '2026-07-20T02:00:00.000Z'),
+        row('s2', '2026-07-21T18:00:00.000Z', '2026-07-21T19:00:00.000Z'),
+        row('s3', '2026-07-21T18:00:00.000Z', '2026-07-21T18:30:00.000Z'),
+        // Broken rows never rank.
+        row('s4', '2026-07-21T18:00:00.000Z', null),
+        row('s5', 'not-a-date', '2026-07-21T19:00:00.000Z'),
+        row('s6', '2026-07-21T19:00:00.000Z', '2026-07-21T18:00:00.000Z'),
+      ],
+      since,
+      now,
+      2,
+    );
+    expect(ranked).toEqual([
+      { streamerId: 's1', hours: 2, sessions: 1 },
+      { streamerId: 's2', hours: 1, sessions: 1 },
+    ]);
   });
 });
 

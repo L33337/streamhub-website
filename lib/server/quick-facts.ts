@@ -41,7 +41,7 @@ interface PredictionRow {
 
 interface PeakRow {
   streamer_id: string;
-  peak_viewer_count: number | null;
+  viewer_count: number | null;
   streamers: { name: string } | null;
 }
 
@@ -73,20 +73,23 @@ async function fetchPredictionFact(since: string): Promise<PredictionAccuracy | 
 }
 
 async function fetchPeakFact(since: string): Promise<HomeQuickFacts['peak']> {
+  // Source of truth for concurrent viewers is the hourly sampling table —
+  // stream_history.peak_viewer_count is NULL on all recent rows in prod
+  // (verified 2026-07-27), so the old stream_history query never produced a
+  // card.
   const rows = await anonRestGet<PeakRow>(
-    'stream_history?select=streamer_id,peak_viewer_count,streamers!inner(name,is_hidden,approved)' +
-      '&source=eq.stream_slot' +
-      `&ended_at=gte.${encodeURIComponent(since)}` +
-      `&peak_viewer_count=not.is.null&${STREAMER_VISIBLE}` +
-      '&order=peak_viewer_count.desc&limit=1',
+    'stream_viewer_samples?select=streamer_id,viewer_count,streamers!inner(name,is_hidden,approved)' +
+      `&sampled_at=gte.${encodeURIComponent(since)}` +
+      `&${STREAMER_VISIBLE}` +
+      '&order=viewer_count.desc&limit=1',
     REVALIDATE_SECONDS,
   );
   const row = rows?.[0];
-  if (!row || !row.streamers?.name || !row.peak_viewer_count) return null;
+  if (!row || !row.streamers?.name || !row.viewer_count) return null;
   return {
     streamerId: row.streamer_id,
     streamerName: row.streamers.name,
-    peak: row.peak_viewer_count,
+    peak: row.viewer_count,
   };
 }
 

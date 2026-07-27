@@ -52,6 +52,8 @@ export const ar: HubLex = {
     upNextLink: 'مباشر وسيبدأ قريبًا ←',
     chipAll: 'الكل',
     chipFavorites: 'مفضلاتي',
+    lineupShowAll: (n) => `عرض كل البثوث (${n})`,
+    lineupShowLess: 'عرض أقل',
     bellAria: (name) => `تلقَّ إشعارًا عندما يبدأ ${name} البث`,
     upsell: {
       bellTitle: 'لا تفوّت أي بث',
@@ -87,6 +89,9 @@ export const ar: HubLex = {
     risersTitle: 'صاعدو الأسبوع',
     risersLink: 'كل التصنيفات ←',
     risersGained: (delta) => `${delta} متابعًا في 7 أيام`,
+    mostStreamedTitle: 'الأكثر بثًا هذا الأسبوع',
+    weekHours: (value) => `${value} ساعة بث · 7 أيام`,
+    weekStreams: (n) => `${n} بثًا`,
     mostWatchedTitle: 'الأكثر مشاهدة',
     topStreamersCol: 'أفضل 5 ستريمرز',
     topCategoriesCol: 'أفضل 5 فئات',

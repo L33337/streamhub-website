@@ -74,6 +74,9 @@ export interface HubLex {
     chipAll: string;
     /** Locked favorites chip (needs an account). */
     chipFavorites: string;
+    /** Expand button under the clamped lineup, e.g. "Show all 24 streams". */
+    lineupShowAll(n: number): string;
+    lineupShowLess: string;
     /** aria-label of the reminder bell on an upcoming slot card. */
     bellAria(name: string): string;
     /** Conversion sheet opened by the bell / locked favorites chip. */
@@ -112,6 +115,11 @@ export interface HubLex {
     risersLink: string;
     /** Secondary line of a riser row; delta is preformatted incl. sign. */
     risersGained(delta: string): string;
+    /** "Most streamed this week" (featured streamers, 7-day session union). */
+    mostStreamedTitle: string;
+    /** Value lines for the most-streamed rows; hours preformatted. */
+    weekHours(value: string): string;
+    weekStreams(n: number): string;
     mostWatchedTitle: string;
     topStreamersCol: string;
     topCategoriesCol: string;

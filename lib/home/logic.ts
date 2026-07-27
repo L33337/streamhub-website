@@ -121,3 +121,78 @@ export function buildPredictionAccuracy(
 export function reliabilityHits(rate: number, sample: number): number {
   return Math.min(sample, Math.max(0, Math.round(rate * sample)));
 }
+
+export interface HistoryIntervalRow {
+  streamer_id: string;
+  started_at: string;
+  ended_at: string | null;
+}
+
+export interface WeekStreamedEntry {
+  streamerId: string;
+  hours: number;
+  sessions: number;
+}
+
+/**
+ * Twitch splits one night into several VODs and a simulcast writes one
+ * stream_history row per platform — merging rows whose gap is below this
+ * tolerance folds both back into one session (the pure-TS sibling of the
+ * gaps-and-islands dedupe in compute_streamer_stats, see CLAUDE.md
+ * "Session counting").
+ */
+const SESSION_GAP_TOLERANCE_MS = 15 * 60 * 1000;
+
+/**
+ * "Most streamed this week": union the vod intervals per streamer into
+ * sessions, rank by total hours live. Rows with unparseable/missing bounds
+ * are dropped; intervals are clamped to [since, now] so a marathon that
+ * started before the window only counts its in-window share.
+ */
+export function rankWeekStreamed(
+  rows: HistoryIntervalRow[],
+  since: Date,
+  now: Date,
+  top = 3,
+): WeekStreamedEntry[] {
+  const byStreamer = new Map<string, Array<{ start: number; end: number }>>();
+  for (const row of rows) {
+    const start = Date.parse(row.started_at);
+    const end = row.ended_at ? Date.parse(row.ended_at) : Number.NaN;
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) continue;
+    const clampedStart = Math.max(start, since.getTime());
+    const clampedEnd = Math.min(end, now.getTime());
+    if (clampedEnd <= clampedStart) continue;
+    const list = byStreamer.get(row.streamer_id) ?? [];
+    list.push({ start: clampedStart, end: clampedEnd });
+    byStreamer.set(row.streamer_id, list);
+  }
+
+  const entries: WeekStreamedEntry[] = [];
+  for (const [streamerId, intervals] of byStreamer) {
+    intervals.sort((a, b) => a.start - b.start);
+    let totalMs = 0;
+    let sessions = 0;
+    let currentStart = -1;
+    let currentEnd = -1;
+    for (const interval of intervals) {
+      if (currentEnd >= 0 && interval.start <= currentEnd + SESSION_GAP_TOLERANCE_MS) {
+        currentEnd = Math.max(currentEnd, interval.end);
+      } else {
+        if (currentEnd >= 0) {
+          totalMs += currentEnd - currentStart;
+          sessions += 1;
+        }
+        currentStart = interval.start;
+        currentEnd = interval.end;
+      }
+    }
+    if (currentEnd >= 0) {
+      totalMs += currentEnd - currentStart;
+      sessions += 1;
+    }
+    entries.push({ streamerId, hours: totalMs / 3_600_000, sessions });
+  }
+
+  return entries.sort((a, b) => b.hours - a.hours).slice(0, top);
+}

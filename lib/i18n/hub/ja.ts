@@ -31,6 +31,8 @@ export const ja: HubLex = {
     upNextLink: '配信中・まもなく開始 →',
     chipAll: 'すべて',
     chipFavorites: 'お気に入り',
+    lineupShowAll: (n) => `${n}件の配信をすべて表示`,
+    lineupShowLess: '折りたたむ',
     bellAria: (name) => `${name}さんの配信開始を通知で受け取る`,
     upsell: {
       bellTitle: '配信を見逃さない',
@@ -66,6 +68,9 @@ export const ja: HubLex = {
     risersTitle: '今週の急上昇',
     risersLink: 'すべてのランキング →',
     risersGained: (delta) => `7日間でフォロワー${delta}`,
+    mostStreamedTitle: '今週最も配信した',
+    weekHours: (value) => `配信${value}時間 · 7日間`,
+    weekStreams: (n) => `${n}件の配信`,
     mostWatchedTitle: '最も視聴されている',
     topStreamersCol: 'ストリーマー トップ5',
     topCategoriesCol: 'カテゴリー トップ5',

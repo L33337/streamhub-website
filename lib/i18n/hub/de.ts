@@ -33,6 +33,8 @@ export const de: HubLex = {
     upNextLink: 'Live & demnächst →',
     chipAll: 'Alle',
     chipFavorites: 'Meine Favoriten',
+    lineupShowAll: (n) => `Alle ${n} Streams anzeigen`,
+    lineupShowLess: 'Weniger anzeigen',
     bellAria: (name) => `Benachrichtigung, wenn ${name} live geht`,
     upsell: {
       bellTitle: 'Verpasse keinen Stream mehr',
@@ -69,6 +71,9 @@ export const de: HubLex = {
     risersTitle: 'Aufsteiger der Woche',
     risersLink: 'Alle Rankings →',
     risersGained: (delta) => `${delta} Follower in 7 Tagen`,
+    mostStreamedTitle: 'Meistgestreamt diese Woche',
+    weekHours: (value) => `${value} Std. live · 7 Tage`,
+    weekStreams: (n) => `${n} ${n === 1 ? 'Stream' : 'Streams'}`,
     mostWatchedTitle: 'Meistgesehen',
     topStreamersCol: 'Top-5 Streamer',
     topCategoriesCol: 'Top-5 Kategorien',

@@ -31,6 +31,8 @@ export const hu: HubLex = {
     upNextLink: 'Élő és hamarosan induló →',
     chipAll: 'Mind',
     chipFavorites: 'Kedvenceim',
+    lineupShowAll: (n) => `Mind a(z) ${n} stream megjelenítése`,
+    lineupShowLess: 'Kevesebb',
     bellAria: (name) => `Értesítés, amikor ${name} élőben van`,
     upsell: {
       bellTitle: 'Ne maradj le egyetlen streamről se',
@@ -66,6 +68,9 @@ export const hu: HubLex = {
     risersTitle: 'A hét feltörekvői',
     risersLink: 'Minden ranglista →',
     risersGained: (delta) => `${delta} követő 7 nap alatt`,
+    mostStreamedTitle: 'A hét legtöbbet streamelői',
+    weekHours: (value) => `${value} óra élőben · 7 nap`,
+    weekStreams: (n) => `${n} stream`,
     mostWatchedTitle: 'Legnézettebbek',
     topStreamersCol: 'Top 5 streamer',
     topCategoriesCol: 'Top 5 kategória',
