@@ -111,6 +111,27 @@ body {
   pointer-events: none;
 }
 
+/* ───────── Streamer page: truncated 7-day schedule ─────────
+   The schedule stays fully server-rendered (SEO: every slot, heading and
+   internal link ships in the HTML) — CollapsibleSchedule only flips the
+   data attribute below, and these rules decide what that means visually.
+   Google indexes content behind expanders since mobile-first indexing, so
+   collapsing costs nothing here; the FAQ block relies on the same property. */
+[data-schedule-collapsed='true'] [data-slot-role='hidden'],
+[data-schedule-collapsed='true'] [data-day-role='hidden'] {
+  display: none;
+}
+
+/* The slot at the cut stays partly visible: a hard stop after N whole cards
+   reads as "that's all", a sliced one reads as "there is more". 4rem is below
+   the smallest possible card height, so it cuts mid-card at every breakpoint. */
+[data-schedule-collapsed='true'] [data-slot-role='peek'] {
+  max-height: 4rem;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+}
+
 /* ───────── Scan lines overlay ───────── */
 .scan-lines::after {
   content: '';

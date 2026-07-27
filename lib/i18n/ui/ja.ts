@@ -11,6 +11,8 @@ export const ja: UiLex = {
     featured: '注目',
     nowStreaming: '配信中:',
     avatarAlt: (name) => `${name}のアバター`,
+    showMore: 'もっと見る',
+    showLess: '閉じる',
   },
   promo: {
     valueProps: [
@@ -71,6 +73,8 @@ export const ja: UiLex = {
     basedOn: (n, d) => `直近${d}日間の${n}件の配信に基づいています。`,
     allTimesIn: (tz) => `すべての時刻は${tz}で表示しています`,
     cityTime: (city) => `${city}時間`,
+    tzToggleYour: 'あなたの時間',
+    tzToggleAria: '時刻の表示基準',
     leadSentence: (name, days, times) => {
       const base = `${name}さんは通常、週に${days}日配信しています`;
       return times

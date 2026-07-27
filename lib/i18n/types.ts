@@ -23,6 +23,13 @@ export interface UiLex {
     /** Label before the (native-language) live stream title. */
     nowStreaming: string;
     avatarAlt(name: string): string;
+    /**
+     * Bio expander, rendered on narrow viewports only. The full bio always
+     * ships in the HTML — the clamp is purely visual, so these never gate
+     * crawlable text.
+     */
+    showMore: string;
+    showLess: string;
   };
   promo: {
     valueProps: [string, string, string];
@@ -92,6 +99,13 @@ export interface UiLex {
     allTimesIn(tzLabel: string): string;
     /** "{city} time" zone label; "UTC" stays literal in the caller. */
     cityTime(city: string): string;
+    /**
+     * Timezone switch above the weekday table. `tzToggleYour` labels the
+     * viewer-local option (the streamer-local one reuses `cityTime`);
+     * `tzToggleAria` names the radio group.
+     */
+    tzToggleYour: string;
+    tzToggleAria: string;
     /** Lead sentence; `times` is null when no typical start/end range exists. */
     leadSentence(
       name: string,

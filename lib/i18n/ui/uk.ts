@@ -20,6 +20,8 @@ export const uk: UiLex = {
     featured: 'Рекомендовано',
     nowStreaming: 'Зараз стрімить:',
     avatarAlt: (name) => `Аватар ${name}`,
+    showMore: 'Показати більше',
+    showLess: 'Показати менше',
   },
   promo: {
     valueProps: [
@@ -103,6 +105,8 @@ export const uk: UiLex = {
     },
     allTimesIn: (tz) => `Часовий пояс: ${tz}`,
     cityTime: (city) => `час ${city}`,
+    tzToggleYour: 'Ваш час',
+    tzToggleAria: 'Показувати час у',
     leadSentence: (name, days, times) => {
       const dayWord = pluralForms('uk', days, {
         one: `${days} день`,

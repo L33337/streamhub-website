@@ -102,6 +102,46 @@ export function formatUtcDateShort(iso: string, lang = 'en'): string {
   }
 }
 
+/**
+ * Viewer-local counterpart of `localizedNextLabel`: same "Today 20:00" /
+ * "Sat 8:00 PM" shape, but rendered in the RUNTIME timezone and the runtime's
+ * hour cycle (12h for en-US, 24h for de/fr/…).
+ *
+ * Client-side only. On the server the runtime zone is the server's, which would
+ * bake a wrong zone into ISR-cached HTML — callers pair this with
+ * `localizedNextLabel` as the deterministic SSR snapshot (the
+ * useSyncExternalStore pattern used by SlotStatusText / LocalTime).
+ *
+ * `now` is injectable for deterministic tests.
+ */
+export function localNextLabel(iso: string, lang = 'en', now = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const locale = lang === 'en' ? 'en-US' : lang;
+  try {
+    const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+    // en-CA yields YYYY-MM-DD — a runtime-zone calendar date we can diff in UTC,
+    // so 23:30 UTC can correctly read as "tomorrow" east of Greenwich.
+    const dayFmt = new Intl.DateTimeFormat('en-CA');
+    const diffDays = Math.round(
+      (Date.parse(`${dayFmt.format(d)}T00:00:00Z`) -
+        Date.parse(`${dayFmt.format(now)}T00:00:00Z`)) /
+        86_400_000,
+    );
+    if (diffDays === 0 || diffDays === 1) {
+      const rel = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+        diffDays,
+        'day',
+      );
+      return `${rel.charAt(0).toUpperCase()}${rel.slice(1)} ${time}`;
+    }
+    const weekday = d.toLocaleDateString(locale, { weekday: 'short' });
+    return `${weekday} ${time}`;
+  } catch {
+    return localizedNextLabel(iso, lang, { now });
+  }
+}
+
 export function groupSlotsByUtcDate<T extends { start_time: string }>(
   slots: T[],
 ): Map<string, T[]> {

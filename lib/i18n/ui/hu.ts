@@ -11,6 +11,8 @@ export const hu: UiLex = {
     featured: 'Kiemelt',
     nowStreaming: 'Épp streamel:',
     avatarAlt: (name) => `${name} avatárja`,
+    showMore: 'Több megjelenítése',
+    showLess: 'Kevesebb megjelenítése',
   },
   promo: {
     valueProps: [
@@ -72,6 +74,8 @@ export const hu: UiLex = {
     basedOn: (n, d) => `${n} stream alapján az elmúlt ${d} napból.`,
     allTimesIn: (tz) => `Minden időpont ${tz} szerint jelenik meg`,
     cityTime: (city) => `${city} idő`,
+    tzToggleYour: 'A te időd',
+    tzToggleAria: 'Időpontok megjelenítése',
     leadSentence: (name, days, times) => {
       const base = `${name} általában heti ${days} napon streamel`;
       return times

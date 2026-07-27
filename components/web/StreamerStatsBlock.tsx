@@ -1,14 +1,10 @@
-import type {
-  PublicStreamer,
-  PublicStreamerStats,
-  PublicStreamerStatsWeekday,
-  StatsWeekday,
-} from '@/lib/server/partner-api';
+import type { PublicStreamer, PublicStreamerStats } from '@/lib/server/partner-api';
 import { formatDuration } from '@/lib/format/time';
-import { resolveUiLang, weekdayLong } from '@/lib/i18n-core';
+import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { dirFor } from '@/lib/seo';
 import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
+import { WeekdayTimesTable } from './WeekdayTimesTable';
 
 interface Props {
   streamer: PublicStreamer;
@@ -17,18 +13,6 @@ interface Props {
   // streamer's language for pre-M22 call sites.
   uiLanguage?: string | null;
 }
-
-// ISO order Mon→Sun; labels come from Intl (weekdayLong) in the streamer's
-// language — 'Monday'…'Sunday' for the English default.
-const WEEKDAY_KEYS: StatsWeekday[] = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-];
 
 /**
  * "When does {name} stream?" — typical weekly streaming pattern computed from
@@ -50,9 +34,6 @@ export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
   const L = uiLexFor(ui).stats;
   const proseDir = dirFor(ui);
   const tzLabel = statsTimezoneLabel(stats, ui);
-  const byWeekday = new Map<StatsWeekday, PublicStreamerStatsWeekday>(
-    stats.weekdays.map((d) => [d.weekday, d]),
-  );
 
   return (
     <section
@@ -68,53 +49,24 @@ export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
       </p>
 
       {stats.weekdays.length > 0 && (
-        <div className="mt-6 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-          <table className="w-full text-sm">
-            <caption className="sr-only">{L.caption(streamer.name, tzLabel)}</caption>
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
-                <th scope="col" className="px-3 py-2 font-semibold">
-                  {L.colDay}
-                </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
-                  {L.colTime}
-                </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
-                  {L.colDuration}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {WEEKDAY_KEYS.map((key, isoIndex) => {
-                const day = byWeekday.get(key);
-                return (
-                  <tr key={key} className="border-t border-divider">
-                    <th
-                      scope="row"
-                      className="px-3 py-2 text-left font-medium text-text-primary"
-                    >
-                      {weekdayLong(isoIndex, lang)}
-                    </th>
-                    {day ? (
-                      <>
-                        <td className="px-3 py-2 text-accent-cyan">
-                          {day.start} – {day.end}
-                        </td>
-                        <td className="px-3 py-2 text-text-secondary">
-                          ~{formatDuration(day.duration_minutes)}
-                        </td>
-                      </>
-                    ) : (
-                      <td colSpan={2} className="px-3 py-2 text-text-muted">
-                        {L.usuallyNoStream}
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <WeekdayTimesTable
+          weekdays={stats.weekdays}
+          timezone={stats.timezone}
+          tzLabel={tzLabel}
+          language={lang}
+          labels={{
+            caption: L.caption(streamer.name, tzLabel),
+            colDay: L.colDay,
+            colTime: L.colTime,
+            colDuration: L.colDuration,
+            usuallyNoStream: L.usuallyNoStream,
+            yourTime: L.tzToggleYour,
+            toggleAria: L.tzToggleAria,
+            allTimesIn: `${L.allTimesIn(tzLabel)}${
+              stats.timezone !== 'UTC' ? ` (${stats.timezone})` : ''
+            }.`,
+          }}
+        />
       )}
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">
@@ -153,9 +105,10 @@ export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
         </div>
       )}
 
+      {/* The zone statement moved up next to the table (it governs how every
+          number there is read); the footnote keeps only the sample basis. */}
       <p className="mt-4 text-xs text-text-muted" dir={proseDir}>
-        {L.basedOn(stats.sample_size, stats.window_days)} {L.allTimesIn(tzLabel)}
-        {stats.timezone !== 'UTC' ? ` (${stats.timezone})` : ''}.
+        {L.basedOn(stats.sample_size, stats.window_days)}
       </p>
     </section>
   );

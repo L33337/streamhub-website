@@ -1,6 +1,6 @@
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { slotLexFor } from '@/lib/i18n-slot';
-import { formatLocalDateShort, formatUtcDateShort } from './time';
+import { formatLocalDateShort, formatUtcDateShort, safeTimeZone } from './time';
 
 /**
  * Coarse elapsed/remaining duration, e.g. "2 hours" / "45 minutes". The
@@ -119,64 +119,92 @@ function formatZoneHour(iso: string, timeZone: string | null, lang = 'en'): stri
   return `${localizedHourLabel(d.getUTCHours(), lang)} UTC`;
 }
 
+export interface SlotStatusParts {
+  /** The dominant line: viewer-local time (UTC on the server snapshot). */
+  primary: string;
+  /**
+   * The streamer's own clock ("11pm CEST"), rendered muted behind the primary
+   * part. Null whenever it would add a third reference frame instead of a
+   * second one — live/offline slots, and streamers whose home zone is unknown,
+   * invalid or UTC (there the primary already IS the only meaningful time).
+   */
+  secondary: string | null;
+}
+
 /**
- * Status text for a stream slot, mirroring the mobile app's
- * `getStatusText` in `src/utils/streamUtils.ts`. The Partner API's
- * `status` field is authoritative — we don't re-derive it from time.
+ * Status of a stream slot, split into a dominant viewer-time part and the
+ * streamer's own clock.
+ *
+ * The split exists so the two never read as equally important: a visitor cares
+ * what time the stream starts for THEM, and the streamer's local hour is
+ * supporting context. Callers render `secondary` in a muted style;
+ * `getStatusText` re-joins them for tests and plain-text contexts.
  *
  * Pass `useUtc=true` for SSR to get a deterministic, timezone-free hour
  * (matches the LocalTime SSR fallback pattern); pass false on the client
- * for browser-local rounding.
+ * for browser-local rounding. `secondary` is zone-fixed and therefore
+ * identical on both sides of hydration.
  *
- * `lang` localizes the phrasing via lib/i18n-slot.ts; the default 'en'
- * composition is byte-identical to the previously hardcoded strings, so the
- * shared English pages (/, /live, /game, feed) render exactly as before.
+ * `lang` localizes the phrasing via lib/i18n-slot.ts.
  */
-export function getStatusText(
+export function getStatusParts(
   slot: PublicStreamSlot,
   useUtc = false,
   lang = 'en',
-): string {
+): SlotStatusParts {
   const L = slotLexFor(lang);
   const start = new Date(slot.start_time);
   const end = getEndTime(start, slot.duration_minutes);
 
   if (slot.status === 'live') {
     const liveSince = getRelativeTime(start, lang);
-    if (slot.is_always_on) return L.statusLiveSince(liveSince);
+    if (slot.is_always_on) return { primary: L.statusLiveSince(liveSince), secondary: null };
     const now = new Date();
-    if (now > end) return `${L.statusLiveSince(liveSince)} · ${L.statusEndsIn('~1h')}`;
-    return `${L.statusLiveSince(liveSince)} · ${L.statusEndsIn(
-      getShortApproximateRelativeTime(end),
-    )}`;
+    const endsIn = now > end ? '~1h' : getShortApproximateRelativeTime(end);
+    return {
+      primary: `${L.statusLiveSince(liveSince)} · ${L.statusEndsIn(endsIn)}`,
+      secondary: null,
+    };
   }
 
   if (slot.status === 'upcoming') {
-    // Viewer-local hour ("10pm your time"); UTC on the server snapshot. The
-    // streamer's own local time follows with a zone abbreviation ("12am CEST").
-    // When the streamer part resolves to the same UTC hour already shown
-    // (unknown, invalid, or UTC-valued streamer timezone) the server snapshot
-    // would read "… 12pm UTC · 12pm UTC" — skip the redundant suffix there.
-    const utcHour = `${localizedHourLabel(start.getUTCHours(), lang)} UTC`;
+    // Viewer-local hour ("10pm your time"); UTC on the server snapshot.
     const localHour = useUtc
-      ? utcHour
+      ? `${localizedHourLabel(start.getUTCHours(), lang)} UTC`
       : L.statusYourTime(localizedHourLabel(start.getHours(), lang));
-    const streamerHour = formatZoneHour(slot.start_time, slot.streamer_timezone, lang);
-    const suffix = useUtc && streamerHour === utcHour ? '' : ` · ${streamerHour}`;
+    // Only a real, non-UTC home zone earns the second frame. Without one,
+    // formatZoneHour would just restate the UTC hour the primary may already
+    // show ("12pm UTC · 12pm UTC") or add UTC as a third frame on the client.
+    const zone = safeTimeZone(slot.streamer_timezone);
+    const secondary = zone ? formatZoneHour(slot.start_time, zone, lang) : null;
+
     // M15 cancelled prediction: the streamer announced NO stream at this
     // usually-regular time — never phrase it as an upcoming stream. No date
     // prefix (app parity; day sections carry the date where it matters).
     if (slot.slot_kind === 'cancelled') {
-      return L.statusNoStreamExpected(`${localHour}${suffix}`);
+      return { primary: L.statusNoStreamExpected(localHour), secondary };
     }
     if (slot.is_predicted && new Date() >= start) {
-      return L.statusWasExpected(`${localHour}${suffix}`);
+      return { primary: L.statusWasExpected(localHour), secondary };
     }
     const date = useUtc
       ? formatUtcDateShort(slot.start_time, lang)
       : formatLocalDateShort(slot.start_time, lang);
-    return `${date} · ${L.statusAround(`${localHour}${suffix}`)}`;
+    return { primary: `${date} · ${L.statusAround(localHour)}`, secondary };
   }
 
-  return L.statusOffline;
+  return { primary: L.statusOffline, secondary: null };
+}
+
+/**
+ * Flat status text — `getStatusParts` re-joined with " · ". Kept for callers
+ * that need one string (aria labels, tests, plain text).
+ */
+export function getStatusText(
+  slot: PublicStreamSlot,
+  useUtc = false,
+  lang = 'en',
+): string {
+  const { primary, secondary } = getStatusParts(slot, useUtc, lang);
+  return secondary ? `${primary} · ${secondary}` : primary;
 }

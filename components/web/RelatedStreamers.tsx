@@ -19,6 +19,8 @@ interface Props {
    *  Drives the RELATION QUERY (same-language streamers) — content semantics,
    *  NOT the viewer locale. */
   language: string | null;
+  /** Streamer's main category (28-day top game). Strongest relation signal. */
+  category?: string | null;
   // M22 (D6): heading/aria + link locale follow the viewer's locale; defaults
   // to the streamer's language for pre-M22 call sites.
   uiLanguage?: string | null;
@@ -45,16 +47,21 @@ function settle<T>(promise: Promise<T>): Promise<Settled<T>> {
  * Empty-schedule pages benefit most — this is often their only outbound link to
  * sibling content.
  *
- * Relation basis with the current Partner API: same broadcaster language
- * (a reasonable "fans of X also watch" proxy), falling back to overall popular
- * streamers when the language is unknown or yields too few matches. A
- * game/category-based relation would be better but the list endpoint has no
- * category filter — left as a future enhancement.
+ * Relation basis, strongest signal first:
+ *   1. same main category — "also streams League of Legends" is a relation a
+ *      visitor can actually see, unlike the language proxy below;
+ *   2. same broadcaster language (a rough "fans of X also watch" proxy);
+ *   3. overall popular streamers, when the two above yield too few.
  *
  * Async server component. Degrades to null on any Partner API error so it can
  * never break the host page.
  */
-export async function RelatedStreamers({ currentId, language, uiLanguage }: Props) {
+export async function RelatedStreamers({
+  currentId,
+  language,
+  category = null,
+  uiLanguage,
+}: Props) {
   const ui = uiLanguage ?? language;
   const api = getPartnerApi();
   const related: PublicStreamer[] = [];
@@ -76,6 +83,13 @@ export async function RelatedStreamers({ currentId, language, uiLanguage }: Prop
   // per-page request. Results are consumed in the same order as before
   // (language first, popular only when too few), so the output is identical.
   const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // One shared cache entry per category (not per streamer page), same as the
+  // popular list below.
+  const categoryPromise = category
+    ? settle(
+        api.listStreamers({ category, order: 'popular', limit: 12, revalidate: 300 }),
+      )
+    : null;
   const languagePromise = language
     ? settle(
         api.listStreamers({ language, order: 'popular', limit: 12, revalidate: 300 }),
@@ -85,10 +99,18 @@ export async function RelatedStreamers({ currentId, language, uiLanguage }: Prop
     api.listStreamers({ order: 'popular', limit: 16, revalidate: 300 }),
   );
 
+  // A failing category lookup is NOT fatal here (unlike the two below): the
+  // category filter hits a different backend view, and losing the best
+  // relation signal is no reason to drop the section's internal links.
+  if (categoryPromise) {
+    const res = await categoryPromise;
+    if (res.ok) take(res.value.data);
+  }
+
   // Error semantics preserved from the sequential version: a Partner API
   // error on a response we actually need degrades the section to null (it
   // must never break the host page); anything else is a bug — rethrow.
-  if (languagePromise) {
+  if (related.length < MAX_RELATED && languagePromise) {
     const res = await languagePromise;
     if (!res.ok) {
       if (!(res.error instanceof PartnerApiError)) throw res.error;
