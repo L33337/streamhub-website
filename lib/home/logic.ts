@@ -52,6 +52,24 @@ export function countStartingSoon(
   return streamers.size;
 }
 
+/**
+ * Only slots whose start still lies in the future. The lineup fetch already
+ * asks for start_time >= bucketedNow, but the 5-min URL bucket plus ISR
+ * staleness leave "upcoming" slots whose start has passed — those render as
+ * "was expected at …" cards, which "Today's lineup" must never show. Server
+ * half of the fix; HomeUpNextFilters hides expired cards client-side because
+ * the served HTML itself can be minutes-to-hours stale.
+ */
+export function filterFutureSlots(
+  slots: PublicStreamSlot[],
+  now: Date,
+): PublicStreamSlot[] {
+  return slots.filter((slot) => {
+    const start = Date.parse(slot.start_time);
+    return !Number.isNaN(start) && start > now.getTime();
+  });
+}
+
 /** Top categories by hours streamed in the 28-day window (most-watched list). */
 export function topCategoriesByHours(games: PublicGame[], cap = 5): PublicGame[] {
   return games

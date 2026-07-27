@@ -11,6 +11,9 @@ import { HomeUpsellSheet, type UpsellSheetStrings } from './HomeUpsellSheet';
  * this wrapper only toggles `hidden` attributes and a purely visual clamp.
  *
  * - Chips filter via `li[data-home-cat]` hidden-toggling across BOTH lists.
+ * - Cards whose `data-home-start` has passed are hidden too (re-checked every
+ *   minute): the ISR page can be served stale, and an expired prediction
+ *   would otherwise sit in "Today's lineup" as a "was expected at …" card.
  * - `moreChildren` (slot 5+) renders inside a clamped peek zone — ~half a
  *   card row visible under a fade — until the toggle expands it. The clipped
  *   region is `inert` while collapsed so keyboard/AT users can't land on
@@ -42,16 +45,28 @@ export function HomeUpNextFilters({
   const [selected, setSelected] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Clock for the expiry check. `now` never reaches the render output — the
+  // hiding happens as a DOM mutation in the effect below, so the initializer
+  // is hydration-safe (FeedClient nowTick pattern).
+  const [now, setNow] = useState(() => Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
   const moreId = useId();
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     container.querySelectorAll<HTMLElement>('li[data-home-cat]').forEach((item) => {
-      item.hidden = selected !== null && item.dataset.homeCat !== selected;
+      const startMs = Number(item.dataset.homeStart);
+      const expired = Number.isFinite(startMs) && startMs > 0 && startMs <= now;
+      item.hidden =
+        expired || (selected !== null && item.dataset.homeCat !== selected);
     });
-  }, [selected]);
+  }, [selected, now]);
 
   const chipClass = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${

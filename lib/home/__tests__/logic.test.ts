@@ -3,6 +3,7 @@ import type { PublicGame, PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   buildPredictionAccuracy,
   countStartingSoon,
+  filterFutureSlots,
   floorToBucket,
   floorToHourIso,
   pickLiveRailSlots,
@@ -99,6 +100,23 @@ describe('countStartingSoon', () => {
         6,
       ),
     ).toBe(1);
+  });
+});
+
+describe('filterFutureSlots', () => {
+  const now = new Date('2026-07-27T12:00:00.000Z');
+
+  it('keeps only slots starting strictly after now', () => {
+    const kept = filterFutureSlots(
+      [
+        slot({ id: 'past', start_time: '2026-07-27T11:59:00.000Z' }),
+        slot({ id: 'exact', start_time: '2026-07-27T12:00:00.000Z' }),
+        slot({ id: 'future', start_time: '2026-07-27T12:01:00.000Z' }),
+        slot({ id: 'broken', start_time: 'not-a-date' }),
+      ],
+      now,
+    );
+    expect(kept.map((s) => s.id)).toEqual(['future']);
   });
 });
 

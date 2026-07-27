@@ -10,6 +10,7 @@ import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 import {
   countStartingSoon,
+  filterFutureSlots,
   floorToBucket,
   pickLiveRailSlots,
   preferWithNextSlot,
@@ -229,11 +230,14 @@ export default async function HomePage({ params }: Props) {
   const soonCount = countStartingSoon(upcomingSlots, now, SOON_WINDOW_HOURS);
   // "Today's lineup" is editorially curated: featured streamers only. When
   // the featured-id fetch failed, fall back to the unfiltered list — a mixed
-  // lineup beats an empty section.
+  // lineup beats an empty section. Future starts only: the bucketed fetch
+  // window trails real time by up to 5 min, and expired predictions would
+  // render as "was expected at …" cards.
+  const futureSlots = filterFutureSlots(upcomingSlots, now);
   const lineupSlots = (
     featuredIds
-      ? upcomingSlots.filter((slot) => featuredIds.has(slot.streamer_id))
-      : upcomingSlots
+      ? futureSlots.filter((slot) => featuredIds.has(slot.streamer_id))
+      : futureSlots
   ).slice(0, UPCOMING_RENDER_LIMIT);
   const topCategories = topCategoriesByHours(games, 5);
 

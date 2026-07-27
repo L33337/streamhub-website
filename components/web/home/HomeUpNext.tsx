@@ -55,7 +55,15 @@ export function HomeUpNext({
   };
 
   const renderSlot = (slot: PublicStreamSlot) => (
-    <li key={slot.id} data-home-cat={slot.category ?? ''} className="relative">
+    <li
+      key={slot.id}
+      data-home-cat={slot.category ?? ''}
+      // Epoch ms for the client-side expiry check in HomeUpNextFilters: the
+      // ISR page can be served stale, so cards whose start has passed are
+      // hidden at hydration instead of flipping to "was expected at …".
+      data-home-start={Date.parse(slot.start_time) || undefined}
+      className="relative"
+    >
       <SlotCard slot={slot} language={locale} />
       <SlotBellButton
         ariaLabel={L.homeFeed.bellAria(slot.streamer_name)}
