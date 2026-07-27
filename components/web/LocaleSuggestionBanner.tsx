@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import type { UiLang } from '@/lib/i18n-core';
 import { localeHref } from '@/lib/i18n-core';
 import { BANNER_STRINGS } from '@/lib/i18n-banner';
 import {
-  detectSuggestedLocale,
   dismissBanner,
-  isBannerDismissed,
   setPreferredLocale,
+  subscribeLocalePreference,
+  suggestedLocaleFor,
 } from '@/lib/locale-preference';
 import { stripLocalePrefix } from './FooterLanguageSwitcher';
+
+/** Server render: never suggest anything (see suggestedLocaleFor). */
+function noSuggestion(): null {
+  return null;
+}
 
 /**
  * M22 language-suggestion banner (D3): compares the browser's preferred
@@ -23,16 +28,16 @@ import { stripLocalePrefix } from './FooterLanguageSwitcher';
  */
 export function LocaleSuggestionBanner({ pageLocale }: { pageLocale: UiLang }) {
   const pathname = usePathname() ?? '/';
-  const [suggested, setSuggested] = useState<UiLang | null>(null);
-
-  useEffect(() => {
-    const detected = detectSuggestedLocale();
-    if (detected !== pageLocale && !isBannerDismissed(detected, pageLocale)) {
-      setSuggested(detected);
-    } else {
-      setSuggested(null);
-    }
-  }, [pageLocale, pathname]);
+  // The suggestion is derived from cookies + navigator, i.e. an external store,
+  // so it is READ rather than mirrored into React state. Mirroring it meant
+  // setting state from an effect: a cascading render on every mount, and a
+  // second source of truth that had to be re-synced on navigation. Dismissing
+  // writes the cookie and notifies, which re-reads this snapshot.
+  const suggested = useSyncExternalStore(
+    subscribeLocalePreference,
+    () => suggestedLocaleFor(pageLocale),
+    noSuggestion,
+  );
 
   if (!suggested) return null;
   const strings = BANNER_STRINGS[suggested];
@@ -57,10 +62,9 @@ export function LocaleSuggestionBanner({ pageLocale }: { pageLocale: UiLang }) {
         <button
           type="button"
           aria-label={strings.dismiss}
-          onClick={() => {
-            dismissBanner(suggested, pageLocale);
-            setSuggested(null);
-          }}
+          // No local state to clear: dismissBanner writes the cookie and
+          // notifies subscribers, so the snapshot above re-reads as null.
+          onClick={() => dismissBanner(suggested, pageLocale)}
           className="shrink-0 rounded p-1 text-text-muted hover:text-text-primary"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
