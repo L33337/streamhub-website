@@ -56,7 +56,7 @@ export function GameBoxArt({
   );
 }
 
-function TrendBadge({ delta }: { delta: number }) {
+export function TrendBadge({ delta }: { delta: number }) {
   const up = delta >= 0;
   return (
     <span

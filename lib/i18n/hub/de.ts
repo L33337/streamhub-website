@@ -19,6 +19,84 @@ export const de: HubLex = {
     browseAllGames: 'Alle Spiele & Kategorien entdecken →',
     seeLiveNow: 'Sieh, wer gerade live ist →',
   },
+  homeFeed: {
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live = liveCount > 0 ? `${liveCount} Streamer gerade live` : '';
+      const soon =
+        soonCount > 0
+          ? `${soonCount} starten in den nächsten ${soonHours} Stunden`
+          : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'Jetzt live',
+    upNextTitle: 'Heute im Programm',
+    upNextLink: 'Live & demnächst →',
+    chipAll: 'Alle',
+    chipFavorites: 'Meine Favoriten',
+    lineupShowAll: (n) => `Alle ${n} Streams anzeigen`,
+    lineupShowLess: 'Weniger anzeigen',
+    bellAria: (name) => `Benachrichtigung, wenn ${name} live geht`,
+    upsell: {
+      bellTitle: 'Verpasse keinen Stream mehr',
+      bellBody:
+        'Bekomm eine Push-Nachricht, kurz bevor ein Stream startet — mit der kostenlosen Streamer-Times-App.',
+      favoritesTitle: 'Deine Favoriten, einen Tipp entfernt',
+      favoritesBody:
+        'Folge Streamern und filtere diese Seite auf dein eigenes Programm — kostenlos, in der App oder direkt hier im Browser.',
+      appCta: 'App holen',
+      loginCta: 'Kostenlos anmelden',
+      close: 'Vielleicht später',
+    },
+    interrupt: {
+      title: 'Diese Seite — nur mit deinen Streamern.',
+      body: 'Folge deinen Streamern und aus dem Guide wird dein persönlicher Feed: dein Programm, Push-Alarm kurz vor Stream-Start und ihre Highlights der Woche.',
+      note: 'Dauert 30 Sekunden · kostenlos',
+      appCta: 'App holen',
+      loginCta: 'Im Browser anmelden',
+    },
+    clipsTitle: 'Clips der Woche',
+    quickFactsTitle: 'Quick Facts',
+    quickFactsSub: 'Aus den letzten 7 Tagen erfasster Streams',
+    factPredictionLabel: 'Prognose-Check',
+    factPrediction: (hits, total) =>
+      `${hits} von ${total} KI-vorhergesagten Streams starteten wie prognostiziert.`,
+    factPeakLabel: 'Peak der Woche',
+    factPeak: (name) =>
+      `${name} erreichte diese Woche die meisten gleichzeitigen Zuschauer.`,
+    factReliableLabel: 'Auf die Minute',
+    factReliable: (name, hits, total) =>
+      `${name} startete ${hits} von ${total} zuletzt angekündigten Streams pünktlich.`,
+    factPauseLabel: 'In der Pause',
+    factPause: (name) => `${name} macht bis zu diesem Datum Pause.`,
+    risersTitle: 'Aufsteiger der Woche',
+    risersLink: 'Alle Rankings →',
+    risersGained: (delta) => `${delta} Follower in 7 Tagen`,
+    mostStreamedTitle: 'Meistgestreamt diese Woche',
+    weekHours: (value) => `${value} Std. live · 7 Tage`,
+    weekStreams: (n) => `${n} ${n === 1 ? 'Stream' : 'Streams'}`,
+    mostWatchedTitle: 'Meistgesehen',
+    topStreamersCol: 'Top-5 Streamer',
+    topCategoriesCol: 'Top-5 Kategorien',
+    medianViewers: (value) => `${value} Zuschauer im Median`,
+    hoursStreamed: (value) => `${value} Std. live · 28 Tage`,
+    followers: (value) => `${value} Follower`,
+    missingStreamer: 'Dein Streamer fehlt? Suchen & hinzufügen →',
+    endcap: {
+      title: 'Nimm dein Programm mit.',
+      bullets: [
+        'Push-Alarm, sobald deine Streamer live gehen',
+        'Up-Next-Widget auf deinem Homescreen',
+        'Favoriten synchron — Handy & Web',
+      ],
+      webLead: 'Lieber im Browser?',
+      webLink: 'Erstell ein kostenloses Konto',
+      webTail: '— dein Feed wartet.',
+    },
+    sessionBanner: {
+      text: 'Willkommen zurück — dein persönlicher Feed ist bereit.',
+      cta: 'Zu meinem Feed →',
+    },
+  },
   hero: {
     kicker: 'Live-Streamer-Guide',
     badgeNew: 'Neu',

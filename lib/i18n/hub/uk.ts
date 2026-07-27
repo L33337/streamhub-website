@@ -43,6 +43,83 @@ export const uk: HubLex = {
     browseAllGames: 'Переглянути всі ігри та категорії →',
     seeLiveNow: 'Подивитися, хто зараз в ефірі →',
   },
+  homeFeed: {
+    // Іменний стиль (двокрапка) замість відмінювання числівників.
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live = liveCount > 0 ? `Зараз в ефірі: ${liveCount}` : '';
+      const soon =
+        soonCount > 0 ? `почнуть протягом ${soonHours} год: ${soonCount}` : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'Зараз в ефірі',
+    upNextTitle: 'Програма на сьогодні',
+    upNextLink: 'В ефірі та незабаром →',
+    chipAll: 'Усі',
+    chipFavorites: 'Мої улюблені',
+    lineupShowAll: (n) => `Показати всі стрими (${n})`,
+    lineupShowLess: 'Згорнути',
+    bellAria: (name) => `Отримати сповіщення, коли ${name} виходить в ефір`,
+    upsell: {
+      bellTitle: 'Не пропускай жодного стриму',
+      bellBody:
+        'Отримуй пуш-сповіщення просто перед початком стриму — у безкоштовному застосунку Streamer Times.',
+      favoritesTitle: 'Твої улюблені — в один дотик',
+      favoritesBody:
+        'Підпишись на стримерів і відфільтруй цю сторінку до власної програми — безкоштовно, у застосунку або просто тут, у браузері.',
+      appCta: 'Завантажити застосунок',
+      loginCta: 'Увійти безкоштовно',
+      close: 'Може, пізніше',
+    },
+    interrupt: {
+      title: 'Ця сторінка — лише з твоїми стримерами.',
+      body: 'Підпишись на своїх стримерів, і гід стане твоєю персональною стрічкою: твоя програма, пуш-сповіщення перед виходом в ефір та їхні найкращі моменти тижня.',
+      note: 'Займе 30 секунд · безкоштовно',
+      appCta: 'Завантажити застосунок',
+      loginCta: 'Увійти через браузер',
+    },
+    clipsTitle: 'Кліпи тижня',
+    quickFactsTitle: 'Коротко про головне',
+    quickFactsSub: 'За стримами останніх 7 днів',
+    factPredictionLabel: 'Перевірка прогнозів',
+    factPrediction: (hits, total) =>
+      `${hits} із ${total} передбачених ШІ стримів почалися за прогнозом.`,
+    factPeakLabel: 'Пік тижня',
+    factPeak: (name) =>
+      `${name} зібрав найбільше одночасних глядачів цього тижня.`,
+    factReliableLabel: 'Хвилина в хвилину',
+    factReliable: (name, hits, total) =>
+      `${name} вчасно розпочав ${hits} з ${total} останніх анонсованих стримів.`,
+    factPauseLabel: 'На паузі',
+    factPause: (name) => `${name} на паузі до цієї дати.`,
+    risersTitle: 'Злети тижня',
+    risersLink: 'Усі рейтинги →',
+    risersGained: (delta) => `${delta} підписників за 7 днів`,
+    mostStreamedTitle: 'Найбільше стримили цього тижня',
+    weekHours: (value) => `${value} год в ефірі · 7 днів`,
+    weekStreams: (n) => `стримів: ${n}`,
+    mostWatchedTitle: 'Найбільш переглядувані',
+    topStreamersCol: 'Топ-5 стримерів',
+    topCategoriesCol: 'Топ-5 категорій',
+    medianViewers: (value) => `${value} глядачів (медіана)`,
+    hoursStreamed: (value) => `${value} год в ефірі · 28 днів`,
+    followers: (value) => `${value} підписників`,
+    missingStreamer: 'Немає твого стримера? Знайди та додай →',
+    endcap: {
+      title: 'Візьми свою програму з собою.',
+      bullets: [
+        'Пуш-сповіщення, щойно твої стримери виходять в ефір',
+        'Віджет наступних стримів на головному екрані',
+        'Улюблені синхронізовані — телефон і веб',
+      ],
+      webLead: 'Зручніше у браузері?',
+      webLink: 'Створи безкоштовний акаунт',
+      webTail: '— твоя стрічка вже чекає.',
+    },
+    sessionBanner: {
+      text: 'З поверненням — твоя персональна стрічка готова.',
+      cta: 'До моєї стрічки →',
+    },
+  },
   hero: {
     kicker: 'Гід по live-стрімах',
     badgeNew: 'Новинка',

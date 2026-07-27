@@ -15,7 +15,7 @@ export const QR_TARGET = 'https://streamertimes.tv/get';
 export function AppQrCode({ className = '' }: { className?: string }) {
   return (
     <div className={className}>
-      <div className="rounded-xl border border-border-default bg-background-elevated p-3 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+      <div className="w-fit rounded-xl border border-border-default bg-background-elevated p-3 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
         <div className="rounded-md bg-white p-2">
           <QRCode
             value={QR_TARGET}

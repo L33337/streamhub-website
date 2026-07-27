@@ -43,6 +43,83 @@ export const ru: HubLex = {
     browseAllGames: 'Смотреть все игры и категории →',
     seeLiveNow: 'Посмотреть, кто сейчас в эфире →',
   },
+  homeFeed: {
+    // Именной стиль (двоеточие) вместо склонения числительных.
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live = liveCount > 0 ? `В эфире сейчас: ${liveCount}` : '';
+      const soon =
+        soonCount > 0 ? `начнут в ближайшие ${soonHours} ч: ${soonCount}` : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'Сейчас в эфире',
+    upNextTitle: 'Программа на сегодня',
+    upNextLink: 'В эфире и скоро →',
+    chipAll: 'Все',
+    chipFavorites: 'Мои избранные',
+    lineupShowAll: (n) => `Показать все стримы (${n})`,
+    lineupShowLess: 'Свернуть',
+    bellAria: (name) => `Получать уведомление, когда ${name} выходит в эфир`,
+    upsell: {
+      bellTitle: 'Не пропускай ни одного стрима',
+      bellBody:
+        'Получай пуш-уведомление прямо перед началом стрима — в бесплатном приложении Streamer Times.',
+      favoritesTitle: 'Твои избранные — в одно касание',
+      favoritesBody:
+        'Подпишись на стримеров и отфильтруй эту страницу до своей собственной программы — бесплатно, в приложении или прямо здесь, в браузере.',
+      appCta: 'Скачать приложение',
+      loginCta: 'Войти бесплатно',
+      close: 'Может, позже',
+    },
+    interrupt: {
+      title: 'Эта страница — только с твоими стримерами.',
+      body: 'Подпишись на своих стримеров, и гид станет твоей персональной лентой: твоя программа, пуш-уведомления перед выходом в эфир и их лучшие моменты недели.',
+      note: 'Займёт 30 секунд · бесплатно',
+      appCta: 'Скачать приложение',
+      loginCta: 'Войти через браузер',
+    },
+    clipsTitle: 'Клипы недели',
+    quickFactsTitle: 'Коротко о главном',
+    quickFactsSub: 'По стримам за последние 7 дней',
+    factPredictionLabel: 'Проверка прогнозов',
+    factPrediction: (hits, total) =>
+      `${hits} из ${total} предсказанных ИИ стримов начались по прогнозу.`,
+    factPeakLabel: 'Пик недели',
+    factPeak: (name) =>
+      `${name} собрал больше всех одновременных зрителей на этой неделе.`,
+    factReliableLabel: 'Минута в минуту',
+    factReliable: (name, hits, total) =>
+      `${name} вовремя начал ${hits} из ${total} последних анонсированных стримов.`,
+    factPauseLabel: 'На паузе',
+    factPause: (name) => `${name} на паузе до этой даты.`,
+    risersTitle: 'Взлёты недели',
+    risersLink: 'Все рейтинги →',
+    risersGained: (delta) => `${delta} подписчиков за 7 дней`,
+    mostStreamedTitle: 'Больше всего стримили на этой неделе',
+    weekHours: (value) => `${value} ч в эфире · 7 дней`,
+    weekStreams: (n) => `стримов: ${n}`,
+    mostWatchedTitle: 'Самые просматриваемые',
+    topStreamersCol: 'Топ-5 стримеров',
+    topCategoriesCol: 'Топ-5 категорий',
+    medianViewers: (value) => `${value} зрителей (медиана)`,
+    hoursStreamed: (value) => `${value} ч в эфире · 28 дней`,
+    followers: (value) => `${value} подписчиков`,
+    missingStreamer: 'Нет твоего стримера? Найди и добавь →',
+    endcap: {
+      title: 'Возьми свою программу с собой.',
+      bullets: [
+        'Пуш-уведомления, как только твои стримеры выходят в эфир',
+        'Виджет ближайших стримов на главном экране',
+        'Избранное синхронизировано — телефон и веб',
+      ],
+      webLead: 'Удобнее в браузере?',
+      webLink: 'Создай бесплатный аккаунт',
+      webTail: '— твоя лента уже ждёт.',
+    },
+    sessionBanner: {
+      text: 'С возвращением — твоя персональная лента готова.',
+      cta: 'К моей ленте →',
+    },
+  },
   hero: {
     kicker: 'Гид по live-стримам',
     badgeNew: 'Новинка',
