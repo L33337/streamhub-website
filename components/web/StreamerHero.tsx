@@ -15,7 +15,7 @@ import { CollapsibleBio } from './CollapsibleBio';
 import { FavoriteButton } from './FavoriteButton';
 import { HeroNextStream } from './HeroNextStream';
 import { InitialsAvatar } from './InitialsAvatar';
-import { channelUrls } from './WatchButtons';
+import { channelUrls, WatchButtons } from './WatchButtons';
 
 /**
  * Ranks below this are not social proof — "#487 most followed" undersells a
@@ -163,18 +163,26 @@ export function StreamerHero({
               </p>
             )}
 
-            {/* The page's headline answer: watch action while live, next start
-                time otherwise. Sits above the chips and the bio on purpose. */}
-            <HeroNextStream
-              liveSlot={liveSlot}
-              nextSlot={nextSlot}
-              twitchLogin={streamer.twitch_login}
-              youtubeChannelId={streamer.youtube_channel_id}
-              language={resolveUiLang(ui)}
-            />
+            {/* Mid-stream the only thing that matters is watching, so the
+                action is promoted from a small platform badge to real buttons. */}
+            {isLive && (
+              <WatchButtons
+                twitchLogin={streamer.twitch_login}
+                youtubeChannelId={streamer.youtube_channel_id}
+                grow={false}
+                language={resolveUiLang(ui)}
+                className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-3"
+              />
+            )}
+            {/* Offline: the headline answer, above the chips and the bio. */}
+            {!isLive && nextSlot && (
+              <div className="mt-3">
+                <HeroNextStream nextSlot={nextSlot} language={resolveUiLang(ui)} />
+              </div>
+            )}
 
             {rankChips.length > 0 && (
-              <ul className="mt-3 flex flex-wrap gap-2">
+              <ul className="mt-2 flex flex-wrap gap-2">
                 {rankChips.map((row) => {
                   const body = (
                     <>
