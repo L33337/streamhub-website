@@ -113,23 +113,33 @@ export interface PredictionAccuracy {
 }
 
 /**
- * Aggregate evaluated predictions into the "Prediction check" quick fact.
- * Below `minTotal` evaluations the fact is statistically embarrassing rather
- * than impressive — return null and let the card hide.
+ * Aggregate evaluated HIGH-confidence predictions into the "Prediction
+ * check" quick fact (the caller's fetch is already confidence-filtered).
+ * Cancelled pause-slots are dropped here: their evaluation semantics are
+ * inverted (expiring WITHOUT a stream = accurate), so the tile's "started
+ * within the two-hour window" wording would not cover them. The tile is a
+ * homepage trust signal, not a lab report — below `minTotal` evaluations or
+ * below `minPct` percent the number reads as an admission rather than a
+ * proof point; return null and let the card hide (UX round 2026-07-27:
+ * the all-confidence share hovered near 50% and looked like a coin flip).
  */
 export function buildPredictionAccuracy(
-  rows: Array<{ was_accurate: boolean | null }>,
-  minTotal = 10,
+  rows: Array<{ was_accurate: boolean | null; slot_kind?: string | null }>,
+  minTotal = 20,
+  minPct = 65,
 ): PredictionAccuracy | null {
   let hits = 0;
   let total = 0;
   for (const row of rows) {
     if (row.was_accurate === null) continue;
+    if (row.slot_kind === 'cancelled') continue;
     total += 1;
     if (row.was_accurate) hits += 1;
   }
   if (total < minTotal) return null;
-  return { hits, total, pct: Math.round((hits / total) * 100) };
+  const pct = Math.round((hits / total) * 100);
+  if (pct < minPct) return null;
+  return { hits, total, pct };
 }
 
 /**

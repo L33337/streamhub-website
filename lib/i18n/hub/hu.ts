@@ -57,7 +57,7 @@ export const hu: HubLex = {
     quickFactsSub: 'Az elmúlt 7 nap követett streamjeiből',
     factPredictionLabel: 'Előrejelzés-ellenőrzés',
     factPrediction: (hits, total) =>
-      `${total} AI által előrejelzett streamből ${hits} az előrejelzés szerint indult.`,
+      `${total} magas valószínűségű előrejelzésből ${hits} esetében a stream az előre jelzett időponthoz képest két órán belül elindult.`,
     factPeakLabel: 'A hét csúcsa',
     factPeak: (name) => `${name} érte el a hét legmagasabb egyidejű nézőszámát.`,
     factReliableLabel: 'Percre pontosan',
@@ -92,6 +92,15 @@ export const hu: HubLex = {
     sessionBanner: {
       text: 'Üdv újra — a személyes feeded készen áll.',
       cta: 'A feedemhez →',
+    },
+    sectionNav: {
+      aria: 'Ugrás egy szakaszhoz',
+      live: 'Élő',
+      lineup: 'Ma',
+      trending: 'Felkapott',
+      clips: 'Klipek',
+      stats: 'Számok',
+      discover: 'Streamerek',
     },
   },
   hero: {

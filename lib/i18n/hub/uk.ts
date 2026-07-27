@@ -82,7 +82,7 @@ export const uk: HubLex = {
     quickFactsSub: 'За стримами останніх 7 днів',
     factPredictionLabel: 'Перевірка прогнозів',
     factPrediction: (hits, total) =>
-      `${hits} із ${total} передбачених ШІ стримів почалися за прогнозом.`,
+      `У ${hits} із ${total} прогнозів із високою ймовірністю стрим почався в межах двох годин від передбаченого часу.`,
     factPeakLabel: 'Пік тижня',
     factPeak: (name) =>
       `${name} зібрав найбільше одночасних глядачів цього тижня.`,
@@ -118,6 +118,15 @@ export const uk: HubLex = {
     sessionBanner: {
       text: 'З поверненням — твоя персональна стрічка готова.',
       cta: 'До моєї стрічки →',
+    },
+    sectionNav: {
+      aria: 'Перейти до розділу',
+      live: 'В ефірі',
+      lineup: 'Сьогодні',
+      trending: 'У тренді',
+      clips: 'Кліпи',
+      stats: 'Цифри',
+      discover: 'Стримери',
     },
   },
   hero: {

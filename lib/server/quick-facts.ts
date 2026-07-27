@@ -19,7 +19,7 @@ const STREAMER_VISIBLE =
   'streamers.is_hidden=eq.false&streamers.approved=eq.true';
 
 export interface HomeQuickFacts {
-  /** Share of AI predictions (7d) that were evaluated accurate. */
+  /** Share of HIGH-confidence AI predictions (7d) that hit the ±2h window. */
   prediction: PredictionAccuracy | null;
   /** Highest concurrent-viewer peak of the week. */
   peak: { streamerId: string; streamerName: string; peak: number } | null;
@@ -37,6 +37,7 @@ export interface HomeQuickFacts {
 
 interface PredictionRow {
   was_accurate: boolean | null;
+  slot_kind: string | null;
 }
 
 interface PeakRow {
@@ -62,8 +63,16 @@ async function fetchPredictionFact(since: string): Promise<PredictionAccuracy | 
   // Row-level count instead of a Prefer:count=exact header — the JSON body
   // survives the Next data-cache unambiguously. PostgREST caps the response at
   // its max-rows anyway; the explicit limit makes the sample size deterministic.
+  //
+  // HIGH-confidence only (UX round 2026-07-27): the tile headlines its
+  // percentage, and the all-confidence mix — dragged down by exploratory
+  // LOW/MEDIUM no-shows — sat near 50% and read as a coin flip. The HIGH
+  // tier is the population the visible confidence badges actually promise
+  // (~74% ±2h in prod at the time of the change). Cancelled slot_kind rows
+  // are filtered in buildPredictionAccuracy, where NULL handling is free.
   const rows = await anonRestGet<PredictionRow>(
-    'ai_predictions?select=was_accurate' +
+    'ai_predictions?select=was_accurate,slot_kind' +
+      '&confidence=eq.high' +
       `&evaluated_at=gte.${encodeURIComponent(since)}` +
       '&was_accurate=not.is.null&limit=1000',
     REVALIDATE_SECONDS,

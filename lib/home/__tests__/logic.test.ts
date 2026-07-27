@@ -172,6 +172,40 @@ describe('buildPredictionAccuracy', () => {
   it('returns null below the minimum sample', () => {
     expect(buildPredictionAccuracy([{ was_accurate: true }], 10)).toBeNull();
     expect(buildPredictionAccuracy([], 10)).toBeNull();
+    // Default minTotal is 20: 19 evaluated rows are not enough.
+    expect(
+      buildPredictionAccuracy(
+        Array.from({ length: 19 }, () => ({ was_accurate: true })),
+      ),
+    ).toBeNull();
+  });
+
+  it('excludes cancelled pause-slots (inverted evaluation semantics)', () => {
+    const rows = [
+      ...Array.from({ length: 7 }, () => ({ was_accurate: true, slot_kind: 'regular' })),
+      ...Array.from({ length: 3 }, () => ({ was_accurate: false, slot_kind: 'new' })),
+      // "Accurate" here means the break held — NOT a ±2h window hit.
+      ...Array.from({ length: 5 }, () => ({
+        was_accurate: true,
+        slot_kind: 'cancelled',
+      })),
+    ];
+    expect(buildPredictionAccuracy(rows, 10)).toEqual({ hits: 7, total: 10, pct: 70 });
+  });
+
+  it('hides the fact below the presentability floor (minPct)', () => {
+    const coinFlip = [
+      ...Array.from({ length: 11 }, () => ({ was_accurate: true })),
+      ...Array.from({ length: 9 }, () => ({ was_accurate: false })),
+    ];
+    // 55% with default minPct 65 → hidden.
+    expect(buildPredictionAccuracy(coinFlip)).toBeNull();
+    // Same data with the floor lowered → visible.
+    expect(buildPredictionAccuracy(coinFlip, 20, 50)).toEqual({
+      hits: 11,
+      total: 20,
+      pct: 55,
+    });
   });
 });
 

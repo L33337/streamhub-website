@@ -23,6 +23,10 @@ import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { applyLocaleSeo, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
 import { HomeMasthead } from '@/components/web/home/HomeMasthead';
+import {
+  HomeSectionNav,
+  type HomeSectionNavItem,
+} from '@/components/web/home/HomeSectionNav';
 import { HomeSessionBanner } from '@/components/web/home/HomeSessionBanner';
 import { HomeLiveRail } from '@/components/web/home/HomeLiveRail';
 import { HomeUpNext } from '@/components/web/home/HomeUpNext';
@@ -45,6 +49,14 @@ const SITE_URL = 'https://streamertimes.tv';
 const UPCOMING_FETCH_LIMIT = 100;
 const UPCOMING_RENDER_LIMIT = 24;
 const SOON_WINDOW_HOURS = 6;
+
+/**
+ * Anchor targets of the sticky section nav sit under two sticky bars
+ * (header + chip row) — without this offset a chip jump hides the section
+ * heading behind them (game-page convention, larger offset for the second
+ * bar).
+ */
+const SECTION_ANCHOR_CLASS = 'scroll-mt-[calc(var(--header-height)+4rem)]';
 
 interface Props {
   params: Promise<{ locale: string }>;
@@ -253,6 +265,42 @@ export default async function HomePage({ params }: Props) {
     .map((streamer) => streamer.avatar_url)
     .filter((url): url is string => Boolean(url));
 
+  // Section-nav chips mirror each section's own hide rule — a chip must
+  // never point at a section that isn't on the page. HomeSectionNav prunes
+  // empty anchors again at mount as a drift guard. The lineup section always
+  // renders (it has an empty state), so its chip is unconditional.
+  const risersVisible = riserEntries.some(
+    (entry) => typeof entry.values.follower_gain_7d === 'number',
+  );
+  const quickFactCount = [
+    quickFacts.prediction,
+    quickFacts.peak,
+    quickFacts.reliable,
+    quickFacts.pause,
+  ].filter(Boolean).length;
+  const statsVisible =
+    quickFactCount >= 2 ||
+    risersVisible ||
+    mostStreamed.length > 0 ||
+    mostWatchedEntries.length > 0 ||
+    topCategories.length > 0;
+  const sectionNavItems: HomeSectionNavItem[] = [
+    ...(liveRailSlots.length > 0
+      ? [{ id: 'home-live', label: L.homeFeed.sectionNav.live }]
+      : []),
+    { id: 'home-lineup', label: L.homeFeed.sectionNav.lineup },
+    ...(trending.length > 0
+      ? [{ id: 'home-trending', label: L.homeFeed.sectionNav.trending }]
+      : []),
+    ...(homeClips.clips.length > 0
+      ? [{ id: 'home-clips', label: L.homeFeed.sectionNav.clips }]
+      : []),
+    ...(statsVisible ? [{ id: 'home-stats', label: L.homeFeed.sectionNav.stats }] : []),
+    ...(discoverStreamers.length > 0
+      ? [{ id: 'home-discover', label: L.homeFeed.sectionNav.discover }]
+      : []),
+  ];
+
   return (
     <main className="container mx-auto max-w-6xl px-6 pb-16 pt-8">
       <script
@@ -277,9 +325,19 @@ export default async function HomePage({ params }: Props) {
         soonHours={SOON_WINDOW_HOURS}
       />
 
-      <HomeLiveRail slots={liveRailSlots} totalLive={liveCount} locale={locale} />
+      {/* The page map only earns its sticky row when there is enough page
+          to map — below three sections it is chrome without value. */}
+      {sectionNavItems.length >= 3 && (
+        <HomeSectionNav items={sectionNavItems} ariaLabel={L.homeFeed.sectionNav.aria} />
+      )}
 
-      <HomeUpNext slots={lineupSlots} locale={locale} />
+      <div id="home-live" className={SECTION_ANCHOR_CLASS}>
+        <HomeLiveRail slots={liveRailSlots} totalLive={liveCount} locale={locale} />
+      </div>
+
+      <div id="home-lineup" className={SECTION_ANCHOR_CLASS}>
+        <HomeUpNext slots={lineupSlots} locale={locale} />
+      </div>
 
       <HomeInterruptCard avatarUrls={interruptAvatars} locale={locale} />
 
@@ -289,58 +347,64 @@ export default async function HomePage({ params }: Props) {
           stat-free when the catalog call failed (never internal 404s). The
           /games link stays unconditional so the hub link survives an empty
           trending cache. */}
-      <HomeTrendingRail
-        trending={trending}
-        gamesByName={gamesByName}
-        catalogSlugByName={catalogSlugByName}
-        locale={locale}
-      />
-      <p className="mt-2 text-sm">
-        <Link
-          href={localeHref(locale, '/games')}
-          className="text-accent-cyan hover:text-text-primary"
-        >
-          {L.home.browseAllGames}
-        </Link>
-      </p>
-
-      <HomeClipsRail
-        clips={homeClips.clips}
-        names={homeClips.names}
-        title={L.homeFeed.clipsTitle}
-      />
-
-      <HomeQuickFactsSection facts={quickFacts} locale={locale} />
-
-      {/* Risers + Most streamed share a row; each hides independently while
-          its data source is empty/warming up, so the grid only splits when
-          both render. */}
-      <div
-        className={
-          riserEntries.some(
-            (entry) => typeof entry.values.follower_gain_7d === 'number',
-          ) && mostStreamed.length > 0
-            ? 'grid gap-x-6 md:grid-cols-2'
-            : undefined
-        }
-      >
-        <HomeRisers entries={riserEntries} locale={locale} />
-        <HomeMostStreamed entries={mostStreamed} locale={locale} />
+      <div id="home-trending" className={SECTION_ANCHOR_CLASS}>
+        <HomeTrendingRail
+          trending={trending}
+          gamesByName={gamesByName}
+          catalogSlugByName={catalogSlugByName}
+          locale={locale}
+        />
+        <p className="mt-2 text-sm">
+          <Link
+            href={localeHref(locale, '/games')}
+            className="text-accent-cyan hover:text-text-primary"
+          >
+            {L.home.browseAllGames}
+          </Link>
+        </p>
       </div>
 
-      <HomeMostWatched
-        streamerEntries={mostWatchedEntries}
-        categories={topCategories}
-        gameHubSlugByName={catalogSlugByName}
-        locale={locale}
-      />
+      <div id="home-clips" className={SECTION_ANCHOR_CLASS}>
+        <HomeClipsRail
+          clips={homeClips.clips}
+          names={homeClips.names}
+          title={L.homeFeed.clipsTitle}
+        />
+      </div>
 
-      <HomeDiscoverGrid
-        streamers={discoverStreamers}
-        nextSlots={discoverNextSlots}
-        liveIds={liveIds}
-        locale={locale}
-      />
+      <div id="home-stats" className={SECTION_ANCHOR_CLASS}>
+        <HomeQuickFactsSection facts={quickFacts} locale={locale} />
+
+        {/* Risers + Most streamed share a row; each hides independently while
+            its data source is empty/warming up, so the grid only splits when
+            both render. */}
+        <div
+          className={
+            risersVisible && mostStreamed.length > 0
+              ? 'grid gap-x-6 md:grid-cols-2'
+              : undefined
+          }
+        >
+          <HomeRisers entries={riserEntries} locale={locale} />
+          <HomeMostStreamed entries={mostStreamed} locale={locale} />
+        </div>
+
+        <HomeMostWatched
+          streamerEntries={mostWatchedEntries}
+          categories={topCategories}
+          gameHubSlugByName={catalogSlugByName}
+          locale={locale}
+        />
+      </div>
+
+      <div id="home-discover" className={SECTION_ANCHOR_CLASS}>
+        <HomeDiscoverGrid
+          streamers={discoverStreamers}
+          nextSlots={discoverNextSlots}
+          liveIds={liveIds}
+          locale={locale}
+        />
+      </div>
 
       <HomeEndCap locale={locale} />
 

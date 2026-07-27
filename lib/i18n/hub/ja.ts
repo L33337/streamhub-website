@@ -57,7 +57,7 @@ export const ja: HubLex = {
     quickFactsSub: '過去7日間のトラッキングデータより',
     factPredictionLabel: '予測チェック',
     factPrediction: (hits, total) =>
-      `AIが予測した配信のうち${total}件中${hits}件が予測どおりに開始しました。`,
+      `確度「高」の予測${total}件のうち${hits}件で、予測時刻から2時間以内に配信が始まりました。`,
     factPeakLabel: '今週のピーク',
     factPeak: (name) => `${name}さんが今週最多の同時視聴者数を記録しました。`,
     factReliableLabel: '時間ぴったり',
@@ -92,6 +92,15 @@ export const ja: HubLex = {
     sessionBanner: {
       text: 'おかえりなさい — パーソナルフィードの準備ができています。',
       cta: 'マイフィードへ →',
+    },
+    sectionNav: {
+      aria: 'セクションへ移動',
+      live: '配信中',
+      lineup: '今日',
+      trending: 'トレンド',
+      clips: 'クリップ',
+      stats: 'データ',
+      discover: 'ストリーマー',
     },
   },
   hero: {

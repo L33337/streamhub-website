@@ -142,6 +142,21 @@ export interface HubLex {
       text: string;
       cta: string;
     };
+    /**
+     * Sticky section-jump chips under the site header (UX round 2026-07-27).
+     * Labels must stay SHORT (one word where the language allows) — the row
+     * scrolls horizontally on mobile and every extra character costs reach.
+     */
+    sectionNav: {
+      /** aria-label of the nav element. */
+      aria: string;
+      live: string;
+      lineup: string;
+      trending: string;
+      clips: string;
+      stats: string;
+      discover: string;
+    };
   };
   hero: {
     /** Overline next to the date chip. */

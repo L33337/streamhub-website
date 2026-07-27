@@ -62,7 +62,7 @@ export const fr: HubLex = {
     quickFactsSub: 'Sur les 7 derniers jours de streams suivis',
     factPredictionLabel: 'Vérif des prédictions',
     factPrediction: (hits, total) =>
-      `${hits} streams prédits par l’IA sur ${total} ont commencé comme prévu.`,
+      `Pour ${hits} des ${total} prédictions à probabilité élevée, le stream a démarré à moins de deux heures de l’horaire prévu.`,
     factPeakLabel: 'Pic de la semaine',
     factPeak: (name) =>
       `${name} a atteint le plus de spectateurs simultanés cette semaine.`,
@@ -98,6 +98,15 @@ export const fr: HubLex = {
     sessionBanner: {
       text: 'Content de te revoir — ton feed personnel est prêt.',
       cta: 'Vers mon feed →',
+    },
+    sectionNav: {
+      aria: 'Aller à une section',
+      live: 'En direct',
+      lineup: 'Aujourd’hui',
+      trending: 'Tendances',
+      clips: 'Clips',
+      stats: 'Chiffres',
+      discover: 'Streamers',
     },
   },
   hero: {

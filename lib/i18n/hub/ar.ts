@@ -78,7 +78,7 @@ export const ar: HubLex = {
     quickFactsSub: 'من آخر 7 أيام من البثوث المتتبَّعة',
     factPredictionLabel: 'فحص التوقعات',
     factPrediction: (hits, total) =>
-      `${hits} من أصل ${total} بثًا توقّعه الذكاء الاصطناعي بدأت كما هو متوقع.`,
+      `في ${hits} من أصل ${total} توقعًا مرتفع الاحتمالية بدأ البث في غضون ساعتين من الموعد المتوقع.`,
     factPeakLabel: 'ذروة الأسبوع',
     factPeak: (name) => `حقق ${name} أعلى عدد مشاهدين متزامنين هذا الأسبوع.`,
     factReliableLabel: 'في الموعد تمامًا',
@@ -113,6 +113,15 @@ export const ar: HubLex = {
     sessionBanner: {
       text: 'مرحبًا بعودتك — خلاصتك الشخصية جاهزة.',
       cta: 'إلى خلاصتي ←',
+    },
+    sectionNav: {
+      aria: 'الانتقال إلى قسم',
+      live: 'مباشر',
+      lineup: 'اليوم',
+      trending: 'الرائج',
+      clips: 'مقاطع',
+      stats: 'أرقام',
+      discover: 'الستريمرز',
     },
   },
   hero: {

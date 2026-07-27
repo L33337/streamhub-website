@@ -29,9 +29,10 @@ function formatUntilDate(iso: string, locale: UiLang): string {
 
 /**
  * "Quick facts" (homepage rebuild 2026-07-27): the anonymous siblings of the
- * feed's info cards — prediction accuracy, weekly peak, M14 punctuality,
- * next announced break. Each fact is optional; the section hides below two
- * cards so a lonely stat never dangles.
+ * feed's info cards — high-confidence prediction accuracy, weekly peak, M14
+ * punctuality, next announced break. Each fact is optional; the section
+ * hides below two cards so a lonely stat never dangles. NOTE: page.tsx
+ * mirrors the two-card rule for the section-nav chip — keep them in sync.
  */
 export function HomeQuickFacts({
   facts,
