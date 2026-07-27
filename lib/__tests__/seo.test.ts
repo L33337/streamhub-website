@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { PublicStreamer, PublicStreamSlot } from '../server/partner-api';
+import type {
+  PublicStreamer,
+  PublicStreamerStats,
+  PublicStreamSlot,
+} from '../server/partner-api';
 import {
   buildBreadcrumbJsonLd,
   buildBroadcastEventsJsonLd,
@@ -429,6 +433,192 @@ describe('buildStreamerMetadata — next-stream time in the description', () => 
       { nextSlot: next() },
     );
     expect(String(meta.description)).toContain('Sa 19:00 UTC');
+  });
+});
+
+function makeStats(overrides: Partial<PublicStreamerStats> = {}): PublicStreamerStats {
+  return {
+    streamer_id: 'examplestreamer',
+    has_stats: true,
+    window_days: 28,
+    sample_size: 23,
+    source: 'vod',
+    timezone: 'Europe/Berlin',
+    typical_start: '20:00',
+    typical_end: '23:30',
+    typical_duration_minutes: 210,
+    streams_per_week: 3,
+    active_days_per_week: 3,
+    hours_streamed: 60,
+    peak_viewer_count: 1234,
+    weekdays: [
+      { weekday: 'tuesday', start: '20:00', end: '23:30', duration_minutes: 210 },
+      { weekday: 'thursday', start: '20:00', end: '23:30', duration_minutes: 210 },
+      { weekday: 'saturday', start: '20:00', end: '23:30', duration_minutes: 210 },
+    ] as PublicStreamerStats['weekdays'],
+    top_categories: [],
+    ...overrides,
+  };
+}
+
+describe('buildStreamerMetadata — evergreen description', () => {
+  const next = () =>
+    makeSlot({
+      status: 'upcoming',
+      is_predicted: true,
+      start_time: '2026-07-18T19:00:00Z', // Sat 21:00 in Europe/Berlin (CEST)
+    });
+
+  it('leads with the weekly rhythm and follows with the next start', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: next(),
+        stats: makeStats(),
+      }).description,
+    );
+    // Evergreen half first: it is what survives SERP truncation and a
+    // days-old crawl.
+    expect(desc.indexOf('Di, Do, Sa')).toBeLessThan(desc.indexOf('Nächster Stream'));
+    expect(desc).toContain('ExampleStreamer streamt meist Di, Do, Sa, 20:00–23:30 Uhr');
+  });
+
+  it('names the calendar date so a cached snippet stays unambiguous', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: next(),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc).toContain('Sa., 18. Juli, 21:00');
+  });
+
+  it('keeps the prediction hedge visible', () => {
+    const predicted = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: next(),
+        stats: makeStats(),
+      }).description,
+    );
+    const announced = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: makeSlot({
+          status: 'upcoming',
+          is_predicted: false,
+          start_time: '2026-07-18T19:00:00Z',
+        }),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(predicted).toContain('voraussichtlich');
+    expect(announced).not.toContain('voraussichtlich');
+  });
+
+  it('states the timezone exactly once', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: next(),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc.match(/Ortszeit Berlin/g)).toHaveLength(1);
+  });
+
+  it('moves the zone onto the next-stream clause when the rhythm has no times', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: next(),
+        stats: makeStats({ typical_start: null, typical_end: null }),
+      }).description,
+    );
+    expect(desc.match(/Ortszeit Berlin/g)).toHaveLength(1);
+    expect(desc).toContain('Sa., 18. Juli, 21:00 (Ortszeit Berlin)');
+  });
+
+  it('renders one zone even when the stats and streamer zones disagree', () => {
+    // The habit clause declares the stats zone, so the start time must be
+    // rendered in that same zone — never Berlin hours labelled "New York time".
+    const desc = String(
+      buildStreamerMetadata(
+        makeStreamer({ timezone: 'Europe/Berlin' }),
+        'examplestreamer',
+        { nextSlot: next(), stats: makeStats({ timezone: 'America/New_York' }) },
+      ).description,
+    );
+    expect(desc).toContain('Ortszeit New York');
+    expect(desc).not.toContain('Ortszeit Berlin');
+    expect(desc).toContain('15:00'); // 19:00Z in New York
+  });
+
+  it('answers with the rhythm alone when nothing is scheduled', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc).toBe('ExampleStreamer streamt meist Di, Do, Sa, 20:00–23:30 Uhr (Ortszeit Berlin).');
+  });
+
+  it('drops the next-stream clause instead of clipping its date mid-word', () => {
+    const desc = String(
+      buildStreamerMetadata(
+        makeStreamer({ name: 'A'.repeat(70) }),
+        'examplestreamer',
+        { nextSlot: next(), stats: makeStats() },
+      ).description,
+    );
+    expect(desc).not.toContain('Nächster Stream');
+    expect(desc).not.toContain('…');
+    expect(desc).toContain('20:00–23:30 Uhr');
+  });
+
+  it('falls back to the next-stream-only phrasing without usable stats', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: next(),
+        stats: makeStats({ weekdays: [] }),
+      }).description,
+    );
+    expect(desc).toContain('Voraussichtlich nächster Stream von ExampleStreamer');
+    expect(desc).toContain('Sa 21:00 (Ortszeit Berlin)');
+  });
+
+  it('leaves the live description untouched', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: makeSlot({ status: 'live' }),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc).toContain('streamt gerade');
+    expect(desc).not.toContain('streamt meist');
+  });
+});
+
+describe('buildStreamerMetadata — index gate vs. cancelled slots', () => {
+  it('stays indexable when the only upcoming slot is a cancellation', () => {
+    // No `nextSlot` (a cancellation is not a next stream) but the page still
+    // renders real content: "this Tuesday is cancelled".
+    const meta = buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+      hasUpcoming: true,
+    });
+    expect(meta.robots).toBeUndefined();
+    // …and it must not promise a next stream it cannot name.
+    expect(String(meta.title)).not.toContain('Nächster Stream');
+  });
+
+  it('noindexes a page with nothing upcoming at all', () => {
+    const meta = buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+      hasUpcoming: false,
+    });
+    expect(meta.robots).toEqual({ index: false, follow: true });
+  });
+
+  it('defaults hasUpcoming to the next slot for callers that omit it', () => {
+    expect(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        nextSlot: makeSlot({ status: 'upcoming', start_time: '2026-07-18T19:00:00Z' }),
+      }).robots,
+    ).toBeUndefined();
   });
 });
 

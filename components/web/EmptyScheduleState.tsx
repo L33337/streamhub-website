@@ -9,9 +9,19 @@ interface Props {
   // M22 (D6): UI strings follow the viewer's locale; defaults to the
   // streamer's language for pre-M22 call sites.
   uiLanguage?: string | null;
+  /**
+   * Whether the page renders a typical-stream-times block below. When it does,
+   * that block — not "browse all streamers" — is the real answer for someone
+   * who searched for this streamer's schedule, so it becomes the primary CTA.
+   */
+  hasTypicalTimes?: boolean;
 }
 
-export function EmptyScheduleState({ streamer, uiLanguage }: Props) {
+export function EmptyScheduleState({
+  streamer,
+  uiLanguage,
+  hasTypicalTimes = false,
+}: Props) {
   const ui = uiLanguage ?? streamer.language;
   const lang = resolveUiLang(ui);
   const L = uiLexFor(ui);
@@ -36,9 +46,21 @@ export function EmptyScheduleState({ streamer, uiLanguage }: Props) {
         {L.empty.body(streamer.name, platforms)}
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {hasTypicalTimes && (
+          <a
+            href="#typical-stream-times"
+            className="inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+          >
+            {L.stats.heading(streamer.name)}
+          </a>
+        )}
         <Link
           href={localeHref(lang, '/')}
-          className="inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+          className={
+            hasTypicalTimes
+              ? 'inline-flex items-center rounded-lg border border-border-default bg-background-elevated px-4 py-2 text-sm font-semibold text-text-primary hover:border-accent-cyan/40 transition-colors'
+              : 'inline-flex items-center rounded-lg border border-accent-cyan/60 bg-accent-cyan/10 px-4 py-2 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors'
+          }
         >
           {L.empty.browseAll}
         </Link>

@@ -1,9 +1,19 @@
 import type { Metadata } from 'next';
-import type { PublicStreamer, PublicStreamSlot } from '@/lib/server/partner-api';
-import { localizedNextLabel, safeTimeZone, timezoneCityLabel } from '@/lib/format/time';
+import type {
+  PublicStreamer,
+  PublicStreamerStats,
+  PublicStreamSlot,
+} from '@/lib/server/partner-api';
+import {
+  absoluteStartLabel,
+  localizedNextLabel,
+  safeTimeZone,
+  timezoneCityLabel,
+} from '@/lib/format/time';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { pickReasoning } from '@/lib/slot-copy';
+import { activeWeekdayList } from '@/lib/streamer-stats';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -333,6 +343,26 @@ interface Lex {
   liveBase(name: string): string;
   livePlaying(name: string, cat: string): string;
   nextLead(name: string, label: string, predicted: boolean): string;
+  /**
+   * Evergreen opener of an offline description: "{name} streams mostly Tue,
+   * Thu, Sat, 16:00–21:00 ({zone})." `days` is the pre-joined localized short
+   * list; `times` is null when the stats carry no typical range, and `zone` is
+   * then unused (the next-stream clause labels the zone instead).
+   */
+  habitDesc(
+    name: string,
+    days: string,
+    times: { start: string; end: string } | null,
+    zone: string,
+  ): string;
+  /**
+   * Next-stream clause that follows `habitDesc`, e.g. "Next stream expected
+   * Sat, Jul 18, 21:00." Carries no name — `habitDesc` already named the
+   * subject, and repeating it would cost a third of the remaining budget.
+   * `predicted` must stay a visible hedge: without it an LLM quoting the
+   * snippet restates an AI guess as a scheduled fact.
+   */
+  nextClause(label: string, predicted: boolean): string;
   fallbackDesc(name: string, platforms: string): string;
   ogTitle(name: string, cat: string | null, live: boolean): string;
   ogDesc(name: string, platforms: string, cat: string | null, live: boolean): string;
@@ -348,6 +378,9 @@ const META_STRINGS: Record<string, Lex> = {
     liveBase: (n) => `${n} is live now`,
     livePlaying: (n, c) => `${n} is live now playing ${c}`,
     nextLead: (n, l, p) => `${n}'s next ${p ? 'predicted ' : ''}stream ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t ? `${n} streams mostly ${d}, ${t.start}–${t.end} (${z}).` : `${n} streams mostly ${d}.`,
+    nextClause: (l, p) => (p ? `Next stream expected ${l}.` : `Next stream: ${l}.`),
     fallbackDesc: (n, p) =>
       `When does ${n} stream live on ${p}? Upcoming schedule, AI-predicted next streams, and current live status.`,
     ogTitle: (n, c, live) =>
@@ -371,6 +404,10 @@ const META_STRINGS: Record<string, Lex> = {
     // "von {name}" phrasing avoids the awkward genitive-s for names ending in s/x/z.
     nextLead: (n, l, p) =>
       p ? `Voraussichtlich nächster Stream von ${n} ${l}` : `Nächster Stream von ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t ? `${n} streamt meist ${d}, ${t.start}–${t.end} Uhr (${z}).` : `${n} streamt meist ${d}.`,
+    nextClause: (l, p) =>
+      p ? `Nächster Stream voraussichtlich ${l}.` : `Nächster Stream: ${l}.`,
     fallbackDesc: (n, p) =>
       `Wann streamt ${n} live auf ${p}? Sendezeiten, KI-prognostizierte Streams und aktueller Live-Status.`,
     ogTitle: (n, c, live) =>
@@ -393,6 +430,11 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} está en directo jugando a ${c}`,
     nextLead: (n, l, p) =>
       p ? `Próximo directo previsto de ${n} ${l}` : `Próximo directo de ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t
+        ? `${n} suele transmitir ${d}, ${t.start}–${t.end} (${z}).`
+        : `${n} suele transmitir ${d}.`,
+    nextClause: (l, p) => (p ? `Próximo directo previsto ${l}.` : `Próximo directo: ${l}.`),
     fallbackDesc: (n, p) =>
       `¿Cuándo transmite ${n} en directo en ${p}? Horario, próximos streams con predicción IA y estado en vivo.`,
     ogTitle: (n, c, live) =>
@@ -414,6 +456,11 @@ const META_STRINGS: Record<string, Lex> = {
     liveBase: (n) => `${n} est en live`,
     livePlaying: (n, c) => `${n} est en live et joue à ${c}`,
     nextLead: (n, l, p) => (p ? `Prochain live prévu de ${n} ${l}` : `Prochain live de ${n} ${l}`),
+    habitDesc: (n, d, t, z) =>
+      t
+        ? `${n} streame généralement ${d}, ${t.start}–${t.end} (${z}).`
+        : `${n} streame généralement ${d}.`,
+    nextClause: (l, p) => (p ? `Prochain live prévu ${l}.` : `Prochain live : ${l}.`),
     fallbackDesc: (n, p) =>
       `Quand ${n} streame-t-il en direct sur ${p} ? Programme, prochains streams prédits par IA et statut en direct.`,
     ogTitle: (n, c, live) =>
@@ -435,6 +482,11 @@ const META_STRINGS: Record<string, Lex> = {
     liveBase: (n) => `${n} está ao vivo`,
     livePlaying: (n, c) => `${n} está ao vivo jogando ${c}`,
     nextLead: (n, l, p) => (p ? `Próxima live prevista de ${n} ${l}` : `Próxima live de ${n} ${l}`),
+    habitDesc: (n, d, t, z) =>
+      t
+        ? `${n} costuma transmitir ${d}, ${t.start}–${t.end} (${z}).`
+        : `${n} costuma transmitir ${d}.`,
+    nextClause: (l, p) => (p ? `Próxima live prevista ${l}.` : `Próxima live: ${l}.`),
     fallbackDesc: (n, p) =>
       `Quando ${n} faz live em ${p}? Agenda, próximas lives previstas por IA e status ao vivo.`,
     ogTitle: (n, c, live) =>
@@ -457,6 +509,11 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} è in diretta e gioca a ${c}`,
     nextLead: (n, l, p) =>
       p ? `Prossima diretta prevista di ${n} ${l}` : `Prossima diretta di ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t
+        ? `${n} trasmette di solito ${d}, ${t.start}–${t.end} (${z}).`
+        : `${n} trasmette di solito ${d}.`,
+    nextClause: (l, p) => (p ? `Prossima diretta prevista ${l}.` : `Prossima diretta: ${l}.`),
     fallbackDesc: (n, p) =>
       `Quando ${n} è in diretta su ${p}? Calendario, prossimi stream previsti con IA e stato live.`,
     ogTitle: (n, c, live) =>
@@ -482,6 +539,10 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} сейчас в эфире — играет в ${c}`,
     nextLead: (n, l, p) =>
       p ? `Предполагаемый следующий стрим ${n} ${l}` : `Следующий стрим ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t ? `${n} обычно стримит ${d}, ${t.start}–${t.end} (${z}).` : `${n} обычно стримит ${d}.`,
+    nextClause: (l, p) =>
+      p ? `Предполагаемый следующий стрим ${l}.` : `Следующий стрим: ${l}.`,
     fallbackDesc: (n, p) =>
       `Когда ${n} выходит в эфир на ${p}? Расписание, прогноз следующих стримов на основе ИИ и текущий статус эфира.`,
     ogTitle: (n, c, live) =>
@@ -504,6 +565,11 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} зараз у ефірі — грає в ${c}`,
     nextLead: (n, l, p) =>
       p ? `Імовірно наступний стрім ${n} ${l}` : `Наступний стрім ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t
+        ? `${n} зазвичай стрімить ${d}, ${t.start}–${t.end} (${z}).`
+        : `${n} зазвичай стрімить ${d}.`,
+    nextClause: (l, p) => (p ? `Імовірно наступний стрім ${l}.` : `Наступний стрім: ${l}.`),
     fallbackDesc: (n, p) =>
       `Коли ${n} виходить у ефір на ${p}? Розклад, прогноз наступних стрімів на основі ШІ та поточний статус ефіру.`,
     ogTitle: (n, c, live) =>
@@ -525,6 +591,9 @@ const META_STRINGS: Record<string, Lex> = {
     liveBase: (n) => `${n} は配信中`,
     livePlaying: (n, c) => `${n} は ${c} を配信中`,
     nextLead: (n, l, p) => (p ? `${n} の次回配信予想は ${l}` : `${n} の次回配信は ${l}`),
+    habitDesc: (n, d, t, z) =>
+      t ? `${n} は主に ${d} の ${t.start}–${t.end}（${z}）に配信。` : `${n} は主に ${d} に配信。`,
+    nextClause: (l, p) => (p ? `次回配信予想: ${l}。` : `次回配信: ${l}。`),
     fallbackDesc: (n, p) =>
       `${n} が ${p} で配信するのはいつ？ 配信スケジュール、AIによる次回配信予想、現在のライブ状況をチェック。`,
     ogTitle: (n, c, live) =>
@@ -547,6 +616,9 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} يبث الآن ${c}`,
     nextLead: (n, l, p) =>
       p ? `البث القادم المتوقع لـ ${n} ${l}` : `البث القادم لـ ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t ? `${n} يبث عادةً ${d}، ${t.start}–${t.end} (${z}).` : `${n} يبث عادةً ${d}.`,
+    nextClause: (l, p) => (p ? `البث القادم المتوقع ${l}.` : `البث القادم: ${l}.`),
     fallbackDesc: (n, p) =>
       `متى يبث ${n} مباشرة على ${p}؟ جدول البث، توقعات البث القادم بالذكاء الاصطناعي، وحالة البث الحالية.`,
     ogTitle: (n, c, live) =>
@@ -569,6 +641,11 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} épp élőben — ${c}`,
     nextLead: (n, l, p) =>
       p ? `${n} várható következő streamje ${l}` : `${n} következő streamje ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t
+        ? `${n} általában ${d} streamel, ${t.start}–${t.end} (${z}).`
+        : `${n} általában ${d} streamel.`,
+    nextClause: (l, p) => (p ? `Várható következő stream: ${l}.` : `Következő stream: ${l}.`),
     fallbackDesc: (n, p) =>
       `Mikor streamel ${n} élőben a ${p} platformon? Műsorrend, MI által előrejelzett következő streamek és aktuális élő státusz.`,
     ogTitle: (n, c, live) =>
@@ -591,6 +668,10 @@ const META_STRINGS: Record<string, Lex> = {
     livePlaying: (n, c) => `${n} jest teraz na żywo i gra w ${c}`,
     nextLead: (n, l, p) =>
       p ? `Przewidywany następny stream ${n} ${l}` : `Następny stream ${n} ${l}`,
+    habitDesc: (n, d, t, z) =>
+      t ? `${n} streamuje zwykle ${d}, ${t.start}–${t.end} (${z}).` : `${n} streamuje zwykle ${d}.`,
+    nextClause: (l, p) =>
+      p ? `Przewidywany następny stream ${l}.` : `Następny stream: ${l}.`,
     fallbackDesc: (n, p) =>
       `Kiedy ${n} streamuje na żywo na ${p}? Harmonogram, następne streamy przewidywane przez AI i aktualny status na żywo.`,
     ogTitle: (n, c, live) =>
@@ -637,12 +718,64 @@ function cleanField(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+interface HabitClause {
+  text: string;
+  /** True when the clause already names the zone, so the next clause must not repeat it. */
+  declaresZone: boolean;
+}
+
+/**
+ * Evergreen opener for an offline streamer's description: the weekly rhythm,
+ * which is still true days after Google cached the snippet.
+ *
+ * The rest of the description is perishable by nature (a predicted start time
+ * is stale within a day, a predicted stream TITLE is stale and speculative),
+ * while Google recrawls a streamer page every few days — so a description made
+ * only of perishable facts is wrong most of the time it is shown. This clause
+ * is the part that keeps the snippet honest between crawls, which is also why
+ * it goes FIRST: it is what survives SERP truncation.
+ *
+ * Returns null without stats or weekday rows; the caller then keeps the older
+ * next-stream-only phrasing.
+ */
+function buildHabitClause(
+  L: Lex,
+  name: string,
+  stats: PublicStreamerStats | null,
+  uiLanguage: string | null,
+  zoneLabel: string,
+): HabitClause | null {
+  if (!stats) return null;
+  const days = activeWeekdayList(stats, uiLanguage);
+  if (!days) return null;
+  const times =
+    stats.typical_start && stats.typical_end
+      ? { start: stats.typical_start, end: stats.typical_end }
+      : null;
+  return {
+    text: L.habitDesc(name, days, times, zoneLabel),
+    declaresZone: times !== null,
+  };
+}
+
 export function buildStreamerMetadata(
   streamer: PublicStreamer,
   slug: string,
   opts?: {
     liveSlot?: PublicStreamSlot | null;
+    // The next REAL stream (cancellations filtered out — see pickNextRealSlot).
+    // Drives the next-stream copy; pass `hasUpcoming` for the index gate.
     nextSlot?: PublicStreamSlot | null;
+    /**
+     * Whether the page shows any upcoming slot at all, cancellations included.
+     * Kept separate from `nextSlot` for the thin-page gate below: a page whose
+     * only upcoming entry is a cancellation has no next stream to announce, but
+     * "this Tuesday is cancelled" is still real, page-specific content and must
+     * not be deindexed. Defaults to `!!nextSlot` for callers that don't care.
+     */
+    hasUpcoming?: boolean;
+    /** Typical-times stats — the evergreen half of the description. */
+    stats?: PublicStreamerStats | null;
     // M22 (D6): meta copy follows the VIEWER's locale (the [locale] route
     // param). Omitted → pre-M22 behavior (streamer's language) for old callers.
     viewerLocale?: UiLang;
@@ -660,6 +793,18 @@ export function buildStreamerMetadata(
 
   const live = opts?.liveSlot ?? null;
   const next = opts?.nextSlot ?? null;
+  const stats = opts?.stats ?? null;
+
+  // ONE timezone governs the whole description. When stats exist their zone
+  // wins, because the habit clause is what declares it in the copy — reading
+  // the zone off `streamer.timezone` instead could label the habit hours
+  // "Berlin time" and the next-stream time from a different zone in the same
+  // sentence pair whenever the two columns disagree. `safeTimeZone` maps
+  // 'UTC'/unknown to null, which keeps the deterministic UTC rendering path.
+  const tz = safeTimeZone(stats ? stats.timezone : streamer.timezone);
+  const zoneLabel = tz
+    ? uiLexFor(uiLanguage).stats.cityTime(timezoneCityLabel(tz))
+    : 'UTC';
 
   let titleCore: string;
   let description: string;
@@ -678,30 +823,48 @@ export function buildStreamerMetadata(
     ogDescription = L.ogDesc(name, platforms, cat, true);
     twTitle = ogTitle;
     twDescription = L.twDesc(name, cat, true);
-  } else if (next) {
-    const cat = cleanField(next.category);
-    const st = cleanField(next.title);
-    const title = st ? truncate(st, MAX_STREAM_TITLE) : null;
-    // Streamer-local next-stream time when the home timezone is known (fixed
-    // zone → deterministic), labeled with the localized cityTime ("Berlin
-    // time"); UTC form otherwise. Mirrors the streamer-FAQ rendering.
-    const tz = safeTimeZone(streamer.timezone);
-    let label = localizedNextLabel(next.start_time, lang, {
-      relative: false,
-      timeZone: tz ?? undefined,
-    });
-    if (tz) {
-      label += ` (${uiLexFor(uiLanguage).stats.cityTime(timezoneCityLabel(tz))})`;
-    }
-    titleCore = L.nextTitle(name);
-    description = buildNextDesc(L, name, label, cat, title, !!next.is_predicted);
-    ogTitle = L.fallbackTitle(name);
-    ogDescription = L.ogDesc(name, platforms, null, false);
-    twTitle = ogTitle;
-    twDescription = L.twDesc(name, null, false);
   } else {
-    titleCore = L.fallbackTitle(name);
-    description = L.fallbackDesc(name, platforms);
+    // Offline. The description leads with the evergreen habit clause and
+    // follows with the next start time, so the durable half is the half that
+    // survives both SERP truncation and a days-old crawl.
+    const habit = buildHabitClause(L, name, stats, uiLanguage, zoneLabel);
+
+    if (next && habit) {
+      // Absolute date, not "Sat 21:00": a snippet is read detached from the
+      // page and days after it was cached. The zone rides along only when the
+      // habit clause did not already name it (it always renders the SAME zone).
+      const start = absoluteStartLabel(next.start_time, lang, tz ?? undefined);
+      const clause = L.nextClause(
+        habit.declaresZone ? start : `${start} (${zoneLabel})`,
+        !!next.is_predicted,
+      );
+      const both = `${habit.text} ${clause}`;
+      // Over budget → drop the whole next-stream clause rather than let
+      // truncate() clip it mid-date. A half-written date is worse than none,
+      // and it is the clause that goes stale anyway.
+      description = both.length <= MAX_DESC ? both : habit.text;
+    } else if (habit) {
+      // No upcoming stream (or only a cancellation): the rhythm is the only
+      // honest answer left, and still a far better one than the keyword
+      // boilerplate this branch used to emit.
+      description = habit.text;
+    } else if (next) {
+      // No usable stats — the pre-existing next-stream-only phrasing, which
+      // carries the name itself and can afford the stream title and category.
+      const cat = cleanField(next.category);
+      const st = cleanField(next.title);
+      const title = st ? truncate(st, MAX_STREAM_TITLE) : null;
+      let label = localizedNextLabel(next.start_time, lang, {
+        relative: false,
+        timeZone: tz ?? undefined,
+      });
+      if (tz) label += ` (${zoneLabel})`;
+      description = buildNextDesc(L, name, label, cat, title, !!next.is_predicted);
+    } else {
+      description = L.fallbackDesc(name, platforms);
+    }
+
+    titleCore = next ? L.nextTitle(name) : L.fallbackTitle(name);
     ogTitle = L.fallbackTitle(name);
     ogDescription = L.ogDesc(name, platforms, null, false);
     twTitle = ogTitle;
@@ -716,8 +879,13 @@ export function buildStreamerMetadata(
   // indexable automatically the moment the streamer is live or has an upcoming
   // stream again. `follow: true` keeps the internal link graph crawlable.
   // Degenerate legacy slugs ('' / leading hyphen) are permanently gated out.
+  //
+  // The gate reads `hasUpcoming`, NOT `next`: `next` excludes cancellations, and
+  // a page announcing "Tuesday is cancelled" carries real, streamer-specific
+  // information that deserves to stay indexed.
   const indexable =
-    (!!live || !!next || streamer.is_featured) && isIndexableStreamerSlug(slug);
+    (!!live || (opts?.hasUpcoming ?? !!next) || streamer.is_featured) &&
+    isIndexableStreamerSlug(slug);
 
   const meta: Metadata = {
     title: clampTitle(titleCore),

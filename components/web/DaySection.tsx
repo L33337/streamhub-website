@@ -8,13 +8,45 @@ interface Props {
   slots: PublicStreamSlot[];
   /** Localizes counts/aria + the nested SlotCards; default 'en' keeps the game-page caller byte-identical. */
   language?: string;
+  /**
+   * Truncation markers for the streamer page (see CollapsibleSchedule +
+   * globals.css). `startIndex` is this section's offset into the flattened
+   * 7-day slot list; slots past `truncateAt` collapse, the one exactly at it
+   * stays half-visible. Null/omitted → no markers at all, so every other caller
+   * renders byte-identically.
+   */
+  startIndex?: number;
+  truncateAt?: number | null;
 }
 
-export function DaySection({ dateKey, label, slots, language = 'en' }: Props) {
+export function DaySection({
+  dateKey,
+  label,
+  slots,
+  language = 'en',
+  startIndex = 0,
+  truncateAt = null,
+}: Props) {
   const L = slotLexFor(language);
+  // Cancelled slots are streams that are NOT happening — they belong in the
+  // list (that is the news) but not in the count.
+  const realCount = slots.filter((s) => s.slot_kind !== 'cancelled').length;
+
+  const slotRole = (index: number): 'peek' | 'hidden' | undefined => {
+    if (truncateAt === null) return undefined;
+    const global = startIndex + index;
+    if (global < truncateAt) return undefined;
+    return global === truncateAt ? 'peek' : 'hidden';
+  };
+  // Whole section collapses once even its first slot is past the cut — keeping
+  // the heading would leave a dangling date with nothing under it.
+  const dayRole =
+    truncateAt !== null && startIndex > truncateAt ? 'hidden' : undefined;
+
   return (
     <section
       id={`day-${dateKey}`}
+      data-day-role={dayRole}
       aria-labelledby={`heading-${dateKey}`}
       className="mt-10 scroll-mt-[calc(var(--header-height)+5rem)]"
     >
@@ -24,12 +56,12 @@ export function DaySection({ dateKey, label, slots, language = 'en' }: Props) {
       >
         {label}
         <span className="text-sm font-normal text-text-muted">
-          {L.nStreams(slots.length)}
+          {realCount === 0 ? L.noStreamsExpected : L.nStreams(realCount)}
         </span>
       </h2>
       <ul className="grid gap-3" aria-label={L.streamsOnAria(label)}>
-        {slots.map((slot) => (
-          <li key={slot.id}>
+        {slots.map((slot, i) => (
+          <li key={slot.id} data-slot-role={slotRole(i)}>
             <SlotCard slot={slot} language={language} />
           </li>
         ))}

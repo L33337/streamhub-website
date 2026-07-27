@@ -102,6 +102,46 @@ export function formatUtcDateShort(iso: string, lang = 'en'): string {
   }
 }
 
+/**
+ * Viewer-local counterpart of `localizedNextLabel`: same "Today 20:00" /
+ * "Sat 8:00 PM" shape, but rendered in the RUNTIME timezone and the runtime's
+ * hour cycle (12h for en-US, 24h for de/fr/…).
+ *
+ * Client-side only. On the server the runtime zone is the server's, which would
+ * bake a wrong zone into ISR-cached HTML — callers pair this with
+ * `localizedNextLabel` as the deterministic SSR snapshot (the
+ * useSyncExternalStore pattern used by SlotStatusText / LocalTime).
+ *
+ * `now` is injectable for deterministic tests.
+ */
+export function localNextLabel(iso: string, lang = 'en', now = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const locale = lang === 'en' ? 'en-US' : lang;
+  try {
+    const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+    // en-CA yields YYYY-MM-DD — a runtime-zone calendar date we can diff in UTC,
+    // so 23:30 UTC can correctly read as "tomorrow" east of Greenwich.
+    const dayFmt = new Intl.DateTimeFormat('en-CA');
+    const diffDays = Math.round(
+      (Date.parse(`${dayFmt.format(d)}T00:00:00Z`) -
+        Date.parse(`${dayFmt.format(now)}T00:00:00Z`)) /
+        86_400_000,
+    );
+    if (diffDays === 0 || diffDays === 1) {
+      const rel = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+        diffDays,
+        'day',
+      );
+      return `${rel.charAt(0).toUpperCase()}${rel.slice(1)} ${time}`;
+    }
+    const weekday = d.toLocaleDateString(locale, { weekday: 'short' });
+    return `${weekday} ${time}`;
+  } catch {
+    return localizedNextLabel(iso, lang, { now });
+  }
+}
+
 export function groupSlotsByUtcDate<T extends { start_time: string }>(
   slots: T[],
 ): Map<string, T[]> {
@@ -240,4 +280,75 @@ export function localizedNextLabel(
   }
   const weekday = target.toLocaleDateString(lang, { weekday: 'short', timeZone: 'UTC' });
   return `${weekday} ${time}`;
+}
+
+/**
+ * Self-contained start label with the calendar date: "Sat, Jul 18, 21:00",
+ * rendered in `timeZone` (UTC when absent/unusable). No zone suffix — the
+ * caller owns that, because copy that already names the zone once must not
+ * repeat it.
+ *
+ * The date is what separates this from `localizedNextLabel`. Inside the page a
+ * bare "Sat 21:00" is unambiguous (the day section around it supplies the
+ * date), but a <meta description> is read detached from the page: Google
+ * serves the cached snippet for days, and LLM crawlers quote it with no
+ * surrounding context at all. There "Sat 21:00" silently becomes whichever
+ * Saturday the reader assumes.
+ *
+ * Times use en-GB/h23 like the zoned branch of `localizedNextLabel`, so the
+ * hour matches the 24h "HH:MM" strings the stats copy renders.
+ */
+export function absoluteStartLabel(iso: string, lang = 'en', timeZone?: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const zone = safeTimeZone(timeZone) ?? 'UTC';
+  const time = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: zone,
+  }).format(d);
+  const dateOpts: Intl.DateTimeFormatOptions = {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: zone,
+  };
+  try {
+    return `${d.toLocaleDateString(lang, dateOpts)}, ${time}`;
+  } catch {
+    return `${d.toLocaleDateString('en-US', dateOpts)}, ${time}`;
+  }
+}
+
+/** UTC date keys (`yyyy-mm-dd`) of the seven days a streamer page renders. */
+export function sevenDayKeys(now: Date): string[] {
+  const keys: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    keys.push(new Date(now.getTime() + i * 86_400_000).toISOString().slice(0, 10));
+  }
+  return keys;
+}
+
+/**
+ * Earliest upcoming slot that is a real stream inside the rendered week.
+ *
+ * Shared by the streamer page body and its `generateMetadata` so the SERP
+ * snippet can never announce a stream the page itself does not show. Two
+ * exclusions, both load-bearing:
+ * - `slot_kind === 'cancelled'` — a cancellation is the opposite of a next
+ *   stream, and promising one in the snippet contradicts the page.
+ * - slots outside `dayKeys` — the fetch window reaches a day past the last
+ *   rendered day section, and such a slot has no anchor to point at.
+ */
+export function pickNextRealSlot<
+  T extends { start_time: string; slot_kind?: string | null },
+>(slots: readonly T[], dayKeys: readonly string[]): T | null {
+  return (
+    [...slots]
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      .find(
+        (s) => s.slot_kind !== 'cancelled' && dayKeys.includes(s.start_time.slice(0, 10)),
+      ) ?? null
+  );
 }

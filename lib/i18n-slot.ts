@@ -62,6 +62,12 @@ export interface SlotLex {
   whyThisPrediction: string;
   /** M22 P3: label shown when the always-English generic_reasoning replaces foreign-language copy. */
   autoSummary: string;
+  /** "Next stream:" — prefix of the forward pointer on a day with nothing scheduled. */
+  nextStreamPrefix: string;
+  /** "Show 6 more streams" — expands the truncated 7-day schedule. */
+  showMoreStreams(n: number): string;
+  /** Collapses it again. */
+  showFewerStreams: string;
 }
 
 const SLOT_STRINGS: Record<UiLang, SlotLex> = {
@@ -93,6 +99,9 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (opens in new tab)',
     whyThisPrediction: 'Why this prediction?',
     autoSummary: 'Auto summary',
+    nextStreamPrefix: 'Next stream:',
+    showMoreStreams: (n) => `Show ${n} more ${n === 1 ? 'stream' : 'streams'}`,
+    showFewerStreams: 'Show fewer',
   },
   de: {
     statusLiveSince: (d) => `Live seit ${d}`,
@@ -126,6 +135,10 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (öffnet in neuem Tab)',
     whyThisPrediction: 'Warum diese Vorhersage?',
     autoSummary: 'Automatische Kurzfassung (englisch)',
+    nextStreamPrefix: 'Nächster Stream:',
+    showMoreStreams: (n) =>
+      n === 1 ? '1 weiteren Stream anzeigen' : `${n} weitere Streams anzeigen`,
+    showFewerStreams: 'Weniger anzeigen',
   },
   es: {
     statusLiveSince: (d) => `En directo desde hace ${d}`,
@@ -158,6 +171,9 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (se abre en una pestaña nueva)',
     whyThisPrediction: '¿Por qué esta predicción?',
     autoSummary: 'Resumen automático (en inglés)',
+    nextStreamPrefix: 'Próximo stream:',
+    showMoreStreams: (n) => (n === 1 ? 'Ver 1 stream más' : `Ver ${n} streams más`),
+    showFewerStreams: 'Ver menos',
   },
   fr: {
     statusLiveSince: (d) => `En live depuis ${d}`,
@@ -190,6 +206,10 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ` (s'ouvre dans un nouvel onglet)`,
     whyThisPrediction: 'Pourquoi cette prédiction ?',
     autoSummary: 'Résumé automatique (en anglais)',
+    nextStreamPrefix: 'Prochain stream :',
+    showMoreStreams: (n) =>
+      n === 1 ? 'Voir 1 stream de plus' : `Voir ${n} streams de plus`,
+    showFewerStreams: 'Voir moins',
   },
   pt: {
     statusLiveSince: (d) => `Ao vivo há ${d}`,
@@ -221,6 +241,9 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (abre em nova aba)',
     whyThisPrediction: 'Por que esta previsão?',
     autoSummary: 'Resumo automático (em inglês)',
+    nextStreamPrefix: 'Próximo stream:',
+    showMoreStreams: (n) => (n === 1 ? 'Ver mais 1 stream' : `Ver mais ${n} streams`),
+    showFewerStreams: 'Ver menos',
   },
   it: {
     statusLiveSince: (d) => `In diretta da ${d}`,
@@ -254,6 +277,10 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (si apre in una nuova scheda)',
     whyThisPrediction: 'Perché questa previsione?',
     autoSummary: 'Riepilogo automatico (in inglese)',
+    nextStreamPrefix: 'Prossimo stream:',
+    showMoreStreams: (n) =>
+      n === 1 ? 'Mostra un altro stream' : `Mostra altri ${n} stream`,
+    showFewerStreams: 'Mostra meno',
   },
   ru: {
     statusLiveSince: (d) => `В эфире уже ${d}`,
@@ -292,6 +319,15 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (откроется в новой вкладке)',
     whyThisPrediction: 'Почему такой прогноз?',
     autoSummary: 'Автоматическое резюме (на английском)',
+    nextStreamPrefix: 'Следующий стрим:',
+    showMoreStreams: (n) =>
+      pluralForms('ru', n, {
+        one: `Показать ещё ${n} стрим`,
+        few: `Показать ещё ${n} стрима`,
+        many: `Показать ещё ${n} стримов`,
+        other: `Показать ещё ${n} стрима`,
+      }),
+    showFewerStreams: 'Показать меньше',
   },
   ja: {
     statusLiveSince: (d) => `配信開始から${d}`,
@@ -323,6 +359,9 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: '（新しいタブで開きます）',
     whyThisPrediction: 'この予測の理由',
     autoSummary: '自動要約（英語）',
+    nextStreamPrefix: '次の配信:',
+    showMoreStreams: (n) => `他${n}件の配信を表示`,
+    showFewerStreams: '表示を減らす',
   },
   uk: {
     statusLiveSince: (d) => `В ефірі вже ${d}`,
@@ -361,6 +400,15 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (відкриється в новій вкладці)',
     whyThisPrediction: 'Чому такий прогноз?',
     autoSummary: 'Автоматичний підсумок (англійською)',
+    nextStreamPrefix: 'Наступний стрім:',
+    showMoreStreams: (n) =>
+      pluralForms('uk', n, {
+        one: `Показати ще ${n} стрім`,
+        few: `Показати ще ${n} стріми`,
+        many: `Показати ще ${n} стрімів`,
+        other: `Показати ще ${n} стріму`,
+      }),
+    showFewerStreams: 'Показати менше',
   },
   ar: {
     // "مدة البث:" (broadcast duration) sidesteps the case governance that
@@ -403,6 +451,16 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (يفتح في تبويب جديد)',
     whyThisPrediction: 'لماذا هذا التوقع؟',
     autoSummary: 'ملخص تلقائي (بالإنجليزية)',
+    nextStreamPrefix: 'البث القادم:',
+    showMoreStreams: (n) =>
+      pluralForms('ar', n, {
+        one: 'عرض بث إضافي واحد',
+        two: 'عرض بثين إضافيين',
+        few: `عرض ${n} بثوث إضافية`,
+        many: `عرض ${n} بثًا إضافيًا`,
+        other: `عرض ${n} بث إضافي`,
+      }),
+    showFewerStreams: 'عرض أقل',
   },
   hu: {
     // "Élőben: 2 óra" (elapsed live time) — Hungarian would need the -ja
@@ -437,6 +495,9 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (új lapon nyílik meg)',
     whyThisPrediction: 'Miért ez az előrejelzés?',
     autoSummary: 'Automatikus összefoglaló (angolul)',
+    nextStreamPrefix: 'Következő stream:',
+    showMoreStreams: (n) => `Még ${n} stream megjelenítése`,
+    showFewerStreams: 'Kevesebb megjelenítése',
   },
   pl: {
     // "już 2 godziny" keeps Intl's nominative form grammatical ("od" would
@@ -477,6 +538,15 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (otwiera się w nowej karcie)',
     whyThisPrediction: 'Skąd ta prognoza?',
     autoSummary: 'Automatyczne podsumowanie (po angielsku)',
+    nextStreamPrefix: 'Następny stream:',
+    showMoreStreams: (n) =>
+      pluralForms('pl', n, {
+        one: `Pokaż jeszcze ${n} stream`,
+        few: `Pokaż jeszcze ${n} streamy`,
+        many: `Pokaż jeszcze ${n} streamów`,
+        other: `Pokaż jeszcze ${n} streama`,
+      }),
+    showFewerStreams: 'Pokaż mniej',
   },
 };
 

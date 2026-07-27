@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
-import { getRelativeTime, getStatusText } from '../slot-status';
+import { getRelativeTime, getStatusParts, getStatusText } from '../slot-status';
 
 const NOW = new Date('2026-07-11T12:00:00Z');
 
@@ -100,8 +100,49 @@ describe('getStatusText — English default (bleed guard, byte-identical legacy 
       slot_kind: 'cancelled',
       streamer_timezone: 'Europe/Berlin',
     });
+    // The zone hour trails the whole phrase now (it is rendered as a separate
+    // muted span), rather than sitting inside the parenthetical.
     expect(getStatusText(slot, true)).toBe(
-      'No stream expected (usually around 9pm UTC · 11pm CEST)',
+      'No stream expected (usually around 9pm UTC) · 11pm CEST',
+    );
+  });
+});
+
+describe('getStatusParts — viewer time vs. streamer clock', () => {
+  it('splits the streamer zone out of the primary text', () => {
+    const slot = makeSlot({ streamer_timezone: 'Europe/Berlin' });
+    const { primary, secondary } = getStatusParts(slot, true);
+    expect(primary).toMatch(/^\w{3}, Jul 12 · Around 9pm UTC$/);
+    expect(secondary).toBe('11pm CEST');
+  });
+
+  it('drops the second frame when the streamer zone is unknown or UTC', () => {
+    // Without a home zone the old code still appended "9pm UTC" on the client,
+    // leaving viewer time + UTC + (in the table below) streamer time on screen.
+    expect(getStatusParts(makeSlot(), true).secondary).toBeNull();
+    expect(getStatusParts(makeSlot({ streamer_timezone: 'UTC' }), true).secondary).toBeNull();
+    expect(
+      getStatusParts(makeSlot({ streamer_timezone: 'Not/AZone' }), true).secondary,
+    ).toBeNull();
+  });
+
+  it('never adds a second frame to live or offline slots', () => {
+    const live = makeSlot({
+      status: 'live',
+      start_time: '2026-07-11T10:00:00Z',
+      streamer_timezone: 'Europe/Berlin',
+    });
+    expect(getStatusParts(live, true).secondary).toBeNull();
+    expect(
+      getStatusParts(makeSlot({ status: 'offline', streamer_timezone: 'Europe/Berlin' }), true)
+        .secondary,
+    ).toBeNull();
+  });
+
+  it('is stable across the SSR/client boundary (zone-fixed)', () => {
+    const slot = makeSlot({ streamer_timezone: 'America/New_York' });
+    expect(getStatusParts(slot, true).secondary).toBe(
+      getStatusParts(slot, false).secondary,
     );
   });
 });

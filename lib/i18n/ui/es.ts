@@ -11,6 +11,8 @@ export const es: UiLex = {
     featured: 'Destacado',
     nowStreaming: 'Transmitiendo ahora:',
     avatarAlt: (name) => `Avatar de ${name}`,
+    showMore: 'Ver más',
+    showLess: 'Ver menos',
   },
   promo: {
     valueProps: [
@@ -72,6 +74,8 @@ export const es: UiLex = {
     basedOn: (n, d) => `Basado en ${n} streams de los últimos ${d} días.`,
     allTimesIn: (tz) => `Todas las horas se muestran en ${tz}`,
     cityTime: (city) => `hora de ${city}`,
+    tzToggleYour: 'Tu hora',
+    tzToggleAria: 'Mostrar horas en',
     leadSentence: (name, days, times) => {
       const dayWord = days === 1 ? 'día' : 'días';
       const base = `${name} suele transmitir ${days} ${dayWord} por semana`;

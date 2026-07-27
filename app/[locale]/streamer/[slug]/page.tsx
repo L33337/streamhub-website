@@ -22,13 +22,20 @@ import {
 } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
-import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
+import { slotLexFor } from '@/lib/i18n-slot';
+import {
+  groupSlotsByUtcDate,
+  pickNextRealSlot,
+  sevenDayKeys,
+  utcDateLabel,
+} from '@/lib/format/time';
 import { ChannelStats } from '@/components/web/ChannelStats';
 import { StreamerRankings } from '@/components/web/StreamerRankings';
 import { StreamerHero } from '@/components/web/StreamerHero';
 import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
+import { CollapsibleSchedule } from '@/components/web/CollapsibleSchedule';
 import { EmptyDayRow } from '@/components/web/EmptyDayRow';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
 import { RecentStreamsSection } from '@/components/web/RecentStreamsSection';
@@ -38,6 +45,11 @@ import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 
 export const revalidate = 300;
+
+/** Slot cards rendered in full before the schedule is cut (the next one peeks). */
+const SCHEDULE_VISIBLE_SLOTS = 2;
+/** Below this many slots the whole week renders — truncating would gain nothing. */
+const SCHEDULE_TRUNCATE_THRESHOLD = 4;
 
 // Required for ISR: without generateStaticParams, Next renders this dynamic
 // route per-request (ƒ in the build output) and never caches the HTML. An
@@ -183,16 +195,20 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, liveSlots, upcomingSlots } = await loadStreamerPage(slug);
+  const { streamer, liveSlots, upcomingSlots, stats, now } = await loadStreamerPage(slug);
   if (!streamer) {
     return { title: 'Streamer not found — StreamerTimes' };
   }
-  // Earliest upcoming slot drives the "next stream" meta text.
-  const nextSlot =
-    [...upcomingSlots].sort((a, b) => a.start_time.localeCompare(b.start_time))[0] ?? null;
+  // Exactly the slot the page below renders as the next stream. Taking the
+  // earliest upcoming slot unfiltered (as this did) let a CANCELLED slot become
+  // the snippet's "next stream" — a SERP promise the page itself contradicts.
+  // `hasUpcoming` keeps the index gate on the old, wider condition.
   const meta = buildStreamerMetadata(streamer, slug, {
     liveSlot: liveSlots[0] ?? null,
-    nextSlot,
+    nextSlot: pickNextRealSlot(upcomingSlots, sevenDayKeys(now)),
+    hasUpcoming: upcomingSlots.length > 0,
+    // Already resolved by the shared cached load — no extra round-trip.
+    stats,
     viewerLocale: locale,
   });
   // M22 P3 (D2): each streamer page indexes as an en + own-language hreflang
@@ -235,11 +251,7 @@ export default async function StreamerPage({ params }: Props) {
   const allSlots = [...liveSlots, ...upcomingSlots];
   const grouped = groupSlotsByUtcDate(allSlots);
 
-  const sevenDays: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(now.getTime() + i * 86_400_000);
-    sevenDays.push(d.toISOString().slice(0, 10));
-  }
+  const sevenDays = sevenDayKeys(now);
 
   // Live slots that started before today's UTC date (always-on channels, but
   // also regular streams crossing midnight) get regrouped under today, so the
@@ -264,6 +276,30 @@ export default async function StreamerPage({ params }: Props) {
   const heroLiveSlot = liveSlots[0] ?? null;
   const isLive = heroLiveSlot !== null;
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
+
+  // Forward pointer for an empty "Today" row — and the same slot generateMetadata
+  // announces, so the snippet and the page can never disagree about it.
+  const nextRealSlot = pickNextRealSlot(upcomingSlots, sevenDays);
+  // Per-day slices with their offset into the flattened 7-day slot list, so the
+  // truncation below can be expressed as one global slot index. Quadratic, over
+  // seven days — the running-total version reassigned a captured accumulator
+  // during render, which the React compiler rejects.
+  const scheduleDays = sevenDays.map((dateKey, i) => ({
+    dateKey,
+    slots: grouped.get(dateKey) ?? [],
+    startIndex: sevenDays
+      .slice(0, i)
+      .reduce((n, key) => n + (grouped.get(key)?.length ?? 0), 0),
+  }));
+  const renderedSlotCount = scheduleDays.reduce((n, d) => n + d.slots.length, 0);
+  // Two whole cards plus a clipped third. Below the threshold the button would
+  // hide barely more than it shows, so the week renders in full.
+  const truncateAt = renderedSlotCount > SCHEDULE_TRUNCATE_THRESHOLD
+    ? SCHEDULE_VISIBLE_SLOTS
+    : null;
+  const collapsedSlotCount =
+    truncateAt !== null ? renderedSlotCount - SCHEDULE_VISIBLE_SLOTS : 0;
+
   // LIVE badge markup: VideoObject with publication:BroadcastEvent while the
   // hero slot is live (null when offline or without a thumbnail). The covered
   // slot is excluded from the bare BroadcastEvents so the same broadcast never
@@ -338,44 +374,78 @@ export default async function StreamerPage({ params }: Props) {
         / {streamer.name}
       </p>
 
-      <StreamerHero streamer={streamer} liveSlot={heroLiveSlot} uiLanguage={locale} />
+      <StreamerHero
+        streamer={streamer}
+        liveSlot={heroLiveSlot}
+        nextSlot={nextRealSlot}
+        rankings={rankings}
+        uiLanguage={locale}
+      />
 
       {!isLive && lastStreamCard}
 
       {showEmpty ? (
-        <EmptyScheduleState streamer={streamer} uiLanguage={locale} />
-      ) : (
         <>
-          <DayNavBar
-            days={sevenDays}
-            grouped={grouped}
-            todayUtc={todayUtc}
-            language={locale}
+          <EmptyScheduleState
+            streamer={streamer}
+            uiLanguage={locale}
+            hasTypicalTimes={stats !== null}
           />
-          {sevenDays.map((dateKey) => {
-            const slots = grouped.get(dateKey) ?? [];
-            const label = utcDateLabel(dateKey, todayUtc, uiLang);
-            if (slots.length === 0) {
-              return (
-                <EmptyDayRow
-                  key={dateKey}
-                  dateKey={dateKey}
-                  label={label}
-                  language={locale}
-                />
-              );
-            }
-            return (
-              <DaySection
-                key={dateKey}
-                dateKey={dateKey}
-                label={label}
-                slots={slots}
+          {/* Pulled up out of its usual slot below: with nothing scheduled, the
+              typical-times table is the page's actual answer to "when does X
+              stream?" and must not sit behind Channel stats + Rankings. */}
+          {stats && (
+            <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />
+          )}
+        </>
+      ) : (
+        (() => {
+          const schedule = (
+            <>
+              <DayNavBar
+                days={sevenDays}
+                grouped={grouped}
+                todayUtc={todayUtc}
                 language={locale}
               />
-            );
-          })}
-        </>
+              {scheduleDays.map(({ dateKey, slots, startIndex }) => {
+                const label = utcDateLabel(dateKey, todayUtc, uiLang);
+                if (slots.length === 0) {
+                  return (
+                    <EmptyDayRow
+                      key={dateKey}
+                      dateKey={dateKey}
+                      label={label}
+                      language={locale}
+                      nextSlot={dateKey === todayUtc ? nextRealSlot : null}
+                      collapsed={truncateAt !== null && startIndex > truncateAt}
+                    />
+                  );
+                }
+                return (
+                  <DaySection
+                    key={dateKey}
+                    dateKey={dateKey}
+                    label={label}
+                    slots={slots}
+                    language={locale}
+                    startIndex={startIndex}
+                    truncateAt={truncateAt}
+                  />
+                );
+              })}
+            </>
+          );
+          if (truncateAt === null) return schedule;
+          return (
+            <CollapsibleSchedule
+              moreLabel={slotLexFor(locale).showMoreStreams(collapsedSlotCount)}
+              lessLabel={slotLexFor(locale).showFewerStreams}
+            >
+              {schedule}
+            </CollapsibleSchedule>
+          );
+        })()
       )}
 
       {/* Channel stats + stats + recent streams + FAQ render outside the
@@ -387,7 +457,9 @@ export default async function StreamerPage({ params }: Props) {
 
       {isLive && lastStreamCard}
 
-      {stats && <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />}
+      {stats && !showEmpty && (
+        <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />
+      )}
 
       {recentStreams.length > 0 && (
         <RecentStreamsSection
@@ -416,6 +488,7 @@ export default async function StreamerPage({ params }: Props) {
       <RelatedStreamers
         currentId={streamer.id}
         language={streamer.language}
+        category={stats?.top_categories[0]?.category ?? null}
         uiLanguage={locale}
       />
     </main>

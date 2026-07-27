@@ -56,9 +56,14 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
     >
       <ul className="flex gap-2 overflow-x-auto" role="list">
         {days.map((dateKey) => {
-          const count = grouped.get(dateKey)?.length ?? 0;
+          const slots = grouped.get(dateKey) ?? [];
+          // A cancelled slot is a stream that is NOT happening — counting it as
+          // "1 stream" made quiet days look busy.
+          const count = slots.filter((s) => s.slot_kind !== 'cancelled').length;
           const label = utcDateShortLabel(dateKey, todayUtc, lang);
-          const disabled = count === 0;
+          // Still linkable when the only entries are cancellations: the day
+          // section exists and says something worth reading.
+          const disabled = slots.length === 0;
           const dayNum = new Date(dateKey + 'T00:00:00Z').getUTCDate();
           if (disabled) {
             return (
@@ -79,6 +84,7 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
               <a
                 href={`#day-${dateKey}`}
                 aria-current={isActive ? 'true' : undefined}
+                aria-label={count === 0 ? `${label}: ${L.noStreamsExpected}` : undefined}
                 className={`inline-flex flex-col items-center rounded-lg border px-3 py-1.5 text-xs transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
                   isActive
                     ? 'border-accent-cyan/70 bg-background-highlight'
@@ -91,7 +97,13 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
                   {label}
                 </span>
                 <span className="text-[10px] text-accent-cyan">
-                  {L.nStreams(count)}
+                  {count === 0 ? (
+                    <span aria-hidden="true" className="text-text-muted">
+                      –
+                    </span>
+                  ) : (
+                    L.nStreams(count)
+                  )}
                 </span>
               </a>
             </li>

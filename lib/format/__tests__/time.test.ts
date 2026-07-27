@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+  absoluteStartLabel,
   formatDuration,
   formatUtcDateShort,
   localizedNextLabel,
+  pickNextRealSlot,
   safeTimeZone,
+  sevenDayKeys,
   utcDateLabel,
   utcDateShortLabel,
 } from '../time';
@@ -132,5 +135,82 @@ describe('formatDuration stays language-neutral', () => {
     expect(formatDuration(195)).toBe('3h 15m');
     expect(formatDuration(45)).toBe('45m');
     expect(formatDuration(180)).toBe('3h');
+  });
+});
+
+describe('absoluteStartLabel', () => {
+  // 2026-07-18T19:00Z = Sat 21:00 in Berlin (CEST), Sat 15:00 in New York.
+  const iso = '2026-07-18T19:00:00Z';
+
+  it('carries the calendar date, unlike localizedNextLabel', () => {
+    expect(localizedNextLabel(iso, 'en', { relative: false })).toBe('Sat 19:00 UTC');
+    expect(absoluteStartLabel(iso, 'en')).toBe('Sat, Jul 18, 19:00');
+  });
+
+  it('renders in the given timezone', () => {
+    expect(absoluteStartLabel(iso, 'en', 'Europe/Berlin')).toBe('Sat, Jul 18, 21:00');
+    expect(absoluteStartLabel(iso, 'en', 'America/New_York')).toBe('Sat, Jul 18, 15:00');
+  });
+
+  it('localizes the date but keeps the 24h clock', () => {
+    expect(absoluteStartLabel(iso, 'de', 'Europe/Berlin')).toBe('Sa., 18. Juli, 21:00');
+  });
+
+  it('falls back to UTC for an unusable zone', () => {
+    expect(absoluteStartLabel(iso, 'en', 'Mars/Olympus')).toBe('Sat, Jul 18, 19:00');
+  });
+
+  it('falls back to en-US for a malformed language tag', () => {
+    // Only MALFORMED tags reach the catch; an unknown-but-valid tag ('xx')
+    // resolves to the host locale instead — same as localizedNextLabel and
+    // weekdayLabel. Callers on this path always pass a validated UiLang.
+    expect(absoluteStartLabel(iso, '')).toBe('Sat, Jul 18, 19:00');
+  });
+
+  it('returns an empty string for an unparseable timestamp', () => {
+    expect(absoluteStartLabel('nope')).toBe('');
+  });
+});
+
+describe('sevenDayKeys', () => {
+  it('starts today and spans a week of UTC date keys', () => {
+    const keys = sevenDayKeys(new Date('2026-07-30T23:00:00Z'));
+    expect(keys).toHaveLength(7);
+    expect(keys[0]).toBe('2026-07-30');
+    expect(keys[6]).toBe('2026-08-05');
+  });
+});
+
+describe('pickNextRealSlot', () => {
+  const days = sevenDayKeys(new Date('2026-07-28T00:00:00Z'));
+  const slot = (start: string, kind?: string) => ({
+    start_time: start,
+    ...(kind ? { slot_kind: kind } : {}),
+  });
+
+  it('takes the earliest upcoming slot regardless of input order', () => {
+    const late = slot('2026-07-30T18:00:00Z');
+    const early = slot('2026-07-29T18:00:00Z');
+    expect(pickNextRealSlot([late, early], days)).toBe(early);
+  });
+
+  it('skips a cancelled slot — a cancellation is not a next stream', () => {
+    const cancelled = slot('2026-07-29T18:00:00Z', 'cancelled');
+    const real = slot('2026-07-30T18:00:00Z');
+    expect(pickNextRealSlot([cancelled, real], days)).toBe(real);
+  });
+
+  it('skips slots past the last rendered day section', () => {
+    // The fetch window reaches a day beyond the seven days that get a section.
+    expect(pickNextRealSlot([slot('2026-08-04T18:00:00Z')], days)).toBeNull();
+  });
+
+  it('returns null when every upcoming slot is cancelled', () => {
+    expect(pickNextRealSlot([slot('2026-07-29T18:00:00Z', 'cancelled')], days)).toBeNull();
+  });
+
+  it('treats a missing slot_kind as a regular stream (API deploy skew)', () => {
+    const s = slot('2026-07-29T18:00:00Z');
+    expect(pickNextRealSlot([s], days)).toBe(s);
   });
 });

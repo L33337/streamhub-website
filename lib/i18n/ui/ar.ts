@@ -24,6 +24,8 @@ export const ar: UiLex = {
     featured: 'مميز',
     nowStreaming: 'يبث الآن:',
     avatarAlt: (name) => `الصورة الرمزية لـ ${name}`,
+    showMore: 'عرض المزيد',
+    showLess: 'عرض أقل',
   },
   promo: {
     valueProps: [
@@ -87,6 +89,8 @@ export const ar: UiLex = {
     basedOn: (n, d) => `استنادًا إلى ${n} بثًا خلال آخر ${d} يومًا.`,
     allTimesIn: (tz) => `جميع الأوقات معروضة حسب ${tz}`,
     cityTime: (city) => `توقيت ${city}`,
+    tzToggleYour: 'بتوقيتك',
+    tzToggleAria: 'عرض الأوقات بـ',
     leadSentence: (name, days, times) => {
       const dayWord = pluralForms('ar', days, {
         one: 'يوم واحد',

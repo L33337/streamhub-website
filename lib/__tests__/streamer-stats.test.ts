@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { PublicStreamerStats } from '../server/partner-api';
-import { statsLeadSentence, statsTimezoneLabel } from '../streamer-stats';
+import {
+  activeWeekdayList,
+  statsLeadSentence,
+  statsTimezoneLabel,
+} from '../streamer-stats';
 
 function makeStats(overrides: Partial<PublicStreamerStats> = {}): PublicStreamerStats {
   return {
@@ -96,5 +100,36 @@ describe('statsLeadSentence', () => {
     expect(de).toContain('20:00');
     expect(de).toContain('23:30');
     expect(de).not.toContain('usually streams');
+  });
+});
+
+describe('activeWeekdayList', () => {
+  const weekday = (w: string) => ({
+    weekday: w,
+    start: '20:00',
+    end: '23:30',
+    duration_minutes: 210,
+  });
+  const withDays = (...w: string[]) =>
+    makeStats({
+      weekdays: w.map(weekday) as PublicStreamerStats['weekdays'],
+    });
+
+  it('lists the streamed days in ISO order, not input order', () => {
+    expect(activeWeekdayList(withDays('saturday', 'tuesday', 'thursday'))).toBe(
+      'Tue, Thu, Sat',
+    );
+  });
+
+  it('starts the week on Monday and ends it on Sunday', () => {
+    expect(activeWeekdayList(withDays('sunday', 'monday'))).toBe('Mon, Sun');
+  });
+
+  it('localizes the day names', () => {
+    expect(activeWeekdayList(withDays('tuesday', 'thursday'), 'de')).toBe('Di, Do');
+  });
+
+  it('returns null without weekday rows, so callers can fall back', () => {
+    expect(activeWeekdayList(makeStats())).toBeNull();
   });
 });

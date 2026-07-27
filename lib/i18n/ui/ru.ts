@@ -21,6 +21,8 @@ export const ru: UiLex = {
     featured: 'Рекомендуем',
     nowStreaming: 'Сейчас стримит:',
     avatarAlt: (name) => `Аватар ${name}`,
+    showMore: 'Показать больше',
+    showLess: 'Показать меньше',
   },
   promo: {
     valueProps: [
@@ -104,6 +106,8 @@ export const ru: UiLex = {
     },
     allTimesIn: (tz) => `Часовой пояс: ${tz}`,
     cityTime: (city) => `время ${city}`,
+    tzToggleYour: 'Ваше время',
+    tzToggleAria: 'Показывать время в',
     leadSentence: (name, days, times) => {
       const dayWord = pluralForms('ru', days, {
         one: `${days} день`,
