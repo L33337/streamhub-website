@@ -58,7 +58,7 @@ export function HomeEndCap({ locale = 'en' }: { locale?: UiLang }) {
           )}
         </div>
         <div className="hidden shrink-0 lg:block">
-          <AppQrCode />
+          <AppQrCode className="flex max-w-44 flex-col items-center gap-2 text-center" />
         </div>
       </div>
     </section>
