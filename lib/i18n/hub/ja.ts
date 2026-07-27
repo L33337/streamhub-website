@@ -104,6 +104,13 @@ export const ja: HubLex = {
     },
   },
   hero: {
+    claim: '配信スケジュール。クリップ。統計。すべてがひとつに。',
+    ctaLogin: 'ログイン',
+    ctaMid: 'または',
+    ctaApp: 'アプリを入手',
+    ctaTail: 'して、お気に入りの配信者をフォローしましょう。',
+    ctaAppOnlyLink: 'アプリを入手',
+    ctaAppOnlyTail: 'して、お気に入りの配信者をフォローしましょう。',
     kicker: 'ライブ配信ガイド',
     badgeNew: '新登場',
     badgeLive: 'iOS & Android で配信中',
@@ -232,6 +239,7 @@ export const ja: HubLex = {
     byGameAria: '人気ゲームのランキング',
     topGameStreamers: (category) => `${category} のトップストリーマー`,
     whoIsLive: '今誰が配信中?',
+    climbersThisWeek: '今週の急上昇ストリーマー',
     metricH1: {
       'most-followed': 'フォロワーの多いストリーマー',
       'fastest-growing': '急成長中のストリーマー',

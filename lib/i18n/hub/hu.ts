@@ -104,6 +104,13 @@ export const hu: HubLex = {
     },
   },
   hero: {
+    claim: 'Műsorrend. Klipek. Statisztikák. Mind egy helyen.',
+    ctaLogin: 'Jelentkezz be',
+    ctaMid: ' vagy ',
+    ctaApp: 'töltsd le az appot',
+    ctaTail: ', hogy kövesd a kedvenc streamereidet.',
+    ctaAppOnlyLink: 'Töltsd le az appot',
+    ctaAppOnlyTail: ', hogy kövesd a kedvenc streamereidet.',
     kicker: 'Élő streamer-kalauz',
     badgeNew: 'Új',
     badgeLive: 'Már elérhető iOS-re és Androidra',
@@ -234,6 +241,7 @@ export const hu: HubLex = {
     byGameAria: 'Népszerű játék-ranglisták',
     topGameStreamers: (category) => `A legjobb ${category}-streamerek`,
     whoIsLive: 'Ki van most élőben?',
+    climbersThisWeek: 'A hét legnagyobb feltörekvői',
     metricH1: {
       'most-followed': 'A legtöbb követővel rendelkező streamerek',
       'fastest-growing': 'A leggyorsabban növekvő streamerek',

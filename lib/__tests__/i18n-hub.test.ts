@@ -89,6 +89,14 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.sectionNav.clips', L.homeFeed.sectionNav.clips],
     ['homeFeed.sectionNav.stats', L.homeFeed.sectionNav.stats],
     ['homeFeed.sectionNav.discover', L.homeFeed.sectionNav.discover],
+    ['hero.claim', L.hero.claim],
+    // The CTA fragments render as one sentence with two inline links; assert
+    // the assembled line (the segments carry the significant spacing).
+    [
+      'hero.cta',
+      `${L.hero.ctaLogin}${L.hero.ctaMid}${L.hero.ctaApp}${L.hero.ctaTail}`,
+    ],
+    ['hero.ctaAppOnly', `${L.hero.ctaAppOnlyLink}${L.hero.ctaAppOnlyTail}`],
     ['hero.kicker', L.hero.kicker],
     ['hero.badgeNew', L.hero.badgeNew],
     ['hero.badgeLive', L.hero.badgeLive],
@@ -263,6 +271,16 @@ describe('HUB_STRINGS lexica', () => {
 
 describe('English lexicon regression guard (legacy hardcoded strings)', () => {
   const L = HUB_STRINGS.en;
+
+  it('pins the homepage masthead copy (rebuild round 2, 2026-07-27)', () => {
+    expect(L.hero.claim).toBe('Stream Schedule. Highlights. Stats. All in One Place.');
+    expect(`${L.hero.ctaLogin}${L.hero.ctaMid}${L.hero.ctaApp}${L.hero.ctaTail}`).toBe(
+      'Log in or get the App to follow your favorite streamers.',
+    );
+    expect(`${L.hero.ctaAppOnlyLink}${L.hero.ctaAppOnlyTail}`).toBe(
+      'Get the App to follow your favorite streamers.',
+    );
+  });
 
   it('keeps the previously hardcoded copy byte-identical', () => {
     // HomeHero

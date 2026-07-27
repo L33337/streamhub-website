@@ -21,13 +21,14 @@ import { isUiLang } from '@/lib/i18n-core';
 
 // Route handlers + metadata routes that live at the app/ root and must never
 // be locale-rewritten. /auth/login etc. are PAGES and are NOT listed here.
+// The brand og/twitter images moved into app/[locale]/ (metadata file
+// conventions only attach within their own segment), so /opengraph-image and
+// /twitter-image now go through the normal /en rewrite like any page.
 const PASSTHROUGH_EXACT = new Set([
   '/get',
   '/auth/callback',
   '/auth/confirm',
   '/auth/sign-out',
-  '/opengraph-image',
-  '/twitter-image',
 ]);
 
 function isPassthrough(pathname: string): boolean {

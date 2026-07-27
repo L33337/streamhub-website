@@ -9,7 +9,6 @@ import { fetchFeaturedStreamers } from '@/lib/server/home-featured';
 import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 import {
-  countStartingSoon,
   filterFutureSlots,
   floorToBucket,
   pickLiveRailSlots,
@@ -27,7 +26,7 @@ import {
   HomeSectionNav,
   type HomeSectionNavItem,
 } from '@/components/web/home/HomeSectionNav';
-import { HomeSessionBanner } from '@/components/web/home/HomeSessionBanner';
+import { SignedOutOnly } from '@/components/web/home/SignedOutOnly';
 import { HomeLiveRail } from '@/components/web/home/HomeLiveRail';
 import { HomeUpNext } from '@/components/web/home/HomeUpNext';
 import { HomeInterruptCard } from '@/components/web/home/HomeInterruptCard';
@@ -45,10 +44,9 @@ export const revalidate = 60;
 
 const SITE_URL = 'https://streamertimes.tv';
 
-/** Fetched wide (soon-count honesty), rendered capped (24 SlotCards max). */
+/** Fetched wide (the 24h window feeds several sections), rendered capped. */
 const UPCOMING_FETCH_LIMIT = 100;
 const UPCOMING_RENDER_LIMIT = 24;
-const SOON_WINDOW_HOURS = 6;
 
 /**
  * Anchor targets of the sticky section nav sit under two sticky bars
@@ -237,9 +235,6 @@ export default async function HomePage({ params }: Props) {
   const liveRailSlots = pickLiveRailSlots(liveSlots, 12);
   // Exact live count from the full sweep; the single-page fetch is the fallback.
   const liveCount = liveIds.size > 0 ? liveIds.size : liveRailSlots.length;
-  // Ticker stays a SITE-WIDE stat (all streamers); only the rendered lineup
-  // below is curated.
-  const soonCount = countStartingSoon(upcomingSlots, now, SOON_WINDOW_HOURS);
   // "Today's lineup" is editorially curated: featured streamers only. When
   // the featured-id fetch failed, fall back to the unfiltered list — a mixed
   // lineup beats an empty section. Future starts only: the bucketed fetch
@@ -310,20 +305,16 @@ export default async function HomePage({ params }: Props) {
         }}
       />
 
-      {/* Signed-in visitors get a client-side pointer to their real feed —
-          the page itself stays static for everyone (ISR-K1). */}
-      <HomeSessionBanner
-        text={L.homeFeed.sessionBanner.text}
-        cta={L.homeFeed.sessionBanner.cta}
-        href={localeHref(locale, '/feed')}
-      />
-
-      <HomeMasthead
-        locale={locale}
-        liveCount={liveCount}
-        soonCount={soonCount}
-        soonHours={SOON_WINDOW_HOURS}
-      />
+      {/* The masthead only pitches sign-in / the app, so signed-in visitors
+          skip it entirely and start at the section nav. The check is
+          client-side — the page itself stays static for everyone (ISR-K1) and
+          crawlers (always anonymous) keep the full H1. The signed-in fallback
+          preserves the document's single h1 for screen readers. */}
+      <SignedOutOnly
+        fallback={<h1 className="sr-only">{L.hero.claim}</h1>}
+      >
+        <HomeMasthead locale={locale} />
+      </SignedOutOnly>
 
       {/* The page map only earns its sticky row when there is enough page
           to map — below three sections it is chrome without value. */}

@@ -112,6 +112,13 @@ export const en: HubLex = {
     },
   },
   hero: {
+    claim: 'Stream Schedule. Highlights. Stats. All in One Place.',
+    ctaLogin: 'Log in',
+    ctaMid: ' or ',
+    ctaApp: 'get the App',
+    ctaTail: ' to follow your favorite streamers.',
+    ctaAppOnlyLink: 'Get the App',
+    ctaAppOnlyTail: ' to follow your favorite streamers.',
     kicker: 'Live streamer guide',
     badgeNew: 'New',
     badgeLive: 'Now live on iOS & Android',
@@ -247,6 +254,7 @@ export const en: HubLex = {
     byGameAria: 'Popular game rankings',
     topGameStreamers: (category) => `Top ${category} streamers`,
     whoIsLive: 'Who is live right now?',
+    climbersThisWeek: 'Biggest climbers this week',
     metricH1: {
       'most-followed': 'Most followed streamers',
       'fastest-growing': 'Fastest growing streamers',

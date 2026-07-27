@@ -202,6 +202,12 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
             </Link>
           ),
         )}
+        <Link
+          href="/rankings/climbers"
+          className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
+        >
+          Climbers this week
+        </Link>
       </nav>
 
       {entries.length > 0 ? (
@@ -296,6 +302,10 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
             </Link>
           </span>
         ))}
+        {'  ·  '}
+        <Link href="/rankings/climbers" className="text-accent-cyan hover:text-text-primary">
+          Climbers this week
+        </Link>
         {'  ·  '}
         <Link href="/streamers" className="text-accent-cyan hover:text-text-primary">
           Browse all streamers A–Z

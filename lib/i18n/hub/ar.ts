@@ -125,6 +125,13 @@ export const ar: HubLex = {
     },
   },
   hero: {
+    claim: 'جدول البث. المقاطع. الإحصائيات. كل ذلك في مكان واحد.',
+    ctaLogin: 'سجّل الدخول',
+    ctaMid: ' أو ',
+    ctaApp: 'حمّل التطبيق',
+    ctaTail: ' لمتابعة صانعي المحتوى المفضّلين لديك.',
+    ctaAppOnlyLink: 'حمّل التطبيق',
+    ctaAppOnlyTail: ' لمتابعة صانعي المحتوى المفضّلين لديك.',
     kicker: 'دليل البث المباشر',
     badgeNew: 'جديد',
     badgeLive: 'متوفر الآن على iOS وAndroid',
@@ -259,6 +266,7 @@ export const ar: HubLex = {
     byGameAria: 'تصنيفات الألعاب الشائعة',
     topGameStreamers: (category) => `أفضل ستريمرز ${category}`,
     whoIsLive: 'من يبث مباشرة الآن؟',
+    climbersThisWeek: 'أكبر الصاعدين هذا الأسبوع',
     metricH1: {
       'most-followed': 'الستريمرز الأكثر متابعة',
       'fastest-growing': 'الستريمرز الأسرع نموًا',

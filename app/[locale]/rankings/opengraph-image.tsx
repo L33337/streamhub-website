@@ -3,7 +3,9 @@ import { getPartnerApi } from '@/lib/server/partner-api';
 import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 import { formatCompactNumber } from '@/lib/format/number';
 
-// Shared OG image for /rankings and its subpages (nearest-ancestor rule).
+// OG image for the /rankings hub page ONLY — metadata file conventions
+// attach within their own segment, so the metric subpages each carry their
+// own opengraph-image.tsx (lib/og/leaderboard.tsx).
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`. The fetch is
 // wrapped — any error degrades to the count-free fallback subtitle.
 export const runtime = 'nodejs';

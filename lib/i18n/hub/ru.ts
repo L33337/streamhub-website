@@ -130,6 +130,13 @@ export const ru: HubLex = {
     },
   },
   hero: {
+    claim: 'Расписание. Клипы. Статистика. Всё в одном месте.',
+    ctaLogin: 'Войдите',
+    ctaMid: ' или ',
+    ctaApp: 'скачайте приложение',
+    ctaTail: ', чтобы следить за любимыми стримерами.',
+    ctaAppOnlyLink: 'Скачайте приложение',
+    ctaAppOnlyTail: ', чтобы следить за любимыми стримерами.',
     kicker: 'Гид по live-стримам',
     badgeNew: 'Новинка',
     badgeLive: 'Уже доступно для iOS и Android',
@@ -284,6 +291,7 @@ export const ru: HubLex = {
     byGameAria: 'Рейтинги популярных игр',
     topGameStreamers: (category) => `Лучшие стримеры ${category}`,
     whoIsLive: 'Кто сейчас в эфире?',
+    climbersThisWeek: 'Главные взлёты недели',
     metricH1: {
       'most-followed': 'Стримеры с наибольшим числом подписчиков',
       'fastest-growing': 'Самые быстрорастущие стримеры',

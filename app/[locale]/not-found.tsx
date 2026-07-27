@@ -5,8 +5,12 @@ import { useParams } from 'next/navigation';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { chromeLexFor } from '@/lib/i18n-chrome';
 
-// Global 404 — also the catch-all for unmatched routes (middleware rewrites
-// unknown unprefixed paths into the /en tree, so every 404 renders here).
+// Global 404 — reached via notFound() throws (unknown streamer/game slugs
+// etc.) AND via the [...notFound] catch-all page, which claims every
+// unmatched URL after the middleware rewrote it into the locale tree. A
+// not-found.tsx alone never fires for unmatched routes in Next 16 — without
+// the catch-all this page was dead code for unknown URLs and visitors got
+// the unbranded framework 404.
 // Client component: not-found files receive no params, so the locale comes
 // from useParams(). Still fully static in effect — no data fetch, no cookies.
 export default function NotFound() {

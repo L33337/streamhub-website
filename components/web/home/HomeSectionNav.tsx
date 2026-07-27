@@ -62,7 +62,7 @@ export function HomeSectionNav({
   return (
     <nav
       aria-label={ariaLabel}
-      className="sticky top-[var(--header-height)] z-20 -mx-6 mt-6 border-b border-divider bg-background/95 px-6 py-2 backdrop-blur"
+      className="sticky top-[var(--header-height)] z-20 -mx-6 border-b border-divider bg-background/95 px-6 py-2 backdrop-blur"
     >
       <ul ref={listRef} className="flex gap-2 overflow-x-auto" role="list">
         {items.map(({ id, label }) => {

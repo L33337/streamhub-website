@@ -255,6 +255,13 @@ export default async function RankingsHubPage({ params }: Props) {
 
       <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">
         <Link
+          href={localeHref(locale, '/rankings/climbers')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {L.rankings.climbersThisWeek}
+        </Link>
+        {'  ·  '}
+        <Link
           href={localeHref(locale, '/live')}
           className="text-accent-cyan hover:text-text-primary"
         >

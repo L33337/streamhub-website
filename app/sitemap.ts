@@ -119,6 +119,14 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.6,
   },
   {
+    // Weekly movers recap. Listed while it warms up (same treatment as
+    // fastest-growing above — the page emits noindex until it has movers).
+    url: `${SITE_URL}/rankings/climbers`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.5,
+  },
+  {
     url: `${SITE_URL}/developers`,
     lastModified: BUILD_TIME,
     changeFrequency: 'monthly',

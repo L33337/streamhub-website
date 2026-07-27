@@ -60,9 +60,12 @@ export interface HubLex {
    */
   homeFeed: {
     /**
-     * Live ticker chip under the H1, e.g. "214 streamers live right now · 38
-     * starting in the next 6 hours". Either clause drops when its count is 0;
-     * never called with both 0 (the chip is hidden then).
+     * Live ticker chip, e.g. "214 streamers live right now · 38 starting in
+     * the next 6 hours". Either clause drops when its count is 0; never
+     * called with both 0 (the chip is hidden then).
+     *
+     * UNRENDERED since the masthead rebuild round 2 (2026-07-27) — the live
+     * count now heads the Live rail. Kept translated for re-use.
      */
     ticker(liveCount: number, soonCount: number, soonHours: number): string;
     /** "Live now" rail heading. */
@@ -137,7 +140,12 @@ export interface HubLex {
       webLink: string;
       webTail: string;
     };
-    /** Client-side banner for signed-in visitors. */
+    /**
+     * Client-side banner for signed-in visitors. UNRENDERED since the
+     * masthead rebuild round 2 (2026-07-27): signed-in visitors now start
+     * straight at the section nav (SignedOutOnly), and the /feed pointer
+     * lives in the header menu + interrupt card. Kept translated for re-use.
+     */
     sessionBanner: {
       text: string;
       cta: string;
@@ -159,6 +167,21 @@ export interface HubLex {
     };
   };
   hero: {
+    /** H1 of the homepage masthead (rebuild round 2, 2026-07-27): one plain
+     *  white line, no brand accent fragment. */
+    claim: string;
+    /** Conversion line under the H1, rendered as
+     *  `<a>{ctaLogin}</a>{ctaMid}<a>{ctaApp}</a>{ctaTail}` — every language
+     *  therefore has to START the sentence with the sign-in link (all 12 do).
+     *  Leading/trailing spaces inside ctaMid/ctaTail are significant. */
+    ctaLogin: string;
+    ctaMid: string;
+    ctaApp: string;
+    ctaTail: string;
+    /** Same sentence without the sign-in half, for builds where the auth UI
+     *  is off (AUTH_UI_VISIBLE=false): `<a>{ctaAppOnlyLink}</a>{ctaAppOnlyTail}`. */
+    ctaAppOnlyLink: string;
+    ctaAppOnlyTail: string;
     /** Overline next to the date chip. */
     kicker: string;
     badgeNew: string;
@@ -310,6 +333,8 @@ export interface HubLex {
     /** Chip label, e.g. "Top Minecraft streamers". */
     topGameStreamers(category: string): string;
     whoIsLive: string;
+    /** Footer link to /rankings/climbers (weekly movers recap). */
+    climbersThisWeek: string;
     /** Per-metric section H1s — 'en' byte-identical to RANKING_PAGES h1. */
     metricH1: Record<HubRankingMetric, string>;
     /** Per-metric methodology notes — 'en' byte-identical to RANKING_PAGES. */

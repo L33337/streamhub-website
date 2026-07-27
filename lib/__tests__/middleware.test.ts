@@ -88,8 +88,6 @@ describe('root route handlers + assets are never rewritten', () => {
     '/llms.txt',
     '/manifest.webmanifest',
     '/screenshots/live-feed.webp',
-    '/opengraph-image',
-    '/twitter-image',
   ])('%s passes through untouched', async (path) => {
     const res = await middleware(req(path));
     expect(rewriteTarget(res)).toBeNull();
@@ -99,6 +97,11 @@ describe('root route handlers + assets are never rewritten', () => {
   it('still rewrites auth PAGES (login is not a route handler)', async () => {
     const res = await middleware(req('/auth/login'));
     expect(rewriteTarget(res)).toBe('/en/auth/login');
+  });
+
+  it('rewrites the brand og/twitter images into the locale tree (they live in app/[locale]/)', async () => {
+    expect(rewriteTarget(await middleware(req('/opengraph-image')))).toBe('/en/opengraph-image');
+    expect(rewriteTarget(await middleware(req('/twitter-image')))).toBe('/en/twitter-image');
   });
 
   it('rewrites the Twitch-import return PAGE into the locale tree', async () => {

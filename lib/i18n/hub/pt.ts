@@ -108,6 +108,13 @@ export const pt: HubLex = {
     },
   },
   hero: {
+    claim: 'Programação. Clipes. Estatísticas. Tudo em um só lugar.',
+    ctaLogin: 'Faça login',
+    ctaMid: ' ou ',
+    ctaApp: 'baixe o app',
+    ctaTail: ' para seguir seus streamers favoritos.',
+    ctaAppOnlyLink: 'Baixe o app',
+    ctaAppOnlyTail: ' para seguir seus streamers favoritos.',
     kicker: 'Guia de streamers ao vivo',
     badgeNew: 'Novo',
     badgeLive: 'Já disponível para iOS e Android',
@@ -243,6 +250,7 @@ export const pt: HubLex = {
     byGameAria: 'Rankings de jogos populares',
     topGameStreamers: (category) => `Melhores streamers de ${category}`,
     whoIsLive: 'Quem está ao vivo agora?',
+    climbersThisWeek: 'Maiores subidas da semana',
     metricH1: {
       'most-followed': 'Streamers com mais seguidores',
       'fastest-growing': 'Streamers que mais crescem',

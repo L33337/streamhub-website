@@ -18,9 +18,11 @@ transcript analysis. Canonical domain: https://streamertimes.tv
 
 ## Rankings
 - [Most followed streamers](https://streamertimes.tv/rankings/most-followed)
+- [Fastest growing streamers](https://streamertimes.tv/rankings/fastest-growing)
 - [Most watched streamers](https://streamertimes.tv/rankings/most-watched)
 - [Most active streamers](https://streamertimes.tv/rankings/most-active)
 - [Most punctual streamers](https://streamertimes.tv/rankings/most-reliable)
+- [Biggest climbers this week](https://streamertimes.tv/rankings/climbers)
 
 ## Detail pages
 - Streamer schedule: https://streamertimes.tv/streamer/{id}

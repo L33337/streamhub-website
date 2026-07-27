@@ -130,6 +130,13 @@ export const uk: HubLex = {
     },
   },
   hero: {
+    claim: 'Розклад. Кліпи. Статистика. Усе в одному місці.',
+    ctaLogin: 'Увійдіть',
+    ctaMid: ' або ',
+    ctaApp: 'установіть застосунок',
+    ctaTail: ', щоб стежити за улюбленими стрімерами.',
+    ctaAppOnlyLink: 'Установіть застосунок',
+    ctaAppOnlyTail: ', щоб стежити за улюбленими стрімерами.',
     kicker: 'Гід по live-стрімах',
     badgeNew: 'Новинка',
     badgeLive: 'Уже доступно для iOS та Android',
@@ -287,6 +294,7 @@ export const uk: HubLex = {
     byGameAria: 'Рейтинги популярних ігор',
     topGameStreamers: (category) => `Найкращі стримери ${category}`,
     whoIsLive: 'Хто зараз в ефірі?',
+    climbersThisWeek: 'Найбільші злети тижня',
     metricH1: {
       'most-followed': 'Стримери з найбільшою кількістю підписників',
       'fastest-growing': 'Стримери, що зростають найшвидше',
