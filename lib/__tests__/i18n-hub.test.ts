@@ -26,6 +26,57 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['common.allGamesCategories', L.common.allGamesCategories],
     ['home.browseAllGames', L.home.browseAllGames],
     ['home.seeLiveNow', L.home.seeLiveNow],
+    ['homeFeed.ticker.both', L.homeFeed.ticker(214, 38, 6)],
+    ['homeFeed.ticker.liveOnly', L.homeFeed.ticker(3, 0, 6)],
+    ['homeFeed.ticker.soonOnly', L.homeFeed.ticker(0, 5, 6)],
+    ['homeFeed.liveTitle', L.homeFeed.liveTitle],
+    ['homeFeed.upNextTitle', L.homeFeed.upNextTitle],
+    ['homeFeed.upNextLink', L.homeFeed.upNextLink],
+    ['homeFeed.chipAll', L.homeFeed.chipAll],
+    ['homeFeed.chipFavorites', L.homeFeed.chipFavorites],
+    ['homeFeed.bellAria', L.homeFeed.bellAria('NachtFalke')],
+    ['homeFeed.upsell.bellTitle', L.homeFeed.upsell.bellTitle],
+    ['homeFeed.upsell.bellBody', L.homeFeed.upsell.bellBody],
+    ['homeFeed.upsell.favoritesTitle', L.homeFeed.upsell.favoritesTitle],
+    ['homeFeed.upsell.favoritesBody', L.homeFeed.upsell.favoritesBody],
+    ['homeFeed.upsell.appCta', L.homeFeed.upsell.appCta],
+    ['homeFeed.upsell.loginCta', L.homeFeed.upsell.loginCta],
+    ['homeFeed.upsell.close', L.homeFeed.upsell.close],
+    ['homeFeed.interrupt.title', L.homeFeed.interrupt.title],
+    ['homeFeed.interrupt.body', L.homeFeed.interrupt.body],
+    ['homeFeed.interrupt.note', L.homeFeed.interrupt.note],
+    ['homeFeed.interrupt.appCta', L.homeFeed.interrupt.appCta],
+    ['homeFeed.interrupt.loginCta', L.homeFeed.interrupt.loginCta],
+    ['homeFeed.clipsTitle', L.homeFeed.clipsTitle],
+    ['homeFeed.quickFactsTitle', L.homeFeed.quickFactsTitle],
+    ['homeFeed.quickFactsSub', L.homeFeed.quickFactsSub],
+    ['homeFeed.factPredictionLabel', L.homeFeed.factPredictionLabel],
+    ['homeFeed.factPrediction', L.homeFeed.factPrediction(312, 359)],
+    ['homeFeed.factPeakLabel', L.homeFeed.factPeakLabel],
+    ['homeFeed.factPeak', L.homeFeed.factPeak('NachtFalke')],
+    ['homeFeed.factReliableLabel', L.homeFeed.factReliableLabel],
+    ['homeFeed.factReliable', L.homeFeed.factReliable('NachtFalke', 5, 5)],
+    ['homeFeed.factPauseLabel', L.homeFeed.factPauseLabel],
+    ['homeFeed.factPause', L.homeFeed.factPause('NachtFalke')],
+    ['homeFeed.risersTitle', L.homeFeed.risersTitle],
+    ['homeFeed.risersLink', L.homeFeed.risersLink],
+    ['homeFeed.risersGained', L.homeFeed.risersGained('+12.4K')],
+    ['homeFeed.mostWatchedTitle', L.homeFeed.mostWatchedTitle],
+    ['homeFeed.topStreamersCol', L.homeFeed.topStreamersCol],
+    ['homeFeed.topCategoriesCol', L.homeFeed.topCategoriesCol],
+    ['homeFeed.medianViewers', L.homeFeed.medianViewers('24.1K')],
+    ['homeFeed.hoursStreamed', L.homeFeed.hoursStreamed('1.2K')],
+    ['homeFeed.followers', L.homeFeed.followers('412K')],
+    ['homeFeed.missingStreamer', L.homeFeed.missingStreamer],
+    ['homeFeed.endcap.title', L.homeFeed.endcap.title],
+    ['homeFeed.endcap.bullets.0', L.homeFeed.endcap.bullets[0]],
+    ['homeFeed.endcap.bullets.1', L.homeFeed.endcap.bullets[1]],
+    ['homeFeed.endcap.bullets.2', L.homeFeed.endcap.bullets[2]],
+    ['homeFeed.endcap.webLead', L.homeFeed.endcap.webLead],
+    ['homeFeed.endcap.webLink', L.homeFeed.endcap.webLink],
+    ['homeFeed.endcap.webTail', L.homeFeed.endcap.webTail],
+    ['homeFeed.sessionBanner.text', L.homeFeed.sessionBanner.text],
+    ['homeFeed.sessionBanner.cta', L.homeFeed.sessionBanner.cta],
     ['hero.kicker', L.hero.kicker],
     ['hero.badgeNew', L.hero.badgeNew],
     ['hero.badgeLive', L.hero.badgeLive],
@@ -145,6 +196,14 @@ describe('HUB_STRINGS lexica', () => {
       expect(value.trim(), `${lang}:${key} empty`).not.toBe('');
       expect(value, `${lang}:${key} broken: "${value}"`).not.toMatch(BROKEN);
     }
+  });
+
+  it.each([...UI_LANGS])('%s embeds the counts in the homeFeed ticker', (lang) => {
+    const ticker = HUB_STRINGS[lang].homeFeed.ticker(214, 38, 6);
+    expect(ticker).toContain('214');
+    expect(ticker).toContain('38');
+    expect(HUB_STRINGS[lang].homeFeed.ticker(7, 0, 6)).toContain('7');
+    expect(HUB_STRINGS[lang].homeFeed.ticker(0, 9, 6)).toContain('9');
   });
 
   it.each([...UI_LANGS])('%s embeds the counts in the live intro', (lang) => {

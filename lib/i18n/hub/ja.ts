@@ -19,6 +19,76 @@ export const ja: HubLex = {
     browseAllGames: 'すべてのゲームとカテゴリーを見る →',
     seeLiveNow: '今配信中のストリーマーを見る →',
   },
+  homeFeed: {
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live = liveCount > 0 ? `${liveCount}人のストリーマーが配信中` : '';
+      const soon =
+        soonCount > 0 ? `${soonCount}人が今後${soonHours}時間以内に開始` : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: '配信中',
+    upNextTitle: '今日のラインナップ',
+    upNextLink: '配信中・まもなく開始 →',
+    chipAll: 'すべて',
+    chipFavorites: 'お気に入り',
+    bellAria: (name) => `${name}さんの配信開始を通知で受け取る`,
+    upsell: {
+      bellTitle: '配信を見逃さない',
+      bellBody:
+        '配信開始の直前にプッシュ通知が届きます — 無料のStreamer Timesアプリで。',
+      favoritesTitle: 'お気に入りをワンタップで',
+      favoritesBody:
+        'ストリーマーをフォローすると、このページが自分だけの番組表になります — 無料で、アプリでもこのブラウザでも。',
+      appCta: 'アプリを入手',
+      loginCta: '無料でログイン',
+      close: 'また今度',
+    },
+    interrupt: {
+      title: 'このページを、あなたのストリーマーだけで。',
+      body: 'ストリーマーをフォローすると、ガイドがあなた専用のフィードに変わります。自分の番組表、配信直前のプッシュ通知、今週のハイライトも。',
+      note: '30秒で完了 · 無料',
+      appCta: 'アプリを入手',
+      loginCta: 'ブラウザでログイン',
+    },
+    clipsTitle: '今週のクリップ',
+    quickFactsTitle: 'クイックファクト',
+    quickFactsSub: '過去7日間のトラッキングデータより',
+    factPredictionLabel: '予測チェック',
+    factPrediction: (hits, total) =>
+      `AIが予測した配信のうち${total}件中${hits}件が予測どおりに開始しました。`,
+    factPeakLabel: '今週のピーク',
+    factPeak: (name) => `${name}さんが今週最多の同時視聴者数を記録しました。`,
+    factReliableLabel: '時間ぴったり',
+    factReliable: (name, hits, total) =>
+      `${name}さんは直近の告知配信${total}件中${hits}件を時間どおりに開始しました。`,
+    factPauseLabel: 'お休み中',
+    factPause: (name) => `${name}さんはこの日までお休みです。`,
+    risersTitle: '今週の急上昇',
+    risersLink: 'すべてのランキング →',
+    risersGained: (delta) => `7日間でフォロワー${delta}`,
+    mostWatchedTitle: '最も視聴されている',
+    topStreamersCol: 'ストリーマー トップ5',
+    topCategoriesCol: 'カテゴリー トップ5',
+    medianViewers: (value) => `視聴者数の中央値 ${value}`,
+    hoursStreamed: (value) => `配信${value}時間 · 28日間`,
+    followers: (value) => `フォロワー${value}`,
+    missingStreamer: 'お目当てのストリーマーがいない？検索して追加 →',
+    endcap: {
+      title: '番組表を持ち歩こう。',
+      bullets: [
+        'お気に入りの配信開始をプッシュ通知でお知らせ',
+        'ホーム画面に次の配信ウィジェット',
+        'お気に入りはスマホとウェブで同期',
+      ],
+      webLead: 'ブラウザ派の方は？',
+      webLink: '無料アカウントを作成',
+      webTail: '— あなたのフィードが待っています。',
+    },
+    sessionBanner: {
+      text: 'おかえりなさい — パーソナルフィードの準備ができています。',
+      cta: 'マイフィードへ →',
+    },
+  },
   hero: {
     kicker: 'ライブ配信ガイド',
     badgeNew: '新登場',

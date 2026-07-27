@@ -22,6 +22,81 @@ export const en: HubLex = {
     browseAllGames: 'Browse all games & categories →',
     seeLiveNow: "See everyone who's live right now →",
   },
+  homeFeed: {
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live =
+        liveCount > 0
+          ? `${liveCount} streamer${liveCount === 1 ? '' : 's'} live right now`
+          : '';
+      const soon =
+        soonCount > 0
+          ? `${soonCount} starting in the next ${soonHours} hours`
+          : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'Live now',
+    upNextTitle: "Today's lineup",
+    upNextLink: 'Live & starting soon →',
+    chipAll: 'All',
+    chipFavorites: 'My favorites',
+    bellAria: (name) => `Get notified when ${name} goes live`,
+    upsell: {
+      bellTitle: 'Never miss a stream',
+      bellBody:
+        'Get a push notification right before a stream starts — with the free Streamer Times app.',
+      favoritesTitle: 'Your favorites, one tap away',
+      favoritesBody:
+        'Follow streamers to filter this page down to your own lineup — free, in the app or right here in the browser.',
+      appCta: 'Get the app',
+      loginCta: 'Sign in free',
+      close: 'Maybe later',
+    },
+    interrupt: {
+      title: 'This page — with only your streamers.',
+      body: 'Follow your streamers and the guide becomes your personal feed: your lineup, push alerts right before they go live, and their highlights of the week.',
+      note: 'Takes 30 seconds · free',
+      appCta: 'Get the app',
+      loginCta: 'Sign in on the web',
+    },
+    clipsTitle: 'Clips of the week',
+    quickFactsTitle: 'Quick facts',
+    quickFactsSub: 'From the last 7 days of tracked streams',
+    factPredictionLabel: 'Prediction check',
+    factPrediction: (hits, total) =>
+      `${hits} of ${total} AI-predicted streams started as forecast.`,
+    factPeakLabel: 'Peak of the week',
+    factPeak: (name) => `${name} hit the highest concurrent viewers this week.`,
+    factReliableLabel: 'Right on time',
+    factReliable: (name, hits, total) =>
+      `${name} started ${hits} of ${total} recent announced streams on time.`,
+    factPauseLabel: 'On a break',
+    factPause: (name) => `${name} is on a break until this date.`,
+    risersTitle: 'Risers of the week',
+    risersLink: 'All rankings →',
+    risersGained: (delta) => `${delta} followers in 7 days`,
+    mostWatchedTitle: 'Most watched',
+    topStreamersCol: 'Top 5 streamers',
+    topCategoriesCol: 'Top 5 categories',
+    medianViewers: (value) => `${value} median viewers`,
+    hoursStreamed: (value) => `${value} h live · 28 days`,
+    followers: (value) => `${value} followers`,
+    missingStreamer: 'Your streamer missing? Search & add them →',
+    endcap: {
+      title: 'Take your lineup with you.',
+      bullets: [
+        'Push alerts the moment your streamers go live',
+        'Up-next widget on your home screen',
+        'Favorites in sync — phone & web',
+      ],
+      webLead: 'Prefer the browser?',
+      webLink: 'Create a free account',
+      webTail: '— your feed is waiting.',
+    },
+    sessionBanner: {
+      text: 'Welcome back — your personal feed is ready.',
+      cta: 'Go to my feed →',
+    },
+  },
   hero: {
     kicker: 'Live streamer guide',
     badgeNew: 'New',

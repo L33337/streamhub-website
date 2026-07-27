@@ -19,6 +19,80 @@ export const pt: HubLex = {
     browseAllGames: 'Explore todos os jogos e categorias →',
     seeLiveNow: 'Veja quem está ao vivo agora →',
   },
+  homeFeed: {
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live =
+        liveCount > 0
+          ? `${liveCount} streamer${liveCount === 1 ? '' : 's'} ao vivo agora`
+          : '';
+      const soon =
+        soonCount > 0 ? `${soonCount} começam nas próximas ${soonHours} horas` : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'Ao vivo agora',
+    upNextTitle: 'A programação de hoje',
+    upNextLink: 'Ao vivo e começando em breve →',
+    chipAll: 'Todos',
+    chipFavorites: 'Meus favoritos',
+    bellAria: (name) => `Receba um aviso quando ${name} entrar ao vivo`,
+    upsell: {
+      bellTitle: 'Não perca nenhuma stream',
+      bellBody:
+        'Receba uma notificação push pouco antes de a stream começar — com o app gratuito do Streamer Times.',
+      favoritesTitle: 'Seus favoritos, a um toque',
+      favoritesBody:
+        'Siga streamers e filtre esta página até a sua própria programação — grátis, no app ou aqui mesmo no navegador.',
+      appCta: 'Baixar o app',
+      loginCta: 'Entrar grátis',
+      close: 'Talvez depois',
+    },
+    interrupt: {
+      title: 'Esta página — só com os seus streamers.',
+      body: 'Siga seus streamers e o guia vira o seu feed pessoal: sua programação, alertas push pouco antes de entrarem ao vivo e os melhores momentos da semana deles.',
+      note: 'Leva 30 segundos · grátis',
+      appCta: 'Baixar o app',
+      loginCta: 'Entrar pela web',
+    },
+    clipsTitle: 'Clipes da semana',
+    quickFactsTitle: 'Fatos rápidos',
+    quickFactsSub: 'Dos últimos 7 dias de streams acompanhadas',
+    factPredictionLabel: 'Checagem de previsões',
+    factPrediction: (hits, total) =>
+      `${hits} de ${total} streams previstas pela IA começaram como previsto.`,
+    factPeakLabel: 'Pico da semana',
+    factPeak: (name) =>
+      `${name} atingiu o maior número de espectadores simultâneos da semana.`,
+    factReliableLabel: 'Na hora certa',
+    factReliable: (name, hits, total) =>
+      `${name} começou no horário ${hits} das últimas ${total} streams anunciadas.`,
+    factPauseLabel: 'De pausa',
+    factPause: (name) => `${name} está de pausa até esta data.`,
+    risersTitle: 'Em ascensão esta semana',
+    risersLink: 'Todos os rankings →',
+    risersGained: (delta) => `${delta} seguidores em 7 dias`,
+    mostWatchedTitle: 'Mais assistidos',
+    topStreamersCol: 'Top 5 streamers',
+    topCategoriesCol: 'Top 5 categorias',
+    medianViewers: (value) => `${value} espectadores (mediana)`,
+    hoursStreamed: (value) => `${value} h ao vivo · 28 dias`,
+    followers: (value) => `${value} seguidores`,
+    missingStreamer: 'Seu streamer está faltando? Busque e adicione →',
+    endcap: {
+      title: 'Leve a sua programação com você.',
+      bullets: [
+        'Alertas push assim que seus streamers entrarem ao vivo',
+        'Widget de próximas streams na tela inicial',
+        'Favoritos sincronizados — celular e web',
+      ],
+      webLead: 'Prefere o navegador?',
+      webLink: 'Crie uma conta grátis',
+      webTail: '— seu feed está esperando.',
+    },
+    sessionBanner: {
+      text: 'Bem-vindo de volta — seu feed pessoal está pronto.',
+      cta: 'Ir para meu feed →',
+    },
+  },
   hero: {
     kicker: 'Guia de streamers ao vivo',
     badgeNew: 'Novo',

@@ -40,6 +40,76 @@ export const ar: HubLex = {
     browseAllGames: 'تصفّح كل الألعاب والفئات ←',
     seeLiveNow: 'شاهد كل من يبث مباشرة الآن ←',
   },
+  homeFeed: {
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live = liveCount > 0 ? `${liveCount} من الستريمرز في بث مباشر الآن` : '';
+      const soon =
+        soonCount > 0 ? `${soonCount} سيبدؤون خلال ${soonHours} ساعات القادمة` : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'مباشر الآن',
+    upNextTitle: 'برنامج اليوم',
+    upNextLink: 'مباشر وسيبدأ قريبًا ←',
+    chipAll: 'الكل',
+    chipFavorites: 'مفضلاتي',
+    bellAria: (name) => `تلقَّ إشعارًا عندما يبدأ ${name} البث`,
+    upsell: {
+      bellTitle: 'لا تفوّت أي بث',
+      bellBody:
+        'احصل على إشعار فوري قبيل بداية البث — مع تطبيق Streamer Times المجاني.',
+      favoritesTitle: 'مفضلاتك على بُعد لمسة',
+      favoritesBody:
+        'تابع الستريمرز وصفِّ هذه الصفحة إلى برنامجك الخاص — مجانًا، في التطبيق أو هنا في المتصفح مباشرة.',
+      appCta: 'حمّل التطبيق',
+      loginCta: 'سجّل الدخول مجانًا',
+      close: 'ربما لاحقًا',
+    },
+    interrupt: {
+      title: 'هذه الصفحة — بستريمرزك أنت فقط.',
+      body: 'تابع الستريمرز المفضلين لديك ليتحوّل الدليل إلى خلاصتك الشخصية: برنامجك، إشعارات فورية قبيل بدء البث، وأبرز لحظات أسبوعهم.',
+      note: 'يستغرق 30 ثانية · مجانًا',
+      appCta: 'حمّل التطبيق',
+      loginCta: 'سجّل الدخول عبر الويب',
+    },
+    clipsTitle: 'مقاطع الأسبوع',
+    quickFactsTitle: 'حقائق سريعة',
+    quickFactsSub: 'من آخر 7 أيام من البثوث المتتبَّعة',
+    factPredictionLabel: 'فحص التوقعات',
+    factPrediction: (hits, total) =>
+      `${hits} من أصل ${total} بثًا توقّعه الذكاء الاصطناعي بدأت كما هو متوقع.`,
+    factPeakLabel: 'ذروة الأسبوع',
+    factPeak: (name) => `حقق ${name} أعلى عدد مشاهدين متزامنين هذا الأسبوع.`,
+    factReliableLabel: 'في الموعد تمامًا',
+    factReliable: (name, hits, total) =>
+      `بدأ ${name} في الموعد ${hits} من آخر ${total} بثًا معلنًا.`,
+    factPauseLabel: 'في استراحة',
+    factPause: (name) => `${name} في استراحة حتى هذا التاريخ.`,
+    risersTitle: 'صاعدو الأسبوع',
+    risersLink: 'كل التصنيفات ←',
+    risersGained: (delta) => `${delta} متابعًا في 7 أيام`,
+    mostWatchedTitle: 'الأكثر مشاهدة',
+    topStreamersCol: 'أفضل 5 ستريمرز',
+    topCategoriesCol: 'أفضل 5 فئات',
+    medianViewers: (value) => `${value} مشاهدًا (الوسيط)`,
+    hoursStreamed: (value) => `${value} ساعة بث · 28 يومًا`,
+    followers: (value) => `${value} متابعًا`,
+    missingStreamer: 'ستريمرك غير موجود؟ ابحث عنه وأضفه ←',
+    endcap: {
+      title: 'خذ برنامجك معك.',
+      bullets: [
+        'إشعارات فورية لحظة بدء الستريمرز المفضلين لديك',
+        'ودجت البثوث القادمة على شاشتك الرئيسية',
+        'مفضلات متزامنة — الهاتف والويب',
+      ],
+      webLead: 'تفضّل المتصفح؟',
+      webLink: 'أنشئ حسابًا مجانيًا',
+      webTail: '— خلاصتك في انتظارك.',
+    },
+    sessionBanner: {
+      text: 'مرحبًا بعودتك — خلاصتك الشخصية جاهزة.',
+      cta: 'إلى خلاصتي ←',
+    },
+  },
   hero: {
     kicker: 'دليل البث المباشر',
     badgeNew: 'جديد',

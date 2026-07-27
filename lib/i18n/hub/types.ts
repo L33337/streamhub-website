@@ -51,6 +51,90 @@ export interface HubLex {
     /** In-body link to /live. */
     seeLiveNow: string;
   };
+  /**
+   * Feed-style homepage sections (homepage rebuild 2026-07-27). Server
+   * components only; client islands (upsell sheet, session banner, chips)
+   * receive the resolved strings as props — every value that crosses a client
+   * boundary must be a plain string, so functions here are always invoked
+   * server-side first.
+   */
+  homeFeed: {
+    /**
+     * Live ticker chip under the H1, e.g. "214 streamers live right now · 38
+     * starting in the next 6 hours". Either clause drops when its count is 0;
+     * never called with both 0 (the chip is hidden then).
+     */
+    ticker(liveCount: number, soonCount: number, soonHours: number): string;
+    /** "Live now" rail heading. */
+    liveTitle: string;
+    /** "Today's lineup" prediction list heading. */
+    upNextTitle: string;
+    /** Section link to /live. */
+    upNextLink: string;
+    chipAll: string;
+    /** Locked favorites chip (needs an account). */
+    chipFavorites: string;
+    /** aria-label of the reminder bell on an upcoming slot card. */
+    bellAria(name: string): string;
+    /** Conversion sheet opened by the bell / locked favorites chip. */
+    upsell: {
+      bellTitle: string;
+      bellBody: string;
+      favoritesTitle: string;
+      favoritesBody: string;
+      appCta: string;
+      loginCta: string;
+      close: string;
+    };
+    /** Interrupt card after the first two content sections. */
+    interrupt: {
+      title: string;
+      body: string;
+      /** Small reassurance line under the body, e.g. "Takes 30 seconds · free". */
+      note: string;
+      appCta: string;
+      loginCta: string;
+    };
+    clipsTitle: string;
+    quickFactsTitle: string;
+    quickFactsSub: string;
+    factPredictionLabel: string;
+    /** Sentence under the big percentage; standalone (not a continuation). */
+    factPrediction(hits: number, total: number): string;
+    factPeakLabel: string;
+    factPeak(name: string): string;
+    factReliableLabel: string;
+    factReliable(name: string, hits: number, total: number): string;
+    factPauseLabel: string;
+    /** Big value is the localized return date, rendered by the component. */
+    factPause(name: string): string;
+    risersTitle: string;
+    risersLink: string;
+    /** Secondary line of a riser row; delta is preformatted incl. sign. */
+    risersGained(delta: string): string;
+    mostWatchedTitle: string;
+    topStreamersCol: string;
+    topCategoriesCol: string;
+    /** Value lines; numbers are preformatted via formatCompactNumber. */
+    medianViewers(value: string): string;
+    hoursStreamed(value: string): string;
+    followers(value: string): string;
+    /** Search & add hint under the popular grid. */
+    missingStreamer: string;
+    endcap: {
+      title: string;
+      bullets: [string, string, string];
+      /** "Prefer the browser?" lead + link + tail around the account link. */
+      webLead: string;
+      webLink: string;
+      webTail: string;
+    };
+    /** Client-side banner for signed-in visitors. */
+    sessionBanner: {
+      text: string;
+      cta: string;
+    };
+  };
   hero: {
     /** Overline next to the date chip. */
     kicker: string;

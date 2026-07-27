@@ -19,6 +19,76 @@ export const hu: HubLex = {
     browseAllGames: 'Böngészd az összes játékot és kategóriát →',
     seeLiveNow: 'Nézd meg, ki van most élőben →',
   },
+  homeFeed: {
+    ticker: (liveCount, soonCount, soonHours) => {
+      const live = liveCount > 0 ? `${liveCount} streamer épp élőben` : '';
+      const soon =
+        soonCount > 0 ? `${soonCount} indul a következő ${soonHours} órában` : '';
+      return live && soon ? `${live} · ${soon}` : live || soon;
+    },
+    liveTitle: 'Épp élőben',
+    upNextTitle: 'A mai műsor',
+    upNextLink: 'Élő és hamarosan induló →',
+    chipAll: 'Mind',
+    chipFavorites: 'Kedvenceim',
+    bellAria: (name) => `Értesítés, amikor ${name} élőben van`,
+    upsell: {
+      bellTitle: 'Ne maradj le egyetlen streamről se',
+      bellBody:
+        'Kapj push-értesítést közvetlenül a stream indulása előtt — az ingyenes Streamer Times appal.',
+      favoritesTitle: 'Kedvenceid egyetlen érintésre',
+      favoritesBody:
+        'Kövesd a streamereket, és szűrd ezt az oldalt a saját műsorodra — ingyen, az appban vagy itt a böngészőben.',
+      appCta: 'App letöltése',
+      loginCta: 'Ingyenes belépés',
+      close: 'Talán később',
+    },
+    interrupt: {
+      title: 'Ez az oldal — csak a te streamereiddel.',
+      body: 'Kövesd a streamereidet, és a műsorújságból személyes feeded lesz: a saját műsorod, push-értesítés közvetlenül az adás előtt és a hét legjobb pillanataik.',
+      note: '30 másodperc az egész · ingyenes',
+      appCta: 'App letöltése',
+      loginCta: 'Belépés böngészőből',
+    },
+    clipsTitle: 'A hét klipjei',
+    quickFactsTitle: 'Gyors tények',
+    quickFactsSub: 'Az elmúlt 7 nap követett streamjeiből',
+    factPredictionLabel: 'Előrejelzés-ellenőrzés',
+    factPrediction: (hits, total) =>
+      `${total} AI által előrejelzett streamből ${hits} az előrejelzés szerint indult.`,
+    factPeakLabel: 'A hét csúcsa',
+    factPeak: (name) => `${name} érte el a hét legmagasabb egyidejű nézőszámát.`,
+    factReliableLabel: 'Percre pontosan',
+    factReliable: (name, hits, total) =>
+      `${name} az utolsó ${total} bejelentett streamből ${hits} alkalommal indult időben.`,
+    factPauseLabel: 'Szünetel',
+    factPause: (name) => `${name} eddig a dátumig szünetet tart.`,
+    risersTitle: 'A hét feltörekvői',
+    risersLink: 'Minden ranglista →',
+    risersGained: (delta) => `${delta} követő 7 nap alatt`,
+    mostWatchedTitle: 'Legnézettebbek',
+    topStreamersCol: 'Top 5 streamer',
+    topCategoriesCol: 'Top 5 kategória',
+    medianViewers: (value) => `${value} néző (medián)`,
+    hoursStreamed: (value) => `${value} óra élőben · 28 nap`,
+    followers: (value) => `${value} követő`,
+    missingStreamer: 'Hiányzik a streamered? Keresd meg és add hozzá →',
+    endcap: {
+      title: 'Vidd magaddal a műsorodat.',
+      bullets: [
+        'Push-értesítés, amint a streamereid élőben vannak',
+        'Következő-stream widget a kezdőképernyőn',
+        'Kedvencek szinkronban — telefonon és weben',
+      ],
+      webLead: 'Inkább böngészőben?',
+      webLink: 'Hozz létre ingyenes fiókot',
+      webTail: '— a feeded már vár.',
+    },
+    sessionBanner: {
+      text: 'Üdv újra — a személyes feeded készen áll.',
+      cta: 'A feedemhez →',
+    },
+  },
   hero: {
     kicker: 'Élő streamer-kalauz',
     badgeNew: 'Új',
