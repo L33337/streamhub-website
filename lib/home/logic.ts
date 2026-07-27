@@ -62,6 +62,21 @@ export function topCategoriesByHours(games: PublicGame[], cap = 5): PublicGame[]
 }
 
 /**
+ * Fetch-URL timestamp bucket (5 min, the lib/server/next-streams.ts
+ * convention). Every homepage fetch that embeds a timestamp MUST floor it to
+ * this bucket: a raw `new Date().toISOString()` produces a unique URL per
+ * render, so the 12 locale prerenders each fire their own uncached API sweep
+ * — enough build-time load to time out the sitemap's sequential sweep and
+ * abort the deploy (Vercel build failure 2026-07-27).
+ */
+export const FETCH_BUCKET_MS = 300_000;
+
+/** Floor a date to the fetch bucket — stable data-cache keys inside it. */
+export function floorToBucket(date: Date, bucketMs = FETCH_BUCKET_MS): Date {
+  return new Date(Math.floor(date.getTime() / bucketMs) * bucketMs);
+}
+
+/**
  * Floor a date to the full hour (UTC), as ISO string. Slow-moving homepage
  * queries (clips, quick facts) embed timestamps in their fetch URLs; bucketing
  * keeps the Next data-cache key stable across the page's 60 s re-renders.

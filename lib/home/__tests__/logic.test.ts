@@ -3,6 +3,7 @@ import type { PublicGame, PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   buildPredictionAccuracy,
   countStartingSoon,
+  floorToBucket,
   floorToHourIso,
   pickLiveRailSlots,
   reliabilityHits,
@@ -112,6 +113,17 @@ describe('topCategoriesByHours', () => {
       3,
     );
     expect(top.map((g) => g.category)).toEqual(['Just Chatting', 'CS2', 'LoL']);
+  });
+});
+
+describe('floorToBucket', () => {
+  it('floors to the 5-minute bucket so fetch URLs dedupe across renders', () => {
+    expect(floorToBucket(new Date('2026-07-27T12:07:59.999Z')).toISOString()).toBe(
+      '2026-07-27T12:05:00.000Z',
+    );
+    expect(floorToBucket(new Date('2026-07-27T12:05:00.000Z')).toISOString()).toBe(
+      '2026-07-27T12:05:00.000Z',
+    );
   });
 });
 

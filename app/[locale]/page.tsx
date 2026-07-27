@@ -7,6 +7,7 @@ import { fetchTopClipsOfWeek } from '@/lib/server/home-clips';
 import { fetchHomeQuickFacts, type HomeQuickFacts } from '@/lib/server/quick-facts';
 import {
   countStartingSoon,
+  floorToBucket,
   pickLiveRailSlots,
   topCategoriesByHours,
 } from '@/lib/home/logic';
@@ -94,12 +95,14 @@ function buildWebSiteJsonLd(): object {
  * it; the exact count comes from getLiveStreamerIdSet). The wide `from`
  * window is required — live slots, especially always-on channels, have
  * start_times hours to weeks in the past (lib/server/live-streamers.ts
- * convention).
+ * convention). Caller passes a BUCKETED `now` (see floorToBucket) so the
+ * fetch URL — and with it the data-cache key — is shared across the 12
+ * locale prerenders instead of firing 12 separate sweeps.
  */
-async function fetchLiveSlots(now: Date): Promise<PublicStreamSlot[]> {
+async function fetchLiveSlots(bucketedNow: Date): Promise<PublicStreamSlot[]> {
   const api = getPartnerApi();
-  const from = new Date(now.getTime() - 365 * 86_400_000).toISOString();
-  const to = new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
+  const from = new Date(bucketedNow.getTime() - 365 * 86_400_000).toISOString();
+  const to = new Date(bucketedNow.getTime() + 6 * 60 * 60 * 1000).toISOString();
   const resp = await api.listSchedules({
     status: ['live'],
     includeAlwaysOn: true,
@@ -117,7 +120,11 @@ export default async function HomePage({ params }: Props) {
   const L = hubLexFor(locale);
   const api = getPartnerApi();
   const now = new Date();
-  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  // Timestamped fetch URLs use the 5-min bucket so all 12 locale prerenders
+  // (and ISR re-renders inside the window) share one data-cache entry per
+  // call. Display/derivation logic keeps the real `now`.
+  const bucketedNow = floorToBucket(now);
+  const twentyFourHoursAhead = new Date(bucketedNow.getTime() + 24 * 60 * 60 * 1000);
 
   // Every fetch failure-isolated: a thrown error during prerender aborts the
   // ENTIRE production build (2026-07-07 incident) — the homepage is the last
@@ -137,12 +144,12 @@ export default async function HomePage({ params }: Props) {
     api.listSchedules({
       status: ['upcoming'],
       includePredictions: true,
-      from: now.toISOString(),
-      to: twentyFourHoursFromNow.toISOString(),
+      from: bucketedNow.toISOString(),
+      to: twentyFourHoursAhead.toISOString(),
       limit: UPCOMING_FETCH_LIMIT,
       revalidate: 60,
     }),
-    fetchLiveSlots(now),
+    fetchLiveSlots(bucketedNow),
     getLiveStreamerIdSet(),
     api.listStreamers({
       order: 'popular',

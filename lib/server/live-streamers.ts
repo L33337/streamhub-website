@@ -6,6 +6,16 @@ let _cache: { set: Set<string>; expiresAt: number } | null = null;
 
 const CACHE_TTL_MS = 60_000;
 const MAX_PAGES = 5;
+/**
+ * `from`/`to` are floored to this bucket so the request URLs — and with them
+ * the Next.js data-cache keys — are shared across pages and build workers
+ * (lib/server/next-streams.ts convention). Raw `Date.now()` timestamps made
+ * every caller fire its own uncached sweep; during `next build` that
+ * multiplied across the hub pages × 12 locales and contributed to the
+ * partner-API saturation that timed out the sitemap (build failure
+ * 2026-07-27). The process-local cache above still handles the hot path.
+ */
+const BUCKET_MS = 300_000;
 
 /**
  * Returns the set of streamer ids that are currently live (including always-on
@@ -24,8 +34,9 @@ export async function getLiveStreamerIdSet(): Promise<Set<string>> {
   // Partner API filters by start_time >= from; live slots whose start_time
   // is in the past (the common case) would otherwise be dropped. Always-on
   // streamers in particular have start_times that are days or weeks old.
-  const wideFrom = new Date(Date.now() - 365 * 86_400_000).toISOString();
-  const wideTo = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+  const bucket = Math.floor(Date.now() / BUCKET_MS) * BUCKET_MS;
+  const wideFrom = new Date(bucket - 365 * 86_400_000).toISOString();
+  const wideTo = new Date(bucket + 6 * 60 * 60 * 1000).toISOString();
 
   do {
     const resp = await api.listSchedules({
