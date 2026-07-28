@@ -173,6 +173,18 @@ Key mechanics (don't break these):
 7. Smoke-test: sign-up with a scratch email on desktop, confirm ON A PHONE (cross-device proof) → signed in; wrong-password error copy; forgot → reset roundtrip; one Twitch + one Google login (regression); mobile-app signup + reset with a scratch account (template regression); mail headers show DKIM pass via Resend.
 8. Rollback = unset `NEXT_PUBLIC_EMAIL_AUTH_ENABLED` + redeploy. Steps 1–5 can stay in place harmlessly.
 
+# Middleware session-refresh budget (2026-07-28)
+
+`updateSession()` (`lib/supabase/middleware-helper.ts`) runs in front of EVERY request, so its failure mode is site-wide, not auth-local. On 2026-07-26/27/28 a swapping Supabase instance made GoTrue answer in tens of seconds and Vercel killed the edge middleware — **504 `MIDDLEWARE_INVOCATION_TIMEOUT` on ordinary pages, for logged-in visitors only**. Invariants that keep that from recurring:
+
+- **Anonymous requests must never touch Supabase.** The `sb-*` cookie prefix check returns before the client is constructed. All SEO traffic depends on this — it is why anonymous visitors saw a healthy site throughout the incident. Do not move work above that check.
+- **The refresh is bounded by `SESSION_REFRESH_BUDGET_MS` (2.5s).** A healthy round trip measured ~100ms from Vercel (A/B: anon median 61ms vs logged-in 160ms on `/live`), so the budget only fires when the backend is genuinely unwell.
+- **One `AbortController` drives both halves, and both are required.** As a signal it cancels the in-flight GoTrue request; as a race participant it guarantees return. The signal ALONE is not enough: auth-js wraps an aborted fetch into a *retryable* error and keeps retrying with exponential backoff until `AUTO_REFRESH_TICK_DURATION_MS` (30s) — past the middleware limit. Never replace the race with "just an AbortSignal".
+- **A timeout degrades, it does not log anyone out.** The existing cookies are forwarded untouched and the refresh retries on the next request. A `setAll` arriving after the budget cannot corrupt the returned response (it reassigns the local variable to a NEW `NextResponse`).
+- **This does not rescue gated pages** — `/feed`, `/favorites`, `/program`, `/settings`, `/onboarding` and `/auth/*` call `getUser()` themselves and would still stall. Everything else (`/`, `/streamer/*`, `/game/*`, `/rankings/*`, `/live`) has no server-side auth call at all, so for those the middleware is the only Supabase touchpoint and bounding it is sufficient.
+
+Frozen by `lib/supabase/__tests__/middleware-helper.test.ts`. Root cause of the incident was compute size, fixed separately (Micro → Small, 2026-07-28); the budget is the tier-independent guard.
+
 # SEO surface
 
 Marketing/hub SEO conventions (last extended 2026-07-12 — keywords cleanup, global 404, llms.txt, per-hub OG images):
