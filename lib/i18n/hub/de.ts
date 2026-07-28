@@ -28,7 +28,7 @@ export const de: HubLex = {
           : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Die größten Streams gerade live',
+    liveTitle: 'Gerade am meisten gesehen',
     liveFilterCategory: 'Kategorie',
     liveFilterLanguage: 'Sprache',
     liveFilterAllCategories: 'Alle Kategorien',

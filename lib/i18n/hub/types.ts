@@ -68,7 +68,7 @@ export interface HubLex {
      * count now heads the Live rail. Kept translated for re-use.
      */
     ticker(liveCount: number, soonCount: number, soonHours: number): string;
-    /** "Biggest live right now" rail heading (section rebuild 2026-07-28). */
+    /** "Most Watched right now" rail heading (section rebuild 2026-07-28). */
     liveTitle: string;
     /**
      * Live-rail filter bar. The two dropdowns filter the rail's own pool (the

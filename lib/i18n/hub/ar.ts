@@ -47,7 +47,7 @@ export const ar: HubLex = {
         soonCount > 0 ? `${soonCount} سيبدؤون خلال ${soonHours} ساعات القادمة` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'أكبر البثوث المباشرة الآن',
+    liveTitle: 'الأكثر مشاهدة الآن',
     liveFilterCategory: 'الفئة',
     liveFilterLanguage: 'اللغة',
     liveFilterAllCategories: 'كل الفئات',

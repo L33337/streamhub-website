@@ -20,7 +20,7 @@ import { AlwaysOnBadge, LiveBadge, PlatformBadge } from '@/components/web/Badges
 import { HomeLiveRailFilters } from './HomeLiveRailFilters';
 
 /**
- * "Biggest live right now" rail (section rebuild 2026-07-28, was "Live now").
+ * "Most Watched right now" rail (section rebuild 2026-07-28, was "Live now").
  *
  * Wide cards with the platform's live preview image, ranked by current
  * viewers (pickBiggestLiveSlots — one slot per streamer, fresh viewer sample

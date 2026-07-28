@@ -34,7 +34,7 @@ export const en: HubLex = {
           : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Biggest live right now',
+    liveTitle: 'Most Watched right now',
     liveFilterCategory: 'Category',
     liveFilterLanguage: 'Language',
     liveFilterAllCategories: 'All categories',

@@ -31,7 +31,7 @@ export interface LiveFilterStrings {
 }
 
 /**
- * Category + language dropdowns over the server-rendered "Biggest live right
+ * Category + language dropdowns over the server-rendered "Most Watched right
  * now" rail, plus the minute tick that keeps the runtime lines honest.
  *
  * Same philosophy as HomeUpNextFilters: the cards stay fully server-rendered

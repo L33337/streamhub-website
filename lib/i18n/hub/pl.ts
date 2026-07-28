@@ -46,7 +46,7 @@ export const pl: HubLex = {
           : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Największe transmisje na żywo',
+    liveTitle: 'Najczęściej oglądani teraz',
     liveFilterCategory: 'Kategoria',
     liveFilterLanguage: 'Język',
     liveFilterAllCategories: 'Wszystkie kategorie',

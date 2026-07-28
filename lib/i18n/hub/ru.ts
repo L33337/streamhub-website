@@ -51,7 +51,7 @@ export const ru: HubLex = {
         soonCount > 0 ? `начнут в ближайшие ${soonHours} ч: ${soonCount}` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Самые крупные трансляции сейчас',
+    liveTitle: 'Самые просматриваемые сейчас',
     liveFilterCategory: 'Категория',
     liveFilterLanguage: 'Язык',
     liveFilterAllCategories: 'Все категории',

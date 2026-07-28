@@ -1,4 +1,4 @@
-// Pure view-model helpers for the "Biggest live right now" rail (homepage
+// Pure view-model helpers for the "Most Watched right now" rail (homepage
 // section rebuild 2026-07-28). No fetching and no clock of their own — every
 // function takes its inputs, so the whole section is unit-testable and the
 // server render and the client's minute tick can share one implementation
@@ -29,11 +29,14 @@ const MIN_SAMPLED_POOL = 4;
 // ============================================
 
 /**
- * The rail's pool: the biggest live streams right now, one slot per streamer,
- * highest concurrent viewers first.
+ * The rail's pool for "Most Watched right now": one slot per streamer, highest
+ * CURRENT concurrent viewers first. Deliberately not renamed after the section
+ * — "most watched" is already taken in this codebase by the `most-watched`
+ * ranking metric (median viewers over 28 days, `HomeMostWatched`), and the two
+ * must not be confused in code.
  *
  * Requiring a fresh viewer sample is what makes the section's promise
- * ("biggest") checkable — and it doubles as the zombie guard. Slots whose
+ * checkable — and it doubles as the zombie guard. Slots whose
  * streamer went offline without the backend noticing keep `status='live'`
  * indefinitely (two such rows sat in production on 2026-07-28, live for 6 and
  * 12 days) and are never sampled again, so `viewer_count` stays null. Without
@@ -58,7 +61,7 @@ export function pickBiggestLiveSlots(
     .sort((a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1));
 
   // One card per streamer — a simulcast writes one live slot per platform and
-  // the same face twice in a "biggest" list reads as a bug. The sort already
+  // the same face twice in a most-watched list reads as a bug. The sort already
   // put the bigger of the two first.
   const seen = new Set<string>();
   const picked: PublicStreamSlot[] = [];

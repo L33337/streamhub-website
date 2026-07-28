@@ -51,7 +51,7 @@ export const uk: HubLex = {
         soonCount > 0 ? `почнуть протягом ${soonHours} год: ${soonCount}` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Найбільші трансляції зараз',
+    liveTitle: 'Найбільш переглядувані зараз',
     liveFilterCategory: 'Категорія',
     liveFilterLanguage: 'Мова',
     liveFilterAllCategories: 'Усі категорії',

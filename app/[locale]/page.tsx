@@ -49,7 +49,7 @@ const UPCOMING_FETCH_LIMIT = 100;
 const UPCOMING_RENDER_LIMIT = 24;
 
 /**
- * Cards in the "Biggest live right now" rail. Also the pool its two filters
+ * Cards in the "Most Watched right now" rail. Also the pool its two filters
  * operate on — see the call site.
  */
 const LIVE_RAIL_POOL = 30;

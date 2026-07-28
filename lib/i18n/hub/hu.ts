@@ -26,7 +26,7 @@ export const hu: HubLex = {
         soonCount > 0 ? `${soonCount} indul a következő ${soonHours} órában` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'A legnagyobb élő adások most',
+    liveTitle: 'Most a legnézettebbek',
     liveFilterCategory: 'Kategória',
     liveFilterLanguage: 'Nyelv',
     liveFilterAllCategories: 'Minden kategória',

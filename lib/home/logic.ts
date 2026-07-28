@@ -5,7 +5,7 @@
 import type { PublicGame, PublicStreamSlot } from '@/lib/server/partner-api';
 
 // The live rail's own helpers (pool picking, runtime estimate, filters) moved
-// to lib/home/live-rail.ts with the "Biggest live right now" rebuild.
+// to lib/home/live-rail.ts with the "Most Watched right now" rebuild.
 
 /**
  * How many streamers have an upcoming slot starting within the next N hours.

@@ -26,7 +26,7 @@ export const ja: HubLex = {
         soonCount > 0 ? `${soonCount}人が今後${soonHours}時間以内に開始` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: '視聴者数トップの配信',
+    liveTitle: '今いちばん見られている配信',
     liveFilterCategory: 'カテゴリ',
     liveFilterLanguage: '言語',
     liveFilterAllCategories: 'すべてのカテゴリ',

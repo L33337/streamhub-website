@@ -29,7 +29,7 @@ export const es: HubLex = {
         soonCount > 0 ? `${soonCount} empiezan en las próximas ${soonHours} horas` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Los directos más grandes ahora',
+    liveTitle: 'Los más vistos ahora mismo',
     liveFilterCategory: 'Categoría',
     liveFilterLanguage: 'Idioma',
     liveFilterAllCategories: 'Todas las categorías',

@@ -17,7 +17,7 @@ export function FeedSectionHeader({
 }) {
   return (
     // Wrapping matters on narrow viewports: with a long title (the live rail's
-    // "Biggest live right now") and a long action label the two used to
+    // "Most Watched right now") and a long action label the two used to
     // overlap at 390 px. The title/count/dot are laid out as inline text
     // rather than as flex items, so "· 10" follows the last wrapped word
     // instead of floating beside a two-line heading.

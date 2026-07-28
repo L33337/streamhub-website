@@ -26,7 +26,7 @@ export const it: HubLex = {
         soonCount > 0 ? `${soonCount} iniziano nelle prossime ${soonHours} ore` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Le live più grandi in questo momento',
+    liveTitle: 'I più visti in questo momento',
     liveFilterCategory: 'Categoria',
     liveFilterLanguage: 'Lingua',
     liveFilterAllCategories: 'Tutte le categorie',
