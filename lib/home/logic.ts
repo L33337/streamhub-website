@@ -4,30 +4,8 @@
 
 import type { PublicGame, PublicStreamSlot } from '@/lib/server/partner-api';
 
-/**
- * Top live slots for the "Live now" rail: highest viewer_count first (slots
- * without a fresh viewer sample sort last), one slot per streamer. Input is
- * expected to be live slots already; non-live rows are dropped defensively.
- */
-export function pickLiveRailSlots(
-  slots: PublicStreamSlot[],
-  cap = 12,
-): PublicStreamSlot[] {
-  const sorted = slots
-    .filter((slot) => slot.status === 'live')
-    .slice()
-    .sort((a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1));
-
-  const seen = new Set<string>();
-  const picked: PublicStreamSlot[] = [];
-  for (const slot of sorted) {
-    if (seen.has(slot.streamer_id)) continue;
-    seen.add(slot.streamer_id);
-    picked.push(slot);
-    if (picked.length >= cap) break;
-  }
-  return picked;
-}
+// The live rail's own helpers (pool picking, runtime estimate, filters) moved
+// to lib/home/live-rail.ts with the "Biggest live right now" rebuild.
 
 /**
  * How many streamers have an upcoming slot starting within the next N hours.

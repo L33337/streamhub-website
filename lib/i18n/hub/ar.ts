@@ -47,7 +47,16 @@ export const ar: HubLex = {
         soonCount > 0 ? `${soonCount} سيبدؤون خلال ${soonHours} ساعات القادمة` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'مباشر الآن',
+    liveTitle: 'أكبر البثوث المباشرة الآن',
+    liveFilterCategory: 'الفئة',
+    liveFilterLanguage: 'اللغة',
+    liveFilterAllCategories: 'كل الفئات',
+    liveFilterAllLanguages: 'كل اللغات',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `${count} بث مباشر`,
+    liveFilterReset: 'إعادة تعيين',
+    liveFilterEmpty: 'لا يوجد بث مباشر يطابق هذه الفلاتر الآن.',
+    liveFilterNote: (count) => `أفضل ${count} حسب عدد المشاهدين الآن`,
     upNextTitle: 'برنامج اليوم',
     upNextLink: 'مباشر وسيبدأ قريبًا ←',
     chipAll: 'الكل',

@@ -51,7 +51,16 @@ export const ru: HubLex = {
         soonCount > 0 ? `начнут в ближайшие ${soonHours} ч: ${soonCount}` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Сейчас в эфире',
+    liveTitle: 'Самые крупные трансляции сейчас',
+    liveFilterCategory: 'Категория',
+    liveFilterLanguage: 'Язык',
+    liveFilterAllCategories: 'Все категории',
+    liveFilterAllLanguages: 'Все языки',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `Трансляций: ${count}`,
+    liveFilterReset: 'Сбросить',
+    liveFilterEmpty: 'Сейчас нет трансляций по этим фильтрам.',
+    liveFilterNote: (count) => `Топ-${count} по числу зрителей сейчас`,
     upNextTitle: 'Программа на сегодня',
     upNextLink: 'В эфире и скоро →',
     chipAll: 'Все',

@@ -46,7 +46,16 @@ export const pl: HubLex = {
           : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Teraz na żywo',
+    liveTitle: 'Największe transmisje na żywo',
+    liveFilterCategory: 'Kategoria',
+    liveFilterLanguage: 'Język',
+    liveFilterAllCategories: 'Wszystkie kategorie',
+    liveFilterAllLanguages: 'Wszystkie języki',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `Transmisje: ${count}`,
+    liveFilterReset: 'Wyczyść',
+    liveFilterEmpty: 'Żadna transmisja nie pasuje teraz do tych filtrów.',
+    liveFilterNote: (count) => `Top ${count} wg liczby widzów`,
     upNextTitle: 'Dzisiejszy program',
     upNextLink: 'Na żywo i wkrótce →',
     chipAll: 'Wszystko',

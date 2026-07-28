@@ -34,7 +34,16 @@ export const en: HubLex = {
           : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Live now',
+    liveTitle: 'Biggest live right now',
+    liveFilterCategory: 'Category',
+    liveFilterLanguage: 'Language',
+    liveFilterAllCategories: 'All categories',
+    liveFilterAllLanguages: 'All languages',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `${count} live ${count === 1 ? 'stream' : 'streams'}`,
+    liveFilterReset: 'Reset',
+    liveFilterEmpty: 'No live stream matches these filters right now.',
+    liveFilterNote: (count) => `Top ${count} by current viewers`,
     upNextTitle: "Today's lineup",
     upNextLink: 'Live & starting soon →',
     chipAll: 'All',

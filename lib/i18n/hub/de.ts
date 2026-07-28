@@ -28,7 +28,16 @@ export const de: HubLex = {
           : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Jetzt live',
+    liveTitle: 'Die größten Streams gerade live',
+    liveFilterCategory: 'Kategorie',
+    liveFilterLanguage: 'Sprache',
+    liveFilterAllCategories: 'Alle Kategorien',
+    liveFilterAllLanguages: 'Alle Sprachen',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `${count} Streams live`,
+    liveFilterReset: 'Zurücksetzen',
+    liveFilterEmpty: 'Zu dieser Auswahl läuft gerade kein Stream.',
+    liveFilterNote: (count) => `Top ${count} nach aktuellen Zuschauern`,
     upNextTitle: 'Heute im Programm',
     upNextLink: 'Live & demnächst →',
     chipAll: 'Alle',

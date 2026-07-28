@@ -51,7 +51,16 @@ export const uk: HubLex = {
         soonCount > 0 ? `почнуть протягом ${soonHours} год: ${soonCount}` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Зараз в ефірі',
+    liveTitle: 'Найбільші трансляції зараз',
+    liveFilterCategory: 'Категорія',
+    liveFilterLanguage: 'Мова',
+    liveFilterAllCategories: 'Усі категорії',
+    liveFilterAllLanguages: 'Усі мови',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `Трансляцій: ${count}`,
+    liveFilterReset: 'Скинути',
+    liveFilterEmpty: 'Зараз немає трансляцій за цими фільтрами.',
+    liveFilterNote: (count) => `Топ-${count} за кількістю глядачів зараз`,
     upNextTitle: 'Програма на сьогодні',
     upNextLink: 'В ефірі та незабаром →',
     chipAll: 'Усі',

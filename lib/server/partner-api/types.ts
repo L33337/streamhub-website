@@ -87,6 +87,13 @@ export interface PublicStreamSlot {
   // Streamer's home timezone (IANA, e.g. "Europe/Berlin"); same value as
   // PublicStreamer.timezone. null while AI discovery hasn't determined it.
   streamer_timezone: string | null;
+  // Broadcast language of the CHANNEL (Twitch broadcaster_language: ISO 639-1
+  // plus Twitch's "other"/"asl"); same value as PublicStreamer.language. null
+  // for channels that never reported one — notably YouTube-only streamers, so
+  // language filters must treat null as "unknown", NOT as English. Distinct
+  // from copy_language (the language of THIS ROW's AI copy).
+  // Optional in this mirror for deploy skew (old API, new site).
+  streamer_language?: string | null;
   // Live concurrent viewers. Non-null only on status='live' slots with a
   // fresh sample (<25 min); null = unknown/stale, never "zero viewers".
   // Optional in this mirror for deploy skew (old API, new site) — treat

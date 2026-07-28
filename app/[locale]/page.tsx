@@ -11,11 +11,11 @@ import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 import {
   filterFutureSlots,
   floorToBucket,
-  pickLiveRailSlots,
   preferWithNextSlot,
   sampleRandom,
   topCategoriesByHours,
 } from '@/lib/home/logic';
+import { pickBiggestLiveSlots } from '@/lib/home/live-rail';
 import { gameSlug } from '@/lib/game-slug';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
@@ -47,6 +47,12 @@ const SITE_URL = 'https://streamertimes.tv';
 /** Fetched wide (the 24h window feeds several sections), rendered capped. */
 const UPCOMING_FETCH_LIMIT = 100;
 const UPCOMING_RENDER_LIMIT = 24;
+
+/**
+ * Cards in the "Biggest live right now" rail. Also the pool its two filters
+ * operate on — see the call site.
+ */
+const LIVE_RAIL_POOL = 30;
 
 /**
  * Anchor targets of the sticky section nav sit under two sticky bars
@@ -233,7 +239,12 @@ export default async function HomePage({ params }: Props) {
     6,
   );
 
-  const liveRailSlots = pickLiveRailSlots(liveSlots, 12);
+  // Rendering more than the visible dozen is what makes the category/language
+  // dropdowns meaningful: the client filters the DOM, so a language can only
+  // be found among the cards that were rendered. 30 keeps the section a
+  // "biggest right now" cut (its heading and note say so) while giving the
+  // smaller languages a realistic chance of appearing.
+  const liveRailSlots = pickBiggestLiveSlots(liveSlots, LIVE_RAIL_POOL);
   // Exact live count from the full sweep; the single-page fetch is the fallback.
   const liveCount = liveIds.size > 0 ? liveIds.size : liveRailSlots.length;
   // "Today's lineup" is editorially curated: featured streamers only. When
@@ -324,7 +335,12 @@ export default async function HomePage({ params }: Props) {
       )}
 
       <div id="home-live" className={SECTION_ANCHOR_CLASS}>
-        <HomeLiveRail slots={liveRailSlots} totalLive={liveCount} locale={locale} />
+        <HomeLiveRail
+          slots={liveRailSlots}
+          totalLive={liveCount}
+          locale={locale}
+          now={now}
+        />
       </div>
 
       <div id="home-lineup" className={SECTION_ANCHOR_CLASS}>

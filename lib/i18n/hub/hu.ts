@@ -26,7 +26,16 @@ export const hu: HubLex = {
         soonCount > 0 ? `${soonCount} indul a következő ${soonHours} órában` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'Épp élőben',
+    liveTitle: 'A legnagyobb élő adások most',
+    liveFilterCategory: 'Kategória',
+    liveFilterLanguage: 'Nyelv',
+    liveFilterAllCategories: 'Minden kategória',
+    liveFilterAllLanguages: 'Minden nyelv',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `${count} élő adás`,
+    liveFilterReset: 'Visszaállítás',
+    liveFilterEmpty: 'Jelenleg egyetlen élő adás sem felel meg ezeknek a szűrőknek.',
+    liveFilterNote: (count) => `Top ${count} a jelenlegi nézőszám alapján`,
     upNextTitle: 'A mai műsor',
     upNextLink: 'Élő és hamarosan induló →',
     chipAll: 'Mind',

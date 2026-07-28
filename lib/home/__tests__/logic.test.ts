@@ -6,7 +6,6 @@ import {
   filterFutureSlots,
   floorToBucket,
   floorToHourIso,
-  pickLiveRailSlots,
   preferWithNextSlot,
   rankWeekStreamed,
   reliabilityHits,
@@ -41,31 +40,8 @@ function game(category: string, hours28d: number | undefined): PublicGame {
   return { category, streamer_count: 3, hours_28d: hours28d } as PublicGame;
 }
 
-describe('pickLiveRailSlots', () => {
-  it('sorts by viewer count desc with null viewers last and dedupes streamers', () => {
-    const picked = pickLiveRailSlots([
-      slot({ id: 'a', streamer_id: 's1', viewer_count: 100 }),
-      slot({ id: 'b', streamer_id: 's2', viewer_count: null }),
-      slot({ id: 'c', streamer_id: 's3', viewer_count: 900 }),
-      // Same streamer with a lower-viewer duplicate slot: dropped.
-      slot({ id: 'd', streamer_id: 's3', viewer_count: 10 }),
-    ]);
-    expect(picked.map((s) => s.id)).toEqual(['c', 'a', 'b']);
-  });
-
-  it('drops non-live rows and applies the cap', () => {
-    const picked = pickLiveRailSlots(
-      [
-        slot({ id: 'a', streamer_id: 's1', viewer_count: 3 }),
-        slot({ id: 'b', streamer_id: 's2', viewer_count: 2 }),
-        slot({ id: 'up', streamer_id: 's4', status: 'upcoming', viewer_count: 999 }),
-        slot({ id: 'c', streamer_id: 's3', viewer_count: 1 }),
-      ],
-      2,
-    );
-    expect(picked.map((s) => s.id)).toEqual(['a', 'b']);
-  });
-});
+// pickLiveRailSlots moved to lib/home/live-rail.ts as pickBiggestLiveSlots —
+// its successor is covered in lib/home/__tests__/live-rail.test.ts.
 
 describe('countStartingSoon', () => {
   const now = new Date('2026-07-27T12:00:00.000Z');

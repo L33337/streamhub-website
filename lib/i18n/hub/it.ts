@@ -26,7 +26,16 @@ export const it: HubLex = {
         soonCount > 0 ? `${soonCount} iniziano nelle prossime ${soonHours} ore` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'In diretta ora',
+    liveTitle: 'Le live più grandi in questo momento',
+    liveFilterCategory: 'Categoria',
+    liveFilterLanguage: 'Lingua',
+    liveFilterAllCategories: 'Tutte le categorie',
+    liveFilterAllLanguages: 'Tutte le lingue',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `${count} live`,
+    liveFilterReset: 'Reimposta',
+    liveFilterEmpty: 'Nessuna live corrisponde a questi filtri al momento.',
+    liveFilterNote: (count) => `Top ${count} per spettatori attuali`,
     upNextTitle: 'Il palinsesto di oggi',
     upNextLink: 'In diretta e in arrivo →',
     chipAll: 'Tutti',

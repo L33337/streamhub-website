@@ -26,7 +26,16 @@ export const ja: HubLex = {
         soonCount > 0 ? `${soonCount}人が今後${soonHours}時間以内に開始` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: '配信中',
+    liveTitle: '視聴者数トップの配信',
+    liveFilterCategory: 'カテゴリ',
+    liveFilterLanguage: '言語',
+    liveFilterAllCategories: 'すべてのカテゴリ',
+    liveFilterAllLanguages: 'すべての言語',
+    liveFilterOption: (label, count) => `${label}（${count}）`,
+    liveFilterMatches: (count) => `${count}件の配信`,
+    liveFilterReset: 'リセット',
+    liveFilterEmpty: 'この条件に合う配信は今のところありません。',
+    liveFilterNote: (count) => `現在の視聴者数トップ${count}`,
     upNextTitle: '今日のラインナップ',
     upNextLink: '配信中・まもなく開始 →',
     chipAll: 'すべて',

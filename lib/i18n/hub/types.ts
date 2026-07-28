@@ -68,8 +68,40 @@ export interface HubLex {
      * count now heads the Live rail. Kept translated for re-use.
      */
     ticker(liveCount: number, soonCount: number, soonHours: number): string;
-    /** "Live now" rail heading. */
+    /** "Biggest live right now" rail heading (section rebuild 2026-07-28). */
     liveTitle: string;
+    /**
+     * Live-rail filter bar. The two dropdowns filter the rail's own pool (the
+     * biggest N live streams), NOT the whole live catalogue — `liveFilterNote`
+     * says so, and the section header keeps linking to /live for everything
+     * else. Language names come from Intl.DisplayNames, not from here.
+     */
+    liveFilterCategory: string;
+    liveFilterLanguage: string;
+    liveFilterAllCategories: string;
+    liveFilterAllLanguages: string;
+    /**
+     * Option label with its slot count, e.g. "Just Chatting (7)". Accepts
+     * strings so the server can render a `{label}` / `{count}` template for
+     * the client island, which recounts on every selection but cannot receive
+     * a function across the server/client boundary. Safe to template because
+     * nothing here agrees with the number grammatically — it is punctuation
+     * around two values.
+     */
+    liveFilterOption(label: string, count: number | string): string;
+    /**
+     * Match counter, shown only while a filter is active. Strictly numeric:
+     * the wording DOES agree with the count (English singular, Slavic plural
+     * categories), so the island receives one pre-rendered string per possible
+     * count instead of a template it would have to pluralize itself.
+     */
+    liveFilterMatches(count: number): string;
+    /** Both dropdowns cleared. */
+    liveFilterReset: string;
+    /** Empty state when a category/language combination matches nothing. */
+    liveFilterEmpty: string;
+    /** Scope note under the heading, e.g. "Top 30 by current viewers". */
+    liveFilterNote(count: number): string;
     /** "Today's lineup" prediction list heading. */
     upNextTitle: string;
     /** Section link to /live. */

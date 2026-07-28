@@ -29,7 +29,16 @@ export const es: HubLex = {
         soonCount > 0 ? `${soonCount} empiezan en las próximas ${soonHours} horas` : '';
       return live && soon ? `${live} · ${soon}` : live || soon;
     },
-    liveTitle: 'En directo ahora',
+    liveTitle: 'Los directos más grandes ahora',
+    liveFilterCategory: 'Categoría',
+    liveFilterLanguage: 'Idioma',
+    liveFilterAllCategories: 'Todas las categorías',
+    liveFilterAllLanguages: 'Todos los idiomas',
+    liveFilterOption: (label, count) => `${label} (${count})`,
+    liveFilterMatches: (count) => `${count} directos`,
+    liveFilterReset: 'Restablecer',
+    liveFilterEmpty: 'Ningún directo coincide con estos filtros ahora mismo.',
+    liveFilterNote: (count) => `Top ${count} por espectadores actuales`,
     upNextTitle: 'La programación de hoy',
     upNextLink: 'En directo y a punto de empezar →',
     chipAll: 'Todos',
