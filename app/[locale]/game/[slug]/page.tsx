@@ -672,7 +672,7 @@ export default async function GamePage({ params }: Props) {
                           {row.avatarUrl ? (
                             <Image
                               src={row.avatarUrl}
-                              alt=""
+                              alt={row.name}
                               width={36}
                               height={36}
                               unoptimized
@@ -759,7 +759,7 @@ export default async function GamePage({ params }: Props) {
                 {s.avatar ? (
                   <Image
                     src={s.avatar}
-                    alt=""
+                    alt={s.name}
                     width={48}
                     height={48}
                     unoptimized

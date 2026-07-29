@@ -157,7 +157,7 @@ export async function RelatedStreamers({
             {s.avatar_url ? (
               <Image
                 src={s.avatar_url}
-                alt=""
+                alt={s.name}
                 width={26}
                 height={26}
                 unoptimized

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import robots from '../robots';
 import { UI_LANGS } from '@/lib/i18n-core';
 
-// Freezes the three-group structure of robots.txt. The split is load-bearing:
-// search crawlers (Googlebot, Bingbot) must not crawl the churning
+// Freezes the four-group structure of robots.txt. The split is load-bearing:
+// search crawlers (Googlebot, Bingbot, DuckDuckBot) must not crawl the churning
 // /schedule/<id> URLs (GSC "Page with redirect" noise, ~500 wasted
 // crawls/day), but the * group must NOT block /schedule/ —
 // Discordbot/Twitterbot respect robots.txt, and a wildcard block would
@@ -44,6 +44,15 @@ describe('robots.txt rules', () => {
     expect(bingbot).toBeDefined();
     expect(bingbot?.disallow).toEqual([...SHARED_DISALLOWS, ...SCHEDULE_DISALLOWS]);
     expect(bingbot?.allow).toBe('/');
+  });
+
+  it('blocks /schedule/ for DuckDuckBot, repeating every shared disallow', () => {
+    // A pure search crawler: it renders no link embeds, so it belongs with
+    // Googlebot/Bingbot rather than in the unfurl-friendly * group.
+    const duckduckbot = ruleFor('DuckDuckBot');
+    expect(duckduckbot).toBeDefined();
+    expect(duckduckbot?.disallow).toEqual([...SHARED_DISALLOWS, ...SCHEDULE_DISALLOWS]);
+    expect(duckduckbot?.allow).toBe('/');
   });
 
   it('keeps /schedule/ crawlable for every other bot (social embeds)', () => {

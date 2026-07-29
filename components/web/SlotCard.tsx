@@ -87,7 +87,7 @@ export function SlotCard({
           {slot.thumbnail_url ? (
             <Image
               src={slot.thumbnail_url}
-              alt=""
+              alt={slot.title?.trim() || slot.streamer_name}
               fill
               unoptimized
               sizes={thumbSizes}
@@ -96,7 +96,7 @@ export function SlotCard({
           ) : slot.avatar_url ? (
             <Image
               src={slot.avatar_url}
-              alt=""
+              alt={slot.streamer_name}
               fill
               unoptimized
               sizes={thumbSizes}

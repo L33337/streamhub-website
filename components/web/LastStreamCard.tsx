@@ -74,7 +74,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
         {thumbnailUrl ? (
           <Image
             src={thumbnailUrl}
-            alt=""
+            alt={title}
             fill
             unoptimized
             sizes={THUMB_SIZES}
@@ -83,7 +83,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
         ) : avatarUrl ? (
           <Image
             src={avatarUrl}
-            alt=""
+            alt={streamerName}
             fill
             unoptimized
             sizes={THUMB_SIZES}

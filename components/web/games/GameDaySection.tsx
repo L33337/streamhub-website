@@ -33,7 +33,7 @@ function CompactSlotRow({ slot }: { slot: PublicStreamSlot }) {
         {slot.avatar_url ? (
           <Image
             src={slot.avatar_url}
-            alt=""
+            alt={slot.streamer_name}
             width={24}
             height={24}
             unoptimized

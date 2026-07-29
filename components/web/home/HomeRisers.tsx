@@ -49,7 +49,7 @@ export function HomeRisers({
               {entry.streamer.avatar_url ? (
                 <Image
                   src={entry.streamer.avatar_url}
-                  alt=""
+                  alt={entry.streamer.name}
                   width={32}
                   height={32}
                   unoptimized

@@ -40,7 +40,7 @@ export function AddStreamerCard({
         {result.avatarUrl ? (
           <Image
             src={result.avatarUrl}
-            alt=""
+            alt={result.displayName}
             width={64}
             height={64}
             unoptimized

@@ -26,7 +26,7 @@ export function SearchResultCard({ streamer, compact = false }: Props) {
       {streamer.avatar_url ? (
         <Image
           src={streamer.avatar_url}
-          alt=""
+          alt={streamer.name}
           width={avatarSize}
           height={avatarSize}
           unoptimized

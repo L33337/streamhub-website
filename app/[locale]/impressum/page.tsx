@@ -15,7 +15,7 @@ export async function generateMetadata({
   const meta: Metadata = {
     title: "Legal Notice (Impressum) - Streamer Times",
     description:
-      "Streamer Times Legal Notice (Impressum). Information in accordance with § 5 TMG.",
+      "Legal notice (Impressum) for Streamer Times: operator and contact details for streamertimes.tv, the livestream schedule guide, in accordance with § 5 TMG.",
     alternates: { canonical: "/impressum" },
   };
   // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow

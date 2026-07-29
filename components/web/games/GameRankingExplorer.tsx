@@ -220,7 +220,7 @@ export function GameRankingExplorer({
                         {row.avatarUrl ? (
                           <Image
                             src={row.avatarUrl}
-                            alt=""
+                            alt={row.name}
                             width={36}
                             height={36}
                             unoptimized

@@ -33,6 +33,8 @@ export function HomeInterruptCard({
               <Image
                 key={url}
                 src={url}
+                // Deliberately empty: the wrapper is aria-hidden, this stack is
+                // pure decoration for the headline next to it.
                 alt=""
                 width={40}
                 height={40}

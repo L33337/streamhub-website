@@ -63,7 +63,7 @@ export function HomeMostWatched({
                     {entry.streamer.avatar_url ? (
                       <Image
                         src={entry.streamer.avatar_url}
-                        alt=""
+                        alt={entry.streamer.name}
                         width={28}
                         height={28}
                         unoptimized
