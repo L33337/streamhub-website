@@ -34,6 +34,33 @@ export const LINEUP_POOL_MAX = 500;
  */
 export const LINEUP_SSR_COUNT = 24;
 
+/** Cards fully visible before the visitor asks for more. */
+export const LINEUP_VISIBLE_COUNT = 4;
+
+/**
+ * Cards kept inside the clamped peek row: enough to tease the next row under
+ * the fade, not enough to read. Purely an affordance — the clamp does the
+ * visual work.
+ */
+export const LINEUP_PEEK_COUNT = 2;
+
+/** How many more cards each "show more" click reveals. */
+export const LINEUP_REVEAL_STEP = 24;
+
+/**
+ * How many MATCHING cards are revealed after `steps` clicks. Step 0 is the
+ * resting state (the visible cards plus the peek teaser); every click after
+ * that is a flat batch, so the page never jumps from a handful of cards to
+ * several hundred.
+ *
+ * Deliberately independent of the filters: selecting a category used to force
+ * the list open, which meant one dropdown change rendered the entire window.
+ */
+export function lineupRevealLimit(steps: number): number {
+  if (steps <= 0) return LINEUP_VISIBLE_COUNT + LINEUP_PEEK_COUNT;
+  return steps * LINEUP_REVEAL_STEP;
+}
+
 /**
  * Splits the pool into the server-rendered head and the deferred tail. Both
  * keep the pool's chronological order, which is what lets the client append
@@ -159,10 +186,29 @@ export function matchesLineupFilters(
 }
 
 /**
- * Ids of the cards that should be visible: everything unexpired that passes
- * the selection. Unlike the live rail there is no default cut — the lineup
- * clamps its overflow visually (peek zone + show-all toggle) instead, so
- * "visible" here is purely about filtering and expiry.
+ * Ids of the unexpired cards passing the selection, IN POOL ORDER (i.e.
+ * chronological). The order is what the reveal window slices — everything the
+ * visitor sees is a prefix of this list, so "the next 24" is well defined
+ * across the server-rendered head and the deferred tail alike.
+ */
+export function matchingLineupIds(
+  items: LineupFilterItem[],
+  selection: LineupSelection,
+  localHour: (startMs: number) => number,
+  nowMs: number,
+): string[] {
+  const matching: string[] = [];
+  for (const item of items) {
+    if (isLineupItemExpired(item, nowMs)) continue;
+    if (!matchesLineupFilters(item, selection, localHour)) continue;
+    matching.push(item.id);
+  }
+  return matching;
+}
+
+/**
+ * Set form of `matchingLineupIds` — the full match set, which drives the match
+ * counter regardless of how much of it is currently revealed.
  */
 export function computeVisibleLineupIds(
   items: LineupFilterItem[],
@@ -170,13 +216,7 @@ export function computeVisibleLineupIds(
   localHour: (startMs: number) => number,
   nowMs: number,
 ): Set<string> {
-  const visible = new Set<string>();
-  for (const item of items) {
-    if (isLineupItemExpired(item, nowMs)) continue;
-    if (!matchesLineupFilters(item, selection, localHour)) continue;
-    visible.add(item.id);
-  }
-  return visible;
+  return new Set(matchingLineupIds(items, selection, localHour, nowMs));
 }
 
 /** Category options over the pool the other two dimensions already narrowed. */

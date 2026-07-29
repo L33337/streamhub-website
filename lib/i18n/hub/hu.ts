@@ -47,6 +47,7 @@ export const hu: HubLex = {
     chipAll: 'Mind',
     chipFavorites: 'Kedvenceim',
     lineupShowAll: (n) => `Mind a(z) ${n} stream megjelenítése`,
+    lineupShowMore: (n) => `Még ${n} megjelenítése`,
     lineupShowLess: 'Kevesebb',
     bellAria: (name) => `Értesítés, amikor ${name} élőben van`,
     upsell: {

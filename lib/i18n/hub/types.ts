@@ -155,8 +155,19 @@ export interface HubLex {
     chipAll: string;
     /** Locked favorites chip (needs an account). */
     chipFavorites: string;
-    /** Expand button under the clamped lineup, e.g. "Show all 24 streams". */
+    /**
+     * Expand button under the clamped lineup, e.g. "Show all 24 streams".
+     *
+     * UNRENDERED since 2026-07-30 — the lineup reveals in batches now, so the
+     * button says how many the next click adds (`lineupShowMore`). Kept as the
+     * island's fallback label and translated for re-use.
+     */
     lineupShowAll(n: number): string;
+    /**
+     * Reveal button, e.g. "Show 24 more" — `n` is the size of the NEXT batch,
+     * which is smaller than LINEUP_REVEAL_STEP for the last one.
+     */
+    lineupShowMore(n: number): string;
     lineupShowLess: string;
     /** aria-label of the reminder bell on an upcoming slot card. */
     bellAria(name: string): string;

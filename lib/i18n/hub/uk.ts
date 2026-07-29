@@ -72,6 +72,7 @@ export const uk: HubLex = {
     chipAll: 'Усі',
     chipFavorites: 'Мої улюблені',
     lineupShowAll: (n) => `Показати всі стрими (${n})`,
+    lineupShowMore: (n) => `Показати ще (${n})`,
     lineupShowLess: 'Згорнути',
     bellAria: (name) => `Отримати сповіщення, коли ${name} виходить в ефір`,
     upsell: {

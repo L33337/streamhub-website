@@ -51,6 +51,7 @@ export const es: HubLex = {
     chipAll: 'Todos',
     chipFavorites: 'Mis favoritos',
     lineupShowAll: (n) => `Mostrar los ${n} streams`,
+    lineupShowMore: (n) => `Mostrar ${n} más`,
     lineupShowLess: 'Mostrar menos',
     bellAria: (name) => `Recibe un aviso cuando ${name} esté en directo`,
     upsell: {

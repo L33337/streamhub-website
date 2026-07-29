@@ -68,6 +68,7 @@ export const ar: HubLex = {
     chipAll: 'الكل',
     chipFavorites: 'مفضلاتي',
     lineupShowAll: (n) => `عرض كل البثوث (${n})`,
+    lineupShowMore: (n) => `عرض ${n} إضافية`,
     lineupShowLess: 'عرض أقل',
     bellAria: (name) => `تلقَّ إشعارًا عندما يبدأ ${name} البث`,
     upsell: {

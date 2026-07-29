@@ -19,13 +19,15 @@ import {
   subscribeMinuteClock,
 } from '@/lib/home/minute-clock';
 import {
-  computeVisibleLineupIds,
   countLineupCategoryOptions,
   countLineupLanguageOptions,
   countLineupTimeOptions,
   isLineupItemExpired,
+  lineupRevealLimit,
+  LINEUP_REVEAL_STEP,
   localHourOf,
   matchesLineupFilters,
+  matchingLineupIds,
   type LineupFilterItem,
   type LineupSelection,
 } from '@/lib/home/lineup-filters';
@@ -52,8 +54,17 @@ export interface LineupFilterStrings {
   /** Localized "{label} ({count})" shape; only the two parts vary. */
   optionPattern: string;
   favoritesLabel: string;
-  /** Resolved server-side, e.g. "Show all 373 streams". */
+  /**
+   * Fallback label only — the reveal button normally uses showMoreByCount.
+   * Kept for the impossible case of a batch size outside that array.
+   */
   showAllLabel: string;
+  /**
+   * Pre-rendered "show N more" per batch size, indexed by it (0..step). Same
+   * reason as matchesByCount: the wording agrees with the number in several
+   * languages, so a `{count}` template would break their plural categories.
+   */
+  showMoreByCount: string[];
   showLessLabel: string;
   /** `bellAria` rendered with a `{name}` token, filled in per deferred card. */
   bellAriaPattern: string;
@@ -115,12 +126,10 @@ export function HomeUpNextFilters({
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState('');
   const [fromHour, setFromHour] = useState<number | null>(null);
-  // Only the TOGGLE's state is stored. Whether the list is open is derived
-  // (`expanded` below), because an active filter always shows every match: a
-  // filter result clipped by the peek zone reads as broken, and storing that
-  // as state meant Reset left the list expanded — with the whole deferred tail
-  // still in the DOM.
-  const [manualExpanded, setManualExpanded] = useState(false);
+  // How many times the visitor asked for more. The ONLY thing that opens the
+  // list — filtering deliberately does not touch it: one dropdown change used
+  // to expand the section and render the whole window.
+  const [revealSteps, setRevealSteps] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Clock for the expiry check AND the time buckets. Unlike the live rail's
   // island this one feeds the render output (the time dropdown's options are
@@ -208,17 +217,15 @@ export function HomeUpNextFilters({
 
   const active =
     activeCategory !== '' || activeLanguage !== '' || activeFromHour !== null;
-  const expanded = manualExpanded || active;
 
-  // Built inside the memo so the three clamped values ARE the dependencies —
-  // a `selection` object assembled in render would be a new reference every
-  // pass and recompute on every unrelated state change.
-  // `now ?? 0` is the pre-hydration case: epoch 0 expires nothing, and no
-  // selection can exist yet, so every card stays visible — identical to the
-  // markup the server sent.
-  const visibleIds = useMemo(
+  // Every match, in chronological order. Built inside the memo so the three
+  // clamped values ARE the dependencies — a `selection` object assembled in
+  // render would be a new reference every pass. `now ?? 0` is the
+  // pre-hydration case: epoch 0 expires nothing, and no selection can exist
+  // yet, so the markup matches what the server sent.
+  const matchingIds = useMemo(
     () =>
-      computeVisibleLineupIds(
+      matchingLineupIds(
         items,
         {
           category: activeCategory,
@@ -231,17 +238,23 @@ export function HomeUpNextFilters({
     [items, activeCategory, activeLanguage, activeFromHour, now],
   );
 
-  // The deferred tail materializes on intent only: a filter narrows the whole
-  // window (so its matches must be reachable) or the visitor asked for the
-  // full list. Both imply `expanded`, which is why the collapsed peek zone
-  // never has to hold hundreds of cards.
-  const showDeferred = active || expanded;
+  const matchCount = matchingIds.length;
+  const revealLimit = lineupRevealLimit(revealSteps);
+  const canRevealMore = revealLimit < matchCount;
+
+  // The reveal window is a PREFIX of the matches, so it spans both regimes:
+  // whichever cards fall inside it are shown, server-rendered or deferred.
+  const revealedIds = useMemo(
+    () => new Set(matchingIds.slice(0, revealLimit)),
+    [matchingIds, revealLimit],
+  );
+
+  // Only as much of the deferred tail as the window reaches — a filter whose
+  // matches all sit late in the day still shows its first few cards without
+  // opening the whole list.
   const deferredVisible = useMemo(
-    () =>
-      showDeferred
-        ? deferredSlots.filter((slot) => visibleIds.has(slot.id))
-        : [],
-    [showDeferred, deferredSlots, visibleIds],
+    () => deferredSlots.filter((slot) => revealedIds.has(slot.id)),
+    [deferredSlots, revealedIds],
   );
 
   // Server-rendered cards only: the deferred ones are a React-controlled list
@@ -252,9 +265,9 @@ export function HomeUpNextFilters({
     container
       .querySelectorAll<HTMLElement>('li[data-home-id]:not([data-home-deferred])')
       .forEach((node) => {
-        node.hidden = !visibleIds.has(node.dataset.homeId ?? '');
+        node.hidden = !revealedIds.has(node.dataset.homeId ?? '');
       });
-  }, [visibleIds]);
+  }, [revealedIds]);
 
   const select = (next: Partial<LineupSelection>) => {
     if (next.category !== undefined) setCategory(next.category);
@@ -267,11 +280,13 @@ export function HomeUpNextFilters({
     'rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
 
   // "More" is anything past the four full cards, from either regime — with a
-  // deferred tail present the toggle must exist even if the server-rendered
+  // deferred tail present the region must exist even if the server-rendered
   // head happened to fit in the visible row.
   const hasMore = moreChildren !== null || deferredSlots.length > 0;
-  const collapsed = hasMore && !expanded;
-  const matchCount = visibleIds.size;
+  // Clamp only while a reveal step is actually available: with 5 matches and
+  // nothing left to reveal, clamping would hide the fifth card behind a fade
+  // and no button.
+  const collapsed = revealSteps === 0 && canRevealMore;
 
   return (
     <div ref={containerRef}>
@@ -418,20 +433,35 @@ export function HomeUpNextFilters({
               />
             )}
           </div>
-          {/* Hidden while filtering: the list already shows every match, and
-              "Show all 373 streams" under 56 visible cards is a lie. The match
-              counter next to the dropdowns is the honest signal there. */}
-          {!active && (
-            <div className="mt-2 text-center">
-              <button
-                type="button"
-                onClick={() => setManualExpanded((v) => !v)}
-                aria-expanded={expanded}
-                aria-controls={moreId}
-                className="text-sm font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80"
-              >
-                {expanded ? strings.showLessLabel : strings.showAllLabel}
-              </button>
+          {/* One batch per click, and a separate way back — a single toggle
+              would have to mean both "more" and "less" at once as soon as the
+              list reveals in steps. The count is what the NEXT click adds, so
+              the last batch says what is actually left. */}
+          {(canRevealMore || revealSteps > 0) && (
+            <div className="mt-2 flex items-center justify-center gap-4 text-sm font-semibold">
+              {canRevealMore && (
+                <button
+                  type="button"
+                  onClick={() => setRevealSteps((steps) => steps + 1)}
+                  aria-controls={moreId}
+                  className="text-accent-cyan transition-colors hover:text-accent-cyan/80"
+                >
+                  {strings.showMoreByCount[
+                    Math.min(LINEUP_REVEAL_STEP, matchCount - revealLimit)
+                  ] ?? strings.showAllLabel}
+                </button>
+              )}
+              {revealSteps > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setRevealSteps(0)}
+                  aria-expanded={true}
+                  aria-controls={moreId}
+                  className="text-text-muted transition-colors hover:text-white"
+                >
+                  {strings.showLessLabel}
+                </button>
+              )}
             </div>
           )}
         </>

@@ -10,11 +10,16 @@ import {
   formatLineupHour,
   isLineupItemExpired,
   isLineupSelectionActive,
+  lineupRevealLimit,
+  LINEUP_PEEK_COUNT,
   LINEUP_POOL_MAX,
+  LINEUP_REVEAL_STEP,
   LINEUP_SSR_COUNT,
   LINEUP_TIME_HOURS,
+  LINEUP_VISIBLE_COUNT,
   localHourOf,
   matchesLineupFilters,
+  matchingLineupIds,
   splitLineupSlots,
   type LineupFilterItem,
 } from '../lineup-filters';
@@ -361,6 +366,77 @@ describe('constants', () => {
   it('covers the whole window and defers most of it', () => {
     expect(LINEUP_POOL_MAX).toBeGreaterThanOrEqual(500);
     expect(LINEUP_SSR_COUNT).toBeLessThan(LINEUP_POOL_MAX / 10);
+  });
+});
+
+describe('lineupRevealLimit', () => {
+  // Step 0 is the resting state: the visible cards plus the peek teaser. Every
+  // click after that is a flat batch, so the list never jumps from a handful
+  // of cards to several hundred.
+  it('starts at the visible cards plus the peek row', () => {
+    expect(lineupRevealLimit(0)).toBe(LINEUP_VISIBLE_COUNT + LINEUP_PEEK_COUNT);
+    expect(lineupRevealLimit(-1)).toBe(LINEUP_VISIBLE_COUNT + LINEUP_PEEK_COUNT);
+  });
+
+  it('adds one flat batch per click', () => {
+    expect(lineupRevealLimit(1)).toBe(LINEUP_REVEAL_STEP);
+    expect(lineupRevealLimit(2)).toBe(LINEUP_REVEAL_STEP * 2);
+    expect(lineupRevealLimit(3)).toBe(LINEUP_REVEAL_STEP * 3);
+  });
+
+  it('never shrinks as steps grow', () => {
+    const limits = [0, 1, 2, 3, 4].map(lineupRevealLimit);
+    expect(limits).toEqual([...limits].sort((a, b) => a - b));
+  });
+});
+
+describe('matchingLineupIds', () => {
+  const items = [
+    item({ id: 'a', startMs: Date.parse('2026-07-30T15:00:00Z') }),
+    item({ id: 'expired', startMs: NOW - 1000 }),
+    item({
+      id: 'b',
+      language: 'de',
+      languageLabel: 'DE',
+      startMs: Date.parse('2026-07-30T19:00:00Z'),
+    }),
+    item({ id: 'c', startMs: Date.parse('2026-07-30T21:00:00Z') }),
+  ];
+
+  // Order is load-bearing: the reveal window is a PREFIX of this list, so
+  // "the next 24" only means anything if the list stays chronological.
+  it('keeps pool order and drops expired rows', () => {
+    expect(matchingLineupIds(items, EMPTY_LINEUP_SELECTION, utcHour, NOW)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+
+  it('narrows to the selection, order intact', () => {
+    expect(
+      matchingLineupIds(items, { ...EMPTY_LINEUP_SELECTION, fromHour: 18 }, utcHour, NOW),
+    ).toEqual(['b', 'c']);
+  });
+
+  it('agrees with computeVisibleLineupIds', () => {
+    const ordered = matchingLineupIds(items, EMPTY_LINEUP_SELECTION, utcHour, NOW);
+    expect(computeVisibleLineupIds(items, EMPTY_LINEUP_SELECTION, utcHour, NOW)).toEqual(
+      new Set(ordered),
+    );
+  });
+
+  // The behaviour the reveal window exists for: a filter narrows the list but
+  // must not open it, so the first click still only reaches its own batch.
+  it('lets a prefix stand in for "the next batch" of a filtered list', () => {
+    const many = Array.from({ length: 100 }, (_, i) =>
+      item({ id: `s${i}`, startMs: Date.parse('2026-07-30T21:00:00Z') + i * 60_000 }),
+    );
+    const matches = matchingLineupIds(many, EMPTY_LINEUP_SELECTION, utcHour, NOW);
+    expect(matches.slice(0, lineupRevealLimit(0))).toHaveLength(6);
+    expect(matches.slice(0, lineupRevealLimit(1))).toHaveLength(24);
+    expect(matches.slice(0, lineupRevealLimit(2))).toHaveLength(48);
+    expect(matches.slice(0, lineupRevealLimit(1))[0]).toBe('s0');
   });
 });
 

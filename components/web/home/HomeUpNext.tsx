@@ -6,23 +6,22 @@ import {
   buildLineupFilterItems,
   formatLineupHour,
   splitLineupSlots,
+  LINEUP_REVEAL_STEP,
   LINEUP_TIME_HOURS,
+  LINEUP_VISIBLE_COUNT,
 } from '@/lib/home/lineup-filters';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { SlotCard } from '@/components/web/SlotCard';
 import { HomeUpNextFilters } from './HomeUpNextFilters';
 import { SlotBellButton } from './SlotBellButton';
 
-/** Cards fully visible while collapsed; the next row peeks under a fade. */
-const VISIBLE_COUNT = 4;
-
 /**
  * "Today's lineup" (homepage rebuild 2026-07-27): the next 24 h of FEATURED
  * streamers' upcoming slots incl. AI predictions as SlotCards (confidence
- * badge + reasoning teaser come with the card). Four cards show fully, the
- * rest sits in a clamped peek zone behind a show-all toggle (CollapsibleBio
- * pattern). Each card carries a reminder bell (implicit hook I2) as an
- * absolute sibling of the card link.
+ * badge + reasoning teaser come with the card). LINEUP_VISIBLE_COUNT cards
+ * show fully, the next ones peek from under a fade, and each click on "show
+ * more" reveals another LINEUP_REVEAL_STEP. Every card carries a reminder bell
+ * (implicit hook I2) as an absolute sibling of the card link.
  *
  * Filtering (2026-07-30) mirrors the live rail: three dropdowns — category,
  * broadcast language, start time. It replaced a row of category chips that
@@ -30,12 +29,15 @@ const VISIBLE_COUNT = 4;
  *
  * **The pool is SPLIT.** Only the first LINEUP_SSR_COUNT slots render as HTML
  * (the island toggles their `hidden` like the rail does); the rest of the 24 h
- * window travels to the client as slot DATA and is rendered on demand — when
- * a filter is active or the list is expanded. Filter metadata covers the WHOLE
- * pool either way, so the dropdown counts are honest from the first paint.
- * Rendering all ~370 predictions up front measured 12,859 DOM elements and
- * 213 ms TBT (2026-07-30) against 6,783 / 72 ms at a 120 cap — the split buys
- * full coverage at neither price.
+ * window travels to the client as slot DATA and is rendered only as far as the
+ * reveal window reaches. Filter metadata covers the WHOLE pool either way, so
+ * the dropdown counts are honest from the first paint. Rendering all ~370
+ * predictions up front measured 12,859 DOM elements and 213 ms TBT
+ * (2026-07-30) against 6,783 / 72 ms at a 120 cap — the split buys full
+ * coverage at neither price.
+ *
+ * Filtering and revealing are INDEPENDENT: a dropdown narrows the list, it
+ * does not open it.
  *
  * The time dimension is the reason the filter metadata carries raw epoch ms
  * instead of a pre-computed bucket: "from 8 PM" means 8 PM where the VISITOR
@@ -94,8 +96,8 @@ export function HomeUpNext({
   const listClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
   // ssr = what becomes HTML, deferred = what the island renders on demand.
   const { ssr: ssrSlots, deferred: deferredSlots } = splitLineupSlots(slots);
-  const firstSlots = ssrSlots.slice(0, VISIBLE_COUNT);
-  const restSlots = ssrSlots.slice(VISIBLE_COUNT);
+  const firstSlots = ssrSlots.slice(0, LINEUP_VISIBLE_COUNT);
+  const restSlots = ssrSlots.slice(LINEUP_VISIBLE_COUNT);
 
   return (
     <section aria-label={L.homeFeed.upNextTitle}>
@@ -138,6 +140,11 @@ export function HomeUpNext({
             optionPattern: L.homeFeed.liveFilterOption('{label}', '{count}'),
             favoritesLabel: L.homeFeed.chipFavorites,
             showAllLabel: L.homeFeed.lineupShowAll(slots.length),
+            // 0..step, so the island can index by the size of the next batch.
+            showMoreByCount: Array.from(
+              { length: LINEUP_REVEAL_STEP + 1 },
+              (_, count) => L.homeFeed.lineupShowMore(count),
+            ),
             showLessLabel: L.homeFeed.lineupShowLess,
             // Same `{name}` template trick as the option pattern: a lexicon
             // FUNCTION cannot cross the server/client boundary, and the island

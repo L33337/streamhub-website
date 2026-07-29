@@ -51,6 +51,8 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.chipAll', L.homeFeed.chipAll],
     ['homeFeed.chipFavorites', L.homeFeed.chipFavorites],
     ['homeFeed.lineupShowAll', L.homeFeed.lineupShowAll(24)],
+    ['homeFeed.lineupShowMore', L.homeFeed.lineupShowMore(24)],
+    ['homeFeed.lineupShowMore.one', L.homeFeed.lineupShowMore(1)],
     ['homeFeed.lineupShowLess', L.homeFeed.lineupShowLess],
     ['homeFeed.bellAria', L.homeFeed.bellAria('NachtFalke')],
     ['homeFeed.upsell.bellTitle', L.homeFeed.upsell.bellTitle],

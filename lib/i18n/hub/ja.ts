@@ -47,6 +47,7 @@ export const ja: HubLex = {
     chipAll: 'すべて',
     chipFavorites: 'お気に入り',
     lineupShowAll: (n) => `${n}件の配信をすべて表示`,
+    lineupShowMore: (n) => `さらに${n}件を表示`,
     lineupShowLess: '折りたたむ',
     bellAria: (name) => `${name}さんの配信開始を通知で受け取る`,
     upsell: {
