@@ -6,6 +6,7 @@
 
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import type { LiveRuntimeLex } from '@/lib/i18n/live-runtime';
+import { countFilterOptions, type CountedFilterOption } from './filter-options';
 
 /**
  * `duration` the backend writes for always-on channels (1 year in minutes,
@@ -220,14 +221,7 @@ export interface LiveFilterItem {
   languageLabel: string;
 }
 
-export interface CountedFilterOption {
-  /** Filter key: the raw category name, or a normalized language code. */
-  value: string;
-  /** What the dropdown shows (category names are their own label). */
-  label: string;
-  /** Cards matching this option within the pool it was counted over. */
-  count: number;
-}
+export type { CountedFilterOption };
 
 /**
  * Cards passing the current selection. An empty selection matches everything;
@@ -246,30 +240,26 @@ export function matchesLiveFilters(
 }
 
 /**
- * Dropdown options for one dimension, counted over whatever pool the caller
- * passes — the island passes the pool narrowed by the OTHER dimension, so the
- * counts always describe what picking the option would actually show, and a
- * zero-result combination cannot be selected.
- *
- * Sorted by count desc, then label, so the order is stable across ISR renders
- * with identical data.
+ * The rail's dropdown options for one dimension. Thin binding over the shared
+ * counter (lib/home/filter-options.ts) — the lineup section counts its own
+ * three dimensions through the same function, so the blank-skipping and the
+ * ISR-stable ordering live in exactly one place.
  */
 export function countLiveFilterOptions(
   items: LiveFilterItem[],
   dimension: 'category' | 'language',
 ): CountedFilterOption[] {
-  const counts = new Map<string, CountedFilterOption>();
-  for (const item of items) {
-    const value = dimension === 'category' ? item.category : item.language;
-    if (!value) continue;
-    const label = dimension === 'category' ? item.category : item.languageLabel;
-    const existing = counts.get(value);
-    if (existing) existing.count += 1;
-    else counts.set(value, { value, label, count: 1 });
-  }
-  return [...counts.values()].sort(
-    (a, b) => b.count - a.count || a.label.localeCompare(b.label),
-  );
+  return dimension === 'category'
+    ? countFilterOptions(
+        items,
+        (item) => item.category,
+        (item) => item.category,
+      )
+    : countFilterOptions(
+        items,
+        (item) => item.language,
+        (item) => item.languageLabel,
+      );
 }
 
 /**

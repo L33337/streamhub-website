@@ -42,6 +42,12 @@ export const es: HubLex = {
       `Top ${top} por espectadores actuales — los filtros buscan entre los ${total} directos`,
     upNextTitle: 'La programación de hoy',
     upNextLink: 'En directo y a punto de empezar →',
+    lineupFilterTime: 'Hora',
+    lineupFilterAllTimes: 'Cualquier hora',
+    lineupFilterFrom: (time) => `Desde ${time}`,
+    lineupFilterMatches: (count) =>
+      `${count} ${count === 1 ? 'emisión' : 'emisiones'}`,
+    lineupFilterEmpty: 'Ninguna emisión coincide con estos filtros.',
     chipAll: 'Todos',
     chipFavorites: 'Mis favoritos',
     lineupShowAll: (n) => `Mostrar los ${n} streams`,

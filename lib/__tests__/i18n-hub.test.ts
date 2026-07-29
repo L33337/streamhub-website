@@ -42,6 +42,12 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.liveFilterNote', L.homeFeed.liveFilterNote(30, 133)],
     ['homeFeed.upNextTitle', L.homeFeed.upNextTitle],
     ['homeFeed.upNextLink', L.homeFeed.upNextLink],
+    ['homeFeed.lineupFilterTime', L.homeFeed.lineupFilterTime],
+    ['homeFeed.lineupFilterAllTimes', L.homeFeed.lineupFilterAllTimes],
+    ['homeFeed.lineupFilterFrom', L.homeFeed.lineupFilterFrom('20:00')],
+    ['homeFeed.lineupFilterMatches', L.homeFeed.lineupFilterMatches(8)],
+    ['homeFeed.lineupFilterMatches.one', L.homeFeed.lineupFilterMatches(1)],
+    ['homeFeed.lineupFilterEmpty', L.homeFeed.lineupFilterEmpty],
     ['homeFeed.chipAll', L.homeFeed.chipAll],
     ['homeFeed.chipFavorites', L.homeFeed.chipFavorites],
     ['homeFeed.lineupShowAll', L.homeFeed.lineupShowAll(24)],
@@ -243,6 +249,23 @@ describe('HUB_STRINGS lexica', () => {
     const note = HUB_STRINGS[lang].homeFeed.liveFilterNote(30, 133);
     expect(note).toContain('30');
     expect(note).toContain('133');
+  });
+
+  // The lineup's time options are the one place a lexicon string wraps a
+  // pre-formatted clock reading — a translation that drops the placeholder
+  // would render "From" with no time at all.
+  it.each([...UI_LANGS])('%s keeps the clock reading in the time option', (lang) => {
+    expect(HUB_STRINGS[lang].homeFeed.lineupFilterFrom('20:00')).toContain('20:00');
+  });
+
+  // Predictions are not running yet, so the lineup counter must not reuse the
+  // live rail's "live" wording, and it has to agree with the count.
+  it.each([...UI_LANGS])('%s counts lineup matches without saying live', (lang) => {
+    const L = HUB_STRINGS[lang].homeFeed;
+    expect(L.lineupFilterMatches(8)).toContain('8');
+    expect(L.lineupFilterMatches(1)).toContain('1');
+    expect(L.lineupFilterMatches(1).toLowerCase()).not.toContain('live');
+    expect(L.lineupFilterEmpty.toLowerCase()).not.toContain('live');
   });
 
   it.each([...UI_LANGS])('%s embeds the counts in the live intro', (lang) => {

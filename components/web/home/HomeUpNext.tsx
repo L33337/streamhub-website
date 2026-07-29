@@ -1,12 +1,17 @@
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
+import { languageDisplayName } from '@/lib/format/language';
+import {
+  buildLineupFilterItems,
+  formatLineupHour,
+  LINEUP_TIME_HOURS,
+} from '@/lib/home/lineup-filters';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { SlotCard } from '@/components/web/SlotCard';
 import { HomeUpNextFilters } from './HomeUpNextFilters';
 import { SlotBellButton } from './SlotBellButton';
 
-const MAX_CATEGORY_CHIPS = 6;
 /** Cards fully visible while collapsed; the next row peeks under a fade. */
 const VISIBLE_COUNT = 4;
 
@@ -15,9 +20,19 @@ const VISIBLE_COUNT = 4;
  * streamers' upcoming slots incl. AI predictions as SlotCards (confidence
  * badge + reasoning teaser come with the card). Four cards show fully, the
  * rest sits in a clamped peek zone behind a show-all toggle (CollapsibleBio
- * pattern); client chips filter by category via hidden-attribute toggling.
- * Each card carries a reminder bell (implicit hook I2) as an absolute
- * sibling of the card link.
+ * pattern). Each card carries a reminder bell (implicit hook I2) as an
+ * absolute sibling of the card link.
+ *
+ * Filtering (2026-07-30) mirrors the live rail: three dropdowns — category,
+ * broadcast language, start time — over the server-rendered cards, which the
+ * island reveals by toggling `hidden`. It replaced a row of category chips
+ * that could only ever offer six categories and no other dimension.
+ *
+ * The time dimension is the reason the filter metadata carries raw epoch ms
+ * instead of a pre-computed bucket: "from 8 PM" means 8 PM where the VISITOR
+ * is, and one prerendered page serves every timezone on earth. So the server
+ * ships the timestamps plus the localized hour labels, and the island resolves
+ * both the buckets and their counts at mount.
  */
 export function HomeUpNext({
   slots,
@@ -28,16 +43,12 @@ export function HomeUpNext({
 }) {
   const L = hubLexFor(locale);
 
-  // Chip list: categories by slot count, most common first.
-  const counts = new Map<string, number>();
-  for (const slot of slots) {
-    if (!slot.category) continue;
-    counts.set(slot.category, (counts.get(slot.category) ?? 0) + 1);
-  }
-  const categories = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, MAX_CATEGORY_CHIPS)
-    .map(([category]) => category);
+  // Language names follow the VIEWER's locale (chrome, not content — CLAUDE.md
+  // D6), so a German visitor picks "Japanisch", not "Japanese".
+  const items = buildLineupFilterItems(
+    slots,
+    (code) => languageDisplayName(code, locale) ?? code.toUpperCase(),
+  );
 
   const bellStrings = {
     title: L.homeFeed.upsell.bellTitle,
@@ -57,11 +68,9 @@ export function HomeUpNext({
   const renderSlot = (slot: PublicStreamSlot) => (
     <li
       key={slot.id}
-      data-home-cat={slot.category ?? ''}
-      // Epoch ms for the client-side expiry check in HomeUpNextFilters: the
-      // ISR page can be served stale, so cards whose start has passed are
-      // hidden at hydration instead of flipping to "was expected at …".
-      data-home-start={Date.parse(slot.start_time) || undefined}
+      // Filter key for the island; the metadata itself travels as a prop, so
+      // the attribute only has to identify the card.
+      data-home-id={slot.id}
       className="relative"
     >
       <SlotCard slot={slot} language={locale} />
@@ -91,11 +100,35 @@ export function HomeUpNext({
         </div>
       ) : (
         <HomeUpNextFilters
-          categories={categories}
-          allLabel={L.homeFeed.chipAll}
-          favoritesLabel={L.homeFeed.chipFavorites}
-          showAllLabel={L.homeFeed.lineupShowAll(slots.length)}
-          showLessLabel={L.homeFeed.lineupShowLess}
+          items={items}
+          strings={{
+            categoryLabel: L.homeFeed.liveFilterCategory,
+            languageLabel: L.homeFeed.liveFilterLanguage,
+            timeLabel: L.homeFeed.lineupFilterTime,
+            allCategories: L.homeFeed.liveFilterAllCategories,
+            allLanguages: L.homeFeed.liveFilterAllLanguages,
+            allTimes: L.homeFeed.lineupFilterAllTimes,
+            // Hour labels are locale-formatted server-side ("8:00 PM" / "20:00")
+            // and wrapped by the lexicon; the counts are filled in on the
+            // client, where the timezone is known.
+            timeOptionLabels: Object.fromEntries(
+              LINEUP_TIME_HOURS.map((hour) => [
+                String(hour),
+                L.homeFeed.lineupFilterFrom(formatLineupHour(hour, locale)),
+              ]),
+            ),
+            // 0..pool, so the island can index straight by its match count and
+            // every language keeps its own plural agreement.
+            matchesByCount: Array.from({ length: slots.length + 1 }, (_, count) =>
+              L.homeFeed.lineupFilterMatches(count),
+            ),
+            reset: L.homeFeed.liveFilterReset,
+            empty: L.homeFeed.lineupFilterEmpty,
+            optionPattern: L.homeFeed.liveFilterOption('{label}', '{count}'),
+            favoritesLabel: L.homeFeed.chipFavorites,
+            showAllLabel: L.homeFeed.lineupShowAll(slots.length),
+            showLessLabel: L.homeFeed.lineupShowLess,
+          }}
           upsellStrings={favoritesStrings}
           moreChildren={
             restSlots.length > 0 ? (

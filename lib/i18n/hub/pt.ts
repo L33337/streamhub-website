@@ -42,6 +42,12 @@ export const pt: HubLex = {
       `Top ${top} por espectadores agora — os filtros buscam entre as ${total} lives`,
     upNextTitle: 'A programação de hoje',
     upNextLink: 'Ao vivo e começando em breve →',
+    lineupFilterTime: 'Horário',
+    lineupFilterAllTimes: 'Qualquer horário',
+    lineupFilterFrom: (time) => `A partir de ${time}`,
+    lineupFilterMatches: (count) =>
+      `${count} ${count === 1 ? 'transmissão' : 'transmissões'}`,
+    lineupFilterEmpty: 'Nenhuma transmissão corresponde a esses filtros.',
     chipAll: 'Todos',
     chipFavorites: 'Meus favoritos',
     lineupShowAll: (n) => `Mostrar todos os ${n} streams`,

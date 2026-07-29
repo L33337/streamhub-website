@@ -16,6 +16,7 @@ import {
   topCategoriesByHours,
 } from '@/lib/home/logic';
 import { LIVE_RAIL_POOL_MAX, pickBiggestLiveSlots } from '@/lib/home/live-rail';
+import { LINEUP_POOL_MAX } from '@/lib/home/lineup-filters';
 import { gameSlug } from '@/lib/game-slug';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
@@ -44,9 +45,14 @@ export const revalidate = 60;
 
 const SITE_URL = 'https://streamertimes.tv';
 
-/** Fetched wide (the 24h window feeds several sections), rendered capped. */
-const UPCOMING_FETCH_LIMIT = 100;
-const UPCOMING_RENDER_LIMIT = 24;
+/**
+ * The lineup's 24 h window, cursor-paginated. One 500-slot page covers it
+ * today (~440 predictions in production), the second is headroom — the
+ * section's dropdowns search the whole window, so a silent truncation would
+ * take languages and categories with it.
+ */
+const UPCOMING_PAGE_LIMIT = 500;
+const UPCOMING_MAX_PAGES = 2;
 
 /**
  * Pages of the live sweep. Simulcasts write one live slot per platform, so
@@ -154,6 +160,43 @@ async function fetchLiveSlots(bucketedNow: Date): Promise<PublicStreamSlot[]> {
   return all;
 }
 
+/**
+ * The next 24 h of upcoming slots incl. AI predictions, cursor-paginated for
+ * the same reason as the live sweep: "Today's lineup" filters by category,
+ * language and start time across the WHOLE window, so a first-page-only fetch
+ * would quietly amputate the evening (the API orders by start_time, so a cut
+ * at 500 rows is a cut in time). Bucketed `now` keeps the URL — and the
+ * data-cache entry — shared across the 12 locale prerenders.
+ */
+async function fetchUpcomingSlots(
+  bucketedNow: Date,
+  windowEnd: Date,
+): Promise<PublicStreamSlot[]> {
+  const api = getPartnerApi();
+  const from = bucketedNow.toISOString();
+  const to = windowEnd.toISOString();
+  const all: PublicStreamSlot[] = [];
+  let cursor: string | undefined = undefined;
+  let pages = 0;
+
+  do {
+    const resp = await api.listSchedules({
+      status: ['upcoming'],
+      includePredictions: true,
+      from,
+      to,
+      limit: UPCOMING_PAGE_LIMIT,
+      cursor,
+      revalidate: 60,
+    });
+    all.push(...resp.data);
+    cursor = resp.pagination.next_cursor ?? undefined;
+    pages++;
+  } while (cursor && pages < UPCOMING_MAX_PAGES);
+
+  return all;
+}
+
 export default async function HomePage({ params }: Props) {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
@@ -183,14 +226,7 @@ export default async function HomePage({ params }: Props) {
     featuredIdsCall,
     mostStreamedCall,
   ] = await Promise.allSettled([
-    api.listSchedules({
-      status: ['upcoming'],
-      includePredictions: true,
-      from: bucketedNow.toISOString(),
-      to: twentyFourHoursAhead.toISOString(),
-      limit: UPCOMING_FETCH_LIMIT,
-      revalidate: 60,
-    }),
+    fetchUpcomingSlots(bucketedNow, twentyFourHoursAhead),
     fetchLiveSlots(bucketedNow),
     getLiveStreamerIdSet(),
     api.listStreamers({
@@ -211,8 +247,7 @@ export default async function HomePage({ params }: Props) {
     fetchWeekMostStreamed(3),
   ]);
 
-  const upcomingSlots =
-    upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [];
+  const upcomingSlots = upcomingCall.status === 'fulfilled' ? upcomingCall.value : [];
   const liveSlots = liveCall.status === 'fulfilled' ? liveCall.value : [];
   const liveIds =
     liveIdsCall.status === 'fulfilled' ? liveIdsCall.value : new Set<string>();
@@ -268,12 +303,18 @@ export default async function HomePage({ params }: Props) {
   // lineup beats an empty section. Future starts only: the bucketed fetch
   // window trails real time by up to 5 min, and expired predictions would
   // render as "was expected at …" cards.
+  //
+  // The cap is the section's filter scope (2026-07-30): the dropdowns search
+  // every card in the DOM, so cutting at 24 meant the language and time
+  // filters could only ever see the next few hours. Slots arrive in
+  // start_time order, so the cap keeps the soonest — the axis the section is
+  // read by.
   const futureSlots = filterFutureSlots(upcomingSlots, now);
   const lineupSlots = (
     featuredIds
       ? futureSlots.filter((slot) => featuredIds.has(slot.streamer_id))
       : futureSlots
-  ).slice(0, UPCOMING_RENDER_LIMIT);
+  ).slice(0, LINEUP_POOL_MAX);
   const topCategories = topCategoriesByHours(games, 5);
 
   // Maps stay server-side only (never cross a client boundary).

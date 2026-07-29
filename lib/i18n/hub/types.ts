@@ -77,6 +77,11 @@ export interface HubLex {
      * carry the pool-wide counts, which is what tells the visitor the filters
      * reach further than the visible cut. Language names come from
      * Intl.DisplayNames, not from here.
+     *
+     * The generic entries below (category/language/option/reset and the "All"
+     * labels) are SHARED with the lineup's filter bar — they name a filter
+     * dimension, nothing live-specific. Only the strings that say "live" or
+     * that the lineup needs on top of them carry a `lineupFilter` prefix.
      */
     liveFilterCategory: string;
     liveFilterLanguage: string;
@@ -116,6 +121,37 @@ export interface HubLex {
     upNextTitle: string;
     /** Section link to /live. */
     upNextLink: string;
+    /**
+     * Lineup filter bar (2026-07-30) — reuses the live rail's generic
+     * category/language/option/reset strings and adds the start-time dimension
+     * plus its own wording where "live" would be wrong (these are predictions,
+     * nothing is running yet).
+     *
+     * aria-label of the time dropdown.
+     */
+    lineupFilterTime: string;
+    /** Unfiltered time option. */
+    lineupFilterAllTimes: string;
+    /**
+     * One time option. `time` is a clock reading already formatted for the
+     * viewer's locale ("8:00 PM" / "20:00"), so this only supplies the
+     * cumulative "from" wording — the option matches every start at or after
+     * that hour of the visitor's local day.
+     */
+    lineupFilterFrom(time: string): string;
+    /**
+     * Match counter, shown only while a filter is active. Agrees with the
+     * count like its live-rail sibling, but must NOT say "live" — the cards
+     * are predictions for later today.
+     */
+    lineupFilterMatches(count: number): string;
+    /** Empty state when a category/language/time combination matches nothing. */
+    lineupFilterEmpty: string;
+    /**
+     * UNRENDERED since 2026-07-30 — the lineup's category chips became
+     * dropdowns, whose unfiltered entry is `liveFilterAllCategories`. Kept
+     * translated for re-use.
+     */
     chipAll: string;
     /** Locked favorites chip (needs an account). */
     chipFavorites: string;
