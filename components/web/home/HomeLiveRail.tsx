@@ -72,16 +72,11 @@ export function HomeLiveRail({
         actionLabel={L.home.seeLiveNow}
         actionHref={localeHref(locale, '/live')}
       />
-      {/* Only when the rail really is a cut — with everything on screen,
-          "Top 30 by current viewers" states the obvious. The second number is
-          the POOL (what the filters search), deliberately not `totalLive`
-          from the header: slots without a fresh viewer sample never made it
-          into the pool, so promising to search them would be a lie. */}
-      {slots.length > LIVE_RAIL_DEFAULT_VISIBLE && (
-        <p className="mb-3 text-xs text-text-muted">
-          {L.homeFeed.liveFilterNote(LIVE_RAIL_DEFAULT_VISIBLE, slots.length)}
-        </p>
-      )}
+      {/* The scope note ("Top 30 by current viewers — filters search all N")
+          was dropped for compactness: the dropdown options carry their own
+          pool-wide counts and the header links to /live, so the section still
+          says what it covers without a third line of chrome above the cards.
+          `liveFilterNote` stays translated for re-use. */}
 
       <HomeLiveRailFilters
         items={items}

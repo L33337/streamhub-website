@@ -73,9 +73,10 @@ export interface HubLex {
     /**
      * Live-rail filter bar. The two dropdowns search the whole rendered pool
      * — every tracked stream that is live — while the unfiltered rail shows
-     * only the biggest LIVE_RAIL_DEFAULT_VISIBLE of them; `liveFilterNote`
-     * states both numbers. Language names come from Intl.DisplayNames, not
-     * from here.
+     * only the biggest LIVE_RAIL_DEFAULT_VISIBLE of them. The option labels
+     * carry the pool-wide counts, which is what tells the visitor the filters
+     * reach further than the visible cut. Language names come from
+     * Intl.DisplayNames, not from here.
      */
     liveFilterCategory: string;
     liveFilterLanguage: string;
@@ -106,6 +107,9 @@ export interface HubLex {
      * filters search all 133 live streams". `total` is the searchable pool,
      * which can be slightly below the header's live count (slots without a
      * fresh viewer sample never enter the pool).
+     *
+     * UNRENDERED since 2026-07-29 — dropped to keep the section compact, the
+     * dropdown counts carry the scope now. Kept translated for re-use.
      */
     liveFilterNote(top: number, total: number): string;
     /** "Today's lineup" prediction list heading. */
