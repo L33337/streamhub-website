@@ -347,7 +347,14 @@ export default async function HomePage({ params }: Props) {
         <HomeUpNext slots={lineupSlots} locale={locale} />
       </div>
 
-      <HomeInterruptCard avatarUrls={interruptAvatars} locale={locale} />
+      {/* Pure conversion pitch ("this page, but with only your streamers") —
+          nothing left to convert once the visitor HAS an account, so it drops
+          out for signed-in sessions, same client-side gate as the masthead.
+          Anonymous crawlers keep it in the static HTML. No fallback: unlike
+          the masthead this carries no h1, so nothing needs preserving. */}
+      <SignedOutOnly>
+        <HomeInterruptCard avatarUrls={interruptAvatars} locale={locale} />
+      </SignedOutOnly>
 
       {/* Trending games — the homepage carries the most link equity, so these
           in-body /game/* and /games links matter more than the nav's. Rail
