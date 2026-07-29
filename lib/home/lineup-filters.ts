@@ -10,12 +10,41 @@ import { countFilterOptions, type CountedFilterOption } from './filter-options';
 import { normalizeSlotLanguage } from './live-rail';
 
 /**
- * Safety cap on rendered prediction cards = the filter scope. The 24 h window
- * holds ~370 featured predictions in production, far more than a homepage
- * section should put in the DOM (a SlotCard is richer than a live card), so
- * the pool is the soonest N — the dimension people actually scan by.
+ * Safety cap on the pool — the filter scope, and now a PAYLOAD guard rather
+ * than a DOM guard. Production holds ~440 predictions in the 24 h window, so
+ * this covers it whole with headroom; the fetch's own page size (500) is the
+ * other end of the same budget.
+ *
+ * It used to be 120 because every card was server-rendered whether or not it
+ * was visible. Measured at 372 predictions (2026-07-30, Lighthouse mobile,
+ * with the live rail's 133 cards on the same page): rendering all of them cost
+ * 12,859 DOM elements / 213 ms TBT / 3.0 s main-thread against 6,783 / 72 ms /
+ * 1.9 s at 120. Hence the split below — only LINEUP_SSR_COUNT cards are HTML,
+ * the rest travel as data and are rendered on demand.
  */
-export const LINEUP_POOL_MAX = 120;
+export const LINEUP_POOL_MAX = 500;
+
+/**
+ * How many cards ship as server-rendered HTML. The rest of the pool travels to
+ * the client as slot DATA and is rendered only once the visitor filters or
+ * expands — full 24 h coverage for the filters at a fraction of the DOM.
+ *
+ * 24 is deliberately the section's pre-2026-07-30 render limit, so the
+ * crawlable surface of the homepage is exactly what it always was.
+ */
+export const LINEUP_SSR_COUNT = 24;
+
+/**
+ * Splits the pool into the server-rendered head and the deferred tail. Both
+ * keep the pool's chronological order, which is what lets the client append
+ * its matches after the server's and still read as one list.
+ */
+export function splitLineupSlots<T>(
+  slots: T[],
+  ssrCount: number = LINEUP_SSR_COUNT,
+): { ssr: T[]; deferred: T[] } {
+  return { ssr: slots.slice(0, ssrCount), deferred: slots.slice(ssrCount) };
+}
 
 /**
  * The offered start times, as hours of the viewer's local day. "Common times"

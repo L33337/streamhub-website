@@ -9,6 +9,10 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { Lock, RotateCcw } from 'lucide-react';
+import type { PublicStreamSlot } from '@/lib/server/partner-api';
+import type { UiLang } from '@/lib/i18n-core';
+import { SlotCard } from '@/components/web/SlotCard';
+import { SlotBellButton } from './SlotBellButton';
 import {
   getMinuteClockSnapshot,
   getServerMinuteClockSnapshot,
@@ -48,9 +52,11 @@ export interface LineupFilterStrings {
   /** Localized "{label} ({count})" shape; only the two parts vary. */
   optionPattern: string;
   favoritesLabel: string;
-  /** Resolved server-side, e.g. "Show all 120 streams". */
+  /** Resolved server-side, e.g. "Show all 373 streams". */
   showAllLabel: string;
   showLessLabel: string;
+  /** `bellAria` rendered with a `{name}` token, filled in per deferred card. */
+  bellAriaPattern: string;
 }
 
 /**
@@ -58,6 +64,15 @@ export interface LineupFilterStrings {
  * server-rendered "Today's lineup". Same philosophy as HomeLiveRailFilters and
  * CollapsibleBio: the cards stay fully server-rendered (SEO) and this wrapper
  * only toggles `hidden` on `li[data-home-id]` plus a purely visual clamp.
+ *
+ * The pool is SPLIT (2026-07-30): `children`/`moreChildren` are the
+ * server-rendered head, whose visibility this wrapper toggles imperatively,
+ * while `deferredSlots` is the rest of the 24 h window as DATA. Those cards are
+ * rendered HERE, and only once a filter is active or the list is expanded — so
+ * the filters cover the whole window without the homepage paying ~350 cards of
+ * DOM up front (measured: 12,859 elements / 213 ms TBT for the all-HTML
+ * variant). The two regimes must not fight: the imperative pass deliberately
+ * skips `[data-home-deferred]`, because React owns those nodes.
  *
  * What this section needs that the live rail does not:
  *
@@ -79,19 +94,33 @@ export function HomeUpNextFilters({
   items,
   strings,
   upsellStrings,
+  bellStrings,
+  deferredSlots,
+  deferredListClassName,
+  locale,
   children,
   moreChildren,
 }: {
   items: LineupFilterItem[];
   strings: LineupFilterStrings;
   upsellStrings: UpsellSheetStrings;
+  bellStrings: UpsellSheetStrings;
+  /** The pool beyond the server-rendered head, rendered here on demand. */
+  deferredSlots: PublicStreamSlot[];
+  deferredListClassName: string;
+  locale: UiLang;
   children: React.ReactNode;
   moreChildren: React.ReactNode | null;
 }) {
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState('');
   const [fromHour, setFromHour] = useState<number | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  // Only the TOGGLE's state is stored. Whether the list is open is derived
+  // (`expanded` below), because an active filter always shows every match: a
+  // filter result clipped by the peek zone reads as broken, and storing that
+  // as state meant Reset left the list expanded — with the whole deferred tail
+  // still in the DOM.
+  const [manualExpanded, setManualExpanded] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Clock for the expiry check AND the time buckets. Unlike the live rail's
   // island this one feeds the render output (the time dropdown's options are
@@ -179,6 +208,7 @@ export function HomeUpNextFilters({
 
   const active =
     activeCategory !== '' || activeLanguage !== '' || activeFromHour !== null;
+  const expanded = manualExpanded || active;
 
   // Built inside the memo so the three clamped values ARE the dependencies —
   // a `selection` object assembled in render would be a new reference every
@@ -201,30 +231,46 @@ export function HomeUpNextFilters({
     [items, activeCategory, activeLanguage, activeFromHour, now],
   );
 
+  // The deferred tail materializes on intent only: a filter narrows the whole
+  // window (so its matches must be reachable) or the visitor asked for the
+  // full list. Both imply `expanded`, which is why the collapsed peek zone
+  // never has to hold hundreds of cards.
+  const showDeferred = active || expanded;
+  const deferredVisible = useMemo(
+    () =>
+      showDeferred
+        ? deferredSlots.filter((slot) => visibleIds.has(slot.id))
+        : [],
+    [showDeferred, deferredSlots, visibleIds],
+  );
+
+  // Server-rendered cards only: the deferred ones are a React-controlled list
+  // below, so mutating their `hidden` here would be two owners for one node.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    container.querySelectorAll<HTMLElement>('li[data-home-id]').forEach((node) => {
-      node.hidden = !visibleIds.has(node.dataset.homeId ?? '');
-    });
+    container
+      .querySelectorAll<HTMLElement>('li[data-home-id]:not([data-home-deferred])')
+      .forEach((node) => {
+        node.hidden = !visibleIds.has(node.dataset.homeId ?? '');
+      });
   }, [visibleIds]);
 
   const select = (next: Partial<LineupSelection>) => {
     if (next.category !== undefined) setCategory(next.category);
     if (next.language !== undefined) setLanguage(next.language);
     if (next.fromHour !== undefined) setFromHour(next.fromHour);
-    // A match may sit entirely in the collapsed region.
-    const willBeActive =
-      (next.category ?? activeCategory) !== '' ||
-      (next.language ?? activeLanguage) !== '' ||
-      (next.fromHour ?? activeFromHour) !== null;
-    if (willBeActive) setExpanded(true);
+    // No expansion bookkeeping: `expanded` follows from `active`.
   };
 
   const selectClass =
     'rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
 
-  const collapsed = moreChildren !== null && !expanded;
+  // "More" is anything past the four full cards, from either regime — with a
+  // deferred tail present the toggle must exist even if the server-rendered
+  // head happened to fit in the visible row.
+  const hasMore = moreChildren !== null || deferredSlots.length > 0;
+  const collapsed = hasMore && !expanded;
   const matchCount = visibleIds.size;
 
   return (
@@ -328,7 +374,7 @@ export function HomeUpNextFilters({
         </p>
       )}
 
-      {moreChildren !== null && (
+      {hasMore && (
         <>
           <div
             id={moreId}
@@ -338,6 +384,33 @@ export function HomeUpNextFilters({
             }
           >
             {moreChildren}
+            {/* The deferred tail. Appended AFTER the server's cards, which is
+                what keeps the whole list chronological: the head is the pool's
+                first LINEUP_SSR_COUNT slots by start time, this is the rest in
+                the same order. Only matches are rendered, so React — not the
+                imperative pass above — owns their visibility. */}
+            {deferredVisible.length > 0 && (
+              <ul className={`${deferredListClassName} mt-3`}>
+                {deferredVisible.map((slot) => (
+                  <li
+                    key={slot.id}
+                    data-home-id={slot.id}
+                    data-home-deferred=""
+                    className="relative"
+                  >
+                    <SlotCard slot={slot} language={locale} />
+                    <SlotBellButton
+                      ariaLabel={strings.bellAriaPattern.replace(
+                        '{name}',
+                        slot.streamer_name,
+                      )}
+                      strings={bellStrings}
+                      className="absolute right-3 top-3 z-10"
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
             {collapsed && (
               <div
                 aria-hidden="true"
@@ -345,17 +418,22 @@ export function HomeUpNextFilters({
               />
             )}
           </div>
-          <div className="mt-2 text-center">
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              aria-expanded={expanded}
-              aria-controls={moreId}
-              className="text-sm font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80"
-            >
-              {expanded ? strings.showLessLabel : strings.showAllLabel}
-            </button>
-          </div>
+          {/* Hidden while filtering: the list already shows every match, and
+              "Show all 373 streams" under 56 visible cards is a lie. The match
+              counter next to the dropdowns is the honest signal there. */}
+          {!active && (
+            <div className="mt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setManualExpanded((v) => !v)}
+                aria-expanded={expanded}
+                aria-controls={moreId}
+                className="text-sm font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80"
+              >
+                {expanded ? strings.showLessLabel : strings.showAllLabel}
+              </button>
+            </div>
+          )}
         </>
       )}
 

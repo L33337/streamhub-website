@@ -11,9 +11,11 @@ import {
   isLineupItemExpired,
   isLineupSelectionActive,
   LINEUP_POOL_MAX,
+  LINEUP_SSR_COUNT,
   LINEUP_TIME_HOURS,
   localHourOf,
   matchesLineupFilters,
+  splitLineupSlots,
   type LineupFilterItem,
 } from '../lineup-filters';
 
@@ -354,8 +356,35 @@ describe('constants', () => {
     expect([...LINEUP_TIME_HOURS]).toEqual([14, 16, 18, 20, 22]);
   });
 
-  it('caps the pool well above the four visible cards', () => {
-    expect(LINEUP_POOL_MAX).toBeGreaterThan(4 * 10);
+  // The pool must clear production's 24 h window (~440 predictions) — it is a
+  // payload guard now, not a DOM guard: only LINEUP_SSR_COUNT cards are HTML.
+  it('covers the whole window and defers most of it', () => {
+    expect(LINEUP_POOL_MAX).toBeGreaterThanOrEqual(500);
+    expect(LINEUP_SSR_COUNT).toBeLessThan(LINEUP_POOL_MAX / 10);
+  });
+});
+
+describe('splitLineupSlots', () => {
+  const pool = Array.from({ length: 30 }, (_, i) => `s${i}`);
+
+  it('keeps the head in the DOM and defers the rest, order intact', () => {
+    const { ssr, deferred } = splitLineupSlots(pool, 4);
+    expect(ssr).toEqual(['s0', 's1', 's2', 's3']);
+    expect(deferred[0]).toBe('s4');
+    expect(deferred).toHaveLength(26);
+    // Concatenating them must reproduce the pool — the client appends its
+    // matches after the server's, so any reordering would scramble the list.
+    expect([...ssr, ...deferred]).toEqual(pool);
+  });
+
+  it('defers nothing when the pool fits the head', () => {
+    const { ssr, deferred } = splitLineupSlots(['a', 'b'], 4);
+    expect(ssr).toEqual(['a', 'b']);
+    expect(deferred).toEqual([]);
+  });
+
+  it('defaults to LINEUP_SSR_COUNT', () => {
+    expect(splitLineupSlots(pool).ssr).toHaveLength(LINEUP_SSR_COUNT);
   });
 });
 

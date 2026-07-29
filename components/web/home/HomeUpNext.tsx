@@ -5,6 +5,7 @@ import { languageDisplayName } from '@/lib/format/language';
 import {
   buildLineupFilterItems,
   formatLineupHour,
+  splitLineupSlots,
   LINEUP_TIME_HOURS,
 } from '@/lib/home/lineup-filters';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
@@ -24,9 +25,17 @@ const VISIBLE_COUNT = 4;
  * absolute sibling of the card link.
  *
  * Filtering (2026-07-30) mirrors the live rail: three dropdowns — category,
- * broadcast language, start time — over the server-rendered cards, which the
- * island reveals by toggling `hidden`. It replaced a row of category chips
- * that could only ever offer six categories and no other dimension.
+ * broadcast language, start time. It replaced a row of category chips that
+ * could only ever offer six categories and no other dimension.
+ *
+ * **The pool is SPLIT.** Only the first LINEUP_SSR_COUNT slots render as HTML
+ * (the island toggles their `hidden` like the rail does); the rest of the 24 h
+ * window travels to the client as slot DATA and is rendered on demand — when
+ * a filter is active or the list is expanded. Filter metadata covers the WHOLE
+ * pool either way, so the dropdown counts are honest from the first paint.
+ * Rendering all ~370 predictions up front measured 12,859 DOM elements and
+ * 213 ms TBT (2026-07-30) against 6,783 / 72 ms at a 120 cap — the split buys
+ * full coverage at neither price.
  *
  * The time dimension is the reason the filter metadata carries raw epoch ms
  * instead of a pre-computed bucket: "from 8 PM" means 8 PM where the VISITOR
@@ -83,8 +92,10 @@ export function HomeUpNext({
   );
 
   const listClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
-  const firstSlots = slots.slice(0, VISIBLE_COUNT);
-  const restSlots = slots.slice(VISIBLE_COUNT);
+  // ssr = what becomes HTML, deferred = what the island renders on demand.
+  const { ssr: ssrSlots, deferred: deferredSlots } = splitLineupSlots(slots);
+  const firstSlots = ssrSlots.slice(0, VISIBLE_COUNT);
+  const restSlots = ssrSlots.slice(VISIBLE_COUNT);
 
   return (
     <section aria-label={L.homeFeed.upNextTitle}>
@@ -128,8 +139,16 @@ export function HomeUpNext({
             favoritesLabel: L.homeFeed.chipFavorites,
             showAllLabel: L.homeFeed.lineupShowAll(slots.length),
             showLessLabel: L.homeFeed.lineupShowLess,
+            // Same `{name}` template trick as the option pattern: a lexicon
+            // FUNCTION cannot cross the server/client boundary, and the island
+            // needs one aria-label per card it renders itself.
+            bellAriaPattern: L.homeFeed.bellAria('{name}'),
           }}
           upsellStrings={favoritesStrings}
+          bellStrings={bellStrings}
+          deferredSlots={deferredSlots}
+          deferredListClassName={listClass}
+          locale={locale}
           moreChildren={
             restSlots.length > 0 ? (
               <ul className={listClass}>{restSlots.map(renderSlot)}</ul>
