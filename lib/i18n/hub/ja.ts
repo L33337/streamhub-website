@@ -35,7 +35,8 @@ export const ja: HubLex = {
     liveFilterMatches: (count) => `${count}件の配信`,
     liveFilterReset: 'リセット',
     liveFilterEmpty: 'この条件に合う配信は今のところありません。',
-    liveFilterNote: (count) => `現在の視聴者数トップ${count}`,
+    liveFilterNote: (top, total) =>
+      `現在の視聴者数トップ${top} — フィルターは全${total}件の配信から検索`,
     upNextTitle: '今日のラインナップ',
     upNextLink: '配信中・まもなく開始 →',
     chipAll: 'すべて',

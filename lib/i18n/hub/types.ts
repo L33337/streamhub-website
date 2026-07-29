@@ -71,10 +71,11 @@ export interface HubLex {
     /** "Most Watched right now" rail heading (section rebuild 2026-07-28). */
     liveTitle: string;
     /**
-     * Live-rail filter bar. The two dropdowns filter the rail's own pool (the
-     * biggest N live streams), NOT the whole live catalogue — `liveFilterNote`
-     * says so, and the section header keeps linking to /live for everything
-     * else. Language names come from Intl.DisplayNames, not from here.
+     * Live-rail filter bar. The two dropdowns search the whole rendered pool
+     * — every tracked stream that is live — while the unfiltered rail shows
+     * only the biggest LIVE_RAIL_DEFAULT_VISIBLE of them; `liveFilterNote`
+     * states both numbers. Language names come from Intl.DisplayNames, not
+     * from here.
      */
     liveFilterCategory: string;
     liveFilterLanguage: string;
@@ -100,8 +101,13 @@ export interface HubLex {
     liveFilterReset: string;
     /** Empty state when a category/language combination matches nothing. */
     liveFilterEmpty: string;
-    /** Scope note under the heading, e.g. "Top 30 by current viewers". */
-    liveFilterNote(count: number): string;
+    /**
+     * Scope note under the heading, e.g. "Top 30 by current viewers —
+     * filters search all 133 live streams". `total` is the searchable pool,
+     * which can be slightly below the header's live count (slots without a
+     * fresh viewer sample never enter the pool).
+     */
+    liveFilterNote(top: number, total: number): string;
     /** "Today's lineup" prediction list heading. */
     upNextTitle: string;
     /** Section link to /live. */

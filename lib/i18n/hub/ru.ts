@@ -60,7 +60,8 @@ export const ru: HubLex = {
     liveFilterMatches: (count) => `Трансляций: ${count}`,
     liveFilterReset: 'Сбросить',
     liveFilterEmpty: 'Сейчас нет трансляций по этим фильтрам.',
-    liveFilterNote: (count) => `Топ-${count} по числу зрителей сейчас`,
+    liveFilterNote: (top, total) =>
+      `Топ-${top} по числу зрителей — фильтры ищут среди всех трансляций (${total})`,
     upNextTitle: 'Программа на сегодня',
     upNextLink: 'В эфире и скоро →',
     chipAll: 'Все',

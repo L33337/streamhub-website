@@ -37,7 +37,8 @@ export const de: HubLex = {
     liveFilterMatches: (count) => `${count} Streams live`,
     liveFilterReset: 'Zurücksetzen',
     liveFilterEmpty: 'Zu dieser Auswahl läuft gerade kein Stream.',
-    liveFilterNote: (count) => `Top ${count} nach aktuellen Zuschauern`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} nach aktuellen Zuschauern – Filter durchsuchen alle ${total} Live-Streams`,
     upNextTitle: 'Heute im Programm',
     upNextLink: 'Live & demnächst →',
     chipAll: 'Alle',

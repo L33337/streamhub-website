@@ -15,7 +15,7 @@ import {
   sampleRandom,
   topCategoriesByHours,
 } from '@/lib/home/logic';
-import { pickBiggestLiveSlots } from '@/lib/home/live-rail';
+import { LIVE_RAIL_POOL_MAX, pickBiggestLiveSlots } from '@/lib/home/live-rail';
 import { gameSlug } from '@/lib/game-slug';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
@@ -49,10 +49,12 @@ const UPCOMING_FETCH_LIMIT = 100;
 const UPCOMING_RENDER_LIMIT = 24;
 
 /**
- * Cards in the "Most Watched right now" rail. Also the pool its two filters
- * operate on — see the call site.
+ * Pages of the live sweep. Simulcasts write one live slot per platform, so
+ * the slot count runs ahead of the streamer count and a single 500-slot page
+ * would start truncating silently somewhere past ~300 live streamers.
  */
-const LIVE_RAIL_POOL = 30;
+const LIVE_PAGE_LIMIT = 500;
+const LIVE_MAX_PAGES = 2;
 
 /**
  * Anchor targets of the sticky section nav sit under two sticky bars
@@ -115,27 +117,41 @@ function buildWebSiteJsonLd(): object {
 }
 
 /**
- * Live sweep for the rail: one 500-slot page (the rail only needs the top of
- * it; the exact count comes from getLiveStreamerIdSet). The wide `from`
- * window is required — live slots, especially always-on channels, have
- * start_times hours to weeks in the past (lib/server/live-streamers.ts
- * convention). Caller passes a BUCKETED `now` (see floorToBucket) so the
- * fetch URL — and with it the data-cache key — is shared across the 12
- * locale prerenders instead of firing 12 separate sweeps.
+ * Live sweep for the rail, cursor-paginated (mirrors /live and
+ * lib/server/live-streamers.ts). The rail's filters search the whole sweep,
+ * so completeness matters here — it is no longer just the top of the list.
+ *
+ * The wide `from` window is required: live slots, especially always-on
+ * channels, have start_times hours to weeks in the past. Caller passes a
+ * BUCKETED `now` (see floorToBucket) so the fetch URL — and with it the
+ * data-cache key — is shared across the 12 locale prerenders instead of
+ * firing 12 separate sweeps; page 2's cursor is derived from page 1, so it
+ * is just as shared.
  */
 async function fetchLiveSlots(bucketedNow: Date): Promise<PublicStreamSlot[]> {
   const api = getPartnerApi();
   const from = new Date(bucketedNow.getTime() - 365 * 86_400_000).toISOString();
   const to = new Date(bucketedNow.getTime() + 6 * 60 * 60 * 1000).toISOString();
-  const resp = await api.listSchedules({
-    status: ['live'],
-    includeAlwaysOn: true,
-    from,
-    to,
-    limit: 500,
-    revalidate: 60,
-  });
-  return resp.data;
+  const all: PublicStreamSlot[] = [];
+  let cursor: string | undefined = undefined;
+  let pages = 0;
+
+  do {
+    const resp = await api.listSchedules({
+      status: ['live'],
+      includeAlwaysOn: true,
+      from,
+      to,
+      limit: LIVE_PAGE_LIMIT,
+      cursor,
+      revalidate: 60,
+    });
+    all.push(...resp.data);
+    cursor = resp.pagination.next_cursor ?? undefined;
+    pages++;
+  } while (cursor && pages < LIVE_MAX_PAGES);
+
+  return all;
 }
 
 export default async function HomePage({ params }: Props) {
@@ -239,12 +255,12 @@ export default async function HomePage({ params }: Props) {
     6,
   );
 
-  // Rendering more than the visible dozen is what makes the category/language
-  // dropdowns meaningful: the client filters the DOM, so a language can only
-  // be found among the cards that were rendered. 30 keeps the section a
-  // "biggest right now" cut (its heading and note say so) while giving the
-  // smaller languages a realistic chance of appearing.
-  const liveRailSlots = pickBiggestLiveSlots(liveSlots, LIVE_RAIL_POOL);
+  // The WHOLE live sweep is rendered (capped only for safety) and the rail
+  // hides everything past its default cut. The client filters the DOM, so a
+  // language is findable only among rendered cards — with a top-30 pool,
+  // "German" meant the 3 German streams big enough to make the top 30 while
+  // 14 others were live, and pt/it/pl had no option at all.
+  const liveRailSlots = pickBiggestLiveSlots(liveSlots, LIVE_RAIL_POOL_MAX);
   // Exact live count from the full sweep; the single-page fetch is the fallback.
   const liveCount = liveIds.size > 0 ? liveIds.size : liveRailSlots.length;
   // "Today's lineup" is editorially curated: featured streamers only. When

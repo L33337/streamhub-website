@@ -39,7 +39,7 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.liveFilterMatches.one', L.homeFeed.liveFilterMatches(1)],
     ['homeFeed.liveFilterReset', L.homeFeed.liveFilterReset],
     ['homeFeed.liveFilterEmpty', L.homeFeed.liveFilterEmpty],
-    ['homeFeed.liveFilterNote', L.homeFeed.liveFilterNote(30)],
+    ['homeFeed.liveFilterNote', L.homeFeed.liveFilterNote(30, 133)],
     ['homeFeed.upNextTitle', L.homeFeed.upNextTitle],
     ['homeFeed.upNextLink', L.homeFeed.upNextLink],
     ['homeFeed.chipAll', L.homeFeed.chipAll],
@@ -234,6 +234,15 @@ describe('HUB_STRINGS lexica', () => {
     expect(ticker).toContain('38');
     expect(HUB_STRINGS[lang].homeFeed.ticker(7, 0, 6)).toContain('7');
     expect(HUB_STRINGS[lang].homeFeed.ticker(0, 9, 6)).toContain('9');
+  });
+
+  // The note carries the section's whole promise: what you see (the cut) and
+  // what the dropdowns actually search (the pool). A translation that drops
+  // one of the two numbers reads as the old, narrower behaviour.
+  it.each([...UI_LANGS])('%s states cut and pool in the live filter note', (lang) => {
+    const note = HUB_STRINGS[lang].homeFeed.liveFilterNote(30, 133);
+    expect(note).toContain('30');
+    expect(note).toContain('133');
   });
 
   it.each([...UI_LANGS])('%s embeds the counts in the live intro', (lang) => {

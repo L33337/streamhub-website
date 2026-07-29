@@ -60,7 +60,8 @@ export const uk: HubLex = {
     liveFilterMatches: (count) => `Трансляцій: ${count}`,
     liveFilterReset: 'Скинути',
     liveFilterEmpty: 'Зараз немає трансляцій за цими фільтрами.',
-    liveFilterNote: (count) => `Топ-${count} за кількістю глядачів зараз`,
+    liveFilterNote: (top, total) =>
+      `Топ-${top} за кількістю глядачів — фільтри шукають серед усіх трансляцій (${total})`,
     upNextTitle: 'Програма на сьогодні',
     upNextLink: 'В ефірі та незабаром →',
     chipAll: 'Усі',

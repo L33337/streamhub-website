@@ -35,7 +35,8 @@ export const hu: HubLex = {
     liveFilterMatches: (count) => `${count} élő adás`,
     liveFilterReset: 'Visszaállítás',
     liveFilterEmpty: 'Jelenleg egyetlen élő adás sem felel meg ezeknek a szűrőknek.',
-    liveFilterNote: (count) => `Top ${count} a jelenlegi nézőszám alapján`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} a jelenlegi nézőszám alapján — a szűrők mind a(z) ${total} élő adásban keresnek`,
     upNextTitle: 'A mai műsor',
     upNextLink: 'Élő és hamarosan induló →',
     chipAll: 'Mind',

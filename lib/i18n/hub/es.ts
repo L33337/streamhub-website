@@ -38,7 +38,8 @@ export const es: HubLex = {
     liveFilterMatches: (count) => `${count} directos`,
     liveFilterReset: 'Restablecer',
     liveFilterEmpty: 'Ningún directo coincide con estos filtros ahora mismo.',
-    liveFilterNote: (count) => `Top ${count} por espectadores actuales`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} por espectadores actuales — los filtros buscan entre los ${total} directos`,
     upNextTitle: 'La programación de hoy',
     upNextLink: 'En directo y a punto de empezar →',
     chipAll: 'Todos',

@@ -3,12 +3,15 @@ import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   ALWAYS_ON_DURATION_SENTINEL,
   buildLiveFilterItems,
+  computeVisibleLiveIds,
   countLiveFilterOptions,
   formatLiveRuntime,
   liveRuntime,
   matchesLiveFilters,
   normalizeSlotLanguage,
   pickBiggestLiveSlots,
+  LIVE_RAIL_DEFAULT_VISIBLE,
+  LIVE_RAIL_POOL_MAX,
 } from '../live-rail';
 import { liveRuntimeLexFor, LIVE_RUNTIME_STRINGS } from '@/lib/i18n/live-runtime';
 import { UI_LANGS } from '@/lib/i18n-core';
@@ -42,14 +45,24 @@ function slot(overrides: Partial<PublicStreamSlot> = {}): PublicStreamSlot {
 
 describe('pickBiggestLiveSlots', () => {
   it('ranks by viewer count and keeps one slot per streamer', () => {
-    const picked = pickBiggestLiveSlots([
-      slot({ id: 'a', streamer_id: 's1', viewer_count: 10 }),
-      slot({ id: 'b', streamer_id: 's2', viewer_count: 500 }),
-      // Simulcast twin of the winner — must not appear a second time.
-      slot({ id: 'c', streamer_id: 's2', viewer_count: 40 }),
-      slot({ id: 'd', streamer_id: 's3', viewer_count: 90 }),
-    ]);
+    const picked = pickBiggestLiveSlots(
+      [
+        slot({ id: 'a', streamer_id: 's1', viewer_count: 10 }),
+        slot({ id: 'b', streamer_id: 's2', viewer_count: 500 }),
+        // Simulcast twin of the winner — must not appear a second time.
+        slot({ id: 'c', streamer_id: 's2', viewer_count: 40 }),
+        slot({ id: 'd', streamer_id: 's3', viewer_count: 90 }),
+      ],
+      LIVE_RAIL_POOL_MAX,
+    );
     expect(picked.map((s) => s.id)).toEqual(['b', 'd', 'a']);
+  });
+
+  // The rail renders the pool and hides the tail, so the cap must clear the
+  // live roster with room to spare — a cap at the visible cut would put us
+  // back where this change started.
+  it('caps well above the unfiltered cut', () => {
+    expect(LIVE_RAIL_POOL_MAX).toBeGreaterThan(LIVE_RAIL_DEFAULT_VISIBLE * 4);
   });
 
   it('drops non-live rows and applies the cap', () => {
@@ -70,22 +83,28 @@ describe('pickBiggestLiveSlots', () => {
   // The zombie guard: production carried two slots stuck on status='live' for
   // 6 and 12 days, never re-sampled. They must not reach a "biggest" rail.
   it('excludes never-sampled zombie slots while enough sampled ones exist', () => {
-    const picked = pickBiggestLiveSlots([
-      slot({ id: 'zombie', streamer_id: 'z', viewer_count: null }),
-      slot({ id: 'a', streamer_id: 's1', viewer_count: 10 }),
-      slot({ id: 'b', streamer_id: 's2', viewer_count: 20 }),
-      slot({ id: 'c', streamer_id: 's3', viewer_count: 30 }),
-      slot({ id: 'd', streamer_id: 's4', viewer_count: 40 }),
-    ]);
+    const picked = pickBiggestLiveSlots(
+      [
+        slot({ id: 'zombie', streamer_id: 'z', viewer_count: null }),
+        slot({ id: 'a', streamer_id: 's1', viewer_count: 10 }),
+        slot({ id: 'b', streamer_id: 's2', viewer_count: 20 }),
+        slot({ id: 'c', streamer_id: 's3', viewer_count: 30 }),
+        slot({ id: 'd', streamer_id: 's4', viewer_count: 40 }),
+      ],
+      LIVE_RAIL_POOL_MAX,
+    );
     expect(picked.map((s) => s.id)).toEqual(['d', 'c', 'b', 'a']);
   });
 
   it('falls back to unsampled slots when the viewer sampler is degraded', () => {
-    const picked = pickBiggestLiveSlots([
-      slot({ id: 'a', streamer_id: 's1', viewer_count: null }),
-      slot({ id: 'b', streamer_id: 's2', viewer_count: 5 }),
-      slot({ id: 'c', streamer_id: 's3', viewer_count: null }),
-    ]);
+    const picked = pickBiggestLiveSlots(
+      [
+        slot({ id: 'a', streamer_id: 's1', viewer_count: null }),
+        slot({ id: 'b', streamer_id: 's2', viewer_count: 5 }),
+        slot({ id: 'c', streamer_id: 's3', viewer_count: null }),
+      ],
+      LIVE_RAIL_POOL_MAX,
+    );
     // Sampled pool (1) is below the floor, so nothing is thrown away; the
     // sampled slot still sorts first.
     expect(picked.map((s) => s.id)).toEqual(['b', 'a', 'c']);
@@ -94,7 +113,7 @@ describe('pickBiggestLiveSlots', () => {
   it('treats an absent viewer_count (older API deployment) like null', () => {
     const withoutField = slot({ id: 'a', streamer_id: 's1' });
     delete (withoutField as { viewer_count?: number | null }).viewer_count;
-    const picked = pickBiggestLiveSlots([withoutField]);
+    const picked = pickBiggestLiveSlots([withoutField], LIVE_RAIL_POOL_MAX);
     expect(picked.map((s) => s.id)).toEqual(['a']);
   });
 });
@@ -335,5 +354,76 @@ describe('countLiveFilterOptions', () => {
         german.filter((item) => matchesLiveFilters(item, option.value, 'de')),
       ).toHaveLength(option.count);
     }
+  });
+
+  // Options are counted over the whole rendered pool, not over the visible
+  // cut — that is what gives the smaller languages an entry at all. Before
+  // 2026-07-29 a language whose streams all ranked below the cut simply had
+  // no option (pt/it/pl in production).
+  it('offers a language that exists only below the default cut', () => {
+    const deep = buildLiveFilterItems(
+      Array.from({ length: 35 }, (_, index) =>
+        slot({
+          id: `s${index}`,
+          streamer_id: `streamer-${index}`,
+          streamer_language: index === 33 ? 'pl' : 'en',
+        }),
+      ),
+      (code) => code.toUpperCase(),
+    );
+    expect(countLiveFilterOptions(deep, 'language')).toContainEqual({
+      value: 'pl',
+      label: 'PL',
+      count: 1,
+    });
+  });
+});
+
+describe('computeVisibleLiveIds', () => {
+  const items = buildLiveFilterItems(
+    [
+      slot({ id: 'a', category: 'VALORANT', streamer_language: 'en' }),
+      slot({ id: 'b', category: 'Just Chatting', streamer_language: 'de' }),
+      slot({ id: 'c', category: null, streamer_language: null }),
+      // Ranked below a cut of 3 — unreachable in the old DOM-toggling rail.
+      slot({ id: 'd', category: 'VALORANT', streamer_language: 'de' }),
+      slot({ id: 'e', category: 'VALORANT', streamer_language: 'ja' }),
+    ],
+    (code) => code.toUpperCase(),
+  );
+
+  it('shows the top cut when nothing is selected', () => {
+    expect(computeVisibleLiveIds(items, '', '', 3)).toEqual(
+      new Set(['a', 'b', 'c']),
+    );
+  });
+
+  it('shows everything when the pool is smaller than the cut', () => {
+    expect(computeVisibleLiveIds(items, '', '', 30)).toEqual(
+      new Set(['a', 'b', 'c', 'd', 'e']),
+    );
+  });
+
+  // The whole point of the change: a filter reaches past the cut, and drops
+  // non-matching cards that were inside it.
+  it('reaches below the cut and drops non-matches above it', () => {
+    const visible = computeVisibleLiveIds(items, '', 'de', 3);
+    expect(visible).toEqual(new Set(['b', 'd']));
+  });
+
+  it('intersects both dimensions, uncapped', () => {
+    expect(computeVisibleLiveIds(items, 'VALORANT', 'de', 1)).toEqual(
+      new Set(['d']),
+    );
+  });
+
+  it('returns nothing when a selection matches nothing', () => {
+    expect(computeVisibleLiveIds(items, 'Dota 2', '', 3)).toEqual(new Set());
+  });
+
+  it('keeps a blank-metadata card in the cut but never in a filter', () => {
+    expect(computeVisibleLiveIds(items, '', '', 3)).toContain('c');
+    expect(computeVisibleLiveIds(items, '', 'de', 3)).not.toContain('c');
+    expect(computeVisibleLiveIds(items, 'VALORANT', '', 5)).not.toContain('c');
   });
 });

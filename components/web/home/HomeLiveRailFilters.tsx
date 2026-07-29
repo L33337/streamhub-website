@@ -5,10 +5,12 @@ import { RotateCcw } from 'lucide-react';
 import type { UiLang } from '@/lib/i18n-core';
 import { liveRuntimeLexFor } from '@/lib/i18n/live-runtime';
 import {
+  computeVisibleLiveIds,
   countLiveFilterOptions,
   formatLiveRuntime,
   liveRuntimeFrom,
   matchesLiveFilters,
+  LIVE_RAIL_DEFAULT_VISIBLE,
   type LiveFilterItem,
 } from '@/lib/home/live-rail';
 
@@ -35,9 +37,11 @@ export interface LiveFilterStrings {
  * now" rail, plus the minute tick that keeps the runtime lines honest.
  *
  * Same philosophy as HomeUpNextFilters: the cards stay fully server-rendered
- * and this wrapper only toggles `hidden` on `li[data-live-id]`, so crawlers and
- * a JS-less browser get the complete rail (the dropdowns SSR too but do
- * nothing there — the right degradation for a filter over a complete list).
+ * and this wrapper only toggles `hidden` on `li[data-live-id]`. The rail
+ * ships the ENTIRE live sweep, of which the server already hid everything
+ * past LIVE_RAIL_DEFAULT_VISIBLE — so an unfiltered mount reproduces the
+ * served markup exactly, and a filter can reveal a match at any rank. A
+ * JS-less browser keeps the top cut and inert dropdowns.
  * Two additions the lineup filter doesn't need:
  *
  * - **Cross-filtered option counts.** Picking "German" narrows the category
@@ -104,14 +108,36 @@ export function HomeLiveRailFilters({
 
   const active = activeCategory !== '' || activeLanguage !== '';
 
+  // Unfiltered this is the server's own cut (the first N items); filtered it
+  // is every match in the pool, however deep. `matching` above stays the
+  // counter's and the empty state's input — with a filter active the two sets
+  // are identical.
+  const visibleIds = useMemo(
+    () =>
+      computeVisibleLiveIds(
+        items,
+        activeCategory,
+        activeLanguage,
+        LIVE_RAIL_DEFAULT_VISIBLE,
+      ),
+    [items, activeCategory, activeLanguage],
+  );
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const visible = new Set(matching.map((item) => item.id));
     container.querySelectorAll<HTMLElement>('li[data-live-id]').forEach((node) => {
-      node.hidden = !visible.has(node.dataset.liveId ?? '');
+      node.hidden = !visibleIds.has(node.dataset.liveId ?? '');
     });
-  }, [matching]);
+    // Going from 130 cards to 5 (or back) leaves the horizontal scroller
+    // parked wherever the previous set ended — often past the end of the new
+    // one, i.e. on empty space.
+    container
+      .querySelectorAll<HTMLElement>('[data-rail-scroll]')
+      .forEach((node) => {
+        node.scrollLeft = 0;
+      });
+  }, [visibleIds]);
 
   // Runtime lines: re-derived on mount (the served HTML may be a minute stale)
   // and every minute after.

@@ -55,7 +55,8 @@ export const pl: HubLex = {
     liveFilterMatches: (count) => `Transmisje: ${count}`,
     liveFilterReset: 'Wyczyść',
     liveFilterEmpty: 'Żadna transmisja nie pasuje teraz do tych filtrów.',
-    liveFilterNote: (count) => `Top ${count} wg liczby widzów`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} wg liczby widzów — filtry przeszukują wszystkie transmisje (${total})`,
     upNextTitle: 'Dzisiejszy program',
     upNextLink: 'Na żywo i wkrótce →',
     chipAll: 'Wszystko',

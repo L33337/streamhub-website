@@ -56,7 +56,8 @@ export const ar: HubLex = {
     liveFilterMatches: (count) => `${count} بث مباشر`,
     liveFilterReset: 'إعادة تعيين',
     liveFilterEmpty: 'لا يوجد بث مباشر يطابق هذه الفلاتر الآن.',
-    liveFilterNote: (count) => `أفضل ${count} حسب عدد المشاهدين الآن`,
+    liveFilterNote: (top, total) =>
+      `أفضل ${top} حسب عدد المشاهدين — تبحث الفلاتر في كل البث المباشر (${total})`,
     upNextTitle: 'برنامج اليوم',
     upNextLink: 'مباشر وسيبدأ قريبًا ←',
     chipAll: 'الكل',

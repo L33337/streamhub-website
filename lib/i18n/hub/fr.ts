@@ -40,7 +40,8 @@ export const fr: HubLex = {
     liveFilterMatches: (count) => `${count} lives`,
     liveFilterReset: 'Réinitialiser',
     liveFilterEmpty: 'Aucun live ne correspond à ces filtres pour le moment.',
-    liveFilterNote: (count) => `Top ${count} par spectateurs actuels`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} par spectateurs actuels — les filtres couvrent les ${total} lives`,
     upNextTitle: 'Le programme du jour',
     upNextLink: 'En direct et bientôt →',
     chipAll: 'Tous',
