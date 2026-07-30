@@ -145,7 +145,10 @@ function LiveCard({
           {slot.thumbnail_url ? (
             <Image
               src={slot.thumbnail_url}
-              alt=""
+              // Language-neutral by construction: the stream's own title (or
+              // the streamer name) rather than an English chrome phrase, which
+              // would leak onto all 11 non-English locales.
+              alt={slot.title?.trim() || slot.streamer_name}
               fill
               unoptimized
               // Only the first card is eager: it is the one that can become
@@ -185,6 +188,9 @@ function LiveCard({
               {slot.avatar_url ? (
                 <Image
                   src={slot.avatar_url}
+                  // Deliberately empty: secondary to the thumbnail above, and
+                  // the streamer name follows as visible text — a repeat here
+                  // only makes screen readers say it twice.
                   alt=""
                   width={28}
                   height={28}
@@ -255,7 +261,8 @@ function ThumbnailFallback({ slot }: { slot: PublicStreamSlot }) {
     return (
       <Image
         src={slot.avatar_url}
-        alt=""
+        // Stands in as the card's primary visual here, so it carries the name.
+        alt={slot.streamer_name}
         fill
         unoptimized
         sizes="268px"

@@ -209,7 +209,7 @@ export function RankingTable({
                     {streamer.avatar_url ? (
                       <Image
                         src={streamer.avatar_url}
-                        alt=""
+                        alt={streamer.name}
                         width={36}
                         height={36}
                         unoptimized

@@ -56,7 +56,7 @@ export function RankingSpotlight({
           {streamer.avatar_url ? (
             <Image
               src={streamer.avatar_url}
-              alt=""
+              alt={streamer.name}
               width={64}
               height={64}
               unoptimized

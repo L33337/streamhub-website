@@ -582,15 +582,107 @@ describe('buildStreamerMetadata — evergreen description', () => {
     expect(desc).toContain('Sa 21:00 (Ortszeit Berlin)');
   });
 
-  it('leaves the live description untouched', () => {
+  it('keeps the live status leading, ahead of the evergreen tail', () => {
     const desc = String(
       buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
         liveSlot: makeSlot({ status: 'live' }),
         stats: makeStats(),
       }).description,
     );
-    expect(desc).toContain('streamt gerade');
-    expect(desc).not.toContain('streamt meist');
+    // Inverse of the offline branch: "live now" is the timely fact the page
+    // exists for, so it goes first and the rhythm follows.
+    expect(desc.indexOf('streamt gerade')).toBeLessThan(desc.indexOf('Übliche Sendezeiten'));
+  });
+});
+
+describe('buildStreamerMetadata — evergreen tail on LIVE descriptions', () => {
+  // The state EventSub leaves behind before enrichment: live, but no category
+  // and no title yet. Bing flagged exactly these pages as "description too
+  // short" (2026-07-29).
+  // `title` is optional on the DTO, `category` nullable — hence the mixed pair.
+  const bareLive = () => makeSlot({ status: 'live', category: null, title: undefined });
+
+  it('extends a bare "is live now" with the weekly rhythm', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: bareLive(),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc).toBe(
+      'ExampleStreamer ist gerade live. Übliche Sendezeiten: Di, Do, Sa, 20:00–23:30 Uhr (Ortszeit Berlin).',
+    );
+    // The whole point of the fix: past Bing's ~100-char short-description gate.
+    // The fixture's short name lands exactly on it; real names are longer.
+    expect(desc.length).toBeGreaterThanOrEqual(100);
+  });
+
+  it('states the timezone exactly once', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: bareLive(),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc.match(/Ortszeit Berlin/g)).toHaveLength(1);
+  });
+
+  it('falls back to a static tail when the stats carry no weekdays', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: bareLive(),
+        stats: makeStats({ weekdays: [] }),
+      }).description,
+    );
+    expect(desc).toBe(
+      'ExampleStreamer ist gerade live. Sendezeiten, typische Stream-Zeiten und Live-Status.',
+    );
+  });
+
+  it('uses the static tail when no stats were loaded at all', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: bareLive(),
+      }).description,
+    );
+    expect(desc).toContain('Sendezeiten, typische Stream-Zeiten und Live-Status.');
+  });
+
+  it('drops the tail whole rather than let truncate clip it mid-sentence', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: makeSlot({ status: 'live', title: 'R'.repeat(120) }),
+        stats: makeStats(),
+      }).description,
+    );
+    expect(desc).not.toContain('Übliche Sendezeiten');
+    // A live slot with a full title already fills the budget on its own.
+    expect(desc.length).toBeGreaterThan(100);
+  });
+
+  it('renders the tail in the viewer locale, not the streamer language', () => {
+    const desc = String(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+        liveSlot: bareLive(),
+        stats: makeStats(),
+        viewerLocale: 'en',
+      }).description,
+    );
+    expect(desc).toContain('is live now.');
+    expect(desc).toContain('Usual schedule: Tue, Thu, Sat, 20:00–23:30 (Berlin time)');
+  });
+
+  it('never exceeds the SERP description budget', () => {
+    for (const locale of ['en', 'de', 'ja', 'ar', 'pl'] as const) {
+      const desc = String(
+        buildStreamerMetadata(makeStreamer(), 'examplestreamer', {
+          liveSlot: makeSlot({ status: 'live', title: 'R'.repeat(60) }),
+          stats: makeStats(),
+          viewerLocale: locale,
+        }).description,
+      );
+      expect(desc.length).toBeLessThanOrEqual(155);
+    }
   });
 });
 

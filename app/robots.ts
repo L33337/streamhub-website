@@ -43,11 +43,20 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: SEARCH_CRAWLER_DISALLOWS,
       },
+      // DuckDuckBot is a pure search crawler — it never renders link embeds, so
+      // the unfurl exemption below does not apply to it and its crawl budget
+      // belongs on indexable pages (added 2026-07-29). DuckDuckGo's web results
+      // come from Bing, so this only steers its own supplementary crawling.
+      {
+        userAgent: 'DuckDuckBot',
+        allow: '/',
+        disallow: SEARCH_CRAWLER_DISALLOWS,
+      },
       // NO /schedule/ here: Discordbot/Twitterbot respect robots.txt — a
       // wildcard block would kill link embeds of user-shared slot URLs.
-      // Residual: other search bots (DuckDuckBot, Yandex, …) may still crawl
-      // /schedule/ — accepted to keep unfurls working; add a named group if
-      // one of them shows up as measurable crawl waste.
+      // Residual: other search bots (Yandex, …) may still crawl /schedule/ —
+      // accepted to keep unfurls working; add a named group if one of them
+      // shows up as measurable crawl waste.
       // /feed IS here: like /settings and /favorites it is auth-gated and
       // always 307s anonymous crawlers (to /app while auth is dormant, to
       // the login page once enabled) — there is never content to fetch.

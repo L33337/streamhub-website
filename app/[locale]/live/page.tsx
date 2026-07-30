@@ -96,7 +96,7 @@ function LiveStreamerRow({ slot, locale }: { slot: PublicStreamSlot; locale: UiL
       {slot.avatar_url ? (
         <Image
           src={slot.avatar_url}
-          alt=""
+          alt={slot.streamer_name}
           width={48}
           height={48}
           unoptimized

@@ -311,7 +311,7 @@ function DropdownResult({
       {streamer.avatar_url ? (
         <Image
           src={streamer.avatar_url}
-          alt=""
+          alt={streamer.name}
           width={32}
           height={32}
           unoptimized

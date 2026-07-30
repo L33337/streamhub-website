@@ -59,7 +59,7 @@ export function HomeDiscoverGrid({
                 {streamer.avatar_url ? (
                   <Image
                     src={streamer.avatar_url}
-                    alt=""
+                    alt={streamer.name}
                     width={40}
                     height={40}
                     unoptimized

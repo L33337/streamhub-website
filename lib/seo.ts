@@ -342,6 +342,15 @@ interface Lex {
   fallbackTitle(name: string): string;
   liveBase(name: string): string;
   livePlaying(name: string, cat: string): string;
+  /**
+   * Evergreen tail of a LIVE description: the weekly rhythm without the name
+   * (the live lead already named the subject). Label-colon form rather than a
+   * subject-less sentence — it stays grammatical in all 12 locales and is
+   * shorter than repeating the name.
+   */
+  liveHabitTail(days: string, times: { start: string; end: string } | null, zone: string): string;
+  /** Same slot as `liveHabitTail`, for live streamers without usable stats. */
+  liveTail(): string;
   nextLead(name: string, label: string, predicted: boolean): string;
   /**
    * Evergreen opener of an offline description: "{name} streams mostly Tue,
@@ -377,6 +386,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — Stream Schedule & Live Status`,
     liveBase: (n) => `${n} is live now`,
     livePlaying: (n, c) => `${n} is live now playing ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `Usual schedule: ${d}, ${t.start}–${t.end} (${z}).` : `Usual schedule: ${d}.`,
+    liveTail: () => `Full stream schedule, typical stream times and live status.`,
     nextLead: (n, l, p) => `${n}'s next ${p ? 'predicted ' : ''}stream ${l}`,
     habitDesc: (n, d, t, z) =>
       t ? `${n} streams mostly ${d}, ${t.start}–${t.end} (${z}).` : `${n} streams mostly ${d}.`,
@@ -401,6 +413,11 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — Stream-Zeiten & Live-Status`,
     liveBase: (n) => `${n} ist gerade live`,
     livePlaying: (n, c) => `${n} streamt gerade ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t
+        ? `Übliche Sendezeiten: ${d}, ${t.start}–${t.end} Uhr (${z}).`
+        : `Übliche Sendezeiten: ${d}.`,
+    liveTail: () => `Sendezeiten, typische Stream-Zeiten und Live-Status.`,
     // "von {name}" phrasing avoids the awkward genitive-s for names ending in s/x/z.
     nextLead: (n, l, p) =>
       p ? `Voraussichtlich nächster Stream von ${n} ${l}` : `Nächster Stream von ${n} ${l}`,
@@ -428,6 +445,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — Horario de streams y estado en vivo`,
     liveBase: (n) => `${n} está en directo`,
     livePlaying: (n, c) => `${n} está en directo jugando a ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `Horario habitual: ${d}, ${t.start}–${t.end} (${z}).` : `Horario habitual: ${d}.`,
+    liveTail: () => `Horario de streams, horas habituales y estado en vivo.`,
     nextLead: (n, l, p) =>
       p ? `Próximo directo previsto de ${n} ${l}` : `Próximo directo de ${n} ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -455,6 +475,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — Programme des streams & statut en direct`,
     liveBase: (n) => `${n} est en live`,
     livePlaying: (n, c) => `${n} est en live et joue à ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `Horaires habituels : ${d}, ${t.start}–${t.end} (${z}).` : `Horaires habituels : ${d}.`,
+    liveTail: () => `Programme des streams, horaires habituels et statut en direct.`,
     nextLead: (n, l, p) => (p ? `Prochain live prévu de ${n} ${l}` : `Prochain live de ${n} ${l}`),
     habitDesc: (n, d, t, z) =>
       t
@@ -481,6 +504,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — Agenda de streams e status ao vivo`,
     liveBase: (n) => `${n} está ao vivo`,
     livePlaying: (n, c) => `${n} está ao vivo jogando ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `Horário habitual: ${d}, ${t.start}–${t.end} (${z}).` : `Horário habitual: ${d}.`,
+    liveTail: () => `Agenda de streams, horários habituais e status ao vivo.`,
     nextLead: (n, l, p) => (p ? `Próxima live prevista de ${n} ${l}` : `Próxima live de ${n} ${l}`),
     habitDesc: (n, d, t, z) =>
       t
@@ -507,6 +533,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — Calendario stream e stato live`,
     liveBase: (n) => `${n} è in diretta`,
     livePlaying: (n, c) => `${n} è in diretta e gioca a ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `Orari abituali: ${d}, ${t.start}–${t.end} (${z}).` : `Orari abituali: ${d}.`,
+    liveTail: () => `Calendario stream, orari abituali e stato live.`,
     nextLead: (n, l, p) =>
       p ? `Prossima diretta prevista di ${n} ${l}` : `Prossima diretta di ${n} ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -537,6 +566,11 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — расписание стримов и статус эфира`,
     liveBase: (n) => `${n} сейчас в эфире`,
     livePlaying: (n, c) => `${n} сейчас в эфире — играет в ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t
+        ? `Обычное расписание: ${d}, ${t.start}–${t.end} (${z}).`
+        : `Обычное расписание: ${d}.`,
+    liveTail: () => `Расписание стримов, обычное время эфира и статус.`,
     nextLead: (n, l, p) =>
       p ? `Предполагаемый следующий стрим ${n} ${l}` : `Следующий стрим ${n} ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -563,6 +597,11 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — розклад стрімів і статус ефіру`,
     liveBase: (n) => `${n} зараз у ефірі`,
     livePlaying: (n, c) => `${n} зараз у ефірі — грає в ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t
+        ? `Звичайний розклад: ${d}, ${t.start}–${t.end} (${z}).`
+        : `Звичайний розклад: ${d}.`,
+    liveTail: () => `Розклад стрімів, звичайний час ефіру та статус.`,
     nextLead: (n, l, p) =>
       p ? `Імовірно наступний стрім ${n} ${l}` : `Наступний стрім ${n} ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -590,6 +629,10 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — 配信スケジュールとライブ状況`,
     liveBase: (n) => `${n} は配信中`,
     livePlaying: (n, c) => `${n} は ${c} を配信中`,
+    // Japanese is pro-drop, so the natural verb form beats a label-colon here.
+    liveHabitTail: (d, t, z) =>
+      t ? `通常は ${d} の ${t.start}–${t.end}（${z}）に配信。` : `通常は ${d} に配信。`,
+    liveTail: () => `配信スケジュール、いつもの配信時間、ライブ状況をチェック。`,
     nextLead: (n, l, p) => (p ? `${n} の次回配信予想は ${l}` : `${n} の次回配信は ${l}`),
     habitDesc: (n, d, t, z) =>
       t ? `${n} は主に ${d} の ${t.start}–${t.end}（${z}）に配信。` : `${n} は主に ${d} に配信。`,
@@ -614,6 +657,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — جدول البث وحالة البث المباشر`,
     liveBase: (n) => `${n} يبث مباشرة الآن`,
     livePlaying: (n, c) => `${n} يبث الآن ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `الجدول المعتاد: ${d}، ${t.start}–${t.end} (${z}).` : `الجدول المعتاد: ${d}.`,
+    liveTail: () => `جدول البث، أوقات البث المعتادة، وحالة البث المباشر.`,
     nextLead: (n, l, p) =>
       p ? `البث القادم المتوقع لـ ${n} ${l}` : `البث القادم لـ ${n} ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -639,6 +685,9 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — stream-időpontok és élő státusz`,
     liveBase: (n) => `${n} épp élőben van`,
     livePlaying: (n, c) => `${n} épp élőben — ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t ? `Szokásos időpontok: ${d}, ${t.start}–${t.end} (${z}).` : `Szokásos időpontok: ${d}.`,
+    liveTail: () => `Stream-időpontok, szokásos időpontok és élő státusz.`,
     nextLead: (n, l, p) =>
       p ? `${n} várható következő streamje ${l}` : `${n} következő streamje ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -666,6 +715,11 @@ const META_STRINGS: Record<string, Lex> = {
     fallbackTitle: (n) => `${n} — harmonogram streamów i status na żywo`,
     liveBase: (n) => `${n} jest teraz na żywo`,
     livePlaying: (n, c) => `${n} jest teraz na żywo i gra w ${c}`,
+    liveHabitTail: (d, t, z) =>
+      t
+        ? `Zwykły harmonogram: ${d}, ${t.start}–${t.end} (${z}).`
+        : `Zwykły harmonogram: ${d}.`,
+    liveTail: () => `Harmonogram streamów, zwykłe godziny i status na żywo.`,
     nextLead: (n, l, p) =>
       p ? `Przewidywany następny stream ${n} ${l}` : `Następny stream ${n} ${l}`,
     habitDesc: (n, d, t, z) =>
@@ -758,6 +812,34 @@ function buildHabitClause(
   };
 }
 
+/**
+ * Evergreen tail for a LIVE description. The live lead alone can be as short as
+ * "{name} is live now." (~20 chars) whenever the slot carries neither category
+ * nor title — the state EventSub leaves behind until enrichment fills those in
+ * up to 10 minutes later. A crawler that samples the page in that window caches
+ * a near-empty snippet for days (Bing flagged 8 such pages, 2026-07-29), and it
+ * stays wrong long after the streamer went offline.
+ *
+ * The rhythm is the same evergreen fact the offline branch leads with, minus
+ * the name, so the snippet still answers "when does this streamer stream?" days
+ * later. Falls back to a static line only when there are no usable stats.
+ */
+function buildLiveTail(
+  L: Lex,
+  stats: PublicStreamerStats | null,
+  uiLanguage: string | null,
+  zoneLabel: string,
+): string {
+  if (!stats) return L.liveTail();
+  const days = activeWeekdayList(stats, uiLanguage);
+  if (!days) return L.liveTail();
+  const times =
+    stats.typical_start && stats.typical_end
+      ? { start: stats.typical_start, end: stats.typical_end }
+      : null;
+  return L.liveHabitTail(days, times, zoneLabel);
+}
+
 export function buildStreamerMetadata(
   streamer: PublicStreamer,
   slug: string,
@@ -819,6 +901,13 @@ export function buildStreamerMetadata(
     const title = st ? truncate(st, MAX_STREAM_TITLE) : null;
     titleCore = L.liveTitle(name, cat);
     description = buildLiveDesc(L, name, cat, title);
+    // Append the evergreen rhythm only when it fits whole: same rule as the
+    // offline branch, and for the same reason — truncate() would clip a half
+    // sentence, which reads worse than the short lead it was meant to extend.
+    // A live slot WITH a category and title already fills the budget on its
+    // own; the tail lands on exactly the short descriptions that need it.
+    const tail = `${description} ${buildLiveTail(L, stats, uiLanguage, zoneLabel)}`;
+    if (tail.length <= MAX_DESC) description = tail;
     ogTitle = L.ogTitle(name, cat, true);
     ogDescription = L.ogDesc(name, platforms, cat, true);
     twTitle = ogTitle;

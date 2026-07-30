@@ -191,7 +191,9 @@ function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; classNa
       {slot.avatar_url ? (
         <Image
           src={slot.avatar_url}
-          alt=""
+          // The Link's aria-label already names the target, so this costs
+          // screen readers nothing and gains the crawler image context.
+          alt={slot.streamer_name}
           width={48}
           height={48}
           unoptimized
