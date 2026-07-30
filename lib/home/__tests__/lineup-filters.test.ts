@@ -11,7 +11,6 @@ import {
   isLineupItemExpired,
   isLineupSelectionActive,
   lineupRevealLimit,
-  LINEUP_PEEK_COUNT,
   LINEUP_POOL_MAX,
   LINEUP_REVEAL_STEP,
   LINEUP_SSR_COUNT,
@@ -370,12 +369,12 @@ describe('constants', () => {
 });
 
 describe('lineupRevealLimit', () => {
-  // Step 0 is the resting state: the visible cards plus the peek teaser. Every
-  // click after that is a flat batch, so the list never jumps from a handful
-  // of cards to several hundred.
-  it('starts at the visible cards plus the peek row', () => {
-    expect(lineupRevealLimit(0)).toBe(LINEUP_VISIBLE_COUNT + LINEUP_PEEK_COUNT);
-    expect(lineupRevealLimit(-1)).toBe(LINEUP_VISIBLE_COUNT + LINEUP_PEEK_COUNT);
+  // Step 0 is the resting state. Whole cards only — a clamped half-card peek
+  // is what cut the first visible card in half once the matches no longer
+  // started at the top of the list.
+  it('starts at the visible card count', () => {
+    expect(lineupRevealLimit(0)).toBe(LINEUP_VISIBLE_COUNT);
+    expect(lineupRevealLimit(-1)).toBe(LINEUP_VISIBLE_COUNT);
   });
 
   it('adds one flat batch per click', () => {
@@ -433,7 +432,7 @@ describe('matchingLineupIds', () => {
       item({ id: `s${i}`, startMs: Date.parse('2026-07-30T21:00:00Z') + i * 60_000 }),
     );
     const matches = matchingLineupIds(many, EMPTY_LINEUP_SELECTION, utcHour, NOW);
-    expect(matches.slice(0, lineupRevealLimit(0))).toHaveLength(6);
+    expect(matches.slice(0, lineupRevealLimit(0))).toHaveLength(LINEUP_VISIBLE_COUNT);
     expect(matches.slice(0, lineupRevealLimit(1))).toHaveLength(24);
     expect(matches.slice(0, lineupRevealLimit(2))).toHaveLength(48);
     expect(matches.slice(0, lineupRevealLimit(1))[0]).toBe('s0');

@@ -76,12 +76,24 @@ export function HomeUpNext({
     close: L.homeFeed.upsell.close,
   };
 
-  const renderSlot = (slot: PublicStreamSlot) => (
+  const listClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
+  // ssr = what becomes HTML, deferred = what the island renders on demand.
+  const { ssr: ssrSlots, deferred: deferredSlots } = splitLineupSlots(slots);
+
+  // Handed over as an ARRAY of <li>, not as a finished list: the island puts
+  // them in the SAME <ul> as the cards it renders itself, so all of them share
+  // one grid. Two sibling grids used to lay out independently, which left a
+  // half-filled row wherever the first one ended on an odd count.
+  const ssrCards = ssrSlots.map((slot, index) => (
     <li
       key={slot.id}
       // Filter key for the island; the metadata itself travels as a prop, so
       // the attribute only has to identify the card.
       data-home-id={slot.id}
+      // Beyond the resting window the server hides them outright — the island
+      // computes the same set on mount, so the first paint needs no correction
+      // and the section does not shift.
+      hidden={index >= LINEUP_VISIBLE_COUNT || undefined}
       className="relative"
     >
       <SlotCard slot={slot} language={locale} />
@@ -91,13 +103,7 @@ export function HomeUpNext({
         className="absolute right-3 top-3 z-10"
       />
     </li>
-  );
-
-  const listClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
-  // ssr = what becomes HTML, deferred = what the island renders on demand.
-  const { ssr: ssrSlots, deferred: deferredSlots } = splitLineupSlots(slots);
-  const firstSlots = ssrSlots.slice(0, LINEUP_VISIBLE_COUNT);
-  const restSlots = ssrSlots.slice(LINEUP_VISIBLE_COUNT);
+  ));
 
   return (
     <section aria-label={L.homeFeed.upNextTitle}>
@@ -153,17 +159,11 @@ export function HomeUpNext({
           }}
           upsellStrings={favoritesStrings}
           bellStrings={bellStrings}
+          ssrCards={ssrCards}
           deferredSlots={deferredSlots}
-          deferredListClassName={listClass}
+          listClassName={listClass}
           locale={locale}
-          moreChildren={
-            restSlots.length > 0 ? (
-              <ul className={listClass}>{restSlots.map(renderSlot)}</ul>
-            ) : null
-          }
-        >
-          <ul className={listClass}>{firstSlots.map(renderSlot)}</ul>
-        </HomeUpNextFilters>
+        />
       )}
     </section>
   );

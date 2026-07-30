@@ -34,30 +34,31 @@ export const LINEUP_POOL_MAX = 500;
  */
 export const LINEUP_SSR_COUNT = 24;
 
-/** Cards fully visible before the visitor asks for more. */
-export const LINEUP_VISIBLE_COUNT = 4;
-
 /**
- * Cards kept inside the clamped peek row: enough to tease the next row under
- * the fade, not enough to read. Purely an affordance — the clamp does the
- * visual work.
+ * Cards shown before the visitor asks for more. They are shown WHOLE: the
+ * section used to clamp a peek row to half a card's height, which broke as
+ * soon as the first visible cards were not the first rendered ones — filter to
+ * a language absent from the top four, or serve a stale ISR page whose early
+ * predictions have expired, and every visible card landed inside a 96 px
+ * window (verified 2026-07-30: one card cut at 77 px, the two rows behind it
+ * gone). The reveal button carries that affordance instead, and it says how
+ * many cards the next click adds.
  */
-export const LINEUP_PEEK_COUNT = 2;
+export const LINEUP_VISIBLE_COUNT = 4;
 
 /** How many more cards each "show more" click reveals. */
 export const LINEUP_REVEAL_STEP = 24;
 
 /**
  * How many MATCHING cards are revealed after `steps` clicks. Step 0 is the
- * resting state (the visible cards plus the peek teaser); every click after
- * that is a flat batch, so the page never jumps from a handful of cards to
- * several hundred.
+ * resting state; every click after that is a flat batch, so the page never
+ * jumps from a handful of cards to several hundred.
  *
  * Deliberately independent of the filters: selecting a category used to force
  * the list open, which meant one dropdown change rendered the entire window.
  */
 export function lineupRevealLimit(steps: number): number {
-  if (steps <= 0) return LINEUP_VISIBLE_COUNT + LINEUP_PEEK_COUNT;
+  if (steps <= 0) return LINEUP_VISIBLE_COUNT;
   return steps * LINEUP_REVEAL_STEP;
 }
 

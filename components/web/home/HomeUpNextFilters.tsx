@@ -106,22 +106,21 @@ export function HomeUpNextFilters({
   strings,
   upsellStrings,
   bellStrings,
+  ssrCards,
   deferredSlots,
-  deferredListClassName,
+  listClassName,
   locale,
-  children,
-  moreChildren,
 }: {
   items: LineupFilterItem[];
   strings: LineupFilterStrings;
   upsellStrings: UpsellSheetStrings;
   bellStrings: UpsellSheetStrings;
+  /** Server-rendered `<li>` cards, placed in the same grid as the deferred ones. */
+  ssrCards: React.ReactNode[];
   /** The pool beyond the server-rendered head, rendered here on demand. */
   deferredSlots: PublicStreamSlot[];
-  deferredListClassName: string;
+  listClassName: string;
   locale: UiLang;
-  children: React.ReactNode;
-  moreChildren: React.ReactNode | null;
 }) {
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState('');
@@ -145,7 +144,7 @@ export function HomeUpNextFilters({
   const categoryId = useId();
   const languageId = useId();
   const timeId = useId();
-  const moreId = useId();
+  const listId = useId();
 
   // Expired cards leave every pool: they are about to disappear from the
   // section, so counting them would over-promise on each dropdown.
@@ -279,15 +278,6 @@ export function HomeUpNextFilters({
   const selectClass =
     'rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
 
-  // "More" is anything past the four full cards, from either regime — with a
-  // deferred tail present the region must exist even if the server-rendered
-  // head happened to fit in the visible row.
-  const hasMore = moreChildren !== null || deferredSlots.length > 0;
-  // Clamp only while a reveal step is actually available: with 5 matches and
-  // nothing left to reveal, clamping would hide the fifth card behind a fade
-  // and no button.
-  const collapsed = revealSteps === 0 && canRevealMore;
-
   return (
     <div ref={containerRef}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -376,95 +366,78 @@ export function HomeUpNextFilters({
         </button>
       </div>
 
-      {children}
+      {/* ONE grid for both regimes. The server's cards arrive as an array of
+          <li> and the deferred ones are appended after them, which keeps the
+          whole list chronological (the head is the pool's first
+          LINEUP_SSR_COUNT slots by start time) AND keeps every card in the
+          same grid flow. Two sibling grids left a half-filled row wherever the
+          first ended on an odd count — and clamping one of them to a peek
+          height cut the first visible card in half whenever the matches all
+          sat in the second. Hidden cards are display:none, so they leave the
+          flow entirely and no gap appears. */}
+      <ul id={listId} className={listClassName}>
+        {ssrCards}
+        {deferredVisible.map((slot) => (
+          <li
+            key={slot.id}
+            data-home-id={slot.id}
+            // Marks React's own nodes: the imperative `hidden` pass skips them.
+            data-home-deferred=""
+            className="relative"
+          >
+            <SlotCard slot={slot} language={locale} />
+            <SlotBellButton
+              ariaLabel={strings.bellAriaPattern.replace(
+                '{name}',
+                slot.streamer_name,
+              )}
+              strings={bellStrings}
+              className="absolute right-3 top-3 z-10"
+            />
+          </li>
+        ))}
+      </ul>
 
       {/* Unreachable by construction: an option is only offered when it has a
           match in the pool the other dropdowns already narrowed, and the clamp
-          above drops a selection that stops being offered. Kept as the visible
-          failure mode if that invariant is ever broken — an empty list with no
-          explanation is the worse outcome. */}
+          in render drops a selection that stops being offered. Kept as the
+          visible failure mode if that invariant is ever broken — an empty list
+          with no explanation is the worse outcome. */}
       {matchCount === 0 && (
         <p className="rounded-xl border border-border-default bg-background-elevated p-6 text-center text-sm text-text-secondary">
           {strings.empty}
         </p>
       )}
 
-      {hasMore && (
-        <>
-          <div
-            id={moreId}
-            inert={collapsed}
-            className={
-              collapsed ? 'relative mt-3 max-h-24 overflow-hidden' : 'mt-3'
-            }
-          >
-            {moreChildren}
-            {/* The deferred tail. Appended AFTER the server's cards, which is
-                what keeps the whole list chronological: the head is the pool's
-                first LINEUP_SSR_COUNT slots by start time, this is the rest in
-                the same order. Only matches are rendered, so React — not the
-                imperative pass above — owns their visibility. */}
-            {deferredVisible.length > 0 && (
-              <ul className={`${deferredListClassName} mt-3`}>
-                {deferredVisible.map((slot) => (
-                  <li
-                    key={slot.id}
-                    data-home-id={slot.id}
-                    data-home-deferred=""
-                    className="relative"
-                  >
-                    <SlotCard slot={slot} language={locale} />
-                    <SlotBellButton
-                      ariaLabel={strings.bellAriaPattern.replace(
-                        '{name}',
-                        slot.streamer_name,
-                      )}
-                      strings={bellStrings}
-                      className="absolute right-3 top-3 z-10"
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-            {collapsed && (
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent"
-              />
-            )}
-          </div>
-          {/* One batch per click, and a separate way back — a single toggle
-              would have to mean both "more" and "less" at once as soon as the
-              list reveals in steps. The count is what the NEXT click adds, so
-              the last batch says what is actually left. */}
-          {(canRevealMore || revealSteps > 0) && (
-            <div className="mt-2 flex items-center justify-center gap-4 text-sm font-semibold">
-              {canRevealMore && (
-                <button
-                  type="button"
-                  onClick={() => setRevealSteps((steps) => steps + 1)}
-                  aria-controls={moreId}
-                  className="text-accent-cyan transition-colors hover:text-accent-cyan/80"
-                >
-                  {strings.showMoreByCount[
-                    Math.min(LINEUP_REVEAL_STEP, matchCount - revealLimit)
-                  ] ?? strings.showAllLabel}
-                </button>
-              )}
-              {revealSteps > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setRevealSteps(0)}
-                  aria-expanded={true}
-                  aria-controls={moreId}
-                  className="text-text-muted transition-colors hover:text-white"
-                >
-                  {strings.showLessLabel}
-                </button>
-              )}
-            </div>
+      {/* One batch per click, and a separate way back — a single toggle would
+          have to mean both "more" and "less" at once as soon as the list
+          reveals in steps. The count is what the NEXT click adds, so the last
+          batch says what is actually left. */}
+      {(canRevealMore || revealSteps > 0) && (
+        <div className="mt-3 flex items-center justify-center gap-4 text-sm font-semibold">
+          {canRevealMore && (
+            <button
+              type="button"
+              onClick={() => setRevealSteps((steps) => steps + 1)}
+              aria-controls={listId}
+              className="text-accent-cyan transition-colors hover:text-accent-cyan/80"
+            >
+              {strings.showMoreByCount[
+                Math.min(LINEUP_REVEAL_STEP, matchCount - revealLimit)
+              ] ?? strings.showAllLabel}
+            </button>
           )}
-        </>
+          {revealSteps > 0 && (
+            <button
+              type="button"
+              onClick={() => setRevealSteps(0)}
+              aria-controls={listId}
+              className="text-text-muted transition-colors hover:text-white"
+            >
+              {strings.showLessLabel}
+            </button>
+          )}
+        </div>
       )}
 
       {sheetOpen && (
