@@ -51,11 +51,18 @@ export function LocaleSuggestionBanner({ pageLocale }: { pageLocale: UiLang }) {
       aria-label={strings.text}
     >
       <div className="container mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-sm">
-        <span className="min-w-0 flex-1 truncate text-text-secondary">{strings.text}</span>
+        {/* Hidden below sm rather than truncated: on a 390px viewport there is
+            only room for ~20 characters next to the CTA, so the sentence used
+            to render as "Diese Seite gibt es auc…" — a cut-off word carries no
+            more meaning than the CTA does on its own. The full sentence stays
+            the region's aria-label above, so screen readers lose nothing. */}
+        <span className="hidden min-w-0 flex-1 truncate text-text-secondary sm:block">
+          {strings.text}
+        </span>
         <a
           href={target}
           onClick={() => setPreferredLocale(suggested)}
-          className="shrink-0 rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 py-1 text-xs font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+          className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-xs font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors sm:min-h-0 sm:py-1"
         >
           {strings.cta}
         </a>
@@ -65,7 +72,9 @@ export function LocaleSuggestionBanner({ pageLocale }: { pageLocale: UiLang }) {
           // No local state to clear: dismissBanner writes the cookie and
           // notifies subscribers, so the snapshot above re-reads as null.
           onClick={() => dismissBanner(suggested, pageLocale)}
-          className="shrink-0 rounded p-1 text-text-muted hover:text-text-primary"
+          // 44px hit area; the negative margin lets it exceed the bar's own
+          // padding instead of making the whole banner taller.
+          className="-my-1.5 ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded text-text-muted hover:text-text-primary sm:ml-0"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18" />

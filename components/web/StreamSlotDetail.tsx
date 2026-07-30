@@ -78,7 +78,7 @@ export function StreamSlotDetail({
               <dt className="sr-only">Start time</dt>
               <dd>
                 <span className="text-text-muted">{startLabel}</span>{' '}
-                <LocalTime utcIso={slot.start_time} />
+                <LocalTime utcIso={slot.start_time} language={language} />
               </dd>
             </div>
             {durationLabel && (

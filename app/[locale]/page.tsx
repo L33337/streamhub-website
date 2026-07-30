@@ -298,6 +298,11 @@ export default async function HomePage({ params }: Props) {
   const liveRailSlots = pickBiggestLiveSlots(liveSlots, LIVE_RAIL_POOL_MAX);
   // Exact live count from the full sweep; the single-page fetch is the fallback.
   const liveCount = liveIds.size > 0 ? liveIds.size : liveRailSlots.length;
+  // What each live streamer is playing right now — lets the Discover cards show
+  // the current category instead of a future prediction (HomeDiscoverGrid).
+  const liveCategories = new Map(
+    liveSlots.map((slot) => [slot.streamer_id, slot.category ?? null] as const),
+  );
   // "Today's lineup" is editorially curated: featured streamers only. When
   // the featured-id fetch failed, fall back to the unfiltered list — a mixed
   // lineup beats an empty section. Future starts only: the bucketed fetch
@@ -474,6 +479,7 @@ export default async function HomePage({ params }: Props) {
           streamers={discoverStreamers}
           nextSlots={discoverNextSlots}
           liveIds={liveIds}
+          liveCategories={liveCategories}
           locale={locale}
         />
       </div>

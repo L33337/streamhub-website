@@ -46,9 +46,13 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
           const vodLinks = historyVodLinks(s);
           const perBadgeLinks = vodLinks.length > 1;
           return (
+            // `min-w-0` on the grid item: a grid track defaults to
+            // `min-width:auto`, so the truncating title below stretched the row
+            // past the viewport and the ellipsis never appeared — the title was
+            // simply cut off mid-word.
             <li
               key={s.id}
-              className="flex items-baseline gap-3 rounded-xl border border-border-default bg-background-elevated px-3 py-2"
+              className="flex min-w-0 items-baseline gap-3 rounded-xl border border-border-default bg-background-elevated px-3 py-2"
             >
               <div className="w-28 shrink-0 text-xs text-text-muted sm:w-36">
                 <time dateTime={s.started_at} className="block text-text-secondary">

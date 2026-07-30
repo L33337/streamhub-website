@@ -275,8 +275,12 @@ export function HomeUpNextFilters({
     // No expansion bookkeeping: `expanded` follows from `active`.
   };
 
+  // Merge note (2026-07-30): the mobile round raised these controls to a 44px
+  // touch target while this section still used chips. The chips are gone —
+  // they became the three selects below — so the same `min-h-11` applies here
+  // instead, matching HomeLiveRailFilters.
   const selectClass =
-    'rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
+    'min-h-11 rounded-full border border-border-default bg-background-elevated px-3 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
 
   return (
     <div ref={containerRef}>
@@ -348,7 +352,7 @@ export function HomeUpNextFilters({
                 setLanguage('');
                 setFromHour(null);
               }}
-              className="flex items-center gap-1 rounded-full border border-dashed border-border-default px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-accent-cyan/50 hover:text-accent-cyan"
+              className="flex min-h-11 items-center gap-1 rounded-full border border-dashed border-border-default px-3 text-xs font-semibold text-text-muted transition-colors hover:border-accent-cyan/50 hover:text-accent-cyan"
             >
               <RotateCcw size={11} aria-hidden="true" />
               {strings.reset}
@@ -359,7 +363,7 @@ export function HomeUpNextFilters({
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-default px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-accent-pink/50 hover:text-accent-pink"
+          className="flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-default px-3 text-xs font-semibold text-text-muted transition-colors hover:border-accent-pink/50 hover:text-accent-pink"
         >
           <Lock size={11} aria-hidden="true" />
           {strings.favoritesLabel}

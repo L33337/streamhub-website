@@ -7,6 +7,9 @@ import {
   publicSlotToIcsSlot,
   splitCollapsibleSlots,
 } from '@/lib/game-schedule';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { utcDateAbsoluteLabel } from '@/lib/format/time';
+import { DayLabel } from '@/components/web/DayLabel';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { PlatformBadge } from '@/components/web/Badges';
@@ -45,7 +48,9 @@ function CompactSlotRow({ slot }: { slot: PublicStreamSlot }) {
         <span className="shrink-0 text-xs tabular-nums text-text-secondary">
           <NextStreamTime startTime={slot.start_time} isPredicted={slot.is_predicted} />
         </span>
-        <span className="truncate text-xs font-semibold text-text-primary group-hover:text-accent-cyan">
+        {/* min-w-0 so this is the element that gives up width — without it the
+            flex row grew past the card instead of shortening the name. */}
+        <span className="min-w-0 truncate text-xs font-semibold text-text-primary group-hover:text-accent-cyan">
           {slot.streamer_name}
         </span>
         <span className="hidden min-w-0 flex-1 truncate text-xs text-text-muted sm:inline">
@@ -66,12 +71,16 @@ export function GameDaySection({
   dateKey,
   label,
   slots,
+  language = 'en',
 }: {
   dateKey: string;
+  /** UTC-referenced day label; DayLabel re-decides Today/Tomorrow per viewer. */
   label: string;
   slots: PublicStreamSlot[];
+  language?: string;
 }) {
   const { full, low } = splitCollapsibleSlots(slots);
+  const absoluteLabel = utcDateAbsoluteLabel(dateKey, resolveUiLang(language));
   return (
     <section
       id={`day-${dateKey}`}
@@ -83,13 +92,13 @@ export function GameDaySection({
         id={`heading-${dateKey}`}
         className="mb-4 flex items-baseline gap-3 text-2xl font-bold text-white"
       >
-        {label}
+        <DayLabel dateKey={dateKey} serverLabel={label} language={language} />
         <span className="text-sm font-normal text-text-muted">
           {slots.length} stream{slots.length === 1 ? '' : 's'}
         </span>
       </h2>
       {full.length > 0 && (
-        <ul className="grid gap-3" aria-label={`Streams on ${label}`}>
+        <ul className="grid gap-3" aria-label={`Streams on ${absoluteLabel}`}>
           {full.map((slot) => (
             <li
               key={slot.id}

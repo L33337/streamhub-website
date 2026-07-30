@@ -167,8 +167,10 @@ export function HomeLiveRailFilters({
     return () => clearInterval(timer);
   }, [locale]);
 
+  // `min-h-11` on the controls: these are the primary filter affordance on a
+  // phone and were 32px tall, well under the 44px touch minimum.
   const selectClass =
-    'rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
+    'min-h-11 rounded-full border border-border-default bg-background-elevated px-3 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
 
   return (
     <div ref={containerRef}>
@@ -218,7 +220,7 @@ export function HomeLiveRailFilters({
                 setCategory('');
                 setLanguage('');
               }}
-              className="flex items-center gap-1 rounded-full border border-dashed border-border-default px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-accent-cyan/50 hover:text-accent-cyan"
+              className="flex min-h-11 items-center gap-1 rounded-full border border-dashed border-border-default px-3 text-xs font-semibold text-text-muted transition-colors hover:border-accent-cyan/50 hover:text-accent-cyan"
             >
               <RotateCcw size={11} aria-hidden="true" />
               {strings.reset}

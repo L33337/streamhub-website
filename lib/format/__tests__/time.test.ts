@@ -3,10 +3,12 @@ import {
   absoluteStartLabel,
   formatDuration,
   formatUtcDateShort,
+  localDateKey,
   localizedNextLabel,
   pickNextRealSlot,
   safeTimeZone,
   sevenDayKeys,
+  utcDateAbsoluteLabel,
   utcDateLabel,
   utcDateShortLabel,
 } from '../time';
@@ -42,6 +44,45 @@ describe('utcDateLabel / utcDateShortLabel — localized', () => {
   it('falls back to English for invalid tags', () => {
     expect(utcDateLabel('2026-07-14', TODAY, 'not a tag!')).toBe('Tue, Jul 14');
     expect(utcDateLabel(TODAY, TODAY, 'not a tag!')).toBe('Today');
+  });
+});
+
+describe('utcDateAbsoluteLabel', () => {
+  it('never goes relative, even for the reference day itself', () => {
+    expect(utcDateAbsoluteLabel(TODAY)).toBe('Sat, Jul 11');
+    expect(utcDateAbsoluteLabel('2026-07-12')).toBe('Sun, Jul 12');
+  });
+
+  it('localizes and falls back to English on invalid tags', () => {
+    expect(utcDateAbsoluteLabel('2026-07-14', 'de')).not.toContain('Jul 14');
+    expect(utcDateAbsoluteLabel('2026-07-14', 'not a tag!')).toBe('Tue, Jul 14');
+  });
+});
+
+describe('localDateKey', () => {
+  it('returns the runtime-local calendar date, not the UTC one', () => {
+    // 22:13Z on Jul 29 is already Jul 30 in Berlin — the exact window in which
+    // the day strip used to label the reader's own "today" as "Tomorrow".
+    const instant = new Date('2026-07-29T22:13:00Z');
+    const berlin = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Berlin',
+    }).format(instant);
+    expect(berlin).toBe('2026-07-30');
+    expect(instant.toISOString().slice(0, 10)).toBe('2026-07-29');
+  });
+
+  it('formats as YYYY-MM-DD', () => {
+    expect(localDateKey(new Date('2026-07-11T12:00:00Z'))).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('relabels the day the viewer calls today', () => {
+    // Server reference (UTC) says Jul 29; the viewer's local date is Jul 30.
+    // Same day key, two references — this is what DayLabel swaps at hydration.
+    expect(utcDateShortLabel('2026-07-30', '2026-07-29')).toBe('Tomorrow');
+    expect(utcDateShortLabel('2026-07-30', '2026-07-30')).toBe('Today');
+    // …and the day that WAS "Today" becomes an unambiguous date, not "Yesterday"
+    // (the label helpers only special-case 0 and +1).
+    expect(utcDateShortLabel('2026-07-29', '2026-07-30')).toBe('Wed');
   });
 });
 

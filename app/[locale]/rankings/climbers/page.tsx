@@ -61,9 +61,11 @@ function streamerUrl(id: string): string {
 function ClimberTable({ movers }: { movers: MetricMovers }) {
   const { spec, climbers } = movers;
   const primary = spec.columns.find((c) => c.primary) ?? spec.columns[0];
+  // min-w on the table: five columns squeezed below the container width on
+  // phones, which clipped the right-hand metric. Same reasoning as RankingTable.
   return (
     <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[34rem] text-sm">
         <caption className="sr-only">{`Biggest climbers this week — ${spec.h1.toLowerCase()}`}</caption>
         <thead>
           <tr className="text-left text-xs uppercase tracking-wider text-text-muted">

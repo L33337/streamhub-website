@@ -192,6 +192,7 @@ export const ja: HubLex = {
     otherCategory: 'その他',
     categoryLiveAria: (name) => `${name} — 現在配信中`,
     nLive: (n) => `${n}件配信中`,
+    jumpToGame: 'ゲームへ移動',
     startingSoon: 'まもなく配信開始',
     nextNHours: (n) => `今後${n}時間`,
     emptyAll:

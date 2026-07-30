@@ -36,6 +36,7 @@ export function SlotCard({
   language = 'en',
   topBadges,
   compact = false,
+  reserveTopRight = false,
 }: {
   slot: PublicStreamSlot;
   language?: string;
@@ -47,6 +48,12 @@ export function SlotCard({
    * text column. Default keeps every existing caller byte-identical.
    */
   compact?: boolean;
+  /**
+   * Set when the caller overlays a control on the card's top-right corner (the
+   * home feed's bell). Reserves room on the status line, which otherwise ran
+   * underneath it and read "… around 12am your ti".
+   */
+  reserveTopRight?: boolean;
 }) {
   const isLive = slot.status === 'live';
   const thumbWidthClass = compact
@@ -121,7 +128,9 @@ export function SlotCard({
 
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div
+              className={`flex min-w-0 items-center gap-2 ${reserveTopRight ? 'pr-8' : ''}`}
+            >
               <span className="truncate text-xs text-text-secondary">
                 <SlotStatusText slot={slot} language={language} />
               </span>
@@ -173,7 +182,7 @@ export function SlotCard({
             </div>
             {!isLive && (
               <div className="flex items-center gap-1">
-                <span className="text-[9px] uppercase tracking-wider text-text-muted">
+                <span className="text-[10px] uppercase tracking-wider text-text-muted">
                   {slotLexFor(language).confidencePrefix}
                 </span>
                 <ConfidenceBadge level={slot.confidence} size="sm" language={language} />

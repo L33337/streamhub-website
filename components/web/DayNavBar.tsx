@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { slotLexFor } from '@/lib/i18n-slot';
-import { utcDateShortLabel } from '@/lib/format/time';
+import { localDateKey, utcDateShortLabel } from '@/lib/format/time';
 
 interface Props {
   days: string[];
@@ -19,10 +19,25 @@ interface Props {
 // viewer is currently reading. SSR output is unchanged — no day is active
 // until the observer fires, so hydration stays clean.
 
+function subscribeToNothing(): () => void {
+  // Intl does not notify on timezone changes; read once at hydration.
+  return () => {};
+}
+
 export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
   const L = slotLexFor(language);
   const lang = resolveUiLang(language);
   const [activeDay, setActiveDay] = useState<string | null>(null);
+  // Which day counts as "Today" is the VIEWER's calendar date, not the
+  // server's UTC one: between local midnight and UTC midnight those differ,
+  // and the pills used to say "Tomorrow" for the day the reader's own phone
+  // called today. `todayUtc` stays the SSR snapshot so the prerendered HTML
+  // is deterministic and hydration does not mismatch.
+  const referenceToday = useSyncExternalStore(
+    subscribeToNothing,
+    localDateKey,
+    () => todayUtc,
+  );
 
   useEffect(() => {
     const sections = days
@@ -54,13 +69,16 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
       aria-label={L.jumpToDayAria}
       className="sticky top-[var(--header-height)] z-10 -mx-4 mt-8 mb-2 border-b border-divider bg-background/95 px-4 py-3 backdrop-blur"
     >
-      <ul className="flex gap-2 overflow-x-auto" role="list">
+      <ul
+        className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        role="list"
+      >
         {days.map((dateKey) => {
           const slots = grouped.get(dateKey) ?? [];
           // A cancelled slot is a stream that is NOT happening — counting it as
           // "1 stream" made quiet days look busy.
           const count = slots.filter((s) => s.slot_kind !== 'cancelled').length;
-          const label = utcDateShortLabel(dateKey, todayUtc, lang);
+          const label = utcDateShortLabel(dateKey, referenceToday, lang);
           // Still linkable when the only entries are cancellations: the day
           // section exists and says something worth reading.
           const disabled = slots.length === 0;
@@ -69,7 +87,7 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
             return (
               <li key={dateKey}>
                 <span
-                  className="inline-flex flex-col items-center rounded-lg border border-border-default/40 bg-background-elevated/40 px-3 py-1.5 text-xs text-text-muted opacity-50"
+                  className="inline-flex min-h-11 flex-col items-center justify-center rounded-lg border border-border-default/40 bg-background-elevated/40 px-3 py-1.5 text-xs text-text-muted opacity-50"
                   aria-disabled="true"
                 >
                   <span className="font-semibold">{label}</span>
@@ -85,7 +103,7 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
                 href={`#day-${dateKey}`}
                 aria-current={isActive ? 'true' : undefined}
                 aria-label={count === 0 ? `${label}: ${L.noStreamsExpected}` : undefined}
-                className={`inline-flex flex-col items-center rounded-lg border px-3 py-1.5 text-xs transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
+                className={`inline-flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-1.5 text-xs transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
                   isActive
                     ? 'border-accent-cyan/70 bg-background-highlight'
                     : 'border-border-default bg-background-elevated'

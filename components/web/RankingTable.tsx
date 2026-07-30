@@ -50,6 +50,16 @@ const MEDAL_CLASSES: Record<number, string> = {
 };
 
 /**
+ * Freezes the ranking metric to the right edge of the scroll container, so the
+ * number the page is ranked by is fully readable at any scroll position. Needs
+ * its own opaque background and a border, otherwise the columns scrolling
+ * underneath show through. `right-0` resolves against the `overflow-x-auto`
+ * wrapper.
+ */
+const PRIMARY_STICKY =
+  'sticky right-0 z-10 border-l border-divider bg-background-elevated';
+
+/**
  * ▲2 / ▼1 / "new" next to the rank — week-over-week movement from the API's
  * `values.previous_rank`. Renders nothing while the backend's snapshot
  * history warms up or when the rank is unchanged.
@@ -151,9 +161,17 @@ export function RankingTable({
   nextSlots,
   mainGameSlugs,
 }: Props) {
+  // Six columns cannot fit a 390px phone at any width, and the ranking metric —
+  // the whole point of the page — was the column that fell off the right edge,
+  // so "39.7K" read as "39.7": a wrong number, not just a truncated one. The
+  // min-width stops the columns squeezing, and the primary metric is frozen to
+  // the right edge so it stays fully readable at every scroll position while
+  // the enrichment columns scroll under it. The scrollbar is deliberately NOT
+  // hidden here — unlike the decorative chip rails, a data table needs it.
+  const hasWideColumns = Boolean(mainGameSlugs || nextSlots);
   return (
     <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-      <table className="w-full text-sm">
+      <table className={`w-full text-sm ${hasWideColumns ? 'min-w-[34rem]' : ''}`}>
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
@@ -164,7 +182,13 @@ export function RankingTable({
               Streamer
             </th>
             {columns.map((col) => (
-              <th key={col.key} scope="col" className="px-3 py-2 text-right font-semibold">
+              <th
+                key={col.key}
+                scope="col"
+                className={`px-3 py-2 text-right font-semibold ${
+                  col.primary ? PRIMARY_STICKY : ''
+                }`}
+              >
                 {col.header}
               </th>
             ))}
@@ -241,8 +265,8 @@ export function RankingTable({
                     key={col.key}
                     className={
                       col.primary
-                        ? 'px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan'
-                        : 'px-3 py-2 text-right tabular-nums text-text-secondary'
+                        ? `whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan ${PRIMARY_STICKY}`
+                        : 'whitespace-nowrap px-3 py-2 text-right tabular-nums text-text-secondary'
                     }
                   >
                     {col.format(entry)}

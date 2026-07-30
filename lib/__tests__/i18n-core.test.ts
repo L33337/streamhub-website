@@ -1,11 +1,49 @@
 import { describe, it, expect } from 'vitest';
 import {
   listConjunction,
+  localeHref,
   pluralForms,
   resolveUiLang,
+  stripLocaleFromPath,
   weekdayLong,
   weekdayShort,
 } from '../i18n-core';
+
+describe('stripLocaleFromPath', () => {
+  it('strips a leading locale segment', () => {
+    expect(stripLocaleFromPath('/de/streamer/x')).toBe('/streamer/x');
+    expect(stripLocaleFromPath('/ja/auth/login')).toBe('/auth/login');
+    expect(stripLocaleFromPath('/de')).toBe('/');
+  });
+
+  it('leaves unprefixed (English) paths alone', () => {
+    expect(stripLocaleFromPath('/streamer/x')).toBe('/streamer/x');
+    expect(stripLocaleFromPath('/auth/login')).toBe('/auth/login');
+    expect(stripLocaleFromPath('/')).toBe('/');
+    expect(stripLocaleFromPath('')).toBe('/');
+  });
+
+  it('does not mistake a non-locale first segment for a locale', () => {
+    // '/game/...' must survive: 'game' is not a UI language.
+    expect(stripLocaleFromPath('/game/valorant')).toBe('/game/valorant');
+    expect(stripLocaleFromPath('/games')).toBe('/games');
+  });
+
+  it('round-trips with localeHref for every locale-prefixed route', () => {
+    for (const locale of ['en', 'de', 'ja', 'ar'] as const) {
+      expect(stripLocaleFromPath(localeHref(locale, '/auth/login'))).toBe('/auth/login');
+      expect(stripLocaleFromPath(localeHref(locale, '/'))).toBe('/');
+    }
+  });
+
+  it('recognizes every localized sign-in path (FloatingGetAppButton gate)', () => {
+    // The button used to test `pathname.startsWith('/auth')`, which was true
+    // only for the English tree and left it floating over /de/auth/login.
+    for (const locale of ['de', 'es', 'fr', 'ja', 'pl', 'uk'] as const) {
+      expect(stripLocaleFromPath(`/${locale}/auth/login`).startsWith('/auth')).toBe(true);
+    }
+  });
+});
 
 describe('resolveUiLang', () => {
   it('resolves supported codes, prefixes and casing', () => {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Bell } from 'lucide-react';
+import { touchTargetExpander } from '@/lib/ui/positioning';
 import { HomeUpsellSheet, type UpsellSheetStrings } from './HomeUpsellSheet';
 
 /**
@@ -28,7 +29,10 @@ export function SlotBellButton({
         aria-label={ariaLabel}
         title={ariaLabel}
         onClick={() => setOpen(true)}
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-background-elevated/90 text-text-muted transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan ${className}`}
+        // The visible circle stays 28px so it does not dominate the card; the
+        // invisible ::before grows the touch target to 44px. `className` comes
+        // last and carries the caller's `absolute right-3 top-3`.
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-background-elevated/90 text-text-muted transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan ${touchTargetExpander(className, 'lg')} ${className}`}
       >
         <Bell size={13} aria-hidden="true" />
       </button>

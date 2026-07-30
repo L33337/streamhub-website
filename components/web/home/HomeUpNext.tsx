@@ -96,7 +96,7 @@ export function HomeUpNext({
       hidden={index >= LINEUP_VISIBLE_COUNT || undefined}
       className="relative"
     >
-      <SlotCard slot={slot} language={locale} />
+      <SlotCard slot={slot} language={locale} reserveTopRight />
       <SlotBellButton
         ariaLabel={L.homeFeed.bellAria(slot.streamer_name)}
         strings={bellStrings}
