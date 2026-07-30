@@ -11,6 +11,7 @@ import {
   buildLiveFilterItems,
   formatLiveRuntime,
   liveRuntime,
+  LIVE_RAIL_DEFAULT_VISIBLE,
 } from '@/lib/home/live-rail';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { RailScroller } from '@/components/web/feed/RailScroller';
@@ -24,9 +25,15 @@ import { HomeLiveRailFilters } from './HomeLiveRailFilters';
  *
  * Wide cards with the platform's live preview image, ranked by current
  * viewers (pickBiggestLiveSlots — one slot per streamer, fresh viewer sample
- * required). Two dropdowns filter the rail by category and broadcast language;
- * the cards themselves stay server-rendered and the client island only toggles
- * `hidden`, so the section is complete for crawlers and without JavaScript.
+ * required). Two dropdowns filter by category and broadcast language.
+ *
+ * `slots` is the WHOLE live sweep, but only the first
+ * LIVE_RAIL_DEFAULT_VISIBLE are visible: the rest render with `hidden` set
+ * server-side and the client island reveals them when a filter matches. That
+ * is what lets a filter reach a stream at rank 84 while the unfiltered
+ * section stays a "biggest right now" cut. Without JavaScript the served
+ * markup IS that cut — the tail stays hidden, which is the honest
+ * degradation for a filter nobody can operate.
  *
  * Every card carries a runtime line — how much longer the stream is expected
  * to run, from the slot's own AI duration estimate. Hidden entirely when
@@ -65,14 +72,11 @@ export function HomeLiveRail({
         actionLabel={L.home.seeLiveNow}
         actionHref={localeHref(locale, '/live')}
       />
-      {/* Only when the rail really is a cut of a bigger set — with everything
-          live on screen, "Top 4 by current viewers" states the obvious and
-          makes the header's total look like a contradiction. */}
-      {totalLive > slots.length && (
-        <p className="mb-3 text-xs text-text-muted">
-          {L.homeFeed.liveFilterNote(slots.length)}
-        </p>
-      )}
+      {/* The scope note ("Top 30 by current viewers — filters search all N")
+          was dropped for compactness: the dropdown options carry their own
+          pool-wide counts and the header links to /live, so the section still
+          says what it covers without a third line of chrome above the cards.
+          `liveFilterNote` stays translated for re-use. */}
 
       <HomeLiveRailFilters
         items={items}
@@ -102,6 +106,7 @@ export function HomeLiveRail({
                 runtimeNote={runtimeLex.estimateNote}
                 runtimeText={formatLiveRuntime(liveRuntime(slot, now), runtimeLex)}
                 priority={index === 0}
+                defaultHidden={index >= LIVE_RAIL_DEFAULT_VISIBLE}
               />
             ))}
           </ul>
@@ -118,6 +123,7 @@ function LiveCard({
   runtimeText,
   runtimeNote,
   priority,
+  defaultHidden,
 }: {
   slot: PublicStreamSlot;
   locale: UiLang;
@@ -125,6 +131,8 @@ function LiveCard({
   runtimeText: string | null;
   runtimeNote: string;
   priority: boolean;
+  /** Ranked past the unfiltered cut — rendered for the filters, not for now. */
+  defaultHidden: boolean;
 }) {
   const runtime = liveRuntime(slot, now);
   const startMs = Date.parse(slot.start_time);
@@ -134,6 +142,10 @@ function LiveCard({
       // Filter key for the client island; the metadata itself is passed as a
       // prop, so these attributes only have to identify the card.
       data-live-id={slot.id}
+      // The island recomputes the same set on mount (computeVisibleLiveIds
+      // over an unfiltered selection is exactly this prefix), so there is
+      // nothing to flip and no flash of 200 cards.
+      hidden={defaultHidden || undefined}
       className="relative w-[248px] shrink-0 sm:w-[268px]"
     >
       <Link

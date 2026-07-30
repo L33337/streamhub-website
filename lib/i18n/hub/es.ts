@@ -38,12 +38,20 @@ export const es: HubLex = {
     liveFilterMatches: (count) => `${count} directos`,
     liveFilterReset: 'Restablecer',
     liveFilterEmpty: 'Ningún directo coincide con estos filtros ahora mismo.',
-    liveFilterNote: (count) => `Top ${count} por espectadores actuales`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} por espectadores actuales — los filtros buscan entre los ${total} directos`,
     upNextTitle: 'La programación de hoy',
     upNextLink: 'En directo y a punto de empezar →',
+    lineupFilterTime: 'Hora',
+    lineupFilterAllTimes: 'Cualquier hora',
+    lineupFilterFrom: (time) => `Desde ${time}`,
+    lineupFilterMatches: (count) =>
+      `${count} ${count === 1 ? 'emisión' : 'emisiones'}`,
+    lineupFilterEmpty: 'Ninguna emisión coincide con estos filtros.',
     chipAll: 'Todos',
     chipFavorites: 'Mis favoritos',
     lineupShowAll: (n) => `Mostrar los ${n} streams`,
+    lineupShowMore: (n) => `Mostrar ${n} más`,
     lineupShowLess: 'Mostrar menos',
     bellAria: (name) => `Recibe un aviso cuando ${name} esté en directo`,
     upsell: {

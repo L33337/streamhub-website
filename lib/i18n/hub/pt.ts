@@ -38,12 +38,20 @@ export const pt: HubLex = {
     liveFilterMatches: (count) => `${count} lives`,
     liveFilterReset: 'Limpar',
     liveFilterEmpty: 'Nenhuma live corresponde a esses filtros agora.',
-    liveFilterNote: (count) => `Top ${count} por espectadores agora`,
+    liveFilterNote: (top, total) =>
+      `Top ${top} por espectadores agora — os filtros buscam entre as ${total} lives`,
     upNextTitle: 'A programação de hoje',
     upNextLink: 'Ao vivo e começando em breve →',
+    lineupFilterTime: 'Horário',
+    lineupFilterAllTimes: 'Qualquer horário',
+    lineupFilterFrom: (time) => `A partir de ${time}`,
+    lineupFilterMatches: (count) =>
+      `${count} ${count === 1 ? 'transmissão' : 'transmissões'}`,
+    lineupFilterEmpty: 'Nenhuma transmissão corresponde a esses filtros.',
     chipAll: 'Todos',
     chipFavorites: 'Meus favoritos',
     lineupShowAll: (n) => `Mostrar todos os ${n} streams`,
+    lineupShowMore: (n) => `Mostrar mais ${n}`,
     lineupShowLess: 'Mostrar menos',
     bellAria: (name) => `Receba um aviso quando ${name} entrar ao vivo`,
     upsell: {

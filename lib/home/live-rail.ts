@@ -6,6 +6,7 @@
 
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import type { LiveRuntimeLex } from '@/lib/i18n/live-runtime';
+import { countFilterOptions, type CountedFilterOption } from './filter-options';
 
 /**
  * `duration` the backend writes for always-on channels (1 year in minutes,
@@ -23,6 +24,23 @@ const SENTINEL_FLOOR_MINUTES = 100_000;
  * sampler and fall back to the unsampled pool (see pickBiggestLiveSlots).
  */
 const MIN_SAMPLED_POOL = 4;
+
+/**
+ * The unfiltered "Most Watched right now" cut: how many cards are visible
+ * before anyone touches a dropdown. Everything beyond this rank is rendered
+ * but ships `hidden` — see computeVisibleLiveIds.
+ */
+export const LIVE_RAIL_DEFAULT_VISIBLE = 30;
+
+/**
+ * Safety cap on rendered cards, i.e. on the filter scope — NOT a target.
+ * Production runs ~130 live streamers with the top-500 onboarding wave still
+ * going, so evening peaks of 150-250 are plausible. Hidden cards cost HTML +
+ * flight bytes and DOM nodes, but no image fetches (`hidden` is display:none,
+ * so their lazy thumbnails never intersect the viewport). DOM size is what
+ * binds here; re-measure before raising this.
+ */
+export const LIVE_RAIL_POOL_MAX = 200;
 
 // ============================================
 // Pool selection
@@ -47,10 +65,15 @@ const MIN_SAMPLED_POOL = 4;
  * fewer than MIN_SAMPLED_POOL slots carry a sample, we rank the unfiltered
  * pool instead (nulls last) — degraded to the pre-2026-07-28 behaviour rather
  * than blank.
+ *
+ * The returned order IS the rail's rank order, and the rail's default cut is
+ * a prefix of it (computeVisibleLiveIds). `cap` has no default on purpose:
+ * the caller renders the whole pool and hides the tail, so the two numbers
+ * (LIVE_RAIL_POOL_MAX vs LIVE_RAIL_DEFAULT_VISIBLE) must never be confused.
  */
 export function pickBiggestLiveSlots(
   slots: PublicStreamSlot[],
-  cap = 30,
+  cap: number,
 ): PublicStreamSlot[] {
   const live = slots.filter((slot) => slot.status === 'live');
   const sampled = live.filter((slot) => typeof slot.viewer_count === 'number');
@@ -198,14 +221,7 @@ export interface LiveFilterItem {
   languageLabel: string;
 }
 
-export interface CountedFilterOption {
-  /** Filter key: the raw category name, or a normalized language code. */
-  value: string;
-  /** What the dropdown shows (category names are their own label). */
-  label: string;
-  /** Cards matching this option within the pool it was counted over. */
-  count: number;
-}
+export type { CountedFilterOption };
 
 /**
  * Cards passing the current selection. An empty selection matches everything;
@@ -224,30 +240,26 @@ export function matchesLiveFilters(
 }
 
 /**
- * Dropdown options for one dimension, counted over whatever pool the caller
- * passes — the island passes the pool narrowed by the OTHER dimension, so the
- * counts always describe what picking the option would actually show, and a
- * zero-result combination cannot be selected.
- *
- * Sorted by count desc, then label, so the order is stable across ISR renders
- * with identical data.
+ * The rail's dropdown options for one dimension. Thin binding over the shared
+ * counter (lib/home/filter-options.ts) — the lineup section counts its own
+ * three dimensions through the same function, so the blank-skipping and the
+ * ISR-stable ordering live in exactly one place.
  */
 export function countLiveFilterOptions(
   items: LiveFilterItem[],
   dimension: 'category' | 'language',
 ): CountedFilterOption[] {
-  const counts = new Map<string, CountedFilterOption>();
-  for (const item of items) {
-    const value = dimension === 'category' ? item.category : item.language;
-    if (!value) continue;
-    const label = dimension === 'category' ? item.category : item.languageLabel;
-    const existing = counts.get(value);
-    if (existing) existing.count += 1;
-    else counts.set(value, { value, label, count: 1 });
-  }
-  return [...counts.values()].sort(
-    (a, b) => b.count - a.count || a.label.localeCompare(b.label),
-  );
+  return dimension === 'category'
+    ? countFilterOptions(
+        items,
+        (item) => item.category,
+        (item) => item.category,
+      )
+    : countFilterOptions(
+        items,
+        (item) => item.language,
+        (item) => item.languageLabel,
+      );
 }
 
 /**
@@ -267,10 +279,43 @@ export function normalizeSlotLanguage(
 }
 
 /**
+ * Which cards the rail should show.
+ *
+ * With no selection the rail is the "biggest right now" cut: the first
+ * `defaultVisible` items. That works because the item order is the slot
+ * order, which is pickBiggestLiveSlots' viewer ranking — an invariant the
+ * server render depends on too (it ships everything past that index
+ * `hidden`, so this function reproduces the served HTML on mount).
+ *
+ * With ANY filter active the cut is gone and every match in the pool shows,
+ * uncapped: the whole point of rendering the full live sweep is that a
+ * language or category is findable no matter where it ranks. A German stream
+ * at rank 84 is exactly the case the pre-2026-07-29 rail could not show.
+ */
+export function computeVisibleLiveIds(
+  items: LiveFilterItem[],
+  category: string,
+  language: string,
+  defaultVisible: number,
+): Set<string> {
+  if (category === '' && language === '') {
+    return new Set(items.slice(0, defaultVisible).map((item) => item.id));
+  }
+  return new Set(
+    items
+      .filter((item) => matchesLiveFilters(item, category, language))
+      .map((item) => item.id),
+  );
+}
+
+/**
  * Turns the rail's slots into the island's filter metadata. `languageName`
  * resolves a code to the viewer's locale (lib/format/language.ts) — injected
  * rather than imported so this module stays free of Intl setup and the tests
  * stay independent of CLDR data.
+ *
+ * Order is load-bearing: it mirrors the slots, i.e. the viewer ranking, and
+ * computeVisibleLiveIds slices its default cut off the front.
  */
 export function buildLiveFilterItems(
   slots: PublicStreamSlot[],

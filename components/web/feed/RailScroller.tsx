@@ -60,6 +60,10 @@ export function RailScroller({
       <div
         ref={scrollRef}
         onScroll={measure}
+        // Handle for siblings that change the rail's content from outside and
+        // need to rewind it (HomeLiveRailFilters): a filter can shrink the
+        // rail to fewer cards than the current scroll offset.
+        data-rail-scroll=""
         className={`overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${contentClassName ?? ''}`}
       >
         {children}

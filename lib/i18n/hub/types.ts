@@ -71,10 +71,17 @@ export interface HubLex {
     /** "Most Watched right now" rail heading (section rebuild 2026-07-28). */
     liveTitle: string;
     /**
-     * Live-rail filter bar. The two dropdowns filter the rail's own pool (the
-     * biggest N live streams), NOT the whole live catalogue — `liveFilterNote`
-     * says so, and the section header keeps linking to /live for everything
-     * else. Language names come from Intl.DisplayNames, not from here.
+     * Live-rail filter bar. The two dropdowns search the whole rendered pool
+     * — every tracked stream that is live — while the unfiltered rail shows
+     * only the biggest LIVE_RAIL_DEFAULT_VISIBLE of them. The option labels
+     * carry the pool-wide counts, which is what tells the visitor the filters
+     * reach further than the visible cut. Language names come from
+     * Intl.DisplayNames, not from here.
+     *
+     * The generic entries below (category/language/option/reset and the "All"
+     * labels) are SHARED with the lineup's filter bar — they name a filter
+     * dimension, nothing live-specific. Only the strings that say "live" or
+     * that the lineup needs on top of them carry a `lineupFilter` prefix.
      */
     liveFilterCategory: string;
     liveFilterLanguage: string;
@@ -100,17 +107,67 @@ export interface HubLex {
     liveFilterReset: string;
     /** Empty state when a category/language combination matches nothing. */
     liveFilterEmpty: string;
-    /** Scope note under the heading, e.g. "Top 30 by current viewers". */
-    liveFilterNote(count: number): string;
+    /**
+     * Scope note under the heading, e.g. "Top 30 by current viewers —
+     * filters search all 133 live streams". `total` is the searchable pool,
+     * which can be slightly below the header's live count (slots without a
+     * fresh viewer sample never enter the pool).
+     *
+     * UNRENDERED since 2026-07-29 — dropped to keep the section compact, the
+     * dropdown counts carry the scope now. Kept translated for re-use.
+     */
+    liveFilterNote(top: number, total: number): string;
     /** "Today's lineup" prediction list heading. */
     upNextTitle: string;
     /** Section link to /live. */
     upNextLink: string;
+    /**
+     * Lineup filter bar (2026-07-30) — reuses the live rail's generic
+     * category/language/option/reset strings and adds the start-time dimension
+     * plus its own wording where "live" would be wrong (these are predictions,
+     * nothing is running yet).
+     *
+     * aria-label of the time dropdown.
+     */
+    lineupFilterTime: string;
+    /** Unfiltered time option. */
+    lineupFilterAllTimes: string;
+    /**
+     * One time option. `time` is a clock reading already formatted for the
+     * viewer's locale ("8:00 PM" / "20:00"), so this only supplies the
+     * cumulative "from" wording — the option matches every start at or after
+     * that hour of the visitor's local day.
+     */
+    lineupFilterFrom(time: string): string;
+    /**
+     * Match counter, shown only while a filter is active. Agrees with the
+     * count like its live-rail sibling, but must NOT say "live" — the cards
+     * are predictions for later today.
+     */
+    lineupFilterMatches(count: number): string;
+    /** Empty state when a category/language/time combination matches nothing. */
+    lineupFilterEmpty: string;
+    /**
+     * UNRENDERED since 2026-07-30 — the lineup's category chips became
+     * dropdowns, whose unfiltered entry is `liveFilterAllCategories`. Kept
+     * translated for re-use.
+     */
     chipAll: string;
     /** Locked favorites chip (needs an account). */
     chipFavorites: string;
-    /** Expand button under the clamped lineup, e.g. "Show all 24 streams". */
+    /**
+     * Expand button under the clamped lineup, e.g. "Show all 24 streams".
+     *
+     * UNRENDERED since 2026-07-30 — the lineup reveals in batches now, so the
+     * button says how many the next click adds (`lineupShowMore`). Kept as the
+     * island's fallback label and translated for re-use.
+     */
     lineupShowAll(n: number): string;
+    /**
+     * Reveal button, e.g. "Show 24 more" — `n` is the size of the NEXT batch,
+     * which is smaller than LINEUP_REVEAL_STEP for the last one.
+     */
+    lineupShowMore(n: number): string;
     lineupShowLess: string;
     /** aria-label of the reminder bell on an upcoming slot card. */
     bellAria(name: string): string;
