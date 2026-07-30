@@ -64,7 +64,7 @@ export function HomeUpNext({
       data-home-start={Date.parse(slot.start_time) || undefined}
       className="relative"
     >
-      <SlotCard slot={slot} language={locale} />
+      <SlotCard slot={slot} language={locale} reserveTopRight />
       <SlotBellButton
         ariaLabel={L.homeFeed.bellAria(slot.streamer_name)}
         strings={bellStrings}

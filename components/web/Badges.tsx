@@ -4,6 +4,13 @@ import { slotLexFor } from '@/lib/i18n-slot';
 // `language` localizes aria/label text on the streamer page; the default 'en'
 // keeps every existing caller (home, /live, /game, feed) byte-identical.
 // The visible "LIVE" and "24/7" badge texts stay untranslated by design.
+//
+// Two layout invariants every badge here shares:
+//   `shrink-0` — badges sit in flex rows next to a `truncate` name. Without it
+//   flexbox shrinks the badge (a short, unwrappable word) instead of the label
+//   that has somewhere to go, so "LIVE" clipped mid-word on narrow phones.
+//   Font floor 10px — the dense `sm` scale used to be 9px, below what is
+//   comfortably legible on a phone.
 
 export function LiveBadge({
   className = '',
@@ -15,10 +22,10 @@ export function LiveBadge({
   /** 'sm' matches PlatformBadge's sm scale for dense list/table rows. */
   size?: 'sm' | 'md';
 }) {
-  const sizing = size === 'sm' ? 'px-1.5 py-px text-[9px]' : 'px-2 py-0.5 text-xs';
+  const sizing = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs';
   return (
     <span
-      className={`inline-flex items-center rounded bg-live font-bold uppercase tracking-[0.1em] text-black glow-green ${sizing} ${className}`}
+      className={`inline-flex shrink-0 items-center rounded bg-live font-bold uppercase tracking-[0.1em] text-black glow-green ${sizing} ${className}`}
       aria-label={slotLexFor(language).liveBadgeAria}
     >
       LIVE
@@ -42,8 +49,8 @@ export function PlatformBadge({
   const bg = platform === 'twitch' ? 'bg-twitch' : 'bg-youtube';
   const label = platform === 'twitch' ? 'Twitch' : 'YouTube';
   const sizing =
-    size === 'sm' ? 'px-1 py-px text-[9px]' : 'px-1.5 py-0.5 text-[10px]';
-  const base = `inline-flex items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`;
+    size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[11px]';
+  const base = `inline-flex shrink-0 items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`;
   if (href) {
     return (
       <a
@@ -78,11 +85,11 @@ export function ConfidenceBadge({
   const L = slotLexFor(language);
   const sizing =
     size === 'sm'
-      ? 'px-1.5 py-px text-[9px] tracking-wider'
+      ? 'px-1.5 py-0.5 text-[10px] tracking-wider'
       : 'px-2 py-0.5 text-xs tracking-[0.1em]';
   return (
     <span
-      className={`inline-flex items-center rounded font-bold uppercase ${CONFIDENCE_STYLES[level]} ${sizing}`}
+      className={`inline-flex shrink-0 items-center rounded font-bold uppercase ${CONFIDENCE_STYLES[level]} ${sizing}`}
       aria-label={L.confidenceAria(level)}
     >
       {L.confidenceLabels[level]}
@@ -92,7 +99,7 @@ export function ConfidenceBadge({
 
 export function AlwaysOnBadge() {
   return (
-    <span className="inline-flex items-center rounded-[3px] bg-accent-cyan px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+    <span className="inline-flex shrink-0 items-center rounded-[3px] bg-accent-cyan px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
       24/7
     </span>
   );
@@ -105,7 +112,7 @@ export function AlwaysOnBadge() {
 /** Streamer announced they will NOT stream on this usually-regular day. */
 export function CancelledBadge() {
   return (
-    <span className="inline-flex items-center rounded bg-confidence-low/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-confidence-low">
+    <span className="inline-flex shrink-0 items-center rounded bg-confidence-low/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-confidence-low">
       Cancelled
     </span>
   );
@@ -114,7 +121,7 @@ export function CancelledBadge() {
 /** Prediction on a day the streamer does not normally stream. */
 export function NewBadge() {
   return (
-    <span className="inline-flex items-center rounded bg-accent-cyan/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-accent-cyan">
+    <span className="inline-flex shrink-0 items-center rounded bg-accent-cyan/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-cyan">
       New
     </span>
   );
@@ -123,7 +130,7 @@ export function NewBadge() {
 /** Streak demotion: the streamer missed their last 2+ predicted streams. */
 export function UncertainBadge() {
   return (
-    <span className="inline-flex items-center rounded bg-confidence-medium/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-confidence-medium">
+    <span className="inline-flex shrink-0 items-center rounded bg-confidence-medium/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-confidence-medium">
       Uncertain
     </span>
   );

@@ -205,6 +205,7 @@ export const ar: HubLex = {
     otherCategory: 'أخرى',
     categoryLiveAria: (name) => `${name} — مباشر الآن`,
     nLive: (n) => `${n} مباشر`,
+    jumpToGame: 'الانتقال إلى لعبة',
     startingSoon: 'يبدأ قريبًا',
     nextNHours: (n) => `الساعات الـ${n} القادمة`,
     emptyAll:

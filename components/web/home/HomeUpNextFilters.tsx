@@ -68,8 +68,11 @@ export function HomeUpNextFilters({
     });
   }, [selected, now]);
 
+  // min-h-11: these chips are the section's primary control on a phone and were
+  // 30px tall, well under the 44px touch minimum. `px-4` keeps them pill-shaped
+  // at that height — with px-3 a short label like "All" rendered as a circle.
   const chipClass = (active: boolean) =>
-    `rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+    `inline-flex min-h-11 items-center rounded-full border px-4 text-xs font-semibold transition-colors ${
       active
         ? 'border-accent-cyan bg-accent-cyan text-background'
         : 'border-border-default bg-background-elevated text-text-secondary hover:border-accent-cyan/50 hover:text-white'
@@ -108,7 +111,7 @@ export function HomeUpNextFilters({
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-default px-3 py-1.5 text-xs font-semibold text-text-muted transition-colors hover:border-accent-pink/50 hover:text-accent-pink"
+          className="flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-default px-3 text-xs font-semibold text-text-muted transition-colors hover:border-accent-pink/50 hover:text-accent-pink"
         >
           <Lock size={11} aria-hidden="true" />
           {favoritesLabel}

@@ -185,6 +185,7 @@ export const hu: HubLex = {
     otherCategory: 'Egyéb',
     categoryLiveAria: (name) => `${name} — most élőben`,
     nLive: (n) => `${n} élőben`,
+    jumpToGame: 'Ugrás egy játékhoz',
     startingSoon: 'Hamarosan kezdenek',
     nextNHours: (n) => `következő ${n} óra`,
     emptyAll:

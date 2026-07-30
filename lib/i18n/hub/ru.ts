@@ -211,6 +211,7 @@ export const ru: HubLex = {
     otherCategory: 'Другое',
     categoryLiveAria: (name) => `${name} — сейчас в эфире`,
     nLive: (n) => `${n} в эфире`,
+    jumpToGame: 'Перейти к игре',
     startingSoon: 'Скоро начнут',
     nextNHours: (n) => `ближайшие ${n} часов`,
     emptyAll:

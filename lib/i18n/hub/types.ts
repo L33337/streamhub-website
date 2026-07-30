@@ -292,6 +292,12 @@ export interface HubLex {
     categoryLiveAria(name: string): string;
     /** Count chip next to a category heading, e.g. "4 live". */
     nLive(n: number): string;
+    /**
+     * Label of the collapsed category jump list, also its nav landmark name.
+     * The page runs to dozens of category sections, so it needs a way back to
+     * the top-level index without scrolling.
+     */
+    jumpToGame: string;
     startingSoon: string;
     /** Chip next to "Starting soon", e.g. "next 6 hours". */
     nextNHours(n: number): string;

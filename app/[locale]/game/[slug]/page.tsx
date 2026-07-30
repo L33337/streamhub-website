@@ -456,8 +456,11 @@ export default async function GamePage({ params }: Props) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-white md:text-4xl">
-            {category} streamers — live now &amp; schedule
+          {/* One interpolated string, not `{category} text`: adjacent JSX
+              children render as separate text nodes and the leading space of
+              the second one is lost, which shipped "VALORANTstreamers". */}
+          <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
+            {`${category} streamers — live now & schedule`}
           </h1>
           <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>
           {/* Stats chips — every chip conditional on its (nullable) field. */}
@@ -686,7 +689,7 @@ export default async function GamePage({ params }: Props) {
                             />
                           )}
                           <span className="flex min-w-0 flex-col">
-                            <span className="flex items-center gap-2">
+                            <span className="flex min-w-0 items-center gap-2">
                               <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
                                 {row.name}
                               </span>
@@ -751,7 +754,7 @@ export default async function GamePage({ params }: Props) {
             aria-label={`Streamers who stream ${category}`}
           >
             {moreStreamers.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="min-w-0">
               <Link
                 href={`/streamer/${encodeURIComponent(s.id)}`}
                 className="group flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated p-3 transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight"
@@ -769,7 +772,7 @@ export default async function GamePage({ params }: Props) {
                   <InitialsAvatar name={s.name} size={48} className="shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
                       {s.name}
                     </span>
@@ -866,6 +869,11 @@ export default async function GamePage({ params }: Props) {
               (s) => s.confidence === 'low' && s.slot_kind !== 'cancelled',
             )}
           >
+            {/* No `language` prop on purpose: this whole page still renders
+                English chrome (M22 P4 localizes the game hub as one piece), and
+                German day headings under English section titles would read
+                worse than consistent English. The viewer-local "Today" fix in
+                DayNavBar/DayLabel is language-independent and applies anyway. */}
             <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
             {sevenDays.map((dateKey) => {
               const slots = grouped.get(dateKey) ?? [];

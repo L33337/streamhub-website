@@ -1,9 +1,13 @@
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { slotLexFor } from '@/lib/i18n-slot';
+import { resolveUiLang } from '@/lib/i18n-core';
+import { utcDateAbsoluteLabel } from '@/lib/format/time';
+import { DayLabel } from './DayLabel';
 import { SlotCard } from './SlotCard';
 
 interface Props {
   dateKey: string;
+  /** UTC-referenced day label; DayLabel re-decides Today/Tomorrow per viewer. */
   label: string;
   slots: PublicStreamSlot[];
   /** Localizes counts/aria + the nested SlotCards; default 'en' keeps the game-page caller byte-identical. */
@@ -28,6 +32,7 @@ export function DaySection({
   truncateAt = null,
 }: Props) {
   const L = slotLexFor(language);
+  const absoluteLabel = utcDateAbsoluteLabel(dateKey, resolveUiLang(language));
   // Cancelled slots are streams that are NOT happening — they belong in the
   // list (that is the news) but not in the count.
   const realCount = slots.filter((s) => s.slot_kind !== 'cancelled').length;
@@ -54,14 +59,19 @@ export function DaySection({
         id={`heading-${dateKey}`}
         className="text-2xl font-bold text-white mb-4 flex items-baseline gap-3"
       >
-        {label}
+        <DayLabel dateKey={dateKey} serverLabel={label} language={language} />
         <span className="text-sm font-normal text-text-muted">
           {realCount === 0 ? L.noStreamsExpected : L.nStreams(realCount)}
         </span>
       </h2>
-      <ul className="grid gap-3" aria-label={L.streamsOnAria(label)}>
+      {/* Absolute date, not the relative word: the visible heading becomes
+          viewer-relative after hydration, and an aria label that still said
+          "Tomorrow" would then contradict it. */}
+      <ul className="grid gap-3" aria-label={L.streamsOnAria(absoluteLabel)}>
         {slots.map((slot, i) => (
-          <li key={slot.id} data-slot-role={slotRole(i)}>
+          // `min-w-0`: a grid item defaults to `min-width:auto`, so the card's
+          // truncating status line stretched the track past the viewport.
+          <li key={slot.id} data-slot-role={slotRole(i)} className="min-w-0">
             <SlotCard slot={slot} language={language} />
           </li>
         ))}

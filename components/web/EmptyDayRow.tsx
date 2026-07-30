@@ -1,5 +1,6 @@
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { slotLexFor } from '@/lib/i18n-slot';
+import { DayLabel } from './DayLabel';
 import { NextStreamHint } from './NextStreamHint';
 
 /**
@@ -36,7 +37,7 @@ export function EmptyDayRow({
         id={`heading-${dateKey}`}
         className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-lg font-semibold text-text-secondary"
       >
-        {label}
+        <DayLabel dateKey={dateKey} serverLabel={label} language={language} />
         <span className="text-sm font-normal text-text-muted">
           {slotLexFor(language).noStreamsExpected}
         </span>

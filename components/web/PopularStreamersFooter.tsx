@@ -35,7 +35,7 @@ export function PopularStreamersFooter({ streamers, locale = 'en' }: Props) {
           <Link
             key={s.id}
             href={localeHref(locale, `/streamer/${encodeURIComponent(s.id)}`)}
-            className="inline-flex items-center rounded-full border border-border-default bg-background-elevated px-3 py-1.5 text-sm text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-text-primary"
+            className="inline-flex min-h-10 items-center rounded-full border border-border-default bg-background-elevated px-3 text-sm text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-text-primary"
           >
             {s.name}
           </Link>

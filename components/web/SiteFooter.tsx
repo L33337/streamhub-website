@@ -66,7 +66,10 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
 
   return (
     <footer className="mt-20 border-t border-divider bg-background">
-      <div className="container mx-auto max-w-6xl px-4 py-12">
+      {/* Extra bottom room on mobile only: FloatingGetAppButton is fixed at
+          bottom-4 and `md:hidden`, so without this the last footer rows sit
+          permanently underneath it with nothing left to scroll. */}
+      <div className="container mx-auto max-w-6xl px-4 pb-28 pt-12 md:pb-12">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-5">
           {/* Brand + store badges */}
           <div className="col-span-2 sm:col-span-1">

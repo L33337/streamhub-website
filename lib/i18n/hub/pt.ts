@@ -191,6 +191,7 @@ export const pt: HubLex = {
     otherCategory: 'Outros',
     categoryLiveAria: (name) => `${name} — ao vivo agora`,
     nLive: (n) => `${n} ao vivo`,
+    jumpToGame: 'Ir para um jogo',
     startingSoon: 'Começando em breve',
     nextNHours: (n) => `próximas ${n} horas`,
     emptyAll:

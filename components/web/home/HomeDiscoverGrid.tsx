@@ -26,12 +26,15 @@ export function HomeDiscoverGrid({
   streamers,
   nextSlots,
   liveIds,
+  liveCategories,
   locale = 'en',
 }: {
   streamers: FeaturedStreamer[];
   /** streamer id → earliest upcoming slot (category-agnostic, 7d window). */
   nextSlots: Map<string, PublicStreamSlot>;
   liveIds: Set<string>;
+  /** streamer id → what a currently-live streamer is playing right now. */
+  liveCategories?: Map<string, string | null>;
   locale?: UiLang;
 }) {
   const cards = streamers.slice(0, 6);
@@ -48,7 +51,13 @@ export function HomeDiscoverGrid({
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((streamer) => {
           const nextSlot = nextSlots.get(streamer.id);
-          const showNext = nextSlot && nextSlot.slot_kind !== 'cancelled';
+          const isLive = liveIds.has(streamer.id);
+          // A card with a LIVE badge used to carry a FUTURE prediction under it
+          // ("LIVE … ~ Sat 11:04 PM · Just Chatting"), which reads as a
+          // contradiction. While they are live the useful fact is what they are
+          // playing right now; the prediction line returns once they are off.
+          const liveCategory = isLive ? (liveCategories?.get(streamer.id) ?? null) : null;
+          const showNext = !isLive && nextSlot && nextSlot.slot_kind !== 'cancelled';
           return (
             <li key={streamer.id} className="relative">
               <Link
@@ -73,9 +82,7 @@ export function HomeDiscoverGrid({
                     <span className="truncate text-sm font-bold text-white">
                       {streamer.name}
                     </span>
-                    {liveIds.has(streamer.id) && (
-                      <LiveBadge size="sm" language={locale} />
-                    )}
+                    {isLive && <LiveBadge size="sm" language={locale} />}
                   </span>
                   {typeof streamer.follower_count === 'number' && (
                     <span className="block truncate text-xs text-text-muted">
@@ -84,8 +91,17 @@ export function HomeDiscoverGrid({
                       )}
                     </span>
                   )}
+                  {liveCategory && (
+                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-text-secondary">
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-live"
+                      />
+                      <span className="truncate">{liveCategory}</span>
+                    </span>
+                  )}
                   {showNext && (
-                    <span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-text-secondary">
+                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 truncate text-xs text-text-secondary">
                       <CalendarClock
                         size={11}
                         aria-hidden="true"

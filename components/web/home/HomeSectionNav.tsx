@@ -64,7 +64,14 @@ export function HomeSectionNav({
       aria-label={ariaLabel}
       className="sticky top-[var(--header-height)] z-20 -mx-6 border-b border-divider bg-background/95 px-6 py-2 backdrop-blur"
     >
-      <ul ref={listRef} className="flex gap-2 overflow-x-auto" role="list">
+      {/* The only horizontal rail on the site that still showed its native
+          scrollbar — a grey bar under the chips on Windows and some Androids.
+          Same utilities the card rails use (see RailScroller). */}
+      <ul
+        ref={listRef}
+        className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        role="list"
+      >
         {items.map(({ id, label }) => {
           const isActive = id === activeId;
           return (
@@ -72,7 +79,7 @@ export function HomeSectionNav({
               <a
                 href={`#${id}`}
                 aria-current={isActive ? 'true' : undefined}
-                className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
+                className={`inline-flex min-h-11 items-center whitespace-nowrap rounded-full border px-3 text-xs font-semibold transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
                   isActive
                     ? 'border-accent-cyan/70 bg-background-highlight text-accent-cyan'
                     : 'border-border-default bg-background-elevated text-text-secondary'

@@ -111,13 +111,18 @@ export function StreamerHero({
         ) : (
           // Two instances rather than one responsive one: InitialsAvatar sizes
           // itself with an inline style, which a utility class cannot override.
+          // The show/hide classes live on WRAPPERS, not on the avatars: the
+          // component hardcodes `inline-flex`, which beat a `hidden` passed in
+          // via className, so both sizes rendered and the avatar column grew to
+          // 240px — squeezing the name to 70px and pushing the favorite button
+          // off-screen for every streamer without an avatar.
           <div className={hasSecondRow ? 'md:row-span-2' : undefined}>
-            <InitialsAvatar name={streamer.name} size={80} className="md:hidden" />
-            <InitialsAvatar
-              name={streamer.name}
-              size={160}
-              className="hidden md:inline-flex"
-            />
+            <span className="md:hidden">
+              <InitialsAvatar name={streamer.name} size={80} />
+            </span>
+            <span className="hidden md:inline-block">
+              <InitialsAvatar name={streamer.name} size={160} />
+            </span>
           </div>
         )}
 

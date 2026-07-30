@@ -27,6 +27,8 @@ export interface ChromeLex {
     games: string;
     rankings: string;
     getApp: string;
+    /** Header sign-in button (visible only when the auth UI is unhidden). */
+    signIn: string;
     /** aria-label on the hamburger button. */
     openMenu: string;
     /** aria-label on the mobile-menu close button. */
@@ -98,6 +100,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Games',
       rankings: 'Rankings',
       getApp: 'Get the App',
+      signIn: 'Sign in',
       openMenu: 'Open menu',
       closeMenu: 'Close menu',
       searchPlaceholder: 'Search streamers…',
@@ -149,6 +152,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Spiele',
       rankings: 'Rankings',
       getApp: 'Hol dir die App',
+      signIn: 'Anmelden',
       openMenu: 'Menü öffnen',
       closeMenu: 'Menü schließen',
       searchPlaceholder: 'Streamer suchen…',
@@ -200,6 +204,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Juegos',
       rankings: 'Rankings',
       getApp: 'Descarga la app',
+      signIn: 'Iniciar sesión',
       openMenu: 'Abrir menú',
       closeMenu: 'Cerrar menú',
       searchPlaceholder: 'Buscar streamers…',
@@ -251,6 +256,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Jeux',
       rankings: 'Classements',
       getApp: `Télécharge l'app`,
+      signIn: 'Se connecter',
       openMenu: 'Ouvrir le menu',
       closeMenu: 'Fermer le menu',
       searchPlaceholder: 'Rechercher un streamer…',
@@ -302,6 +308,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Jogos',
       rankings: 'Rankings',
       getApp: 'Baixe o app',
+      signIn: 'Entrar',
       openMenu: 'Abrir menu',
       closeMenu: 'Fechar menu',
       searchPlaceholder: 'Buscar streamers…',
@@ -353,6 +360,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Giochi',
       rankings: 'Classifiche',
       getApp: `Scarica l'app`,
+      signIn: 'Accedi',
       openMenu: 'Apri il menu',
       closeMenu: 'Chiudi il menu',
       searchPlaceholder: 'Cerca streamer…',
@@ -404,6 +412,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Игры',
       rankings: 'Рейтинги',
       getApp: 'Скачать приложение',
+      signIn: 'Войти',
       openMenu: 'Открыть меню',
       closeMenu: 'Закрыть меню',
       searchPlaceholder: 'Поиск стримеров…',
@@ -455,6 +464,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'ゲーム',
       rankings: 'ランキング',
       getApp: 'アプリを入手',
+      signIn: 'ログイン',
       openMenu: 'メニューを開く',
       closeMenu: 'メニューを閉じる',
       searchPlaceholder: 'ストリーマーを検索…',
@@ -506,6 +516,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Ігри',
       rankings: 'Рейтинги',
       getApp: 'Завантажити застосунок',
+      signIn: 'Увійти',
       openMenu: 'Відкрити меню',
       closeMenu: 'Закрити меню',
       searchPlaceholder: 'Пошук стримерів…',
@@ -557,6 +568,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'الألعاب',
       rankings: 'التصنيفات',
       getApp: 'حمّل التطبيق',
+      signIn: 'تسجيل الدخول',
       openMenu: 'فتح القائمة',
       closeMenu: 'إغلاق القائمة',
       searchPlaceholder: 'ابحث عن ستريمر…',
@@ -608,6 +620,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Játékok',
       rankings: 'Ranglisták',
       getApp: 'Töltsd le az appot',
+      signIn: 'Bejelentkezés',
       openMenu: 'Menü megnyitása',
       closeMenu: 'Menü bezárása',
       searchPlaceholder: 'Streamerek keresése…',
@@ -659,6 +672,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       games: 'Gry',
       rankings: 'Rankingi',
       getApp: 'Pobierz aplikację',
+      signIn: 'Zaloguj się',
       openMenu: 'Otwórz menu',
       closeMenu: 'Zamknij menu',
       searchPlaceholder: 'Szukaj streamerów…',

@@ -214,6 +214,7 @@ export const pl: HubLex = {
     otherCategory: 'Inne',
     categoryLiveAria: (name) => `${name} — teraz na żywo`,
     nLive: (n) => `${n} na żywo`,
+    jumpToGame: 'Przejdź do gry',
     startingSoon: 'Zaczynają wkrótce',
     nextNHours: (n) => `najbliższe ${n} godzin`,
     emptyAll:

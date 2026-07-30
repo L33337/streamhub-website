@@ -159,6 +159,27 @@ export function groupSlotsByUtcDate<T extends { start_time: string }>(
 }
 
 /**
+ * The runtime's own calendar date as `YYYY-MM-DD` — i.e. the viewer's local
+ * "today" when called in the browser. `en-CA` formats exactly that shape (the
+ * same trick `localNextLabel` above already relies on).
+ *
+ * CLIENT-SIDE ONLY for day labels: on the server this is the server's date,
+ * which must never be baked into ISR HTML. Callers pair it with the UTC key as
+ * the deterministic SSR snapshot (see components/web/DayLabel.tsx).
+ */
+export function localDateKey(now = new Date()): string {
+  try {
+    const formatted = new Intl.DateTimeFormat('en-CA').format(now);
+    // Guard against ICU builds that hand back a non-ISO order.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(formatted)) return formatted;
+  } catch {
+    // Fall through to manual assembly.
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/**
  * "Today"/"Tomorrow" in `lang` via Intl.RelativeTimeFormat (numeric:'auto'),
  * capitalized like the English literals ("Heute", "Сегодня", "今日"). Falls
  * back to the English words on unknown tags.
@@ -176,12 +197,13 @@ function relativeDayLabel(diffDays: 0 | 1, lang: string): string {
   }
 }
 
-export function utcDateLabel(yyyyMmDd: string, todayUtc: string, lang = 'en'): string {
-  if (yyyyMmDd === todayUtc) return relativeDayLabel(0, lang);
-  const today = new Date(todayUtc + 'T00:00:00Z');
+/**
+ * Weekday + date, never relative — "Thu, Jul 30". Used where a label has to
+ * stay unambiguous regardless of the reader's timezone (aria text, and the
+ * fallback branch of the relative labels below).
+ */
+export function utcDateAbsoluteLabel(yyyyMmDd: string, lang = 'en'): string {
   const target = new Date(yyyyMmDd + 'T00:00:00Z');
-  const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-  if (diffDays === 1) return relativeDayLabel(1, lang);
   const options: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
@@ -193,6 +215,15 @@ export function utcDateLabel(yyyyMmDd: string, todayUtc: string, lang = 'en'): s
   } catch {
     return target.toLocaleDateString('en-US', options);
   }
+}
+
+export function utcDateLabel(yyyyMmDd: string, todayUtc: string, lang = 'en'): string {
+  if (yyyyMmDd === todayUtc) return relativeDayLabel(0, lang);
+  const today = new Date(todayUtc + 'T00:00:00Z');
+  const target = new Date(yyyyMmDd + 'T00:00:00Z');
+  const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  if (diffDays === 1) return relativeDayLabel(1, lang);
+  return utcDateAbsoluteLabel(yyyyMmDd, lang);
 }
 
 export function utcDateShortLabel(

@@ -48,6 +48,21 @@ export function localeHref(locale: UiLang, path: string): string {
 }
 
 /**
+ * Inverse of `localeHref`: strip a leading locale segment, so
+ * '/de/streamer/x' → '/streamer/x' and '/de' → '/'. English paths pass through
+ * unchanged. Lives here rather than in a component because route-matching
+ * checks ("is this a sign-in page?") need it on both sides of the boundary.
+ */
+export function stripLocaleFromPath(pathname: string): string {
+  const [, first, ...rest] = pathname.split('/');
+  if (isUiLang(first)) {
+    const stripped = `/${rest.join('/')}`;
+    return stripped === '//' ? '/' : stripped;
+  }
+  return pathname || '/';
+}
+
+/**
  * Resolve a stored broadcaster language (BCP-47, may be null/''/'other'/
  * unknown) to a supported lexicon language. 'de-AT' → 'de'; anything without
  * a lexicon → 'en'. Mirrors langCode() in lib/seo.ts but is duplicated here

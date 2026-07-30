@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthProvider';
 import { useFavorites } from '@/hooks/useFavorites';
 import { slotLexFor } from '@/lib/i18n-slot';
 import { AUTH_UI_VISIBLE } from '@/lib/auth-flag';
+import { touchTargetExpander } from '@/lib/ui/positioning';
 
 type Size = 'sm' | 'md';
 
@@ -19,9 +20,12 @@ interface Props {
   language?: string;
 }
 
-const SIZE_CLASSES: Record<Size, { button: string; icon: number }> = {
-  sm: { button: 'h-8 w-8', icon: 16 },
-  md: { button: 'h-10 w-10', icon: 20 },
+// A 32px heart is well under the 44px touch minimum, but a 44px one would crowd
+// the cards it sits on — so the visible circle stays and an invisible ::before
+// carries the hit area (see lib/ui/positioning.ts for the `relative` caveat).
+const SIZE_CLASSES: Record<Size, { button: string; icon: number; expander: 'md' | 'sm' }> = {
+  sm: { button: 'h-8 w-8', icon: 16, expander: 'md' },
+  md: { button: 'h-10 w-10', icon: 20, expander: 'sm' },
 };
 
 function HeartIcon({
@@ -89,7 +93,7 @@ export function FavoriteButton({
           e.stopPropagation();
           router.push(target);
         }}
-        className={`inline-flex items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-muted hover:border-accent-pink/40 hover:text-accent-pink transition-colors ${sizeClasses.button} ${className}`}
+        className={`inline-flex items-center justify-center rounded-full border border-border-default bg-background-elevated text-text-muted hover:border-accent-pink/40 hover:text-accent-pink transition-colors ${sizeClasses.button} ${touchTargetExpander(className, sizeClasses.expander)} ${className}`}
       >
         <HeartIcon filled={false} size={sizeClasses.icon} />
       </button>
@@ -110,7 +114,7 @@ export function FavoriteButton({
         const nowFavorited = !favorited;
         void toggle(streamerId).then(() => onToggled?.(nowFavorited));
       }}
-      className={`inline-flex items-center justify-center rounded-full border transition-colors ${sizeClasses.button} ${className} ${
+      className={`inline-flex items-center justify-center rounded-full border transition-colors ${sizeClasses.button} ${touchTargetExpander(className, sizeClasses.expander)} ${className} ${
         favorited
           ? 'border-accent-pink/60 bg-accent-pink/15 text-accent-pink hover:bg-accent-pink/25'
           : 'border-border-default bg-background-elevated text-text-muted hover:border-accent-pink/40 hover:text-accent-pink'

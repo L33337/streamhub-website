@@ -166,7 +166,11 @@ export default async function RootLayout({
                 StreamerTimes
               </Link>
               <SearchBar
-                className="ml-auto w-full max-w-md"
+                // `min-w-0` so the search field is what yields width in the
+                // header row: it is the only flexible item there, and without
+                // this its intrinsic minimum pushed the hamburger off-screen on
+                // 320px-class phones.
+                className="ml-auto w-full min-w-0 max-w-md"
                 locale={locale}
                 placeholder={chrome.nav.searchPlaceholder}
                 resultsLabel={chrome.nav.searchResults}
@@ -188,7 +192,9 @@ export default async function RootLayout({
               </Link>
               {/* Static-safe: AUTH_ENABLED is a build-time constant, and
                   HeaderUserMenu reads auth state client-side via useAuth(). */}
-              {AUTH_ENABLED && <HeaderUserMenu />}
+              {AUTH_ENABLED && (
+                <HeaderUserMenu locale={locale} signInLabel={chrome.nav.signIn} />
+              )}
               <div className="ml-auto md:hidden">
                 <MobileHeaderMenu locale={locale} strings={chrome.nav} />
               </div>
@@ -198,7 +204,7 @@ export default async function RootLayout({
           {children}
           {modal}
           <SiteFooter locale={locale} />
-          <FloatingGetAppButton />
+          <FloatingGetAppButton locale={locale} label={chrome.nav.getApp} />
         </Providers>
         <Analytics />
         <SpeedInsights />

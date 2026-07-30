@@ -19,6 +19,7 @@ const EN_NAV: ChromeLex['nav'] = {
   games: 'Games',
   rankings: 'Rankings',
   getApp: 'Get the App',
+  signIn: 'Sign in',
   openMenu: 'Open menu',
   closeMenu: 'Close menu',
   searchPlaceholder: 'Search streamers…',
@@ -58,7 +59,10 @@ export function MobileHeaderMenu({ locale = 'en', strings = EN_NAV }: Props) {
         aria-expanded={open}
         aria-controls="mobile-header-menu"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-default bg-background-elevated text-text-primary hover:border-accent-cyan/40 transition-colors"
+        // `before:-inset-1` lifts the touch target to 44px while the visual box
+        // stays 36px: --header-height is a layout contract for every sticky
+        // offset on the site, so the header itself must not grow.
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-default bg-background-elevated text-text-primary transition-colors before:absolute before:-inset-1 before:content-[''] hover:border-accent-cyan/40"
       >
         <svg
           width="20"

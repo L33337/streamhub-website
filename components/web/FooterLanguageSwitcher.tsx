@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { UI_LANGS, isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { UI_LANGS, localeHref, stripLocaleFromPath, type UiLang } from '@/lib/i18n-core';
 import { LANGUAGE_NATIVE_NAMES } from '@/lib/i18n-chrome';
 import { setPreferredLocale } from '@/lib/locale-preference';
 
@@ -18,15 +18,11 @@ import { setPreferredLocale } from '@/lib/locale-preference';
  * never varies rendering on it.
  */
 
-/** Strip a leading locale segment: '/de/streamer/x' → '/streamer/x'. */
-export function stripLocalePrefix(pathname: string): string {
-  const [, first, ...rest] = pathname.split('/');
-  if (isUiLang(first)) {
-    const stripped = `/${rest.join('/')}`;
-    return stripped === '//' ? '/' : stripped;
-  }
-  return pathname || '/';
-}
+/**
+ * Strip a leading locale segment: '/de/streamer/x' → '/streamer/x'.
+ * Re-exported from lib/i18n-core so existing importers keep working.
+ */
+export const stripLocalePrefix = stripLocaleFromPath;
 
 export function FooterLanguageSwitcher({
   currentLocale,
@@ -36,7 +32,7 @@ export function FooterLanguageSwitcher({
   heading: string;
 }) {
   const pathname = usePathname() ?? '/';
-  const basePath = stripLocalePrefix(pathname);
+  const basePath = stripLocaleFromPath(pathname);
 
   return (
     <nav aria-label={heading}>
