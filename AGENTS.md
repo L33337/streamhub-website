@@ -142,6 +142,17 @@ A mobile audit at 390px found the same three defect families across many pages. 
 - **The locale banner hides its sentence below `sm`** instead of truncating it: at 390px there is room for ~20 characters next to the CTA, and a cut-off word says less than the CTA already does. The full sentence remains the region's `aria-label`.
 - Chrome that must stay locale-aware: `HeaderUserMenu` (label + `localeHref`), `FloatingGetAppButton` (label + `localeHref`, and its hide-on-`/auth` check runs through `stripLocaleFromPath` — plain `startsWith('/auth')` only matched the English tree). The game hub is deliberately left English-only until M22 P4 localizes it as one piece; do not half-localize it.
 
+# Release 2026-07-30 — four branches merged together
+
+`main` had lagged four unmerged feature branches. They went to production as one release (`e41a6e1..7458a00`), in this order: `feature/bing-seo-round` → `feature/hide-interrupt-card-when-signed-in` → `feature/live-rail-full-pool` → `feature/mobile-ux-round`. Verified on the integrated tree before the push: `tsc --noEmit` clean, eslint 0 errors (4 pre-existing warnings), 973 unit tests, `next build`, and a mobile browser pass at 390px.
+
+Two conflicts, both because the live-rail branch and the mobile round reworked the same homepage surfaces. Worth knowing if you touch either again:
+
+- The lineup's category CHIPS became three selects (`HomeUpNextFilters`), so the mobile round's `chipClass` had nothing left to style. Its intent — 44px touch targets — moved onto `selectClass` and the reset button. **When a control changes shape, carry the touch-target rule across rather than dropping it with the old class.**
+- `app/[locale]/live/page.tsx` is treated as BINARY by git (no NUL bytes, no `.gitattributes` — the heuristic simply trips on it), so a conflict there produces **no conflict markers** and silently leaves "ours" in the tree. Resolve it by diffing the three merge stages (`git show :1: / :2: / :3:`) instead of looking for markers. Miss that and one side's change vanishes without a trace.
+
+After merging, re-check that auto-merged files kept the mobile round's intent — auto-merge can succeed textually and still lose it. The markers to grep for: `reserveTopRight`, `liveCategories`, `touchTargetExpander`, `DayLabel`, `min-h-11`.
+
 # Performance baseline (M20 Phase 0)
 
 Web-Vitals tooling for the perf-health runbook (`StreamHub/docs/performance-health.md`):
