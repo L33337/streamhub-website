@@ -13,6 +13,7 @@ import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import type { UiLang } from '@/lib/i18n-core';
 import { SlotCard } from '@/components/web/SlotCard';
 import { SlotBellButton } from './SlotBellButton';
+import { FILTER_SELECT_CLASS } from './filter-controls';
 import {
   getMinuteClockSnapshot,
   getServerMinuteClockSnapshot,
@@ -275,13 +276,6 @@ export function HomeUpNextFilters({
     // No expansion bookkeeping: `expanded` follows from `active`.
   };
 
-  // Merge note (2026-07-30): the mobile round raised these controls to a 44px
-  // touch target while this section still used chips. The chips are gone —
-  // they became the three selects below — so the same `min-h-11` applies here
-  // instead, matching HomeLiveRailFilters.
-  const selectClass =
-    'min-h-11 rounded-full border border-border-default bg-background-elevated px-3 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
-
   return (
     <div ref={containerRef}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -292,7 +286,7 @@ export function HomeUpNextFilters({
           id={categoryId}
           value={activeCategory}
           onChange={(event) => select({ category: event.target.value })}
-          className={selectClass}
+          className={FILTER_SELECT_CLASS}
         >
           <option value="">{strings.allCategories}</option>
           {categoryOptions.map((option) => (
@@ -309,7 +303,7 @@ export function HomeUpNextFilters({
           id={languageId}
           value={activeLanguage}
           onChange={(event) => select({ language: event.target.value })}
-          className={selectClass}
+          className={FILTER_SELECT_CLASS}
         >
           <option value="">{strings.allLanguages}</option>
           {languageOptions.map((option) => (
@@ -330,7 +324,7 @@ export function HomeUpNextFilters({
               fromHour: event.target.value === '' ? null : Number(event.target.value),
             })
           }
-          className={selectClass}
+          className={FILTER_SELECT_CLASS}
         >
           <option value="">{strings.allTimes}</option>
           {timeOptions.map((option) => (

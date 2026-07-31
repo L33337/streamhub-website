@@ -13,6 +13,7 @@ import {
   LIVE_RAIL_DEFAULT_VISIBLE,
   type LiveFilterItem,
 } from '@/lib/home/live-rail';
+import { FILTER_SELECT_CLASS } from './filter-controls';
 
 export interface LiveFilterStrings {
   categoryLabel: string;
@@ -167,11 +168,6 @@ export function HomeLiveRailFilters({
     return () => clearInterval(timer);
   }, [locale]);
 
-  // `min-h-11` on the controls: these are the primary filter affordance on a
-  // phone and were 32px tall, well under the 44px touch minimum.
-  const selectClass =
-    'min-h-11 rounded-full border border-border-default bg-background-elevated px-3 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none';
-
   return (
     <div ref={containerRef}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -182,7 +178,7 @@ export function HomeLiveRailFilters({
           id={categoryId}
           value={activeCategory}
           onChange={(event) => setCategory(event.target.value)}
-          className={selectClass}
+          className={FILTER_SELECT_CLASS}
         >
           <option value="">{strings.allCategories}</option>
           {categoryOptions.map((option) => (
@@ -199,7 +195,7 @@ export function HomeLiveRailFilters({
           id={languageId}
           value={activeLanguage}
           onChange={(event) => setLanguage(event.target.value)}
-          className={selectClass}
+          className={FILTER_SELECT_CLASS}
         >
           <option value="">{strings.allLanguages}</option>
           {languageOptions.map((option) => (
