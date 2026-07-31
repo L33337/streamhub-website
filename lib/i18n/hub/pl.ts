@@ -89,6 +89,8 @@ export const pl: HubLex = {
       loginCta: 'Zaloguj się w przeglądarce',
     },
     clipsTitle: 'Klipy tygodnia',
+    clipsFilterMatches: (count) => `Klipy: ${count}`,
+    clipsFilterEmpty: 'Żaden klip nie pasuje do tych filtrów.',
     quickFactsTitle: 'Szybkie fakty',
     quickFactsSub: 'Z ostatnich 7 dni śledzonych streamów',
     factPredictionLabel: 'Sprawdzian prognoz',

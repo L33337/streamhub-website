@@ -94,6 +94,8 @@ export const ru: HubLex = {
       loginCta: 'Войти через браузер',
     },
     clipsTitle: 'Клипы недели',
+    clipsFilterMatches: (count) => `Клипов: ${count}`,
+    clipsFilterEmpty: 'Нет клипов по этим фильтрам.',
     quickFactsTitle: 'Коротко о главном',
     quickFactsSub: 'По стримам за последние 7 дней',
     factPredictionLabel: 'Проверка прогнозов',

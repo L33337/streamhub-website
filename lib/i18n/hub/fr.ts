@@ -74,6 +74,8 @@ export const fr: HubLex = {
       loginCta: 'Se connecter sur le web',
     },
     clipsTitle: 'Clips de la semaine',
+    clipsFilterMatches: (count) => `${count} clip${count === 1 ? '' : 's'}`,
+    clipsFilterEmpty: 'Aucun clip ne correspond à ces filtres.',
     quickFactsTitle: 'En bref',
     quickFactsSub: 'Sur les 7 derniers jours de streams suivis',
     factPredictionLabel: 'Vérif des prédictions',

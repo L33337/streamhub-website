@@ -90,6 +90,8 @@ export const ar: HubLex = {
       loginCta: 'سجّل الدخول عبر الويب',
     },
     clipsTitle: 'مقاطع الأسبوع',
+    clipsFilterMatches: (count) => `${count} مقطع`,
+    clipsFilterEmpty: 'لا توجد مقاطع تطابق هذه الفلاتر.',
     quickFactsTitle: 'حقائق سريعة',
     quickFactsSub: 'من آخر 7 أيام من البثوث المتتبَّعة',
     factPredictionLabel: 'فحص التوقعات',

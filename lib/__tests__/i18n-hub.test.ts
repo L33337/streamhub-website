@@ -68,6 +68,9 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.interrupt.appCta', L.homeFeed.interrupt.appCta],
     ['homeFeed.interrupt.loginCta', L.homeFeed.interrupt.loginCta],
     ['homeFeed.clipsTitle', L.homeFeed.clipsTitle],
+    ['homeFeed.clipsFilterMatches', L.homeFeed.clipsFilterMatches(141)],
+    ['homeFeed.clipsFilterMatches.one', L.homeFeed.clipsFilterMatches(1)],
+    ['homeFeed.clipsFilterEmpty', L.homeFeed.clipsFilterEmpty],
     ['homeFeed.quickFactsTitle', L.homeFeed.quickFactsTitle],
     ['homeFeed.quickFactsSub', L.homeFeed.quickFactsSub],
     ['homeFeed.factPredictionLabel', L.homeFeed.factPredictionLabel],
@@ -277,6 +280,17 @@ describe('HUB_STRINGS lexica', () => {
     expect(L.lineupFilterMatches(1)).toContain('1');
     expect(L.lineupFilterMatches(1).toLowerCase()).not.toContain('live');
     expect(L.lineupFilterEmpty.toLowerCase()).not.toContain('live');
+  });
+
+  // The clips counter shares its dropdowns with the live rail but not its
+  // noun: these are recorded highlights, so a translation that borrows the
+  // live wording would claim the rail is showing running streams.
+  it.each([...UI_LANGS])('%s counts clip matches without saying live', (lang) => {
+    const L = HUB_STRINGS[lang].homeFeed;
+    expect(L.clipsFilterMatches(141)).toContain('141');
+    expect(L.clipsFilterMatches(1)).toContain('1');
+    expect(L.clipsFilterMatches(1).toLowerCase()).not.toContain('live');
+    expect(L.clipsFilterEmpty.toLowerCase()).not.toContain('live');
   });
 
   // The trending rail's metric lines carry the number the sort is based on —
