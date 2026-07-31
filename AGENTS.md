@@ -206,6 +206,35 @@ itself scrolling sideways in five locales. Rules that came out of it:
   `document.documentElement.scrollWidth === window.innerWidth` at 320px, for
   every locale. It was 357 (pl), 333 (de/es/pt), 330 (ru), 326 (fr) before.
 
+## Header search: icon below `lg` (2026-07-31, second pass)
+
+The header row is brand + search + nav pills + sign-in + hamburger, and the
+search was the ONLY flexible item in it — so it silently absorbed every
+shortfall: 22px wide on a 320px phone (es), 48px on an iPad in portrait. Below
+`lg` it is now a 36px icon (`SearchBar` prop `collapsible`) that opens a fixed
+panel under the header.
+
+- **One input, three wrapper states** (`hidden` / fixed panel / inline field).
+  Do not "solve" this by rendering a second input for mobile — the dropdown
+  anchors to the wrapper and the query state would fork. `expanded` is false on
+  the server, so the static HTML is the collapsed header.
+- **The whole caller className is `lg:`-prefixed** (`lg:ml-auto lg:w-full …`).
+  Below `lg` the wrapper is `fixed inset-x-3`, and a `w-full` there would
+  over-constrain it against the insets.
+- **Everything in the phone row is now shrink-0** — that is the consequence
+  people trip over. The gaps and the brand size are the only give left, hence
+  `gap-2` + brand `text-sm` up to `sm`. Adding any further fixed-width control
+  to the header means re-measuring all 12 locales at 320/360.
+- **Nav pills are `whitespace-nowrap`**: they are a fixed 36px tall, so a row
+  1px over budget wraps a two-word label into a second line that overflows the
+  pill — it does not read as "tight", it reads as broken.
+- **Get-App is `lg:`, not `md:`** — the widest label in the row ("Скачать
+  приложение" 174px, "Завантажити застосунок" 203px). The floating Get-App
+  button covers that intent below `lg`.
+- Below 360px the icon still steps out while a sign-in button is rendered
+  (`max-[359px]:[&:has(~[data-signin])]:hidden`) — four fixed controls do not
+  fit a 320px screen in any locale that spells sign-in out.
+
 # Release 2026-07-31 — three homepage branches merged together
 
 `8155fb4..5b86104` went to production as one release, in this order:
