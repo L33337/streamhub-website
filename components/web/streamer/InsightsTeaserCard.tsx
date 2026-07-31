@@ -30,9 +30,11 @@ export function InsightsTeaserCard({
             Streaming insights
           </span>
           <span className="mt-0.5 block truncate text-xs text-text-secondary">
-            Best day: <span className="font-semibold text-text-primary">{bestDay}</span> ·
-            ~{median} median viewers — viewer patterns, category performance &amp;
-            benchmarks
+            {/* Interpolated strings — adjacent JSX text nodes drop spaces
+                (the documented "VALORANTstreamers" bug). */}
+            {'Best day: '}
+            <span className="font-semibold text-text-primary">{bestDay}</span>
+            {` · ~${median} median viewers — viewer patterns, category performance & benchmarks`}
           </span>
         </span>
         <span aria-hidden="true" className="shrink-0 text-accent-cyan">

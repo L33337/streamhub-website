@@ -286,7 +286,9 @@ export default async function BestTimePage({ params }: Props) {
 
       <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">
         <Link href={`/game/${slug}`} className="text-accent-cyan hover:text-text-primary">
-          ← {category} streamers &amp; schedule
+          {/* One interpolated string — adjacent JSX text nodes drop the space
+              (the documented "VALORANTstreamers" bug). */}
+          {`← ${category} streamers & schedule`}
         </Link>
         {'  ·  '}
         <Link href="/best-games-to-stream" className="text-accent-cyan hover:text-text-primary">
