@@ -312,6 +312,26 @@ export interface HubLex {
     aria: string;
     /** Rank chip under a box art, e.g. "#3 on Twitch". */
     rankOnTwitch(rank: number): string;
+    /**
+     * Sort control over the rail (2026-07-31). Keep the labels SHORT — four
+     * buttons share one row on a phone before they wrap.
+     * `sortViewers` counts viewers watching the category RIGHT NOW; it must
+     * never be attached to `sortHours`, which is time BROADCAST
+     * (lib/games-sort.ts invariant).
+     */
+    sortAria: string;
+    sortTwitch: string;
+    sortHours: string;
+    sortViewers: string;
+    sortStreamers: string;
+    /** Tile metric line in the viewers sort, e.g. "16.3K watching now". */
+    liveViewers(value: string): string;
+    /**
+     * Tile metric line in the streamers sort, e.g. "242 streamers".
+     * `value` is the compact-formatted number to render, `count` the raw one —
+     * the Slavic locales need it for `pluralForms` (3 стримера / 5 стримеров).
+     */
+    streamerCount(value: string, count: number): string;
   };
   popular: {
     /** Heading AND aria-label of the popular-streamers footer nav. */

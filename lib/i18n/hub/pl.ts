@@ -179,6 +179,19 @@ export const pl: HubLex = {
       'Największe gry na Twitchu w tej chwili — nasi streamerzy nie obejmują jeszcze wszystkich.',
     aria: 'Popularne gry na Twitchu',
     rankOnTwitch: (rank) => `#${rank} na Twitchu`,
+    sortAria: 'Sortuj gry',
+    sortTwitch: 'Pozycja na Twitchu',
+    sortHours: 'Najwięcej godzin',
+    sortViewers: 'Najwięcej widzów (na żywo)',
+    sortStreamers: 'Najwięcej streamerów',
+    liveViewers: (value) => `${value} ogląda teraz`,
+    streamerCount: (value, count) =>
+      pluralForms('pl', count, {
+        one: `${value} streamer`,
+        few: `${value} streamerów`,
+        many: `${value} streamerów`,
+        other: `${value} streamera`,
+      }),
   },
   popular: {
     heading: 'Popularni streamerzy',

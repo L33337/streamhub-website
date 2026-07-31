@@ -141,6 +141,15 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['trending.subtitle', L.trending.subtitle],
     ['trending.aria', L.trending.aria],
     ['trending.rankOnTwitch', L.trending.rankOnTwitch(3)],
+    ['trending.sortAria', L.trending.sortAria],
+    ['trending.sortTwitch', L.trending.sortTwitch],
+    ['trending.sortHours', L.trending.sortHours],
+    ['trending.sortViewers', L.trending.sortViewers],
+    ['trending.sortStreamers', L.trending.sortStreamers],
+    ['trending.liveViewers', L.trending.liveViewers('16.3K')],
+    ['trending.streamerCount', L.trending.streamerCount('242', 242)],
+    ['trending.streamerCount.few', L.trending.streamerCount('3', 3)],
+    ['trending.streamerCount.one', L.trending.streamerCount('1', 1)],
     ['popular.heading', L.popular.heading],
     ['popular.viewAll', L.popular.viewAll],
     ['apiPromo.heading', L.apiPromo.heading],
@@ -268,6 +277,25 @@ describe('HUB_STRINGS lexica', () => {
     expect(L.lineupFilterMatches(1)).toContain('1');
     expect(L.lineupFilterMatches(1).toLowerCase()).not.toContain('live');
     expect(L.lineupFilterEmpty.toLowerCase()).not.toContain('live');
+  });
+
+  // The trending rail's metric lines carry the number the sort is based on —
+  // a translation that drops the placeholder would show a bare noun. The
+  // streamer count additionally has to agree with the count it is given
+  // (Slavic/Arabic plural categories).
+  it.each([...UI_LANGS])('%s embeds the value in the trending metrics', (lang) => {
+    const L = HUB_STRINGS[lang].trending;
+    expect(L.liveViewers('16.3K')).toContain('16.3K');
+    expect(L.streamerCount('242', 242)).toContain('242');
+    expect(L.streamerCount('3', 3)).toContain('3');
+  });
+
+  // hours_28d is time BROADCAST (lib/games-sort.ts invariant): the hours sort
+  // must never borrow the viewers sort's wording in any language.
+  it.each([...UI_LANGS])('%s keeps hours and viewers sorts distinct', (lang) => {
+    const L = HUB_STRINGS[lang].trending;
+    expect(L.sortHours).not.toBe(L.sortViewers);
+    expect(L.sortHours.toLowerCase()).not.toContain('watch');
   });
 
   it.each([...UI_LANGS])('%s embeds the counts in the live intro', (lang) => {

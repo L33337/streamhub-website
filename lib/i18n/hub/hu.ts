@@ -158,6 +158,13 @@ export const hu: HubLex = {
       'A Twitch legnagyobb játékai éppen most — a streamereink még nem fedik le mindet.',
     aria: 'Felkapott játékok a Twitchen',
     rankOnTwitch: (rank) => `#${rank} a Twitchen`,
+    sortAria: 'Játékok rendezése',
+    sortTwitch: 'Twitch-helyezés',
+    sortHours: 'Legtöbb óra',
+    sortViewers: 'Legtöbb néző (élő)',
+    sortStreamers: 'Legtöbb streamer',
+    liveViewers: (value) => `${value} nézi most`,
+    streamerCount: (value) => `${value} streamer`,
   },
   popular: {
     heading: 'Népszerű streamerek',

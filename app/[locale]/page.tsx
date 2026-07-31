@@ -234,7 +234,10 @@ export default async function HomePage({ params }: Props) {
       limit: 20,
       revalidate: 300,
     }),
-    fetchTrendingRail(10),
+    // The full Twitch top-games cache: with a sort control over the rail, ten
+    // tiles reorder into barely a different list. /games fetches the same 20,
+    // so the two share one data-cache entry.
+    fetchTrendingRail(20),
     // Catalog for internal /game/* links (404 avoidance) AND the most-watched
     // categories column. Same URL + revalidate as the /games page call, so
     // this shares its data-cache entry instead of adding load.

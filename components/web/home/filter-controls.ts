@@ -1,6 +1,7 @@
 /**
- * Chrome shared by the homepage's two filter islands (HomeLiveRailFilters,
- * HomeUpNextFilters). They were kept in sync by hand and by comment, which
+ * Chrome shared by the homepage's filter islands (HomeLiveRailFilters,
+ * HomeUpNextFilters, HomeTrendingRailClient). They were kept in sync by hand
+ * and by comment, which
  * already cost one regression: the 2026-07-30 mobile round raised the live
  * rail's controls to a 44px touch target while the lineup's chips were being
  * replaced by selects on another branch, and the rule silently didn't reach
@@ -22,3 +23,26 @@
  */
 export const FILTER_SELECT_CLASS =
   'min-h-11 max-w-44 truncate rounded-full border border-border-default bg-background-elevated px-3 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-cyan/50 hover:text-white focus-visible:border-accent-cyan focus-visible:outline-none sm:max-w-60';
+
+/**
+ * Segmented sort control (trending rail, 2026-07-31). Same two-state colours
+ * as the game-ranking explorer so the site has one "pick a metric" language,
+ * with two deliberate homepage deviations:
+ *
+ * - `min-h-11` again: the ranking page's `py-1.5` buttons are ~30px, under the
+ *   44px touch minimum. Desktop-first page there, phone-first here.
+ * - The group WRAPS instead of clipping (`flex-wrap` + padded container,
+ *   rounded buttons) — four localized labels ("Najwięcej streamerów",
+ *   "Больше всего стримеров") do not fit one row on a 390px phone, and an
+ *   `overflow-hidden` group would cut them off.
+ */
+export const FILTER_SEGMENT_GROUP_CLASS =
+  'flex flex-wrap gap-1 rounded-lg border border-border-default p-1';
+
+export const FILTER_SEGMENT_BUTTON_CLASS =
+  'min-h-11 rounded-md px-3 text-xs font-semibold transition-colors';
+
+export const FILTER_SEGMENT_BUTTON_ACTIVE_CLASS = 'bg-accent-cyan/20 text-accent-cyan';
+
+export const FILTER_SEGMENT_BUTTON_IDLE_CLASS =
+  'text-text-secondary hover:text-text-primary';

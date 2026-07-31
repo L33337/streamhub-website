@@ -184,6 +184,19 @@ export const ru: HubLex = {
       'Самые крупные игры на Twitch прямо сейчас — наши стримеры пока покрывают не все из них.',
     aria: 'Игры в тренде на Twitch',
     rankOnTwitch: (rank) => `#${rank} на Twitch`,
+    sortAria: 'Сортировать игры',
+    sortTwitch: 'Место на Twitch',
+    sortHours: 'Больше всего часов',
+    sortViewers: 'Больше всего зрителей (live)',
+    sortStreamers: 'Больше всего стримеров',
+    liveViewers: (value) => `${value} смотрят сейчас`,
+    streamerCount: (value, count) =>
+      pluralForms('ru', count, {
+        one: `${value} стример`,
+        few: `${value} стримера`,
+        many: `${value} стримеров`,
+        other: `${value} стримера`,
+      }),
   },
   popular: {
     heading: 'Популярные стримеры',
