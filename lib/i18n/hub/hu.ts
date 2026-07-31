@@ -157,7 +157,7 @@ export const hu: HubLex = {
   trending: {
     heading: 'Felkapott a Twitchen',
     subtitle:
-      'A Twitch legnagyobb játékai éppen most — a streamereink még nem fedik le mindet.',
+      'Amit most az egész Twitch néz.',
     aria: 'Felkapott játékok a Twitchen',
     rankOnTwitch: (rank) => `#${rank} a Twitchen`,
     sortAria: 'Játékok rendezése',

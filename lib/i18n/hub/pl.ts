@@ -187,7 +187,7 @@ export const pl: HubLex = {
   trending: {
     heading: 'Na topie na Twitchu',
     subtitle:
-      'Największe gry na Twitchu w tej chwili — nasi streamerzy nie obejmują jeszcze wszystkich.',
+      'To, co ogląda teraz cały Twitch.',
     aria: 'Popularne gry na Twitchu',
     rankOnTwitch: (rank) => `#${rank} na Twitchu`,
     sortAria: 'Sortuj gry',

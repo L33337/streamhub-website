@@ -188,7 +188,7 @@ export const ar: HubLex = {
   },
   trending: {
     heading: 'الرائج على Twitch',
-    subtitle: 'أكبر الألعاب على Twitch الآن — لا يغطي ستريمرزنا كلها بعد.',
+    subtitle: 'ما يشاهده Twitch كله الآن.',
     aria: 'الألعاب الرائجة على Twitch',
     rankOnTwitch: (rank) => `المركز ${rank}# على Twitch`,
     sortAria: 'ترتيب الألعاب',

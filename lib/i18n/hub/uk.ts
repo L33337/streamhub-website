@@ -192,7 +192,7 @@ export const uk: HubLex = {
   trending: {
     heading: 'У тренді на Twitch',
     subtitle:
-      'Найбільші ігри на Twitch просто зараз — наші стримери поки що покривають не всі з них.',
+      'Що дивиться весь Twitch просто зараз.',
     aria: 'Ігри в тренді на Twitch',
     rankOnTwitch: (rank) => `#${rank} на Twitch`,
     sortAria: 'Сортувати ігри',

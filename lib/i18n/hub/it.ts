@@ -158,7 +158,7 @@ export const it: HubLex = {
   trending: {
     heading: 'Di tendenza su Twitch',
     subtitle:
-      'I giochi più grandi su Twitch in questo momento — i nostri streamer non li coprono ancora tutti.',
+      'Cosa guardano tutti su Twitch in questo momento.',
     aria: 'Giochi di tendenza su Twitch',
     rankOnTwitch: (rank) => `#${rank} su Twitch`,
     sortAria: 'Ordina i giochi',

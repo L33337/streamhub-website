@@ -157,7 +157,7 @@ export const ja: HubLex = {
   trending: {
     heading: 'Twitch のトレンド',
     subtitle:
-      '今 Twitch で最も大きなゲームです — まだ当サイトのストリーマーが全部をカバーしているわけではありません。',
+      '今、Twitch全体が見ているもの。',
     aria: 'Twitch のトレンドゲーム',
     rankOnTwitch: (rank) => `Twitch で第${rank}位`,
     sortAria: 'ゲームを並び替え',
