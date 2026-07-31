@@ -179,8 +179,9 @@ export default async function BestTimePage({ params }: Props) {
           <p className="mt-3 max-w-2xl text-text-secondary">
             When do {category} viewers outnumber {category} streamers? The heatmap
             below compares hourly viewer demand with live-channel competition —
-            the brightest cells are the windows where a new stream has the best
-            chance of being found.
+            green cells are the windows where a new stream has the best chance
+            of being found, red cells are hours where the competition outweighs
+            the audience.
           </p>
         </div>
       </div>

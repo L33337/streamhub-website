@@ -12,7 +12,8 @@ import {
   rampBarLabel,
   shiftNullableSeries,
   shiftSlot,
-  timingIntensity,
+  timingCellColor,
+  timingGoodness,
 } from '../game-timing';
 
 function series(cells: Record<number, number>): (number | null)[] {
@@ -138,15 +139,77 @@ describe('buildOpportunityView — score contract fixture', () => {
     const view = buildOpportunityView(viewers, streamers, days, 2);
     expect(view.grid[2][22].days).toBe(4);
   });
+
+  it('builds winsorized color bands per mode (p10..p90 of observed values)', () => {
+    const view = buildOpportunityView(viewers, streamers, null, 0);
+    // 10 observed cells per mode → lower-index quantiles of the sorted values.
+    // opportunity scores sorted: [80,90,100,110,120,240,260,280,300,320/2=160…]
+    expect(view.scale.opportunity).not.toBeNull();
+    expect(view.scale.viewers).not.toBeNull();
+    expect(view.scale.streamers).toEqual({ lo: 1, hi: 2 });
+    const opp = view.scale.opportunity!;
+    expect(opp.lo).toBeLessThan(opp.hi);
+    expect(opp.hi).toBeLessThanOrEqual(view.max.opportunity);
+  });
+
+  it('scale is null for a mode with no observed cells', () => {
+    const empty = new Array(TIMING_CELLS).fill(null);
+    const view = buildOpportunityView(viewers, empty, null, 0);
+    // No streamers observed → no streamer band and no opportunity scores.
+    expect(view.scale.streamers).toBeNull();
+    expect(view.scale.opportunity).toBeNull();
+    expect(view.scale.viewers).not.toBeNull();
+  });
 });
 
-describe('timingIntensity', () => {
-  it('sqrt-scales and clamps', () => {
-    expect(timingIntensity(null, 100)).toBe(0);
-    expect(timingIntensity(0, 100)).toBe(0);
-    expect(timingIntensity(25, 100)).toBeCloseTo(0.5);
-    expect(timingIntensity(100, 100)).toBe(1);
-    expect(timingIntensity(200, 100)).toBe(1);
+describe('timingGoodness', () => {
+  const band = { lo: 100, hi: 300 };
+
+  it('is linear within the band for opportunity and viewers (more = better)', () => {
+    expect(timingGoodness(300, band, 'opportunity')).toBe(1);
+    expect(timingGoodness(100, band, 'opportunity')).toBe(0);
+    expect(timingGoodness(200, band, 'viewers')).toBeCloseTo(0.5);
+  });
+
+  it('winsorizes: values outside the band clamp to the ends', () => {
+    expect(timingGoodness(10_000, band, 'opportunity')).toBe(1);
+    expect(timingGoodness(0, band, 'opportunity')).toBe(0);
+  });
+
+  it('inverts for competition (fewer live channels = better)', () => {
+    expect(timingGoodness(300, band, 'streamers')).toBe(0);
+    expect(timingGoodness(100, band, 'streamers')).toBe(1);
+    expect(timingGoodness(200, band, 'streamers')).toBeCloseTo(0.5);
+  });
+
+  it('null for no-data cells and modes without a scale', () => {
+    expect(timingGoodness(null, band, 'opportunity')).toBeNull();
+    expect(timingGoodness(50, null, 'opportunity')).toBeNull();
+  });
+
+  it('flat band (all observed cells identical) → every hour equally fine = green', () => {
+    const flat = { lo: 50, hi: 50 };
+    expect(timingGoodness(50, flat, 'opportunity')).toBe(1);
+    expect(timingGoodness(50, flat, 'streamers')).toBe(1);
+  });
+});
+
+describe('timingCellColor', () => {
+  it('maps worst to red and best to green with rising opacity', () => {
+    expect(timingCellColor(0)).toBe('hsla(8, 75%, 52%, 0.36)');
+    expect(timingCellColor(1)).toBe('hsla(132, 75%, 52%, 0.88)');
+  });
+
+  it('passes through yellow mid-scale', () => {
+    const mid = timingCellColor(0.5);
+    const hue = Number(/hsla\((\d+),/.exec(mid)?.[1]);
+    expect(hue).toBeGreaterThan(45);
+    expect(hue).toBeLessThan(95);
+  });
+
+  it('clamps out-of-range goodness to the scale ends', () => {
+    expect(timingCellColor(-0.5)).toBe(timingCellColor(0));
+    expect(timingCellColor(1.5)).toBe(timingCellColor(1));
   });
 });
 

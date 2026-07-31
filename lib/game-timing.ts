@@ -103,13 +103,35 @@ export interface TimingCell {
   score: number | null;
 }
 
+/** Winsorized color band of a mode: p10 → worst end, p90 → best end. */
+export interface TimingScale {
+  lo: number;
+  hi: number;
+}
+
 export interface OpportunityView {
   /** 7 rows (Mon..Sun) × 24 hour columns, in the shifted frame. */
   grid: TimingCell[][];
-  /** Per-mode maxima for color scaling (0 when the mode has no data). */
+  /** Per-mode maxima (0 when the mode has no data). */
   max: { opportunity: number; viewers: number; streamers: number };
+  /**
+   * Per-mode color bands (null = mode has no data). Percentile-winsorized so
+   * one outlier cell can't push every other cell to the red end.
+   */
+  scale: { opportunity: TimingScale | null; viewers: TimingScale | null; streamers: TimingScale | null };
   /** Top-3 cells by score recomputed from the grid (contract fixture target). */
   topSlots: { dow: number; hour: number; score: number; viewers: number; streamers: number }[];
+}
+
+/** Lower-index quantile of an unsorted sample (p in 0..1). */
+function quantile(values: number[], p: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(p * (sorted.length - 1))];
+}
+
+function scaleOf(values: number[]): TimingScale | null {
+  if (values.length === 0) return null;
+  return { lo: quantile(values, 0.1), hi: quantile(values, 0.9) };
 }
 
 /**
@@ -130,6 +152,7 @@ export function buildOpportunityView(
   const grid: TimingCell[][] = [];
   const max = { opportunity: 0, viewers: 0, streamers: 0 };
   const flat: (TimingCell & { dow: number; hour: number })[] = [];
+  const samples = { opportunity: [] as number[], viewers: [] as number[], streamers: [] as number[] };
   for (let dow = 0; dow < 7; dow++) {
     const row: TimingCell[] = [];
     for (let hour = 0; hour < 24; hour++) {
@@ -143,11 +166,19 @@ export function buildOpportunityView(
       if (cell.score !== null && cell.score > max.opportunity) max.opportunity = cell.score;
       if (cell.viewers !== null && cell.viewers > max.viewers) max.viewers = cell.viewers;
       if (cell.streamers !== null && cell.streamers > max.streamers) max.streamers = cell.streamers;
+      if (cell.score !== null) samples.opportunity.push(cell.score);
+      if (cell.viewers !== null) samples.viewers.push(cell.viewers);
+      if (cell.streamers !== null) samples.streamers.push(cell.streamers);
       row.push(cell);
       flat.push({ ...cell, dow, hour });
     }
     grid.push(row);
   }
+  const scale = {
+    opportunity: scaleOf(samples.opportunity),
+    viewers: scaleOf(samples.viewers),
+    streamers: scaleOf(samples.streamers),
+  };
 
   const topSlots = flat
     .filter((c): c is typeof c & { score: number; viewers: number; streamers: number } =>
@@ -157,7 +188,7 @@ export function buildOpportunityView(
     .slice(0, 3)
     .map((c) => ({ dow: c.dow, hour: c.hour, score: c.score, viewers: c.viewers, streamers: c.streamers }));
 
-  return { grid, max, topSlots };
+  return { grid, max, scale, topSlots };
 }
 
 /** Value of a cell under the active mode (null = no data in that mode). */
@@ -168,12 +199,39 @@ export function cellValueForMode(cell: TimingCell, mode: TimingMode): number | n
 }
 
 /**
- * 0..1 color intensity — sqrt scale, same reasoning as lib/game-heatmap.ts
- * heatmapIntensity (long-tailed distributions).
+ * Semantic "how good is this hour for a streamer" 0..1 (1 = best), linear
+ * within the winsorized band (values at/below scale.lo → 0, at/above
+ * scale.hi → 1). Relative-to-this-game on purpose: an opportunity score has
+ * no absolute meaning across games, so the map answers "which hours of MY
+ * game's week are better/worse". The Competition mode inverts — FEWER live
+ * channels is the favorable end — so green always means "good for you".
+ * Flat band (hi <= lo, e.g. all observed cells identical) → every observed
+ * hour is equally fine → 1 (green), never an arbitrary red/neutral split.
+ * Null when the cell or the whole mode has no data.
  */
-export function timingIntensity(value: number | null, max: number): number {
-  if (value === null || value <= 0 || max <= 0) return 0;
-  return Math.sqrt(Math.min(value, max) / max);
+export function timingGoodness(
+  value: number | null,
+  scale: TimingScale | null,
+  mode: TimingMode,
+): number | null {
+  if (value === null || scale === null) return null;
+  if (scale.hi <= scale.lo) return 1;
+  const t = Math.max(0, Math.min(1, (value - scale.lo) / (scale.hi - scale.lo)));
+  return mode === 'streamers' ? 1 - t : t;
+}
+
+/**
+ * Cell color for a semantic goodness value: red (bad hour) → yellow →
+ * green (good hour). Hue AND opacity ramp together, so luminance rises
+ * monotonically toward "good" — that keeps a brightness signal for red-green
+ * color blindness (the detail line / tooltips carry the exact numbers).
+ * Deterministic string (rounded) so SSR and client markup stay identical.
+ */
+export function timingCellColor(goodness: number): string {
+  const g = Math.max(0, Math.min(1, goodness));
+  const hue = Math.round(8 + 124 * g); // 8° red → 132° green
+  const alpha = (0.36 + 0.52 * g).toFixed(2);
+  return `hsla(${hue}, 75%, 52%, ${alpha})`;
 }
 
 /** "Tuesday 20:00" (already-shifted dow/hour). */

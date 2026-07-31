@@ -11,7 +11,7 @@
 // tap-to-select detail line under the grid — touch devices have no hover, so
 // without the detail line phones could see the colors but never the numbers.
 // The best-opportunity cell starts selected (ring), which also answers "where
-// IS that window?" without hunting for the brightest pixel.
+// IS that window?" without hunting for the greenest cell.
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { localUtcOffsetHours } from '@/lib/game-heatmap';
@@ -23,7 +23,8 @@ import {
   buildOpportunityView,
   cellValueForMode,
   formatSlotLabel,
-  timingIntensity,
+  timingCellColor,
+  timingGoodness,
   type TimingMode,
 } from '@/lib/game-timing';
 
@@ -31,28 +32,28 @@ function subscribe(): () => void {
   return () => {};
 }
 
-// Mode hues over the dark surface: opportunity = cyan (brand), viewers =
-// violet, competition = pink (more = harder, so the "hot" reading flips).
-const MODE_META: Record<TimingMode, { label: string; rgb: string; legend: string }> = {
+// One semantic scale for every mode: red = bad hour for a streamer, green =
+// good hour. Competition inverts its raw values inside timingGoodness (fewer
+// live channels = green), so green ALWAYS reads "favorable for you" and the
+// legend never flips direction between modes.
+const MODE_META: Record<TimingMode, { label: string; legend: string }> = {
   opportunity: {
     label: 'Opportunity',
-    rgb: '0, 240, 255',
-    legend: 'viewers per live channel — brighter = better time to stream',
+    legend: 'viewers per live channel — green = good time to stream, red = crowded or slow',
   },
   viewers: {
     label: 'Viewers',
-    rgb: '167, 139, 250',
-    legend: 'average concurrent viewers — brighter = more people watching',
+    legend: 'average concurrent viewers — green = most people watching, red = few viewers',
   },
   streamers: {
     label: 'Competition',
-    rgb: '244, 114, 182',
-    legend: 'average live channels — brighter = more competition',
+    legend: 'average live channels — green = little competition, red = crowded',
   },
 };
 
 const HOUR_TICKS = new Set([0, 6, 12, 18]);
-const LEGEND_STEPS = [0.15, 0.4, 0.7, 1];
+// Goodness steps for the legend swatches, worst (red) → best (green).
+const LEGEND_STEPS = [0, 0.25, 0.5, 0.75, 1];
 const MODES: TimingMode[] = ['opportunity', 'viewers', 'streamers'];
 // Grid geometry shared by render + initial-scroll math: the day-label column
 // is 2.25rem = 36px, cells split the rest evenly.
@@ -201,7 +202,7 @@ export function BestTimeHeatmap({
                 {row.map((cell, hour) => {
                   const value = cellValueForMode(cell, mode);
                   const noData = value === null;
-                  const t = timingIntensity(value, view.max[mode]);
+                  const goodness = timingGoodness(value, view.scale[mode], mode);
                   const isSelected = selected?.day === day && selected?.hour === hour;
                   return (
                     <div
@@ -210,14 +211,14 @@ export function BestTimeHeatmap({
                       className={`h-4 cursor-pointer rounded-[2px] ${
                         noData
                           ? 'border border-dashed border-white/10'
-                          : t === 0
+                          : goodness === null
                             ? 'bg-white/[0.06]'
                             : ''
                       } ${isSelected ? 'ring-1 ring-white/90' : ''}`}
                       style={{
                         touchAction: 'manipulation',
-                        ...(!noData && t > 0
-                          ? { backgroundColor: `rgba(${meta.rgb}, ${0.08 + 0.84 * t})` }
+                        ...(!noData && goodness !== null
+                          ? { backgroundColor: timingCellColor(goodness) }
                           : {}),
                       }}
                       title={
@@ -249,16 +250,15 @@ export function BestTimeHeatmap({
         className="mt-3 flex flex-wrap items-center gap-1 text-[10px] text-text-muted"
         aria-hidden="true"
       >
-        <span className="mr-1">Less</span>
-        <span className="h-3 w-3 rounded-[2px] bg-white/[0.06]" />
-        {LEGEND_STEPS.map((t) => (
+        <span className="mr-1">Worse</span>
+        {LEGEND_STEPS.map((g) => (
           <span
-            key={t}
+            key={g}
             className="h-3 w-3 rounded-[2px]"
-            style={{ backgroundColor: `rgba(${meta.rgb}, ${0.08 + 0.84 * t})` }}
+            style={{ backgroundColor: timingCellColor(g) }}
           />
         ))}
-        <span className="ml-1 mr-3">More</span>
+        <span className="ml-1 mr-3">Better</span>
         <span className="h-3 w-3 rounded-[2px] border border-dashed border-white/10" />
         <span className="ml-1">No data</span>
       </div>
