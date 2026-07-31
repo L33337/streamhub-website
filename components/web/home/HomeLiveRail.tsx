@@ -11,8 +11,10 @@ import {
   buildLiveFilterItems,
   formatLiveRuntime,
   liveRuntime,
+  liveWatchUrl,
   LIVE_RAIL_DEFAULT_VISIBLE,
 } from '@/lib/home/live-rail';
+import { slotLexFor } from '@/lib/i18n-slot';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { RailScroller } from '@/components/web/feed/RailScroller';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
@@ -38,6 +40,10 @@ import { HomeLiveRailFilters } from './HomeLiveRailFilters';
  * Every card carries a runtime line — how much longer the stream is expected
  * to run, from the slot's own AI duration estimate. Hidden entirely when
  * nothing is live.
+ *
+ * Cards link OUT (liveWatchUrl), unlike every other slot card on the site:
+ * these streams are running right now, so the click belongs to the stream, not
+ * to our slot page.
  */
 export function HomeLiveRail({
   slots,
@@ -136,6 +142,9 @@ function LiveCard({
 }) {
   const runtime = liveRuntime(slot, now);
   const startMs = Date.parse(slot.start_time);
+  const watchUrl = liveWatchUrl(slot);
+  const cardClass =
+    'flex h-full flex-col overflow-hidden rounded-xl border border-border-default bg-background-elevated transition-colors hover:border-accent-cyan/50';
 
   return (
     <li
@@ -148,11 +157,7 @@ function LiveCard({
       hidden={defaultHidden || undefined}
       className="relative w-[248px] shrink-0 sm:w-[268px]"
     >
-      <Link
-        href={localeHref(locale, `/schedule/${encodeURIComponent(slot.id)}`)}
-        prefetch={false}
-        className="flex h-full flex-col overflow-hidden rounded-xl border border-border-default bg-background-elevated transition-colors hover:border-accent-cyan/50"
-      >
+      <CardShell watchUrl={watchUrl} slotId={slot.id} locale={locale} className={cardClass}>
         <div className="relative aspect-video w-full overflow-hidden bg-background-highlight">
           {slot.thumbnail_url ? (
             <Image
@@ -251,7 +256,7 @@ function LiveCard({
             )}
           </div>
         </div>
-      </Link>
+      </CardShell>
       <FavoriteButton
         streamerId={slot.streamer_id}
         streamerName={slot.streamer_name}
@@ -260,6 +265,48 @@ function LiveCard({
         className="absolute right-2 top-2 z-10"
       />
     </li>
+  );
+}
+
+/**
+ * The card's single click target. Normally the platform's live page in a new
+ * tab (site-wide convention for outbound watch links — WatchPill,
+ * WatchButtons); the internal slot page only as the fallback for a live slot
+ * whose channel id we don't have, where an external link isn't buildable.
+ */
+function CardShell({
+  watchUrl,
+  slotId,
+  locale,
+  className,
+  children,
+}: {
+  watchUrl: string | null;
+  slotId: string;
+  locale: UiLang;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (!watchUrl) {
+    return (
+      <Link
+        href={localeHref(locale, `/schedule/${encodeURIComponent(slotId)}`)}
+        prefetch={false}
+        className={className}
+      >
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a href={watchUrl} target="_blank" rel="noopener noreferrer" className={className}>
+      {children}
+      {/* Appended to the link's accessible name, which is otherwise the whole
+          card — a screen reader user gets no other warning that the click
+          leaves the site. `sr-only` is absolutely positioned, so the card's
+          flex layout is untouched. */}
+      <span className="sr-only">{slotLexFor(locale).opensInNewTab}</span>
+    </a>
   );
 }
 

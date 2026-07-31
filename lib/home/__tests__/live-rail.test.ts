@@ -7,6 +7,7 @@ import {
   countLiveFilterOptions,
   formatLiveRuntime,
   liveRuntime,
+  liveWatchUrl,
   matchesLiveFilters,
   normalizeSlotLanguage,
   pickBiggestLiveSlots,
@@ -115,6 +116,44 @@ describe('pickBiggestLiveSlots', () => {
     delete (withoutField as { viewer_count?: number | null }).viewer_count;
     const picked = pickBiggestLiveSlots([withoutField], LIVE_RAIL_POOL_MAX);
     expect(picked.map((s) => s.id)).toEqual(['a']);
+  });
+});
+
+describe('liveWatchUrl', () => {
+  it('links to the Twitch channel', () => {
+    expect(liveWatchUrl(slot())).toBe('https://twitch.tv/streamerone');
+  });
+
+  it('deep-links YouTube to /live so the running stream opens, not the channel', () => {
+    expect(
+      liveWatchUrl(
+        slot({
+          platforms: ['youtube'],
+          twitch_login: null,
+          youtube_channel_id: 'UC123',
+        }),
+      ),
+    ).toBe('https://youtube.com/channel/UC123/live');
+  });
+
+  it('prefers Twitch on a simulcast — its viewer count is what ranked the card', () => {
+    expect(
+      liveWatchUrl(
+        slot({ platforms: ['twitch', 'youtube'], youtube_channel_id: 'UC123' }),
+      ),
+    ).toBe('https://twitch.tv/streamerone');
+  });
+
+  it('ignores a channel id for a platform the slot is not live on', () => {
+    expect(
+      liveWatchUrl(
+        slot({ platforms: ['youtube'], youtube_channel_id: null }),
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null without any usable channel id, so the caller can fall back', () => {
+    expect(liveWatchUrl(slot({ twitch_login: null }))).toBeNull();
   });
 });
 

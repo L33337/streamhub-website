@@ -97,6 +97,32 @@ export function pickBiggestLiveSlots(
   return picked;
 }
 
+/**
+ * Where a card in this rail sends you: straight to the stream that is running
+ * right now, on the platform itself.
+ *
+ * Everything in this rail is live by construction, so our own /schedule/<id>
+ * page has nothing to add that the card doesn't already show — it only puts an
+ * intercepted modal between the viewer and the stream they clicked. (No SEO
+ * cost either: robots.txt disallows /schedule/ for search crawlers, so these
+ * were never indexable link targets.)
+ *
+ * Twitch wins a simulcast: it is the platform whose viewer count ranked the
+ * card into the rail, and its channel URL always lands on the running stream.
+ * YouTube needs the /live suffix for that. Returns null when the slot carries
+ * no channel id for any platform it claims to be live on — the caller then
+ * keeps the internal link rather than rendering a dead card.
+ */
+export function liveWatchUrl(slot: PublicStreamSlot): string | null {
+  if (slot.platforms.includes('twitch') && slot.twitch_login) {
+    return `https://twitch.tv/${slot.twitch_login}`;
+  }
+  if (slot.platforms.includes('youtube') && slot.youtube_channel_id) {
+    return `https://youtube.com/channel/${slot.youtube_channel_id}/live`;
+  }
+  return null;
+}
+
 // ============================================
 // Runtime estimate ("how much longer is this running?")
 // ============================================
