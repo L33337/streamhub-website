@@ -33,7 +33,7 @@ export function HomeMostStreamed({
       />
       <ul className="grid gap-2">
         {rows.map((entry, index) => (
-          <li key={entry.streamerId}>
+          <li key={entry.streamerId} className="min-w-0">
             <Link
               href={localeHref(locale, `/streamer/${entry.streamerId}`)}
               prefetch={false}
@@ -54,14 +54,18 @@ export function HomeMostStreamed({
               ) : (
                 <InitialsAvatar name={entry.name} size={32} />
               )}
-              <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                {entry.name}
-              </span>
-              <span className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-accent-cyan">
-                <Clock size={13} aria-hidden="true" />
-                {L.homeFeed.weekHours(
-                  formatCompactNumber(Math.round(entry.hours), locale),
-                )}
+              <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3">
+                <span className="truncate text-sm font-bold text-white sm:flex-1">
+                  {entry.name}
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-accent-cyan sm:shrink-0">
+                  <Clock size={13} aria-hidden="true" className="shrink-0" />
+                  <span className="truncate">
+                    {L.homeFeed.weekHours(
+                      formatCompactNumber(Math.round(entry.hours), locale),
+                    )}
+                  </span>
+                </span>
               </span>
               <span className="hidden shrink-0 font-mono text-xs text-text-muted sm:inline">
                 {L.homeFeed.weekStreams(entry.sessions)}

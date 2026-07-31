@@ -35,9 +35,13 @@ export function HomeRisers({
         actionLabel={L.homeFeed.risersLink}
         actionHref={localeHref(locale, '/rankings/fastest-growing')}
       />
+      {/* Same phone rule as HomeMostWatched: min-w-0 on every <li> (a grid
+          item's min-width:auto would size the track to the widest row's
+          max-content) and the value drops under the name below `sm`, where
+          "+467.6K obserwujących w 7 dni" is wider than the whole row. */}
       <ul className="grid gap-2">
         {rows.map((entry) => (
-          <li key={entry.streamer.id}>
+          <li key={entry.streamer.id} className="min-w-0">
             <Link
               href={localeHref(locale, `/streamer/${entry.streamer.id}`)}
               prefetch={false}
@@ -58,14 +62,18 @@ export function HomeRisers({
               ) : (
                 <InitialsAvatar name={entry.streamer.name} size={32} />
               )}
-              <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                {entry.streamer.name}
-              </span>
-              <span className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-live">
-                <TrendingUp size={13} aria-hidden="true" />
-                {L.homeFeed.risersGained(
-                  formatSignedCompact(entry.values.follower_gain_7d),
-                )}
+              <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3">
+                <span className="truncate text-sm font-bold text-white sm:flex-1">
+                  {entry.streamer.name}
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-live sm:shrink-0">
+                  <TrendingUp size={13} aria-hidden="true" className="shrink-0" />
+                  <span className="truncate">
+                    {L.homeFeed.risersGained(
+                      formatSignedCompact(entry.values.follower_gain_7d),
+                    )}
+                  </span>
+                </span>
               </span>
               {typeof entry.values.follower_count === 'number' && (
                 <span className="hidden shrink-0 font-mono text-xs text-text-muted sm:inline">
