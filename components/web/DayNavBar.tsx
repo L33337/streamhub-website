@@ -67,7 +67,7 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
   return (
     <nav
       aria-label={L.jumpToDayAria}
-      className="sticky top-[var(--header-height)] z-10 -mx-4 mt-8 mb-2 border-b border-divider bg-background/95 px-4 py-3 backdrop-blur"
+      className="sticky top-[var(--header-height)] z-10 -mx-4 mt-8 mb-2 border-b border-divider bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
       <ul
         className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

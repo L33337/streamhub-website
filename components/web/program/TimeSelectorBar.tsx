@@ -66,7 +66,7 @@ export function TimeSelectorBar({
   return (
     <nav
       aria-label="Program navigation"
-      className="sticky top-[var(--header-height)] z-20 -mx-4 border-b border-border-default bg-background/95 px-4 py-2.5 backdrop-blur"
+      className="sticky top-[var(--header-height)] z-20 -mx-4 border-b border-border-default bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
       {/* Day strip — horizontally scrollable on narrow screens, no wrap. */}
       <div

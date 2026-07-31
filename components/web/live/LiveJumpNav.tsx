@@ -18,7 +18,7 @@ export function LiveJumpNav({ label, children }: { label: string; children: Reac
   return (
     <details
       ref={ref}
-      className="sticky top-[var(--header-height)] z-20 -mx-4 mt-6 border-b border-divider bg-background/95 px-4 py-2 backdrop-blur"
+      className="sticky top-[var(--header-height)] z-20 -mx-4 mt-6 border-b border-divider bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-text-secondary marker:content-none hover:text-accent-cyan [&::-webkit-details-marker]:hidden">
         <span aria-hidden="true" className="text-xs">

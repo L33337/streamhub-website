@@ -62,7 +62,12 @@ export function HomeSectionNav({
   return (
     <nav
       aria-label={ariaLabel}
-      className="sticky top-[var(--header-height)] z-20 -mx-6 border-b border-divider bg-background/95 px-6 py-2 backdrop-blur"
+      // Same translucency recipe as the header it hangs under (layout.tsx):
+      // /95 is the no-backdrop-filter fallback, and the `supports-` override
+      // drops to /80 wherever the blur actually renders. Without that override
+      // the bar reads as a slightly darker block glued below the header —
+      // measured 0.95 vs 0.80 alpha over the same colour.
+      className="sticky top-[var(--header-height)] z-20 -mx-6 border-b border-divider bg-background/95 px-6 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
       {/* The only horizontal rail on the site that still showed its native
           scrollbar — a grey bar under the chips on Windows and some Androids.
