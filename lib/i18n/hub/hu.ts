@@ -69,6 +69,8 @@ export const hu: HubLex = {
       loginCta: 'Belépés böngészőből',
     },
     clipsTitle: 'A hét klipjei',
+    clipsFilterMatches: (count) => `${count} klip`,
+    clipsFilterEmpty: 'Egy klip sem felel meg ezeknek a szűrőknek.',
     quickFactsTitle: 'Gyors tények',
     quickFactsSub: 'Az elmúlt 7 nap követett streamjeiből',
     factPredictionLabel: 'Előrejelzés-ellenőrzés',

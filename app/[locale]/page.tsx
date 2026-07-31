@@ -255,7 +255,9 @@ export default async function HomePage({ params }: Props) {
     api.listGames({ limit: 500, revalidate: 600 }),
     api.getRankings('most-watched', { limit: 5, revalidate: 3600 }),
     api.getRankings('fastest-growing', { limit: 3, revalidate: 3600 }),
-    fetchTopClipsOfWeek(12),
+    // The whole pool, not a display cut: the section's dropdowns search every
+    // clip they are given, so the cap IS the filter scope (HOME_CLIPS_POOL_MAX).
+    fetchTopClipsOfWeek(),
     fetchHomeQuickFacts(),
     fetchFeaturedStreamers(),
     fetchWeekMostStreamed(3),
@@ -275,7 +277,11 @@ export default async function HomePage({ params }: Props) {
   const homeClips =
     clipsCall.status === 'fulfilled'
       ? clipsCall.value
-      : { clips: [], names: {} as Record<string, string> };
+      : {
+          clips: [],
+          names: {} as Record<string, string>,
+          languages: {} as Record<string, string>,
+        };
   const quickFacts: HomeQuickFacts =
     factsCall.status === 'fulfilled'
       ? factsCall.value
@@ -491,7 +497,8 @@ export default async function HomePage({ params }: Props) {
         <HomeClipsRail
           clips={homeClips.clips}
           names={homeClips.names}
-          title={L.homeFeed.clipsTitle}
+          languages={homeClips.languages}
+          locale={locale}
         />
       </div>
 

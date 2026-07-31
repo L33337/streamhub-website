@@ -69,6 +69,8 @@ export const ja: HubLex = {
       loginCta: 'ブラウザでログイン',
     },
     clipsTitle: '今週のクリップ',
+    clipsFilterMatches: (count) => `${count}件のクリップ`,
+    clipsFilterEmpty: 'この条件に合うクリップはありません。',
     quickFactsTitle: 'クイックファクト',
     quickFactsSub: '過去7日間のトラッキングデータより',
     factPredictionLabel: '予測チェック',

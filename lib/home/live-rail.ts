@@ -6,7 +6,11 @@
 
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import type { LiveRuntimeLex } from '@/lib/i18n/live-runtime';
-import { countFilterOptions, type CountedFilterOption } from './filter-options';
+import {
+  countFilterOptions,
+  normalizeLanguageCode,
+  type CountedFilterOption,
+} from './filter-options';
 
 /**
  * `duration` the backend writes for always-on channels (1 year in minutes,
@@ -289,19 +293,14 @@ export function countLiveFilterOptions(
 }
 
 /**
- * Normalizes a broadcaster language to the value used as the filter key and
- * as the `data-live-lang` attribute: lowercased, region subtag dropped
- * ("pt-BR" → "pt"), so Twitch's regional variants collapse into one option.
- * Returns null for unknown languages — those slots stay reachable only under
- * "All languages"; inventing an "Unknown" bucket in a filter reads as a bug.
+ * A slot's broadcaster language as the filter key — see normalizeLanguageCode
+ * (lib/home/filter-options.ts) for the region-subtag rule this shares with the
+ * clips rail.
  */
 export function normalizeSlotLanguage(
   slot: Pick<PublicStreamSlot, 'streamer_language'>,
 ): string | null {
-  const raw = slot.streamer_language;
-  if (!raw) return null;
-  const base = raw.trim().toLowerCase().split('-')[0];
-  return base.length > 0 ? base : null;
+  return normalizeLanguageCode(slot.streamer_language);
 }
 
 /**

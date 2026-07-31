@@ -1,6 +1,7 @@
 // Shared vocabulary for the homepage's dropdown filters (live rail 2026-07-28,
-// lineup 2026-07-30). Both sections count their options the same way, and the
-// ordering below is part of the ISR contract — see countFilterOptions.
+// lineup 2026-07-30, clips 2026-07-31). All three sections count their options
+// the same way, and the ordering below is part of the ISR contract — see
+// countFilterOptions.
 
 export interface CountedFilterOption {
   /** Filter key, e.g. a raw category name or a normalized language code. */
@@ -40,4 +41,23 @@ export function countFilterOptions<T>(
   return [...counts.values()].sort(
     (a, b) => b.count - a.count || a.label.localeCompare(b.label),
   );
+}
+
+/**
+ * Normalizes a broadcaster language to the value the filters use as their key:
+ * lowercased, region subtag dropped ("pt-BR" → "pt"), so Twitch's regional
+ * variants collapse into one option. Returns null for a missing/blank code —
+ * those items stay reachable only under "All languages", because inventing an
+ * "Unknown" bucket in a filter reads as a bug.
+ *
+ * Lives here rather than next to one section: the live rail reads the language
+ * off a slot, the clips rail off the clip's streamer, and a second copy of the
+ * region rule is exactly how the two would drift apart.
+ */
+export function normalizeLanguageCode(
+  raw: string | null | undefined,
+): string | null {
+  if (!raw) return null;
+  const base = raw.trim().toLowerCase().split('-')[0];
+  return base.length > 0 ? base : null;
 }

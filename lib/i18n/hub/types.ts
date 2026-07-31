@@ -191,6 +191,14 @@ export interface HubLex {
       loginCta: string;
     };
     clipsTitle: string;
+    /**
+     * Match counter beside the clips rail's dropdowns, e.g. "141 clips". The
+     * category/language labels and the reset button are shared with the live
+     * rail (`liveFilter*`) — only the noun differs, so only the noun is a key
+     * of its own.
+     */
+    clipsFilterMatches(count: number): string;
+    clipsFilterEmpty: string;
     quickFactsTitle: string;
     quickFactsSub: string;
     factPredictionLabel: string;
