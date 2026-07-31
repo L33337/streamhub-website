@@ -129,9 +129,9 @@ export const pl: HubLex = {
     endcap: {
       title: 'Zabierz swój program ze sobą.',
       bullets: [
-        'Obserwuj swojego ulubionego streamera',
-        'Harmonogram streamów w jednym miejscu',
-        'Statystyki, klipy i więcej!',
+        'Obserwuj swoich ulubionych streamerów',
+        'Zobacz, kto i kiedy wchodzi na żywo',
+        'Staty, klipy i więcej!',
       ],
       webLead: 'Wolisz przeglądarkę?',
       webLink: 'Załóż darmowe konto',

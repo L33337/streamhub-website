@@ -100,9 +100,9 @@ export const it: HubLex = {
     endcap: {
       title: 'Porta il tuo palinsesto con te.',
       bullets: [
-        'Segui il tuo streamer preferito',
-        'La programmazione a colpo d’occhio',
-        'Statistiche, clip e molto altro!',
+        'Segui i tuoi streamer preferiti',
+        'Scopri chi va in diretta e quando',
+        'Stats, clip e molto altro!',
       ],
       webLead: 'Preferisci il browser?',
       webLink: 'Crea un account gratuito',
