@@ -123,10 +123,19 @@ export interface OpportunityView {
   topSlots: { dow: number; hour: number; score: number; viewers: number; streamers: number }[];
 }
 
-/** Lower-index quantile of an unsorted sample (p in 0..1). */
+/**
+ * Linearly interpolated quantile of an unsorted sample (p in 0..1). MUST be
+ * interpolated, not lower-index: the bar charts feed as few as 2 qualified
+ * values, where floor(0.9 * (n-1)) = 0 would collapse the band to lo == hi
+ * ("every bar equally good") even though the values clearly differ.
+ */
 function quantile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(p * (sorted.length - 1))];
+  const pos = p * (sorted.length - 1);
+  const base = Math.floor(pos);
+  const next = sorted[base + 1];
+  if (next === undefined) return sorted[base];
+  return sorted[base] + (pos - base) * (next - sorted[base]);
 }
 
 /**
