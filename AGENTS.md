@@ -155,6 +155,75 @@ A mobile audit at 390px found the same three defect families across many pages. 
 - **The locale banner hides its sentence below `sm`** instead of truncating it: at 390px there is room for ~20 characters next to the CTA, and a cut-off word says less than the CTA already does. The full sentence remains the region's `aria-label`.
 - Chrome that must stay locale-aware: `HeaderUserMenu` (label + `localeHref`), `FloatingGetAppButton` (label + `localeHref`, and its hide-on-`/auth` check runs through `stripLocaleFromPath` — plain `startsWith('/auth')` only matched the English tree). The game hub is deliberately left English-only until M22 P4 localizes it as one piece; do not half-localize it.
 
+# Phone-first CTA round (2026-07-31)
+
+The 2026-07-30 audit ran at 390px. Re-running it at **320px** — the narrowest
+screen the site claims to support — found the CTAs stacking and the document
+itself scrolling sideways in five locales. Rules that came out of it:
+
+- **A CTA pair belongs side by side on a phone, not stacked.** Both homepage
+  conversion blocks now put their two buttons in one row below `sm` and let
+  them split the width (`flex-1`), with reduced type/padding; from `sm` up they
+  return to their original metrics and natural width. `min-h-11` keeps the 44pt
+  target when a label stays on one line, and the row's default stretch keeps
+  both boxes identical when one wraps to two. Sizing is dimensioned against the
+  LONGEST localized label, not the English one: "Zaloguj się w przeglądarce"
+  (pl) and "Завантажити застосунок" (uk) are the ones to test.
+- **Give both buttons of a pair the same border, colour it per skin.**
+  `flex-basis: 0` resolves against the border box, so a ring on only the
+  outlined one makes it 2px wider than the filled one. And never put the colour
+  in the shared class: two colour utilities on one element are resolved by
+  STYLESHEET order, not class order, so a base `border-transparent` silently
+  wins over the caller's `border-accent-cyan` — the outlined button loses its
+  ring on desktop while the phone layout looks fine.
+- **`min-w-0` has to be released at EVERY grid level, not just the outer one**
+  (extends the 2026-07-30 rule). `HomeMostWatched` nests a grid of columns
+  inside a grid of rows; releasing only the column left the row overflowing its
+  column, and the page still scrolled sideways. Symptom to recognize: the auto
+  track is wider than its own container (`grid-template-columns: 309px` on a
+  272px box).
+- **A label next to a badge needs a container query, not a breakpoint**, when
+  the label is one unbreakable localized word. `SlotCard`'s "Confidence:" is
+  134px in pl inside a 124px text column; it now renders only from
+  `@min-[13rem]` of the COLUMN (`@container` on the text column), because the
+  same card sits in a narrower cell on the Program page where a viewport
+  breakpoint would guess wrong.
+- **The header row has no slack at 320px**: brand, sign-in button and hamburger
+  are all `shrink-0`, so only the gaps are left to give (`gap-2` below 360px)
+  and the brand drops to `text-sm` there. The search field additionally steps
+  out below 360px **only when the sign-in button is rendered**
+  (`max-[359px]:[&:has(~[data-signin])]:hidden`) — squeezed to 9px it stopped
+  being a search box and its absolutely positioned magnifier spilled over the
+  neighbour, but without that button (today's production stealth state) it
+  still gets ~130px and stays usable. Keep the `data-signin` attribute on the
+  sign-in link if you touch `HeaderUserMenu`.
+- **The end cap is a 2-column grid**, photo beside the copy from the smallest
+  screen up; only the CTA cell moves (full width on a phone so the two store
+  badges fit next to each other, back under the copy from `sm`). `.store-badge`
+  scales every box metric with the viewport below 640px and floors at a width
+  that fits 320px with the longest localized sub-label.
+- **Regression check that catches all of this in one number**:
+  `document.documentElement.scrollWidth === window.innerWidth` at 320px, for
+  every locale. It was 357 (pl), 333 (de/es/pt), 330 (ru), 326 (fr) before.
+
+# Release 2026-07-31 — three homepage branches merged together
+
+`8155fb4..5b86104` went to production as one release, in this order:
+`feature/home-streamer-wiki` → `feature/home-clips-filters` →
+`feature/home-mobile-layout` (the phone-first CTA round above, branched off the
+already-merged pair so the QA ran against the final tree). Both feature
+branches auto-merged without conflicts despite overlapping in `page.tsx` and 13
+i18n files. Verified on the integrated tree before the push: `tsc --noEmit`
+clean, eslint 0 errors (4 pre-existing warnings), 1106 unit tests, `next build`
+(379 static pages), and a browser pass over `/`, `/live`, `/games`,
+`/rankings`, `/streamers` at 320/390/768/1280 against the PRODUCTION build.
+
+Note for the next branch dance: after `git checkout` + `git stash pop`, the dev
+server kept serving the PREVIOUS branch's compiled `globals.css` — the phone
+badge metrics silently did not apply and the first round of measurements was
+worthless. `rm -rf .next` and restart before trusting any CSS measurement taken
+across a branch switch.
+
 # Release 2026-07-30 — four branches merged together
 
 `main` had lagged four unmerged feature branches. They went to production as one release (`e41a6e1..7458a00`), in this order: `feature/bing-seo-round` → `feature/hide-interrupt-card-when-signed-in` → `feature/live-rail-full-pool` → `feature/mobile-ux-round`. Verified on the integrated tree before the push: `tsc --noEmit` clean, eslint 0 errors (4 pre-existing warnings), 973 unit tests, `next build`, and a mobile browser pass at 390px.
