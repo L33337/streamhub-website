@@ -8,6 +8,8 @@ import { fetchHomeQuickFacts, type HomeQuickFacts } from '@/lib/server/quick-fac
 import { fetchFeaturedStreamers } from '@/lib/server/home-featured';
 import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import { fetchStreamerFeedStats } from '@/lib/server/streamer-feed-stats';
+import { pickWikiStreamers } from '@/lib/home/streamer-wiki';
 import {
   filterFutureSlots,
   floorToBucket,
@@ -39,7 +41,7 @@ import { HomeMostWatched } from '@/components/web/home/HomeMostWatched';
 import { HomeDiscoverGrid } from '@/components/web/home/HomeDiscoverGrid';
 import { HomeEndCap } from '@/components/web/home/HomeEndCap';
 import { HomeTrendingRail } from '@/components/web/home/HomeTrendingRail';
-import { PopularStreamersFooter } from '@/components/web/PopularStreamersFooter';
+import { HomeStreamerWiki, WIKI_CARD_COUNT } from '@/components/web/home/HomeStreamerWiki';
 
 export const revalidate = 60;
 
@@ -229,9 +231,14 @@ export default async function HomePage({ params }: Props) {
     fetchUpcomingSlots(bucketedNow, twentyFourHoursAhead),
     fetchLiveSlots(bucketedNow),
     getLiveStreamerIdSet(),
+    // 40, not 20: the Streamer Wiki cards need a top category AND a 28-day
+    // stream count, and refresh_streamer_feed_stats() only covers approved
+    // streamers — 9 of the 20 most-watched have no stats row at all. Measured
+    // 2026-07-31: top-20 yields 11 complete candidates (too few once the
+    // Discover grid's six are excluded), top-40 yields 20.
     api.listStreamers({
       order: 'popular',
-      limit: 20,
+      limit: 40,
       revalidate: 300,
     }),
     // The full Twitch top-games cache: with a sort control over the rail, ten
@@ -284,13 +291,41 @@ export default async function HomePage({ params }: Props) {
   // to the popular list when the featured pool is unavailable.
   const discoverPool = featuredStreamers ?? popularStreamers;
   const discoverSample = sampleRandom(discoverPool, 12, Math.random);
-  const discoverNextSlots = await getNextSlotByStreamer(
-    discoverSample.map((streamer) => streamer.id),
-  );
+
+  // One tail round trip for BOTH bottom sections. The next-slot lookup covers
+  // the discover sample AND every popular streamer at once: 52 unique ids stay
+  // under the Partner API's 100-id filter cap, so this is still the single
+  // request it was before the Streamer Wiki needed slot data too.
+  const [nextSlotsByStreamer, wikiStatsById] = await Promise.all([
+    getNextSlotByStreamer([
+      ...discoverSample.map((streamer) => streamer.id),
+      ...popularStreamers.map((streamer) => streamer.id),
+    ]),
+    fetchStreamerFeedStats(popularStreamers.map((streamer) => streamer.id)),
+  ]);
+  const discoverNextSlots = nextSlotsByStreamer;
   const discoverStreamers = preferWithNextSlot(
     discoverSample,
     new Set(discoverNextSlots.keys()),
     6,
+  );
+
+  // Streamer Wiki (page bottom): the app's Discover cards over the popular
+  // list. Excludes whatever the Discover grid above is already showing — two
+  // card grids with the same faces read as a bug — and floats candidates whose
+  // fact chip can be filled (live, or a known next start) to the front.
+  const wikiChipIds = new Set([
+    ...liveIds,
+    ...[...nextSlotsByStreamer.entries()]
+      .filter(([, slot]) => slot.slot_kind !== 'cancelled')
+      .map(([id]) => id),
+  ]);
+  const wikiStreamers = pickWikiStreamers(
+    popularStreamers,
+    wikiStatsById,
+    new Set(discoverStreamers.map((streamer) => streamer.id)),
+    wikiChipIds,
+    WIKI_CARD_COUNT,
   );
 
   // The WHOLE live sweep is rendered (capped only for safety) and the rail
@@ -489,7 +524,13 @@ export default async function HomePage({ params }: Props) {
 
       <HomeEndCap locale={locale} />
 
-      <PopularStreamersFooter streamers={popularStreamers} locale={locale} />
+      <HomeStreamerWiki
+        streamers={wikiStreamers}
+        statsById={wikiStatsById}
+        nextSlots={nextSlotsByStreamer}
+        liveIds={liveIds}
+        locale={locale}
+      />
     </main>
   );
 }

@@ -11,6 +11,15 @@ const nStreamers = (n: number): string =>
     other: `${n} стримери`,
   });
 
+/** "20 трансляцій" — counted broadcasts for the Streamer Wiki stats line. */
+const nStreams = (n: number): string =>
+  pluralForms('uk', n, {
+    one: `${n} трансляція`,
+    few: `${n} трансляції`,
+    many: `${n} трансляцій`,
+    other: `${n} трансляції`,
+  });
+
 /** "у 2 іграх" — locative counted games. */
 const inGames = (n: number): string =>
   pluralForms('uk', n, {
@@ -201,6 +210,15 @@ export const uk: HubLex = {
   popular: {
     heading: 'Популярні стримери',
     viewAll: 'Усі стримери →',
+  },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'Хто вони, у що грають і коли виходять у ефір.',
+    viewAll: 'Переглянути всіх стримерів →',
+    followers: (value) => `≈${value} підписників`,
+    streams28d: (count) => `${nStreams(count)} за 28 днів`,
+    liveNow: 'Зараз у ефірі',
+    nextPrefix: 'Наступна',
   },
   apiPromo: {
     heading: 'API для розробників',

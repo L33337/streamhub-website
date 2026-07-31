@@ -152,6 +152,16 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['trending.streamerCount.one', L.trending.streamerCount('1', 1)],
     ['popular.heading', L.popular.heading],
     ['popular.viewAll', L.popular.viewAll],
+    ['streamerWiki.heading', L.streamerWiki.heading],
+    ['streamerWiki.subline', L.streamerWiki.subline],
+    ['streamerWiki.viewAll', L.streamerWiki.viewAll],
+    ['streamerWiki.followers', L.streamerWiki.followers('1.6M')],
+    // Both plural branches — 1 and 20 land in different CLDR categories in
+    // ar/pl/ru/uk, so a missing form would otherwise stay invisible here.
+    ['streamerWiki.streams28d', L.streamerWiki.streams28d(20)],
+    ['streamerWiki.streams28d.one', L.streamerWiki.streams28d(1)],
+    ['streamerWiki.liveNow', L.streamerWiki.liveNow],
+    ['streamerWiki.nextPrefix', L.streamerWiki.nextPrefix],
     ['apiPromo.heading', L.apiPromo.heading],
     ['apiPromo.comingSoon', L.apiPromo.comingSoon],
     ['apiPromo.eyebrow', L.apiPromo.eyebrow],
@@ -243,6 +253,27 @@ describe('HUB_STRINGS lexica', () => {
       expect(value.trim(), `${lang}:${key} empty`).not.toBe('');
       expect(value, `${lang}:${key} broken: "${value}"`).not.toMatch(BROKEN);
     }
+  });
+
+  // "Streamer Wiki" is a brand term like "Streamer Times" — a translated
+  // heading in one locale would fork the section's identity across the 12
+  // homepages (decision 2026-07-31).
+  it.each([...UI_LANGS])('%s leaves the Streamer Wiki heading untranslated', (lang) => {
+    expect(HUB_STRINGS[lang].streamerWiki.heading).toBe('Streamer Wiki');
+  });
+
+  // The two halves are joined with " · " by the card, so each must carry its
+  // own number — and neither may smuggle in the other's separator.
+  it.each([...UI_LANGS])('%s embeds the number in each wiki stats half', (lang) => {
+    const L = HUB_STRINGS[lang].streamerWiki;
+    expect(L.followers('1.6M')).toContain('1.6M');
+    expect(L.followers('1.6M')).not.toContain('·');
+    expect(L.streams28d(20)).toContain('20');
+    expect(L.streams28d(20)).not.toContain('·');
+    // No digit assertion at count 1: Arabic's `one` form spells the numeral
+    // out ("بث واحد" = "one broadcast"), which is correct, not a dropped value.
+    expect(L.streams28d(1).trim()).not.toBe('');
+    expect(L.streams28d(1)).not.toContain('·');
   });
 
   it.each([...UI_LANGS])('%s embeds the counts in the homeFeed ticker', (lang) => {
@@ -390,6 +421,9 @@ describe('English lexicon regression guard (legacy hardcoded strings)', () => {
     expect(L.trending.rankOnTwitch(3)).toBe('#3 on Twitch');
     expect(L.popular.heading).toBe('Popular streamers');
     expect(L.popular.viewAll).toBe('View all streamers →');
+    expect(L.streamerWiki.followers('1.6M')).toBe('≈1.6M followers');
+    expect(L.streamerWiki.streams28d(20)).toBe('20 streams in 28 days');
+    expect(L.streamerWiki.streams28d(1)).toBe('1 stream in 28 days');
     expect(L.apiPromo.headlineLead).toBe('Build with the same data —');
     expect(L.apiPromo.headlineKey).toBe('soon, on our API.');
     expect(L.apiPromo.bullets[2]).toBe('Webhooks for “went live” events');
