@@ -298,6 +298,19 @@ describe('HUB_STRINGS lexica', () => {
     expect(L.sortHours.toLowerCase()).not.toContain('watch');
   });
 
+  // The four sort buttons share ONE row on a 390px phone — they scroll rather
+  // than wrap, so a long translation doesn't break the layout, it hides the
+  // last option. Widest today is "Espectadores" (12). CJK glyphs are ~2x the
+  // width of a latin character, so they count double.
+  it.each([...UI_LANGS])('%s keeps the sort labels inside the row budget', (lang) => {
+    const L = HUB_STRINGS[lang].trending;
+    const width = (s: string) =>
+      [...s].reduce((n, ch) => n + (/[　-鿿＀-￯]/.test(ch) ? 2 : 1), 0);
+    for (const label of [L.sortTwitch, L.sortHours, L.sortViewers, L.sortStreamers]) {
+      expect(width(label)).toBeLessThanOrEqual(14);
+    }
+  });
+
   it.each([...UI_LANGS])('%s embeds the counts in the live intro', (lang) => {
     const intro = HUB_STRINGS[lang].live.intro(7, 4, 3, 6);
     expect(intro).toContain('7');

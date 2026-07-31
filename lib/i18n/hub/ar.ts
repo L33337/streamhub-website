@@ -179,10 +179,10 @@ export const ar: HubLex = {
     aria: 'الألعاب الرائجة على Twitch',
     rankOnTwitch: (rank) => `المركز ${rank}# على Twitch`,
     sortAria: 'ترتيب الألعاب',
-    sortTwitch: 'الترتيب على Twitch',
-    sortHours: 'الأكثر ساعات',
-    sortViewers: 'الأكثر مشاهدة (مباشر)',
-    sortStreamers: 'الأكثر ستريمرز',
+    sortTwitch: 'Twitch',
+    sortHours: 'ساعات',
+    sortViewers: 'مشاهدون',
+    sortStreamers: 'ستريمرز',
     liveViewers: (value) => `${value} يشاهدون الآن`,
     streamerCount: (value, count) =>
       pluralForms('ar', count, {

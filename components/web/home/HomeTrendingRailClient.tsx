@@ -89,7 +89,7 @@ export function HomeTrendingRailClient({
         <div
           role="group"
           aria-label={strings.aria}
-          className={`mb-3 w-fit ${FILTER_SEGMENT_GROUP_CLASS}`}
+          className={`mb-3 w-fit max-w-full ${FILTER_SEGMENT_GROUP_CLASS}`}
         >
           {modes.map((option) => (
             <button
