@@ -7,9 +7,15 @@ const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.streamhub.tv.app';
 
 /**
- * The two store badges, shared by the homepage masthead and end-cap
- * (extracted from the former HomeHero during the 2026-07-27 rebuild).
+ * The two store badges of the homepage end-cap (extracted from the former
+ * HomeHero during the 2026-07-27 rebuild; the masthead dropped them again in
+ * the same round, so HomeEndCap is the only caller today).
  * Server component — resolves its own lexica.
+ *
+ * Layout (2026-07-31): a 2-column grid on phones so the badges never stack —
+ * they share the full card width there, and `.store-badge` scales its box with
+ * the viewport (globals.css) so even a 320px screen fits both. From `sm` up the
+ * grid gives way to the original auto-width flex row.
  */
 export function StoreBadges({
   locale = 'en',
@@ -22,7 +28,9 @@ export function StoreBadges({
   const chrome = chromeLexFor(locale);
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
+    <div
+      className={`grid max-w-[26rem] grid-cols-2 gap-1.5 sm:flex sm:max-w-none sm:flex-wrap sm:gap-2 ${className}`}
+    >
       <a
         href={APP_STORE_URL}
         target="_blank"

@@ -58,6 +58,10 @@ export function HeaderUserMenu({
     return (
       <Link
         href={localeHref(locale, '/auth/login')}
+        // Marks the row as "four items wide" for the header search, which hides
+        // itself below 360px when this button is present (layout.tsx). Nothing
+        // else keys off it.
+        data-signin=""
         // `shrink-0` + `whitespace-nowrap`: in the mobile header row the greedy
         // search field squeezed this button down to its padding and the label
         // broke across two lines ("Sign / in"). The search input is the element

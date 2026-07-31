@@ -35,6 +35,15 @@ export function HomeMostWatched({
     'mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted';
   const rowClass =
     'flex items-center gap-3 rounded-lg border border-border-default bg-background-elevated px-3 py-2 transition-colors hover:border-accent-cyan/50';
+  // Name and value share one line only where the value fits beside it. On a
+  // phone they stack: several locales spell the metric out ("214,9 тыс.
+  // зрителей (медиана)" is 209px) — wider than the whole row on a 320px
+  // screen, which used to push the DOCUMENT sideways because the value was
+  // shrink-0. Stacked, each line owns the full column and truncates at worst.
+  const valueStackClass =
+    'flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:justify-between sm:gap-2';
+  const valueClass =
+    'truncate font-mono text-[11px] text-text-secondary sm:shrink-0 sm:text-xs';
 
   return (
     <section aria-label={L.homeFeed.mostWatchedTitle}>
@@ -43,13 +52,20 @@ export function HomeMostWatched({
         actionLabel={L.rankings.seeFullRanking}
         actionHref={localeHref(locale, '/rankings/most-watched')}
       />
+      {/* min-w-0 on the columns AND on every <li>, not decoration: a grid item
+          defaults to min-width:auto, so an auto track can never size below its
+          content's minimum. Both levels are grids here, so both had to be
+          released — otherwise one long localized value line ("214,9 mil
+          espectadores (mediana)") widens the whole DOCUMENT on a 320px phone.
+          Release only the outer one and the row overflows its column instead;
+          the page still scrolls sideways. */}
       <div className="grid gap-6 md:grid-cols-2">
         {streamers.length > 0 && (
-          <div>
+          <div className="min-w-0">
             <h3 className={colTitleClass}>{L.homeFeed.topStreamersCol}</h3>
             <ul className="grid gap-1.5">
               {streamers.map((entry, index) => (
-                <li key={entry.streamer.id}>
+                <li key={entry.streamer.id} className="min-w-0">
                   <Link
                     href={localeHref(locale, `/streamer/${entry.streamer.id}`)}
                     prefetch={false}
@@ -72,16 +88,18 @@ export function HomeMostWatched({
                     ) : (
                       <InitialsAvatar name={entry.streamer.name} size={28} />
                     )}
-                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                      {entry.streamer.name}
-                    </span>
-                    {typeof entry.values.avg_view_count === 'number' && (
-                      <span className="shrink-0 font-mono text-xs text-text-secondary">
-                        {L.homeFeed.medianViewers(
-                          formatCompactNumber(entry.values.avg_view_count, locale),
-                        )}
+                    <span className={valueStackClass}>
+                      <span className="truncate text-sm font-bold text-white">
+                        {entry.streamer.name}
                       </span>
-                    )}
+                      {typeof entry.values.avg_view_count === 'number' && (
+                        <span className={valueClass}>
+                          {L.homeFeed.medianViewers(
+                            formatCompactNumber(entry.values.avg_view_count, locale),
+                          )}
+                        </span>
+                      )}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -89,7 +107,7 @@ export function HomeMostWatched({
           </div>
         )}
         {games.length > 0 && (
-          <div>
+          <div className="min-w-0">
             <h3 className={colTitleClass}>{L.homeFeed.topCategoriesCol}</h3>
             <ul className="grid gap-1.5">
               {games.map((game, index) => {
@@ -108,20 +126,22 @@ export function HomeMostWatched({
                         sizes="24px"
                       />
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                      {game.category}
-                    </span>
-                    {typeof game.hours_28d === 'number' && (
-                      <span className="shrink-0 font-mono text-xs text-text-secondary">
-                        {L.homeFeed.hoursStreamed(
-                          formatCompactNumber(Math.round(game.hours_28d), locale),
-                        )}
+                    <span className={valueStackClass}>
+                      <span className="truncate text-sm font-bold text-white">
+                        {game.category}
                       </span>
-                    )}
+                      {typeof game.hours_28d === 'number' && (
+                        <span className={valueClass}>
+                          {L.homeFeed.hoursStreamed(
+                            formatCompactNumber(Math.round(game.hours_28d), locale),
+                          )}
+                        </span>
+                      )}
+                    </span>
                   </>
                 );
                 return (
-                  <li key={game.category}>
+                  <li key={game.category} className="min-w-0">
                     {slug ? (
                       <Link
                         href={localeHref(locale, `/game/${slug}`)}

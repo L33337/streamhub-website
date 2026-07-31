@@ -158,10 +158,19 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background">
         <Providers>
           <header className="sticky top-0 z-50 border-b border-divider bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="container mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 md:gap-4">
+            {/* gap-2 below 360px: brand, sign-in button and hamburger are all
+                shrink-0, so on a 320px screen the three gaps are the only
+                width left to give — without this the row runs past the
+                viewport wherever the locale spells sign-in out. */}
+            <div className="container mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 min-[360px]:gap-3 md:gap-4">
               <Link
                 href={localeHref(locale, "/")}
-                className="shrink-0 text-base font-bold text-white md:text-xl"
+                // text-sm below 360px: the brand, the sign-in button and the
+                // hamburger are all shrink-0, and the search field has already
+                // given up all its width there — so on a 320px screen the row
+                // overflowed the viewport wherever the locale spells sign-in
+                // out ("Iniciar sesión", "Se connecter").
+                className="shrink-0 text-sm font-bold text-white min-[360px]:text-base md:text-xl"
               >
                 StreamerTimes
               </Link>
@@ -170,7 +179,15 @@ export default async function RootLayout({
                 // header row: it is the only flexible item there, and without
                 // this its intrinsic minimum pushed the hamburger off-screen on
                 // 320px-class phones.
-                className="ml-auto w-full min-w-0 max-w-md"
+                //
+                // Below 360px it yields ALL of it, and a 9px-wide field is not
+                // a search box — its absolutely positioned magnifier just
+                // spills over the neighbour. So it steps out entirely, but
+                // only when the sign-in button is actually rendered
+                // (`:has(~ [data-signin])`): without that button — today's
+                // production stealth state — the field still gets ~130px on a
+                // 320px screen and stays perfectly usable.
+                className="ml-auto w-full min-w-0 max-w-md max-[359px]:[&:has(~[data-signin])]:hidden"
                 locale={locale}
                 placeholder={chrome.nav.searchPlaceholder}
                 resultsLabel={chrome.nav.searchResults}
