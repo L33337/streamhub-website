@@ -158,6 +158,13 @@ export const ja: HubLex = {
       '今 Twitch で最も大きなゲームです — まだ当サイトのストリーマーが全部をカバーしているわけではありません。',
     aria: 'Twitch のトレンドゲーム',
     rankOnTwitch: (rank) => `Twitch で第${rank}位`,
+    sortAria: 'ゲームを並び替え',
+    sortTwitch: 'Twitch 順位',
+    sortHours: '配信時間順',
+    sortViewers: '視聴者数順（ライブ）',
+    sortStreamers: 'ストリーマー数順',
+    liveViewers: (value) => `${value}人が視聴中`,
+    streamerCount: (value) => `ストリーマー ${value}人`,
   },
   popular: {
     heading: '人気のストリーマー',

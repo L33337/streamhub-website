@@ -164,6 +164,13 @@ export const fr: HubLex = {
       'Les plus gros jeux sur Twitch en ce moment — nos streamers ne les couvrent pas encore tous.',
     aria: 'Jeux en tendance sur Twitch',
     rankOnTwitch: (rank) => `#${rank} sur Twitch`,
+    sortAria: 'Trier les jeux',
+    sortTwitch: 'Rang Twitch',
+    sortHours: "Plus d'heures",
+    sortViewers: 'Plus de spectateurs (live)',
+    sortStreamers: 'Plus de streamers',
+    liveViewers: (value) => `${value} regardent`,
+    streamerCount: (value, count) => `${value} ${count === 1 ? 'streamer' : 'streamers'}`,
   },
   popular: {
     heading: 'Streamers populaires',

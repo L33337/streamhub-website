@@ -178,6 +178,20 @@ export const ar: HubLex = {
     subtitle: 'أكبر الألعاب على Twitch الآن — لا يغطي ستريمرزنا كلها بعد.',
     aria: 'الألعاب الرائجة على Twitch',
     rankOnTwitch: (rank) => `المركز ${rank}# على Twitch`,
+    sortAria: 'ترتيب الألعاب',
+    sortTwitch: 'الترتيب على Twitch',
+    sortHours: 'الأكثر ساعات',
+    sortViewers: 'الأكثر مشاهدة (مباشر)',
+    sortStreamers: 'الأكثر ستريمرز',
+    liveViewers: (value) => `${value} يشاهدون الآن`,
+    streamerCount: (value, count) =>
+      pluralForms('ar', count, {
+        one: 'ستريمر واحد',
+        two: 'ستريمران',
+        few: `${value} ستريمرز`,
+        many: `${value} ستريمرًا`,
+        other: `${value} ستريمر`,
+      }),
   },
   popular: {
     heading: 'ستريمرز مشهورون',
