@@ -24,6 +24,12 @@ function statsMap(...entries: WikiFeedStats[]): Map<string, WikiFeedStats> {
 
 const NO_EXCLUDE = new Set<string>();
 const ALL_CHIPS = (...ids: string[]) => new Set(ids);
+/**
+ * sampleRandom's partial Fisher-Yates swaps index i with i + floor(r * (n-i)),
+ * so r === 0 always swaps an element with itself — the pool comes back in its
+ * original order. Lets the order-sensitive cases below pin the draw.
+ */
+const IDENTITY = () => 0;
 
 describe('topCategoryOf', () => {
   it('returns the highest share', () => {
@@ -82,7 +88,7 @@ describe('truncateBio', () => {
 });
 
 describe('pickWikiStreamers', () => {
-  it('keeps popularity order when every candidate has a chip', () => {
+  it('keeps the pool order when the draw is pinned and everyone has a chip', () => {
     const popular = [streamer('a'), streamer('b'), streamer('c')];
     const picked = pickWikiStreamers(
       popular,
@@ -90,6 +96,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('a', 'b', 'c'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['a', 'b', 'c']);
   });
@@ -102,6 +109,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('a', 'nostats', 'c'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['a', 'c']);
   });
@@ -119,6 +127,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('nocat', 'nostreams', 'zero', 'ok'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['ok']);
   });
@@ -131,6 +140,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('nobio', 'ok'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['ok']);
   });
@@ -142,6 +152,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('enonly'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['enonly']);
   });
@@ -154,6 +165,7 @@ describe('pickWikiStreamers', () => {
       new Set(['dupe']),
       ALL_CHIPS('a', 'dupe', 'c'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['a', 'c']);
   });
@@ -166,6 +178,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('b', 'd'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['b', 'd', 'a', 'c']);
   });
@@ -178,6 +191,7 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       new Set(popular.map((s) => s.id)),
       9,
+      IDENTITY,
     );
     expect(picked).toHaveLength(9);
     expect(picked[0].id).toBe('s0');
@@ -191,25 +205,28 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('a', 'b'),
       9,
+      IDENTITY,
     );
     expect(picked).toHaveLength(2);
   });
 
   it('keeps the section alive when the stats FETCH failed (null, not empty)', () => {
     const popular = [streamer('a'), streamer('b'), streamer('c')];
-    const picked = pickWikiStreamers(popular, null, NO_EXCLUDE, ALL_CHIPS('a', 'b', 'c'), 9);
+    const picked = pickWikiStreamers(popular, null, NO_EXCLUDE, ALL_CHIPS('a', 'b', 'c'), 9, IDENTITY);
     expect(picked.map((s) => s.id)).toEqual(['a', 'b', 'c']);
   });
 
   it('still honours exclusions when the stats fetch failed', () => {
     const popular = [streamer('a'), streamer('dupe')];
-    const picked = pickWikiStreamers(popular, null, new Set(['dupe']), ALL_CHIPS('a'), 9);
+    const picked = pickWikiStreamers(popular, null, new Set(['dupe']), ALL_CHIPS('a'), 9, IDENTITY);
     expect(picked.map((s) => s.id)).toEqual(['a']);
   });
 
   it('empties out when nobody has stats (empty map is NOT a failure)', () => {
     const popular = [streamer('a'), streamer('b')];
-    expect(pickWikiStreamers(popular, new Map(), NO_EXCLUDE, ALL_CHIPS('a', 'b'), 9)).toEqual([]);
+    expect(
+      pickWikiStreamers(popular, new Map(), NO_EXCLUDE, ALL_CHIPS('a', 'b'), 9, IDENTITY),
+    ).toEqual([]);
   });
 
   it('drops blank ids and de-duplicates repeated ones', () => {
@@ -220,7 +237,85 @@ describe('pickWikiStreamers', () => {
       NO_EXCLUDE,
       ALL_CHIPS('', 'a'),
       9,
+      IDENTITY,
     );
     expect(picked.map((s) => s.id)).toEqual(['a']);
+  });
+});
+
+/**
+ * The section exists to cycle the roster, not to pin nine faces to the
+ * homepage forever — these lock that in.
+ */
+describe('pickWikiStreamers rotation', () => {
+  /** Deterministic LCG so a "random" draw is reproducible per seed. */
+  function seeded(seed: number): () => number {
+    let s = seed >>> 0;
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 0x100000000;
+    };
+  }
+
+  const POOL = Array.from({ length: 30 }, (_, i) => streamer(`s${i}`));
+  const POOL_STATS = statsMap(...POOL.map((s) => stats(s.id)));
+  const ALL = new Set(POOL.map((s) => s.id));
+
+  function draw(seed: number): string[] {
+    return pickWikiStreamers(POOL, POOL_STATS, NO_EXCLUDE, ALL, 9, seeded(seed)).map((s) => s.id);
+  }
+
+  it('returns a different set of cards for different draws', () => {
+    const a = draw(1);
+    const b = draw(2);
+    expect(a).toHaveLength(9);
+    expect(b).toHaveLength(9);
+    expect(a).not.toEqual(b);
+    // Not merely reordered — the actual membership has to move, or the page
+    // shows the same nine streamers shuffled.
+    const overlap = a.filter((id) => b.includes(id)).length;
+    expect(overlap).toBeLessThan(9);
+  });
+
+  it('never repeats a streamer inside one draw', () => {
+    for (const seed of [1, 7, 42, 99, 1234]) {
+      const ids = draw(seed);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it('eventually surfaces every eligible streamer — nobody is stuck off-page', () => {
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 200; seed++) draw(seed).forEach((id) => seen.add(id));
+    expect(seen.size).toBe(POOL.length);
+  });
+
+  it('still honours the completeness gate and exclusions while rotating', () => {
+    const pool = [...POOL, streamer('nostats'), streamer('dupe')];
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 120; seed++) {
+      pickWikiStreamers(pool, POOL_STATS, new Set(['dupe']), ALL, 9, seeded(seed)).forEach((s) =>
+        seen.add(s.id),
+      );
+    }
+    expect(seen.has('nostats')).toBe(false);
+    expect(seen.has('dupe')).toBe(false);
+  });
+
+  it('prefers chip-capable candidates within the random draw', () => {
+    // Only 9 of 30 can fill a chip — with a 1.5x oversample the draw usually
+    // holds a few of them, and they must claim the visible slots first.
+    const chipIds = new Set(POOL.slice(0, 9).map((s) => s.id));
+    let chipLeadingDraws = 0;
+    for (let seed = 0; seed < 60; seed++) {
+      const ids = pickWikiStreamers(POOL, POOL_STATS, NO_EXCLUDE, chipIds, 9, seeded(seed)).map(
+        (s) => s.id,
+      );
+      const firstChipless = ids.findIndex((id) => !chipIds.has(id));
+      const lastChip = ids.map((id) => chipIds.has(id)).lastIndexOf(true);
+      // Every chip-capable card must sit ahead of every chip-less one.
+      if (firstChipless === -1 || lastChip < firstChipless) chipLeadingDraws++;
+    }
+    expect(chipLeadingDraws).toBe(60);
   });
 });

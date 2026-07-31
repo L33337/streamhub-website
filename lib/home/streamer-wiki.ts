@@ -3,10 +3,18 @@
  * (2026-07-31) — the former `PopularStreamersFooter` pill list, rebuilt as
  * the app's Discover cards (src/components/DiscoverStreamerCard.tsx).
  *
- * Pure and deterministic on purpose: the section is server-rendered into a
- * statically regenerated page, so the same inputs must always produce the
- * same 9 cards in the same order — no Math.random, no Date.now.
+ * The nine cards are a RANDOM draw from the eligible pool, redrawn on every
+ * ISR regeneration, so the section cycles through the roster instead of
+ * showing the same nine faces forever (same behaviour as the Discover grid
+ * further up the page). The randomness is injected, never called here, so
+ * tests stay deterministic.
+ *
+ * Everything that is NOT the draw stays deterministic — notably
+ * `topCategoryOf`'s tie-break, so a streamer's category can't flip between
+ * regenerations while the card set rotates around it.
  */
+
+import { preferWithNextSlot, sampleRandom } from './logic';
 
 /** One row of the nightly `streamer_feed_stats` cache, as the grid needs it. */
 export interface WikiFeedStats {
@@ -82,19 +90,30 @@ function isComplete(
 }
 
 /**
- * Picks the cards, in popularity order (the caller passes the list already
- * sorted by the Partner API's `order=popular`).
+ * How many candidates to draw before the chip preference trims back to
+ * `count`. Oversampling is what lets the preference matter at all: draw
+ * exactly nine and there is nothing to drop, so a chip-less streamer takes a
+ * visible slot even when chip-capable ones were available.
+ */
+const OVERSAMPLE = 1.5;
+
+/**
+ * Picks the cards: a random draw from the eligible pool, redrawn per
+ * regeneration.
  *
  * - `excludeIds` drops the streamers the Discover grid further up the page is
  *   already showing — two card grids with the same faces read as a bug.
  * - `withChipIds` are the streamers whose fact chip can be filled (live, or a
- *   known next start). They are floated to the front, relative order intact,
- *   so the visible cards are the uniform ones. Chip-less candidates still
- *   qualify — they just lose ties.
+ *   known next start). Within the drawn sample they are floated to the front
+ *   and the overflow is trimmed off the back, so the nine visible cards are
+ *   the uniform ones. Chip-less candidates still qualify — they just lose
+ *   ties, which keeps them in rotation instead of banning them.
  * - `statsById === null` means the stats FETCH FAILED (as opposed to an empty
  *   map, which means "queried, nobody has stats"). Requiring completeness then
  *   would silently delete the whole section, so the completeness gate is
  *   dropped and the cards render without category/stats lines.
+ * - `random` is injected so tests can pin the draw; production passes
+ *   `Math.random`. Passing `() => 0` yields the pool's own order untouched.
  */
 export function pickWikiStreamers<T extends WikiStreamerInput>(
   popular: readonly T[],
@@ -102,6 +121,7 @@ export function pickWikiStreamers<T extends WikiStreamerInput>(
   excludeIds: ReadonlySet<string>,
   withChipIds: ReadonlySet<string>,
   count: number,
+  random: () => number = Math.random,
 ): T[] {
   const seen = new Set<string>();
   const eligible = popular.filter((streamer) => {
@@ -111,7 +131,7 @@ export function pickWikiStreamers<T extends WikiStreamerInput>(
     return isComplete(streamer, statsById.get(streamer.id));
   });
 
-  const withChip = eligible.filter((streamer) => withChipIds.has(streamer.id));
-  const withoutChip = eligible.filter((streamer) => !withChipIds.has(streamer.id));
-  return [...withChip, ...withoutChip].slice(0, Math.max(0, count));
+  const capped = Math.max(0, count);
+  const drawn = sampleRandom(eligible, Math.ceil(capped * OVERSAMPLE), random);
+  return preferWithNextSlot(drawn, withChipIds, capped);
 }

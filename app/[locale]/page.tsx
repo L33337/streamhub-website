@@ -231,14 +231,18 @@ export default async function HomePage({ params }: Props) {
     fetchUpcomingSlots(bucketedNow, twentyFourHoursAhead),
     fetchLiveSlots(bucketedNow),
     getLiveStreamerIdSet(),
-    // 40, not 20: the Streamer Wiki cards need a top category AND a 28-day
-    // stream count, and refresh_streamer_feed_stats() only covers approved
-    // streamers — 9 of the 20 most-watched have no stats row at all. Measured
-    // 2026-07-31: top-20 yields 11 complete candidates (too few once the
-    // Discover grid's six are excluded), top-40 yields 20.
+    // 60, not 20: the Streamer Wiki draws its nine cards at random from this
+    // list on every regeneration, so the pool has to be several times the
+    // nine on show or the "rotation" keeps recycling the same faces. It also
+    // needs a top category AND a 28-day stream count per card, and
+    // refresh_streamer_feed_stats() only covers approved streamers — 9 of the
+    // 20 most-watched have no stats row at all. Complete candidates measured
+    // 2026-07-31: top-20 → 11, top-40 → 20, top-60 → 33. 60 keeps the shared
+    // next-slot lookup below at 72 ids, still inside its 100-id single-request
+    // cap.
     api.listStreamers({
       order: 'popular',
-      limit: 40,
+      limit: 60,
       revalidate: 300,
     }),
     // The full Twitch top-games cache: with a sort control over the rail, ten
@@ -311,9 +315,12 @@ export default async function HomePage({ params }: Props) {
   );
 
   // Streamer Wiki (page bottom): the app's Discover cards over the popular
-  // list. Excludes whatever the Discover grid above is already showing — two
-  // card grids with the same faces read as a bug — and floats candidates whose
-  // fact chip can be filled (live, or a known next start) to the front.
+  // list. The nine cards are drawn at random and redrawn on every ISR
+  // regeneration, so the section cycles through the roster instead of showing
+  // the same nine forever. Excludes whatever the Discover grid above is
+  // already showing — two card grids with the same faces read as a bug — and
+  // floats candidates whose fact chip can be filled (live, or a known next
+  // start) to the front of the draw.
   const wikiChipIds = new Set([
     ...liveIds,
     ...[...nextSlotsByStreamer.entries()]
@@ -326,6 +333,7 @@ export default async function HomePage({ params }: Props) {
     new Set(discoverStreamers.map((streamer) => streamer.id)),
     wikiChipIds,
     WIKI_CARD_COUNT,
+    Math.random,
   );
 
   // The WHOLE live sweep is rendered (capped only for safety) and the rail
