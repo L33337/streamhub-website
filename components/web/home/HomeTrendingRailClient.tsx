@@ -11,6 +11,7 @@ import {
   FILTER_SEGMENT_BUTTON_CLASS,
   FILTER_SEGMENT_BUTTON_IDLE_CLASS,
   FILTER_SEGMENT_GROUP_CLASS,
+  FILTER_SEGMENT_SCROLLER_CLASS,
 } from './filter-controls';
 
 /**
@@ -86,26 +87,33 @@ export function HomeTrendingRailClient({
       {/* A single mode is no choice — with no catalog stats at all only the
           Twitch order remains, and the control would be dead chrome. */}
       {modes.length > 1 && (
-        <div
-          role="group"
-          aria-label={strings.aria}
-          className={`mb-3 w-fit max-w-full ${FILTER_SEGMENT_GROUP_CLASS}`}
-        >
-          {modes.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setMode(option)}
-              aria-pressed={mode === option}
-              className={`${FILTER_SEGMENT_BUTTON_CLASS} ${
-                mode === option
-                  ? FILTER_SEGMENT_BUTTON_ACTIVE_CLASS
-                  : FILTER_SEGMENT_BUTTON_IDLE_CLASS
-              }`}
-            >
-              {strings.modes[option]}
-            </button>
-          ))}
+        // Three nested elements on purpose: outer spacing, then the scroller,
+        // then the bordered group — see FILTER_SEGMENT_* for why the overflow
+        // must not sit on the group. The spacing may NOT be merged into the
+        // scroller's class either: its `-my-1` and an `mb-*` land in the same
+        // Tailwind layer, so which one owns margin-bottom is decided by
+        // stylesheet order, and the padding it is meant to cancel leaks back
+        // into the layout.
+        <div className="mb-3">
+          <div className={FILTER_SEGMENT_SCROLLER_CLASS}>
+            <div role="group" aria-label={strings.aria} className={FILTER_SEGMENT_GROUP_CLASS}>
+              {modes.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setMode(option)}
+                  aria-pressed={mode === option}
+                  className={`${FILTER_SEGMENT_BUTTON_CLASS} ${
+                    mode === option
+                      ? FILTER_SEGMENT_BUTTON_ACTIVE_CLASS
+                      : FILTER_SEGMENT_BUTTON_IDLE_CLASS
+                  }`}
+                >
+                  {strings.modes[option]}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
       <RailScroller contentClassName="pb-2">
