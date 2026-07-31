@@ -11,6 +11,15 @@ const nStreamers = (n: number): string =>
     other: `${n} стримера`,
   });
 
+/** "20 трансляций" — counted broadcasts for the Streamer Wiki stats line. */
+const nStreams = (n: number): string =>
+  pluralForms('ru', n, {
+    one: `${n} трансляция`,
+    few: `${n} трансляции`,
+    many: `${n} трансляций`,
+    other: `${n} трансляции`,
+  });
+
 /** "в 2 играх" — prepositional counted games. */
 const inGames = (n: number): string =>
   pluralForms('ru', n, {
@@ -201,6 +210,15 @@ export const ru: HubLex = {
   popular: {
     heading: 'Популярные стримеры',
     viewAll: 'Все стримеры →',
+  },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'Кто они, во что играют и когда выходят в эфир.',
+    viewAll: 'Смотреть всех стримеров →',
+    followers: (value) => `≈${value} подписчиков`,
+    streams28d: (count) => `${nStreams(count)} за 28 дней`,
+    liveNow: 'Сейчас в эфире',
+    nextPrefix: 'Следующая',
   },
   apiPromo: {
     heading: 'API для разработчиков',

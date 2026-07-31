@@ -339,9 +339,35 @@ export interface HubLex {
     streamerCount(value: string, count: number): string;
   };
   popular: {
-    /** Heading AND aria-label of the popular-streamers footer nav. */
+    /** Heading AND aria-label of the popular-streamers discover grid. */
     heading: string;
     viewAll: string;
+  };
+  /**
+   * "Streamer Wiki" card grid at the page bottom (2026-07-31) — the former
+   * `popular` pill footer, rebuilt as the app's Discover cards. `heading` is
+   * the BRAND term and stays untranslated in every locale, like "Streamer
+   * Times" itself; everything else localizes.
+   */
+  streamerWiki: {
+    heading: string;
+    /** One-line promise under the heading. */
+    subline: string;
+    viewAll: string;
+    /**
+     * The two halves of the stats line ("≈1.6M followers · 20 streams in 28
+     * days"), kept atomic so the card can drop either one on its own: a
+     * streamer with a NULL follower_count still deserves the activity count
+     * instead of a blank line. The caller joins the present halves with " · ".
+     * `followers` is the compact-formatted string; `streams` is the raw count,
+     * which the Slavic and Arabic locales need for `pluralForms`.
+     */
+    followers(value: string): string;
+    streams28d(count: number): string;
+    /** Fact chip while the streamer is broadcasting. */
+    liveNow: string;
+    /** Fact-chip prefix before the next start time, e.g. "Next: ~ Sat 9:00 PM". */
+    nextPrefix: string;
   };
   apiPromo: {
     heading: string;

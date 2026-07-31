@@ -170,6 +170,16 @@ export const ja: HubLex = {
     heading: '人気のストリーマー',
     viewAll: 'すべてのストリーマーを見る →',
   },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'どんな人か、何を配信するか、いつ配信するか。',
+    viewAll: 'すべてのストリーマーを見る →',
+    followers: (value) => `フォロワー約${value}人`,
+    // Japanese has no plural inflection; the counter 回 covers every count.
+    streams28d: (count) => `28日間で${count}回配信`,
+    liveNow: '配信中',
+    nextPrefix: '次回',
+  },
   apiPromo: {
     heading: '開発者向けAPI',
     comingSoon: '近日公開',

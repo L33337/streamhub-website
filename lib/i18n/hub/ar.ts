@@ -12,6 +12,17 @@ const nStreamersLive = (n: number): string =>
     other: `يبث ${n} ستريمر`,
   });
 
+/** "20 بثًا" — counted broadcasts for the Streamer Wiki stats line. */
+const nStreams = (n: number): string =>
+  pluralForms('ar', n, {
+    zero: 'لا بثوث',
+    one: 'بث واحد',
+    two: 'بثان',
+    few: `${n} بثوث`,
+    many: `${n} بثًا`,
+    other: `${n} بث`,
+  });
+
 /** "3 فئات" — counted categories. */
 const nCategories = (n: number): string =>
   pluralForms('ar', n, {
@@ -196,6 +207,16 @@ export const ar: HubLex = {
   popular: {
     heading: 'ستريمرز مشهورون',
     viewAll: 'عرض كل الستريمرز ←',
+  },
+  streamerWiki: {
+    // Brand term — stays untranslated in every locale, like "Streamer Times".
+    heading: 'Streamer Wiki',
+    subline: 'من هم، وماذا يلعبون، ومتى يبدأون البث.',
+    viewAll: 'تصفح كل الستريمرز ←',
+    followers: (value) => `≈${value} متابعًا`,
+    streams28d: (count) => `${nStreams(count)} خلال 28 يومًا`,
+    liveNow: 'يبث الآن',
+    nextPrefix: 'التالي',
   },
   apiPromo: {
     heading: 'واجهة API للمطورين',

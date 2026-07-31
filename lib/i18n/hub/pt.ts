@@ -175,6 +175,15 @@ export const pt: HubLex = {
     heading: 'Streamers populares',
     viewAll: 'Ver todos os streamers →',
   },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'Quem são, o que jogam e quando entram ao vivo.',
+    viewAll: 'Explorar todos os streamers →',
+    followers: (value) => `≈${value} seguidores`,
+    streams28d: (count) => `${count} ${count === 1 ? 'transmissão' : 'transmissões'} em 28 dias`,
+    liveNow: 'Ao vivo agora',
+    nextPrefix: 'Próxima',
+  },
   apiPromo: {
     heading: 'API para desenvolvedores',
     comingSoon: 'Em breve',

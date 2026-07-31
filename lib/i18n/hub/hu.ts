@@ -170,6 +170,16 @@ export const hu: HubLex = {
     heading: 'Népszerű streamerek',
     viewAll: 'Összes streamer megtekintése →',
   },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'Kik ők, mivel játszanak, és mikor mennek élőben.',
+    viewAll: 'Összes streamer böngészése →',
+    followers: (value) => `≈${value} követő`,
+    // Hungarian counted nouns stay singular after a numeral ("20 adás").
+    streams28d: (count) => `${count} adás 28 nap alatt`,
+    liveNow: 'Most élőben',
+    nextPrefix: 'Következő',
+  },
   apiPromo: {
     heading: 'Fejlesztői API',
     comingSoon: 'Hamarosan',

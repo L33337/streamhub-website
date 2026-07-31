@@ -173,6 +173,15 @@ export const de: HubLex = {
     heading: 'Beliebte Streamer',
     viewAll: 'Alle Streamer ansehen →',
   },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'Wer sie sind, was sie spielen und wann sie live gehen.',
+    viewAll: 'Alle Streamer durchsuchen →',
+    followers: (value) => `≈${value} Follower`,
+    streams28d: (count) => `${count} ${count === 1 ? 'Stream' : 'Streams'} in 28 Tagen`,
+    liveNow: 'Jetzt live',
+    nextPrefix: 'Nächster',
+  },
   apiPromo: {
     heading: 'Entwickler-API',
     comingSoon: 'Bald verfügbar',

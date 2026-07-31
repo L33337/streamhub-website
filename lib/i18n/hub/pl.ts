@@ -11,6 +11,15 @@ const nStreamers = (n: number): string =>
     other: `${n} streamera`,
   });
 
+/** "20 transmisji" — counted broadcasts for the Streamer Wiki stats line. */
+const nStreams = (n: number): string =>
+  pluralForms('pl', n, {
+    one: `${n} transmisja`,
+    few: `${n} transmisje`,
+    many: `${n} transmisji`,
+    other: `${n} transmisji`,
+  });
+
 /** "w 3 kategoriach" — locative counted categories. */
 const inCategories = (n: number): string =>
   pluralForms('pl', n, {
@@ -196,6 +205,15 @@ export const pl: HubLex = {
   popular: {
     heading: 'Popularni streamerzy',
     viewAll: 'Zobacz wszystkich streamerów →',
+  },
+  streamerWiki: {
+    heading: 'Streamer Wiki',
+    subline: 'Kim są, w co grają i kiedy wchodzą na żywo.',
+    viewAll: 'Przeglądaj wszystkich streamerów →',
+    followers: (value) => `≈${value} obserwujących`,
+    streams28d: (count) => `${nStreams(count)} w 28 dni`,
+    liveNow: 'Teraz na żywo',
+    nextPrefix: 'Następna',
   },
   apiPromo: {
     heading: 'API dla deweloperów',
