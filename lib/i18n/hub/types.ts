@@ -313,11 +313,16 @@ export interface HubLex {
     /** Rank chip under a box art, e.g. "#3 on Twitch". */
     rankOnTwitch(rank: number): string;
     /**
-     * Sort control over the rail (2026-07-31). Keep the labels SHORT — four
-     * buttons share one row on a phone before they wrap.
+     * Sort control over the rail (2026-07-31). Keep the labels SHORT — all
+     * four share ONE row on a 390px phone (~334px for the set), and a long
+     * translation costs the last button its visibility behind a scroll.
+     * A single noun is the target; the superlative ("Most hours") is
+     * deliberately dropped, a segmented control already reads as "sort by".
+     * Budget-tested in i18n-hub.test.ts.
      * `sortViewers` counts viewers watching the category RIGHT NOW; it must
      * never be attached to `sortHours`, which is time BROADCAST
-     * (lib/games-sort.ts invariant).
+     * (lib/games-sort.ts invariant). The live-vs-28d distinction is carried by
+     * `liveViewers` below, which is what the picked mode renders per tile.
      */
     sortAria: string;
     sortTwitch: string;

@@ -185,10 +185,10 @@ export const uk: HubLex = {
     aria: 'Ігри в тренді на Twitch',
     rankOnTwitch: (rank) => `#${rank} на Twitch`,
     sortAria: 'Сортувати ігри',
-    sortTwitch: 'Місце на Twitch',
-    sortHours: 'Найбільше годин',
-    sortViewers: 'Найбільше глядачів (live)',
-    sortStreamers: 'Найбільше стримерів',
+    sortTwitch: 'Twitch',
+    sortHours: 'Години',
+    sortViewers: 'Глядачі',
+    sortStreamers: 'Стримери',
     liveViewers: (value) => `${value} дивляться зараз`,
     streamerCount: (value, count) =>
       pluralForms('uk', count, {
