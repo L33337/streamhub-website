@@ -2,6 +2,8 @@
 
 // M24 streamer insights: median-viewers bars by weekday and by hour, with a
 // viewer-TZ / streamer-TZ toggle on the HOUR chart (exact cell rotation).
+// Bars share the best-time heatmap's red-to-green scale (timingCellColor +
+// winsorized band): green = the streamer's stronger hours, red = weaker.
 // Weekday bars stay UTC-labelled on purpose: day-level aggregates cannot be
 // shifted across midnight without the underlying samples (site convention:
 // "days follow the UTC calendar"). SSR renders the UTC frame; hydration
@@ -11,6 +13,7 @@ import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { InsightsMedianCell } from '@/lib/server/partner-api';
 import { localUtcOffsetHours } from '@/lib/game-heatmap';
 import { formatStatValue } from '@/lib/format/number';
+import { timingCellColor, timingGoodness, timingScaleOf } from '@/lib/game-timing';
 import {
   WEEKDAY_LABELS,
   shiftHourCells,
@@ -50,6 +53,15 @@ function Bars({
       bestIdx = i;
     }
   });
+  // Red-to-green fill, same winsorized band as the best-time heatmap. The
+  // band is built from TRUSTWORTHY bars only, so a thin-sample spike can
+  // neither glow saturated green nor push every solid bar to the red end
+  // (falls back to all observed bars when nothing qualifies yet).
+  const qualified = cells
+    .filter((c) => c.median !== null && c.samples >= minSamples)
+    .map((c) => c.median as number);
+  const observed = cells.filter((c) => c.median !== null).map((c) => c.median as number);
+  const scale = timingScaleOf(qualified.length > 0 ? qualified : observed);
   const heightPct = (v: number) => Math.max(4, Math.round((v / max) * MAX_BAR_PCT));
   return (
     <div>
@@ -84,9 +96,16 @@ function Bars({
                 <div
                   aria-hidden="true"
                   className={`mx-auto w-4/5 rounded-t-[3px] ${
-                    thin ? 'bg-accent-cyan/30' : isBest ? 'bg-accent-cyan' : 'bg-accent-cyan/70'
+                    // Thin bars keep their color but render faded — the value
+                    // is real, the confidence is not.
+                    thin ? 'opacity-40' : ''
                   }`}
-                  style={{ height: `${heightPct(c.median)}%` }}
+                  style={{
+                    height: `${heightPct(c.median)}%`,
+                    backgroundColor: timingCellColor(
+                      timingGoodness(c.median, scale, 'viewers') ?? 0.5,
+                    ),
+                  }}
                 />
               ) : (
                 <div
@@ -216,6 +235,23 @@ export function InsightsCharts({
               labelMode="peak"
             />
           </div>
+        </div>
+      )}
+      {(weekdayCells || shiftedHours) && (
+        <div
+          className="flex flex-wrap items-center gap-1 text-[10px] text-text-muted lg:col-span-2"
+          aria-hidden="true"
+        >
+          <span className="mr-1">Worse</span>
+          {[0, 0.25, 0.5, 0.75, 1].map((g) => (
+            <span
+              key={g}
+              className="h-3 w-3 rounded-[2px]"
+              style={{ backgroundColor: timingCellColor(g) }}
+            />
+          ))}
+          <span className="ml-1">Better</span>
+          <span className="ml-3">faded = few samples</span>
         </div>
       )}
     </div>

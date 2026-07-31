@@ -14,6 +14,7 @@ import {
   shiftSlot,
   timingCellColor,
   timingGoodness,
+  timingScaleOf,
 } from '../game-timing';
 
 function series(cells: Record<number, number>): (number | null)[] {
@@ -159,6 +160,17 @@ describe('buildOpportunityView — score contract fixture', () => {
     expect(view.scale.streamers).toBeNull();
     expect(view.scale.opportunity).toBeNull();
     expect(view.scale.viewers).not.toBeNull();
+  });
+});
+
+describe('timingScaleOf', () => {
+  it('winsorized p10..p90 band (lower-index quantile)', () => {
+    expect(timingScaleOf([10, 1, 9, 2, 8, 3, 7, 4, 6, 5])).toEqual({ lo: 1, hi: 9 });
+  });
+
+  it('single value → flat band; empty → null', () => {
+    expect(timingScaleOf([50])).toEqual({ lo: 50, hi: 50 });
+    expect(timingScaleOf([])).toBeNull();
   });
 });
 

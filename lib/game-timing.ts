@@ -129,7 +129,12 @@ function quantile(values: number[], p: number): number {
   return sorted[Math.floor(p * (sorted.length - 1))];
 }
 
-function scaleOf(values: number[]): TimingScale | null {
+/**
+ * Winsorized p10..p90 color band over a plain value sample. Shared by the
+ * heatmap (168 cells) and the insights bar charts (7/24 bars) so every
+ * red-to-green surface normalizes the same way. Null for an empty sample.
+ */
+export function timingScaleOf(values: number[]): TimingScale | null {
   if (values.length === 0) return null;
   return { lo: quantile(values, 0.1), hi: quantile(values, 0.9) };
 }
@@ -175,9 +180,9 @@ export function buildOpportunityView(
     grid.push(row);
   }
   const scale = {
-    opportunity: scaleOf(samples.opportunity),
-    viewers: scaleOf(samples.viewers),
-    streamers: scaleOf(samples.streamers),
+    opportunity: timingScaleOf(samples.opportunity),
+    viewers: timingScaleOf(samples.viewers),
+    streamers: timingScaleOf(samples.streamers),
   };
 
   const topSlots = flat
