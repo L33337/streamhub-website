@@ -145,7 +145,7 @@ export default async function SearchPage({ searchParams }: Props) {
         <>
           <ul className="mt-6 grid gap-3" aria-label={`Streamers matching ${query}`}>
             {filtered.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} className="min-w-0">
                 <SearchResultCard streamer={s} />
               </li>
             ))}

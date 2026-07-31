@@ -37,9 +37,13 @@ export function SearchResultCard({ streamer, compact = false }: Props) {
       )}
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* min-w-0 twice, or the `truncate` below is decorative: neither the
+            wrap row nor the span may keep its automatic min-width, otherwise a
+            long unbroken streamer name inflates the card's minimum and pushes
+            the grid track past the viewport on a 320px phone. */}
+        <div className="flex min-w-0 items-center gap-2 flex-wrap">
           <span
-            className={`font-semibold text-text-primary group-hover:text-accent-cyan transition-colors ${
+            className={`min-w-0 font-semibold text-text-primary group-hover:text-accent-cyan transition-colors ${
               compact ? 'text-sm' : 'text-lg'
             } truncate`}
           >

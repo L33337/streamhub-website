@@ -182,9 +182,12 @@ export async function StreamersIndexView({
               >
                 {letter}
               </h2>
+              {/* min-w-0 on the <li>: the card truncates internally, but a
+                  grid item defaults to min-width:auto, so a long streamer name
+                  still stretched the track past a 320px viewport. */}
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                 {items.map((s) => (
-                  <li key={s.id}>
+                  <li key={s.id} className="min-w-0">
                     <SearchResultCard streamer={s} compact />
                   </li>
                 ))}
