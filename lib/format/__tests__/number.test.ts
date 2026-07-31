@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatCompactNumber } from '../number';
+import { formatCompactNumber, formatStatValue } from '../number';
 
 describe('formatCompactNumber', () => {
   it('keeps small numbers as-is', () => {
@@ -32,5 +32,34 @@ describe('formatCompactNumber', () => {
 
   it('falls back to en-US for invalid language tags', () => {
     expect(formatCompactNumber(12_500, 'not a tag!')).toBe('12.5K');
+  });
+});
+
+describe('formatStatValue', () => {
+  it('keeps one decimal below 10 (avg-live-channel range)', () => {
+    expect(formatStatValue(7.68)).toBe('7.7');
+    expect(formatStatValue(1.04)).toBe('1');
+    expect(formatStatValue(2)).toBe('2');
+    expect(formatStatValue(9.95)).toBe('10'); // rounds up across the boundary
+    expect(formatStatValue(0)).toBe('0');
+  });
+
+  it('drops the fake decimals of raw aggregates between 10 and 1000', () => {
+    expect(formatStatValue(499.2)).toBe('499');
+    expect(formatStatValue(45.6)).toBe('46');
+    expect(formatStatValue(999.4)).toBe('999');
+  });
+
+  it('compacts everything from 1000 up', () => {
+    expect(formatStatValue(8_882.6)).toBe('8.9K');
+    expect(formatStatValue(45_808.6)).toBe('45.8K');
+    expect(formatStatValue(50_018)).toBe('50K');
+    expect(formatStatValue(12_332)).toBe('12.3K');
+  });
+
+  it('empty string for null/undefined/non-finite (callers keep their own "—")', () => {
+    expect(formatStatValue(null)).toBe('');
+    expect(formatStatValue(undefined)).toBe('');
+    expect(formatStatValue(Number.NaN)).toBe('');
   });
 });

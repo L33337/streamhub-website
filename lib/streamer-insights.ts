@@ -151,6 +151,30 @@ export function usableCategoryRows(
   );
 }
 
+/**
+ * Category with the highest median among rows observed for at least
+ * `minHours` (a 1-hour spike must never win the "highest median" marker).
+ * Null when fewer than 2 rows qualify — a superlative over one row, or over
+ * a table where nothing is comparable, is noise.
+ */
+export function bestMedianCategory(
+  rows: InsightsCategoryEntry[],
+  minHours = 10,
+): string | null {
+  const qualified = rows.filter(
+    (r) =>
+      typeof r.median === 'number' &&
+      Number.isFinite(r.median) &&
+      (r.hours ?? 0) >= minHours,
+  );
+  if (qualified.length < 2) return null;
+  let best: InsightsCategoryEntry | null = null;
+  for (const r of qualified) {
+    if (!best || (r.median as number) > (best.median as number)) best = r;
+  }
+  return best?.category ?? null;
+}
+
 /** Extracts a plain nullable series from {median,samples} ramp cells. */
 export function rampMedians(
   cells: InsightsMedianCell[] | null | undefined,

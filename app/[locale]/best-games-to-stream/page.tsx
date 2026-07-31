@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { applyLocaleSeo, buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
+import { formatStatValue } from '@/lib/format/number';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import {
   buildBestGameRows,
@@ -190,7 +191,7 @@ export default async function BestGamesToStreamPage() {
                         )}
                         <p className="mt-1 text-xs text-text-secondary">
                           <span className="font-semibold text-accent-cyan">
-                            {Math.round(row.score * 10) / 10}
+                            {formatStatValue(row.score)}
                           </span>{' '}
                           viewers per live channel
                           {row.isTrending && (
@@ -199,6 +200,14 @@ export default async function BestGamesToStreamPage() {
                             </span>
                           )}
                         </p>
+                        {/* Channel count exposes the thin-base outliers (event
+                            categories averaging 1-2 mega channels) instead of
+                            letting them read like a broad measurement. */}
+                        {row.trackedStreamers > 0 && (
+                          <p className="mt-0.5 text-[11px] text-text-muted">
+                            {`avg. across ${row.trackedStreamers} tracked channels`}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {row.bestSlot && (
