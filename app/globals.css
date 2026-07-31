@@ -34,8 +34,26 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Outer height of the sticky header INCLUDING its 1px bottom border — every
+   `top-[var(--header-height)]` sub-nav aligns to that edge, and every
+   `scroll-mt-[calc(var(--header-height)+…)]` anchor clears it.
+
+   Two tiers because the header itself has two: below `lg` the tallest control
+   is a 36px button, from `lg` the search input (44px) takes over. The row is
+   pinned to `h-14 lg:h-16` in app/[locale]/layout.tsx so content can no longer
+   drift it — if you change that height, change these numbers with it.
+
+   Was a flat 56px until 2026-07-31, i.e. 1px short on a phone and 9px short on
+   a desktop: every sticky sub-nav (home section nav, /live jump nav, program
+   time bar, feed chips) parked that far UNDER the header. */
 :root {
-  --header-height: 56px;
+  --header-height: 57px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-height: 65px;
+  }
 }
 
 html {

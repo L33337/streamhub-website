@@ -162,11 +162,19 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background">
         <Providers>
           <header className="sticky top-0 z-50 border-b border-divider bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            {/* gap-2 below `sm`: every item in the phone row is shrink-0, so
+            {/* The height is PINNED, not derived from the content (it used to
+                be `py-2.5` around the tallest child): --header-height in
+                globals.css hard-codes 57/65px, and every sticky sub-nav on the
+                site offsets against it. h-14/lg:h-16 reproduces exactly what
+                the padding produced — 36px controls below `lg`, the 44px
+                search input from `lg` — but now a taller child overflows
+                visibly instead of silently desynchronising every sub-nav.
+
+                gap-2 below `sm`: every item in the phone row is shrink-0, so
                 the gaps are the only width left to give — without this the row
                 runs past the viewport wherever the locale spells sign-in out
                 ("Iniciar sesión", "Bejelentkezés"). */}
-            <div className="container mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 md:gap-4">
+            <div className="container mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-3 md:gap-4 lg:h-16">
               <Link
                 href={localeHref(locale, "/")}
                 // text-sm below `sm`: brand, search icon, sign-in button and
