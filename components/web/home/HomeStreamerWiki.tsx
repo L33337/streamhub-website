@@ -154,11 +154,16 @@ export function HomeStreamerWiki({
                   </span>
                 )}
 
-                {/* mt-auto pins the chip to the card floor, so a short bio
+                {/* mt-auto pins the chip row to the card floor, so a short bio
                     doesn't leave the chip floating mid-card next to a
-                    neighbour's. */}
+                    neighbour's. The pt-3 on the wrapper is the FLOOR of that
+                    gap: in the tallest card of a row `mt-auto` resolves to 0
+                    and the chip ended up glued to the follower line above it.
+                    It has to be padding on a wrapper, not a second margin —
+                    margin-top is already spoken for by the auto. */}
+                <span className="mt-auto flex pt-3">
                 {isLive ? (
-                  <span className="mt-auto inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-live/40 bg-background-highlight px-2.5 py-1">
+                  <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-live/40 bg-background-highlight px-2.5 py-1">
                     <span
                       aria-hidden="true"
                       className="relative inline-flex h-2 w-2 shrink-0"
@@ -171,7 +176,7 @@ export function HomeStreamerWiki({
                     </span>
                   </span>
                 ) : showNext ? (
-                  <span className="mt-auto inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-accent-cyan/40 bg-background-highlight px-2.5 py-1">
+                  <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-accent-cyan/40 bg-background-highlight px-2.5 py-1">
                     <CalendarClock
                       size={12}
                       aria-hidden="true"
@@ -191,6 +196,7 @@ export function HomeStreamerWiki({
                     </span>
                   </span>
                 ) : null}
+                </span>
               </Link>
 
               <FavoriteButton
