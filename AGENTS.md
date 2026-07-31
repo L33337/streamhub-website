@@ -260,6 +260,15 @@ edge and every `scroll-mt-[calc(var(--header-height)+…)]` anchor clears it.
   `header.getBoundingClientRect().bottom - subnav.getBoundingClientRect().top`
   must be 0. Disable `scroll-behavior: smooth` first (globals.css sets it on
   `html`) or the measurement runs mid-animation and reads nonsense.
+- **Every sticky bar carries the header's full translucency recipe**:
+  `bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80`.
+  The `/95` alone is only the no-backdrop-filter fallback — five bars shipped
+  with just that and rendered at 0.95 alpha under a 0.80 header, which reads as
+  a darker block glued below it rather than one continuous chrome layer.
+- The chips inside those bars deliberately do NOT match the header's nav pills:
+  same background, text colour, border and padding, but 44px tall / pill /
+  12px text vs 36px / `rounded-lg` / 14px. The height is the standalone-chip
+  touch-target rule from the 2026-07-30 round — do not "fix" it to h-9.
 
 # Release 2026-07-31 — three homepage branches merged together
 
