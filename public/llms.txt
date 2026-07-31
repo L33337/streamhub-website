@@ -14,6 +14,7 @@ transcript analysis. Canonical domain: https://streamertimes.tv
 - [Games & categories](https://streamertimes.tv/games): Find streamers by the game or category they play.
 - [All streamers A–Z](https://streamertimes.tv/streamers): Full A–Z index of tracked Twitch and YouTube streamers.
 - [Streamer rankings](https://streamertimes.tv/rankings): Leaderboards — most followed, most watched, most active and most punctual streamers, updated daily.
+- [Best games to stream](https://streamertimes.tv/best-games-to-stream): Categories ranked by viewers per live channel — where a new stream is easiest to find, updated daily.
 - [Get the app](https://streamertimes.tv/app): Go-live alerts and AI stream predictions, free for iOS and Android.
 
 ## Rankings
@@ -28,6 +29,7 @@ transcript analysis. Canonical domain: https://streamertimes.tv
 - Streamer schedule: https://streamertimes.tv/streamer/{id}
 - Game / category hub: https://streamertimes.tv/game/{slug}
 - Per-game ranking: https://streamertimes.tv/rankings/game/{slug}
+- Best time to stream a game: https://streamertimes.tv/game/{slug}/best-time
 
 ## Developers
 - [Partner API](https://streamertimes.tv/developers): Public REST API for live schedules and AI predictions (waitlist).

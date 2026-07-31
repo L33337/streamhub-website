@@ -37,4 +37,12 @@ export type {
   PublicStreamerRankings,
   PublicRankingPlacement,
   PublicGamePlacement,
+  GameTiming,
+  TimingBestSlot,
+  BestGameEntry,
+  StreamerInsights,
+  InsightsMedianCell,
+  InsightsCategoryEntry,
+  InsightsGameToTry,
+  InsightsScheduleReliability,
 } from './types';

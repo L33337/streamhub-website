@@ -9,6 +9,7 @@ import {
   PartnerApiServerError,
 } from './errors';
 import type {
+  BestGameEntry,
   Paginated,
   PartnerApiErrorBody,
   Platform,
@@ -20,6 +21,7 @@ import type {
   PublicStreamSlot,
   RankingMetric,
   RankingsResponse,
+  StreamerInsights,
 } from './types';
 
 const USER_AGENT = 'streamertimes-web/1.0';
@@ -111,8 +113,12 @@ export interface ListGamesOptions extends FetchOptions {
   limit?: number;
   /** Exact-match category filter — narrows the list to that single row. */
   category?: string;
-  /** Opt-in enrichments; 'hour_histogram' adds the weekday-hour heatmap data. */
-  include?: 'hour_histogram';
+  /**
+   * Opt-in enrichments, comma-separable: 'hour_histogram' adds the
+   * weekday-hour heatmap data, 'timing' (M24) the viewer-demand vs
+   * competition stats.
+   */
+  include?: 'hour_histogram' | 'timing' | 'hour_histogram,timing' | 'timing,hour_histogram';
 }
 
 export interface ListHistoryOptions extends FetchOptions {
@@ -155,6 +161,42 @@ class PartnerApiClient {
     if (opts.include) params.set('include', opts.include);
     const qs = params.toString();
     return this.request<Paginated<PublicGame>>('GET', `/v1/games${qs ? `?${qs}` : ''}`, opts);
+  }
+
+  /**
+   * Opportunity ranking of all categories with >= 5 tracked streamers
+   * (M24, GET /v1/games/best-to-stream — already sorted by overall_score
+   * desc). NOT best-effort: the /best-games-to-stream page must catch and
+   * degrade to its warming state itself (never throw during prerender).
+   * Nightly aggregate → 1h data-cache revalidate by default.
+   */
+  async listBestGamesToStream(opts: FetchOptions = {}): Promise<{ data: BestGameEntry[] }> {
+    return this.request<{ data: BestGameEntry[] }>('GET', '/v1/games/best-to-stream', {
+      revalidate: 3600,
+      ...opts,
+    });
+  }
+
+  /**
+   * Viewer-timing insights for one streamer (M24). Best-effort: any
+   * API/network error collapses to null so a failing lookup never breaks the
+   * page (mirrors `getStreamerStats`). A `sample_count: 0` response is
+   * returned as-is — the collecting state is the page's business.
+   * Nightly aggregate → 1h revalidate.
+   */
+  async getStreamerInsights(
+    id: string,
+    opts: FetchOptions = {},
+  ): Promise<StreamerInsights | null> {
+    try {
+      return await this.request<StreamerInsights>(
+        'GET',
+        `/v1/streamers/${encodeURIComponent(id)}/insights`,
+        { revalidate: 3600, ...opts },
+      );
+    } catch {
+      return null;
+    }
   }
 
   async getStreamer(id: string, opts: FetchOptions = {}): Promise<PublicStreamer | null> {
