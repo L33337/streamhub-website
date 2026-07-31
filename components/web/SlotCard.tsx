@@ -126,7 +126,13 @@ export function SlotCard({
           )}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+        {/* Container context for the confidence line below: whether the
+            "Confidence:" label fits depends on how wide THIS column is (the
+            thumbnail is fixed, the card is not), and the label is a single
+            unbreakable word in several locales — "Prawdopodobieństwo:" alone
+            is 134px. A viewport breakpoint would guess wrong on the Program
+            page, where the same card sits in a narrower grid cell. */}
+        <div className="@container flex min-w-0 flex-1 flex-col justify-between gap-2">
           <div className="min-w-0">
             <div
               className={`flex min-w-0 items-center gap-2 ${reserveTopRight ? 'pr-8' : ''}`}
@@ -181,8 +187,13 @@ export function SlotCard({
               ))}
             </div>
             {!isLive && (
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              <div className="flex min-w-0 items-center gap-1">
+                {/* Label only once the column can hold label + badge in every
+                    locale (13rem covers the longest, pl). Below that the
+                    colour-coded badge carries the meaning on its own —
+                    without this the pair pushed the whole DOCUMENT wider than
+                    a 320px phone in pl/de/ru. */}
+                <span className="hidden text-[10px] uppercase tracking-wider text-text-muted @min-[13rem]:inline">
                   {slotLexFor(language).confidencePrefix}
                 </span>
                 <ConfidenceBadge level={slot.confidence} size="sm" language={language} />
