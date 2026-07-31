@@ -11,18 +11,32 @@ import { formatViews, formatClipDuration } from '@/lib/feed/logic';
  * app's ClipCard). The card is an <a> to the clip on twitch.tv; since M18
  * Phase 1 the caller intercepts the click (preventDefault) to open the
  * in-feed lightbox instead — the href stays as middle-click/no-JS fallback.
+ *
+ * `showMeta` (homepage clips rail, 2026-07-31) adds a third line naming the
+ * clip's category and its broadcaster language — the two dimensions that
+ * section filters by, so a card can be read back against the dropdown that
+ * surfaced it. Opt-in, because the signed-in feed's Highlights rail is
+ * already scoped to the viewer's own streamers and gains nothing from it.
  */
 export function ClipCard({
   clip,
   streamerName,
+  languageCode,
+  showMeta = false,
   onOpen,
 }: {
   clip: FeedClip;
   streamerName?: string;
+  /** Normalized broadcaster language ("de"); shown upper-cased with `showMeta`. */
+  languageCode?: string;
+  showMeta?: boolean;
   onOpen: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const [thumbnailError, setThumbnailError] = useState(false);
   const duration = formatClipDuration(clip.durationSeconds);
+  const meta = showMeta
+    ? [clip.category, languageCode?.toUpperCase()].filter(Boolean).join(' · ')
+    : '';
 
   return (
     <a
@@ -31,7 +45,9 @@ export function ClipCard({
       rel="noopener noreferrer"
       onClick={onOpen}
       className="block w-[200px] shrink-0 overflow-hidden rounded-xl bg-background-elevated transition-transform focus-visible:outline-none motion-safe:hover:scale-[1.02] motion-safe:focus-visible:scale-[1.02]"
-      aria-label={`Clip: ${clip.title ?? 'Untitled'}${streamerName ? `, ${streamerName}` : ''}, ${formatViews(clip.viewCount)} views`}
+      // The label REPLACES the card's inner text for screen readers, so the
+      // meta line has to be repeated here or it is invisible to them.
+      aria-label={`Clip: ${clip.title ?? 'Untitled'}${streamerName ? `, ${streamerName}` : ''}, ${formatViews(clip.viewCount)} views${meta ? `, ${meta.replace(' · ', ', ')}` : ''}`}
     >
       <div className="relative aspect-video w-full bg-background-highlight">
         {!thumbnailError && clip.thumbnailUrl ? (
@@ -70,6 +86,14 @@ export function ClipCard({
         {streamerName ? (
           <p className="mt-0.5 truncate text-[11px] text-text-secondary">{streamerName}</p>
         ) : null}
+        {/* Rendered even when empty (a clip with neither category nor
+            language): the rail lays its cards out in a flex row, so a card
+            one line shorter than its neighbours ends visibly higher. */}
+        {showMeta && (
+          <p className="mt-0.5 min-h-[14px] truncate font-mono text-[10px] uppercase tracking-wide text-text-muted">
+            {meta}
+          </p>
+        )}
       </div>
     </a>
   );

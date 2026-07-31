@@ -131,6 +131,14 @@ export function HomeClipsRailClient({
       });
   }, [visibleIds]);
 
+  // The cards name the two dimensions the dropdowns filter by; the language
+  // code already sits on the filter items, so it is read back from there
+  // rather than passed a second time from the server.
+  const languageById = useMemo(
+    () => new Map(items.map((item) => [item.id, item.language])),
+    [items],
+  );
+
   // A filter can drop the clip that is currently playing out of the rail. The
   // lightbox stays open on purpose (closing a video someone is watching
   // because a dropdown moved is worse), but it must not keep a playlist the
@@ -207,6 +215,8 @@ export function HomeClipsRailClient({
               <ClipCard
                 clip={clip}
                 streamerName={names[clip.streamerId]}
+                languageCode={languageById.get(clip.id) || undefined}
+                showMeta
                 onOpen={(event) => {
                   event.preventDefault();
                   setActiveClip(clip);

@@ -14,17 +14,17 @@ import {
 /**
  * Safety cap on the pool — and with it the filter scope. Production holds
  * ~7,600 visible clips in the 7-day window, so this is a genuine cut, not
- * headroom: the top 300 by views cover 111 streamers, 52 categories and all
- * 10 broadcast languages that appear at all (measured 2026-07-31), while 150
- * would already drop pt/it/fr from the language dropdown and 500 adds only
- * long-tail categories at ~60 % more payload.
+ * headroom: the top 500 by views cover 147 streamers, 69 categories and all
+ * 10 broadcast languages that appear at all (measured 2026-07-31). The
+ * languages are complete from ~300 onwards; what the last 200 clips buy is
+ * category depth — the long tail of games a visitor is most likely to miss.
  *
  * Unlike the live rail's cap this one is a PAYLOAD guard, not a DOM guard:
  * ClipCard is a client component, so every pooled clip crosses the boundary as
  * props whether or not it is rendered (~640 bytes/clip, thumbnails alone
  * averaging 169 characters).
  */
-export const HOME_CLIPS_POOL_MAX = 300;
+export const HOME_CLIPS_POOL_MAX = 500;
 
 /**
  * The unfiltered cut: how many cards are in the rail before anyone touches a
@@ -71,25 +71,36 @@ export function matchesClipFilters(
 
 /**
  * The rail's dropdown options for one dimension. Thin binding over the shared
- * counter (lib/home/filter-options.ts), so the blank-skipping and the
- * ISR-stable ordering live in exactly one place for all three homepage
- * sections.
+ * counter (lib/home/filter-options.ts), so the blank-skipping stays in one
+ * place for all three homepage sections.
+ *
+ * **Categories are sorted ALPHABETICALLY here**, unlike the live rail and the
+ * lineup, which keep the shared counter's count-desc order. A 500-clip pool
+ * offers ~69 categories (prod, 2026-07-31) and a popularity-ordered list that
+ * long is unscannable: you cannot look a game up in it, you can only read it
+ * top to bottom. The live rail's list is short enough that its most-first
+ * order still reads as a ranking — if that ever changes, move this sort into
+ * `countFilterOptions` rather than growing a second copy.
+ *
+ * Languages keep count-desc: ten entries, and "which languages is there much
+ * to watch in" is a useful thing for the order itself to say.
  */
 export function countClipFilterOptions(
   items: ClipFilterItem[],
   dimension: 'category' | 'language',
 ): CountedFilterOption[] {
-  return dimension === 'category'
-    ? countFilterOptions(
-        items,
-        (item) => item.category,
-        (item) => item.category,
-      )
-    : countFilterOptions(
-        items,
-        (item) => item.language,
-        (item) => item.languageLabel,
-      );
+  if (dimension === 'language') {
+    return countFilterOptions(
+      items,
+      (item) => item.language,
+      (item) => item.languageLabel,
+    );
+  }
+  return countFilterOptions(
+    items,
+    (item) => item.category,
+    (item) => item.category,
+  ).sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /**

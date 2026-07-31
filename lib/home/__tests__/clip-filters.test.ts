@@ -120,10 +120,24 @@ describe('countClipFilterOptions', () => {
     item({ id: '4', category: '', language: '', languageLabel: '' }),
   ];
 
-  it('counts categories, most first, skipping blanks', () => {
+  it('sorts categories ALPHABETICALLY, not by count, skipping blanks', () => {
+    // Fortnite has twice the clips but still comes second — a ~69-entry
+    // popularity list cannot be looked things up in.
     expect(countClipFilterOptions(items, 'category')).toEqual([
       { value: 'Fortnite', label: 'Fortnite', count: 2 },
       { value: 'Just Chatting', label: 'Just Chatting', count: 1 },
+    ]);
+    const reordered = countClipFilterOptions(
+      [
+        item({ id: '5', category: 'Zenless Zone Zero' }),
+        item({ id: '6', category: 'Zenless Zone Zero' }),
+        item({ id: '7', category: 'Apex Legends' }),
+      ],
+      'category',
+    );
+    expect(reordered.map((option) => option.label)).toEqual([
+      'Apex Legends',
+      'Zenless Zone Zero',
     ]);
   });
 
@@ -132,6 +146,18 @@ describe('countClipFilterOptions', () => {
       { value: 'de', label: 'DE', count: 2 },
       { value: 'en', label: 'EN', count: 1 },
     ]);
+  });
+
+  it('keeps languages count-first — only the categories are alphabetical', () => {
+    const options = countClipFilterOptions(
+      [
+        item({ id: '1', language: 'zz', languageLabel: 'ZZ' }),
+        item({ id: '2', language: 'zz', languageLabel: 'ZZ' }),
+        item({ id: '3', language: 'aa', languageLabel: 'AA' }),
+      ],
+      'language',
+    );
+    expect(options.map((option) => option.label)).toEqual(['ZZ', 'AA']);
   });
 });
 
