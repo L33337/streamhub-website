@@ -24,6 +24,8 @@ const EN_NAV: ChromeLex['nav'] = {
   closeMenu: 'Close menu',
   searchPlaceholder: 'Search streamers…',
   searchResults: 'Search results',
+  openSearch: 'Open search',
+  closeSearch: 'Close search',
   home: 'Streamer Times home',
 };
 

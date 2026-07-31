@@ -37,6 +37,10 @@ export interface ChromeLex {
     searchPlaceholder: string;
     /** aria-label on the search results listbox. */
     searchResults: string;
+    /** aria-label on the collapsed search button (below `lg`). */
+    openSearch: string;
+    /** aria-label on the close button of the expanded mobile search. */
+    closeSearch: string;
     /** aria-label on the footer wordmark link. */
     home: string;
   };
@@ -105,6 +109,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Close menu',
       searchPlaceholder: 'Search streamers…',
       searchResults: 'Search results',
+      openSearch: 'Open search',
+      closeSearch: 'Close search',
       home: 'Streamer Times home',
     },
     feedNav: {
@@ -157,6 +163,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Menü schließen',
       searchPlaceholder: 'Streamer suchen…',
       searchResults: 'Suchergebnisse',
+      openSearch: 'Suche öffnen',
+      closeSearch: 'Suche schließen',
       home: 'Streamer Times Startseite',
     },
     feedNav: {
@@ -209,6 +217,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Cerrar menú',
       searchPlaceholder: 'Buscar streamers…',
       searchResults: 'Resultados de búsqueda',
+      openSearch: 'Abrir búsqueda',
+      closeSearch: 'Cerrar búsqueda',
       home: 'Inicio de Streamer Times',
     },
     feedNav: {
@@ -261,6 +271,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Fermer le menu',
       searchPlaceholder: 'Rechercher un streamer…',
       searchResults: 'Résultats de recherche',
+      openSearch: 'Ouvrir la recherche',
+      closeSearch: 'Fermer la recherche',
       home: 'Accueil Streamer Times',
     },
     feedNav: {
@@ -313,6 +325,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Fechar menu',
       searchPlaceholder: 'Buscar streamers…',
       searchResults: 'Resultados da busca',
+      openSearch: 'Abrir a busca',
+      closeSearch: 'Fechar a busca',
       home: 'Página inicial do Streamer Times',
     },
     feedNav: {
@@ -365,6 +379,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Chiudi il menu',
       searchPlaceholder: 'Cerca streamer…',
       searchResults: 'Risultati della ricerca',
+      openSearch: 'Apri la ricerca',
+      closeSearch: 'Chiudi la ricerca',
       home: 'Home di Streamer Times',
     },
     feedNav: {
@@ -417,6 +433,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Закрыть меню',
       searchPlaceholder: 'Поиск стримеров…',
       searchResults: 'Результаты поиска',
+      openSearch: 'Открыть поиск',
+      closeSearch: 'Закрыть поиск',
       home: 'Главная Streamer Times',
     },
     feedNav: {
@@ -469,6 +487,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'メニューを閉じる',
       searchPlaceholder: 'ストリーマーを検索…',
       searchResults: '検索結果',
+      openSearch: '検索を開く',
+      closeSearch: '検索を閉じる',
       home: 'Streamer Times ホーム',
     },
     feedNav: {
@@ -521,6 +541,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Закрити меню',
       searchPlaceholder: 'Пошук стримерів…',
       searchResults: 'Результати пошуку',
+      openSearch: 'Відкрити пошук',
+      closeSearch: 'Закрити пошук',
       home: 'Головна Streamer Times',
     },
     feedNav: {
@@ -573,6 +595,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'إغلاق القائمة',
       searchPlaceholder: 'ابحث عن ستريمر…',
       searchResults: 'نتائج البحث',
+      openSearch: 'فتح البحث',
+      closeSearch: 'إغلاق البحث',
       home: 'الصفحة الرئيسية لـ Streamer Times',
     },
     feedNav: {
@@ -625,6 +649,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Menü bezárása',
       searchPlaceholder: 'Streamerek keresése…',
       searchResults: 'Keresési találatok',
+      openSearch: 'Keresés megnyitása',
+      closeSearch: 'Keresés bezárása',
       home: 'Streamer Times főoldal',
     },
     feedNav: {
@@ -677,6 +703,8 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       closeMenu: 'Zamknij menu',
       searchPlaceholder: 'Szukaj streamerów…',
       searchResults: 'Wyniki wyszukiwania',
+      openSearch: 'Otwórz wyszukiwarkę',
+      closeSearch: 'Zamknij wyszukiwarkę',
       home: 'Strona główna Streamer Times',
     },
     feedNav: {

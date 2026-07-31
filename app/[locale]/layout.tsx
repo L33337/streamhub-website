@@ -103,8 +103,12 @@ export default async function RootLayout({
   const locale: UiLang = rawLocale;
   const chrome = chromeLexFor(locale);
 
+  // `whitespace-nowrap` because the pills are a fixed 36px tall: once the row
+  // is even 1px over, flex shrinks these items and a two-word label ("En
+  // directo") wraps to a second line that overflows the pill instead of the
+  // row simply staying tight.
   const navLinkClass =
-    "hidden h-9 items-center rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-text-primary md:inline-flex";
+    "hidden h-9 items-center whitespace-nowrap rounded-lg border border-border-default bg-background-elevated px-3 text-sm font-semibold text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-text-primary md:inline-flex";
 
   return (
     <html
@@ -158,39 +162,41 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background">
         <Providers>
           <header className="sticky top-0 z-50 border-b border-divider bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            {/* gap-2 below 360px: brand, sign-in button and hamburger are all
-                shrink-0, so on a 320px screen the three gaps are the only
-                width left to give — without this the row runs past the
-                viewport wherever the locale spells sign-in out. */}
-            <div className="container mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 min-[360px]:gap-3 md:gap-4">
+            {/* gap-2 below `sm`: every item in the phone row is shrink-0, so
+                the gaps are the only width left to give — without this the row
+                runs past the viewport wherever the locale spells sign-in out
+                ("Iniciar sesión", "Bejelentkezés"). */}
+            <div className="container mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 md:gap-4">
               <Link
                 href={localeHref(locale, "/")}
-                // text-sm below 360px: the brand, the sign-in button and the
-                // hamburger are all shrink-0, and the search field has already
-                // given up all its width there — so on a 320px screen the row
-                // overflowed the viewport wherever the locale spells sign-in
-                // out ("Iniciar sesión", "Se connecter").
-                className="shrink-0 text-sm font-bold text-white min-[360px]:text-base md:text-xl"
+                // text-sm below `sm`: brand, search icon, sign-in button and
+                // hamburger are ALL shrink-0 on a phone (the search stopped
+                // being the flexible item when it became an icon), so the row
+                // has no give left. 15px of brand plus the tighter gaps below
+                // is what keeps "Bejelentkezés" (hu) inside a 360px screen.
+                className="shrink-0 text-sm font-bold text-white sm:text-base md:text-xl"
               >
                 StreamerTimes
               </Link>
               <SearchBar
-                // `min-w-0` so the search field is what yields width in the
-                // header row: it is the only flexible item there, and without
-                // this its intrinsic minimum pushed the hamburger off-screen on
-                // 320px-class phones.
+                // Below `lg` this renders as a 36px icon that opens a panel
+                // under the header (see SearchBar's `collapsible`): from `md`
+                // up the four nav links join the row, and an inline field was
+                // down to 48px on an iPad in portrait — present, unusable.
                 //
-                // Below 360px it yields ALL of it, and a 9px-wide field is not
-                // a search box — its absolutely positioned magnifier just
-                // spills over the neighbour. So it steps out entirely, but
-                // only when the sign-in button is actually rendered
-                // (`:has(~ [data-signin])`): without that button — today's
-                // production stealth state — the field still gets ~130px on a
-                // 320px screen and stays perfectly usable.
-                className="ml-auto w-full min-w-0 max-w-md max-[359px]:[&:has(~[data-signin])]:hidden"
+                // `min-w-0` from `lg` up so the field is what yields width in
+                // the header row: it is the only flexible item there, and
+                // without it its intrinsic minimum pushed the hamburger
+                // off-screen. The collapsed classes must NOT apply below `lg`,
+                // where the wrapper is a fixed panel — a `w-full` there would
+                // over-constrain it against inset-x.
+                className="lg:ml-auto lg:w-full lg:min-w-0 lg:max-w-md"
+                collapsible
                 locale={locale}
                 placeholder={chrome.nav.searchPlaceholder}
                 resultsLabel={chrome.nav.searchResults}
+                openLabel={chrome.nav.openSearch}
+                closeLabel={chrome.nav.closeSearch}
               />
               <Link href={localeHref(locale, "/live")} className={navLinkClass}>
                 {chrome.nav.live}
@@ -201,9 +207,13 @@ export default async function RootLayout({
               <Link href={localeHref(locale, "/rankings")} className={navLinkClass}>
                 {chrome.nav.rankings}
               </Link>
+              {/* From `lg`, not `md`: it is the widest label in the row
+                  ("Descarga la app" is 134px) and on a tablet it was the item
+                  that pushed the nav past the viewport. The floating Get-App
+                  button covers the same intent on every page below `lg`. */}
               <Link
                 href={localeHref(locale, "/app")}
-                className="hidden h-9 items-center rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors md:inline-flex"
+                className="hidden h-9 items-center whitespace-nowrap rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-sm font-semibold text-accent-cyan hover:bg-accent-cyan/20 transition-colors lg:inline-flex"
               >
                 {chrome.nav.getApp}
               </Link>

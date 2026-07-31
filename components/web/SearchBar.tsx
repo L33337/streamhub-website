@@ -36,6 +36,21 @@ interface Props {
   locale?: UiLang;
   placeholder?: string;
   resultsLabel?: string;
+  /**
+   * Header mode (2026-07-31): below `lg` the field collapses to a 36px icon
+   * button and opens as a panel under the header instead of competing for
+   * width with the brand, the nav links and the sign-in button. Measured
+   * before: on an iPad in portrait the field was down to 48px (es) and on a
+   * phone to 22px — present, but far too small to type in.
+   *
+   * There is exactly ONE input in the DOM either way: the wrapper switches
+   * between `hidden`, a fixed panel, and the normal inline field, so the
+   * dropdown keeps anchoring to it and no state is duplicated.
+   */
+  collapsible?: boolean;
+  /** aria-labels for the collapsed button and the panel's close button. */
+  openLabel?: string;
+  closeLabel?: string;
 }
 
 export function SearchBar({
@@ -43,6 +58,9 @@ export function SearchBar({
   locale = 'en',
   placeholder = 'Search streamers…',
   resultsLabel = 'Search results',
+  collapsible = false,
+  openLabel = 'Open search',
+  closeLabel = 'Close search',
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,9 +74,13 @@ export function SearchBar({
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  // Collapsed mode only: is the panel showing? Always false on the server, so
+  // the header's static HTML is the collapsed one and hydration stays clean.
+  const [expanded, setExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Close dropdown when navigating away. Syncs UI state with the URL — an
@@ -69,16 +91,21 @@ export function SearchBar({
     setQuery('');
     setResults([]);
     setFocusedIndex(-1);
+    setExpanded(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [pathname]);
 
-  // Click outside → close.
+  // Click outside → close. In collapsed mode the panel folds away too, so a
+  // tap anywhere on the page dismisses it (the button itself is excluded, or
+  // its own click would reopen what this just closed).
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (!containerRef.current) return;
-      if (!containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = e.target as Node;
+      if (containerRef.current.contains(target)) return;
+      if (buttonRef.current?.contains(target)) return;
+      setIsOpen(false);
+      setExpanded(false);
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
@@ -168,10 +195,16 @@ export function SearchBar({
         setIsOpen(true);
         setFocusedIndex((i) => (i <= 0 ? results.length - 1 : i - 1));
       } else if (e.key === 'Escape') {
+        // First Escape closes the suggestions, a second one folds the mobile
+        // panel away and hands focus back to the button that opened it.
         if (isOpen) {
           e.preventDefault();
           setIsOpen(false);
           setFocusedIndex(-1);
+        } else if (expanded) {
+          e.preventDefault();
+          setExpanded(false);
+          buttonRef.current?.focus();
         }
       } else if (e.key === 'Home' && isOpen) {
         e.preventDefault();
@@ -181,7 +214,7 @@ export function SearchBar({
         setFocusedIndex(results.length - 1);
       }
     },
-    [isOpen, results.length],
+    [expanded, isOpen, results.length],
   );
 
   const trimmed = query.trim();
@@ -195,8 +228,64 @@ export function SearchBar({
       ? `${listboxId}-opt-${focusedIndex}`
       : undefined;
 
+  // Three states, one input. Below `lg` the wrapper is either gone (collapsed)
+  // or a fixed panel under the header — never an inline field, which is the
+  // whole point: there is no width left for one. From `lg` up every collapsed
+  // rule is overridden and the caller's own classes take over, so the desktop
+  // header is byte-identical to before. Breakpoint variants are emitted after
+  // base utilities, so `lg:relative` reliably beats `fixed`.
+  const wrapperClass = !collapsible
+    ? `relative ${className}`
+    : [
+        expanded
+          ? 'fixed inset-x-3 top-[calc(var(--header-height)+0.5rem)] z-50 rounded-xl border border-border-default bg-background-elevated p-2 shadow-lg'
+          : 'hidden',
+        'lg:relative lg:inset-auto lg:z-auto lg:block lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none',
+        className,
+      ].join(' ');
+
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <>
+      {collapsible && (
+        <button
+          ref={buttonRef}
+          type="button"
+          aria-label={openLabel}
+          aria-expanded={expanded}
+          onClick={() => {
+            setExpanded(true);
+            // The input mounts in the same commit; focusing it in the click
+            // handler would race the layout, so hand it to the next frame.
+            requestAnimationFrame(() => inputRef.current?.focus());
+          }}
+          // Same 36px box and invisible 44px hit area as the hamburger next to
+          // it — `--header-height` is a layout contract, the header must not
+          // grow. `ml-auto` makes this the element that pushes the right-hand
+          // controls over once the field is gone.
+          // The `:has` clause is the 320px trade-off: brand, sign-in and the
+          // hamburger are all shrink-0 and together already fill that screen,
+          // so below 360px the search steps out — but ONLY while a sign-in
+          // button is actually rendered next to it.
+          className="relative ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-default bg-background-elevated text-text-secondary transition-colors before:absolute before:-inset-1 before:content-[''] hover:border-accent-cyan/40 hover:text-accent-cyan max-[359px]:[&:has(~[data-signin])]:hidden lg:hidden"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </button>
+      )}
+      <div ref={containerRef} className={wrapperClass}>
       <form
         role="combobox"
         aria-haspopup="listbox"
@@ -252,6 +341,37 @@ export function SearchBar({
             className="h-11 w-full rounded-lg border border-border-default bg-background-elevated pl-10 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-cyan/60 focus:outline-none focus:ring-1 focus:ring-accent-cyan/40"
           />
         </div>
+        {collapsible && (
+          // Panel-only: the desktop field has no close button, so this one is
+          // hidden from `lg` up rather than rendered conditionally on state —
+          // one markup tree, no hydration branch.
+          <button
+            type="button"
+            aria-label={closeLabel}
+            onClick={() => {
+              setExpanded(false);
+              setIsOpen(false);
+              buttonRef.current?.focus();
+            }}
+            className="relative ml-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors before:absolute before:-inset-1 before:content-[''] hover:bg-background-highlight hover:text-accent-cyan lg:hidden"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
       </form>
 
       {showDropdown && (
@@ -292,7 +412,8 @@ export function SearchBar({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
