@@ -355,22 +355,107 @@ body {
 .hero-link:hover { text-decoration-color: #00F0FF; }
 
 .hero-stores { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+/* Phone-first sizing (2026-07-31): below 640px the two badges have to sit side
+   by side inside a ~240-310px card, so every box metric scales with the
+   viewport and floors at a width that still fits a 320px screen with the
+   longest localized sub-label (English "DOWNLOAD ON THE"). From `sm` up the
+   badges get their original fixed metrics back. The 46px phone height keeps
+   the 44pt minimum tap target. */
 .store-badge {
-  display: inline-flex; align-items: center; gap: 10px;
-  height: 52px; padding: 0 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: clamp(5px, 1.8vw, 10px);
+  min-width: 0;
+  height: 46px; padding: 0 clamp(6px, 2.6vw, 14px);
   border-radius: 12px;
   border: 1px solid var(--color-border-default);
   background: var(--color-background-elevated);
   color: #fff;
   transition: border-color .15s, background .15s;
 }
+.store-badge svg { flex: none; width: clamp(15px, 4.6vw, 20px); height: auto; }
 .store-badge:hover {
   border-color: rgba(0,240,255,.6);
   background: var(--color-background-highlight);
 }
-.store-badge-stack { display: flex; flex-direction: column; line-height: 1.1; }
-.store-badge-sub  { font: 400 10px/1.1 var(--font-sans); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .04em; }
-.store-badge-main { font: 600 15px/1.1 var(--font-sans); color: #fff; }
+.store-badge-stack { display: flex; flex-direction: column; min-width: 0; line-height: 1.1; }
+.store-badge-sub  {
+  font: 400 clamp(8px, 2.3vw, 10px)/1.1 var(--font-sans);
+  color: var(--color-text-secondary);
+  text-transform: uppercase; letter-spacing: .02em; white-space: nowrap;
+  /* Safety net: the longest localized sub-label ("DOWNLOAD ON THE") clears a
+     320px card by ~6px with the Geist metrics. A wider fallback font would
+     otherwise spill across the neighbouring badge — ellipsis instead. */
+  overflow: hidden; text-overflow: ellipsis;
+}
+.store-badge-main { font: 600 clamp(12px, 3.3vw, 15px)/1.15 var(--font-sans); color: #fff; white-space: nowrap; }
+
+@media (min-width: 640px) {
+  .store-badge { height: 52px; padding: 0 18px; gap: 10px; }
+  .store-badge svg { width: auto; height: auto; } /* back to the per-icon width/height attributes */
+  .store-badge-sub { font-size: 10px; letter-spacing: .04em; }
+  .store-badge-main { font-size: 15px; }
+}
+
+/* ───────── Homepage end-cap: neon sheen (2026-07-31) ─────────
+   The card picks up the lighting of the photo it contains: pink neon enters
+   from the top right and falls off into cyan toward the bottom left. Three
+   layers — the pink bloom, the cyan counter-light and a faint diagonal wash
+   that keeps the middle from going flat — over the normal elevated surface.
+   The hairline border is a masked gradient on ::before, so the section itself
+   carries NO `border` utility (a real border would double the ring). */
+.endcap-sheen {
+  /* Intensity lives in these three knobs — the phone card is much narrower and
+     taller, so the same alphas read roughly twice as strong there (hence the
+     lower set under 640px). */
+  --sheen-pink: .11;
+  --sheen-cyan: .085;
+  --sheen-wash: .045;
+  /* Multiplier for the hairline border + outer glow, so the frame can be
+     dialled back together with the fills instead of dominating them. */
+  --sheen-edge: 1;
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-background-elevated);
+  background-image:
+    radial-gradient(90% 150% at 100% 0%, rgba(255, 0, 170, var(--sheen-pink)), transparent 66%),
+    radial-gradient(95% 155% at 0% 100%, rgba(0, 240, 255, var(--sheen-cyan)), transparent 64%),
+    linear-gradient(212deg,
+      rgba(255, 0, 170, var(--sheen-wash)) 0%,
+      rgba(145, 70, 255, .05) 45%,
+      rgba(0, 240, 255, calc(var(--sheen-wash) * .85)) 100%);
+  box-shadow:
+    0 -14px 46px -32px rgba(255, 0, 170, calc(.38 * var(--sheen-edge))),
+    0 16px 46px -32px rgba(0, 240, 255, calc(.28 * var(--sheen-edge)));
+}
+@media (max-width: 639px) {
+  .endcap-sheen {
+    --sheen-pink: .055;
+    --sheen-cyan: .042;
+    --sheen-wash: .02;
+    --sheen-edge: .68;
+  }
+}
+.endcap-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(212deg,
+    rgba(255, 0, 170, calc(.38 * var(--sheen-edge))) 0%,
+    rgba(145, 70, 255, calc(.22 * var(--sheen-edge))) 45%,
+    rgba(0, 240, 255, calc(.32 * var(--sheen-edge))) 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
 
 /* Store badges + scan-to-download QR side by side (desktop only). */
 .hero-get { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin-bottom: 20px; }
