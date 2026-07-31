@@ -236,16 +236,19 @@ export function timingGoodness(
 
 /**
  * Cell color for a semantic goodness value: red (bad hour) → yellow →
- * green (good hour). Hue AND opacity ramp together, so luminance rises
- * monotonically toward "good" — that keeps a brightness signal for red-green
- * color blindness (the detail line / tooltips carry the exact numbers).
+ * green (good hour). The red end runs brighter/more saturated than the
+ * green end (user-tuned 2026-08-01: "kräftiger, leuchtender") while opacity
+ * still rises toward "good", so good cells keep the strongest visual pull
+ * and the detail line / tooltips carry the exact numbers.
  * Deterministic string (rounded) so SSR and client markup stay identical.
  */
 export function timingCellColor(goodness: number): string {
   const g = Math.max(0, Math.min(1, goodness));
   const hue = Math.round(8 + 124 * g); // 8° red → 132° green
-  const alpha = (0.36 + 0.52 * g).toFixed(2);
-  return `hsla(${hue}, 75%, 52%, ${alpha})`;
+  const sat = Math.round(90 - 15 * g);
+  const light = Math.round(62 - 10 * g);
+  const alpha = (0.55 + 0.33 * g).toFixed(2);
+  return `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
 }
 
 /** "Tuesday 20:00" (already-shifted dow/hour). */

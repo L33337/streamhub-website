@@ -217,7 +217,7 @@ describe('timingGoodness', () => {
 
 describe('timingCellColor', () => {
   it('maps worst to red and best to green with rising opacity', () => {
-    expect(timingCellColor(0)).toBe('hsla(8, 75%, 52%, 0.36)');
+    expect(timingCellColor(0)).toBe('hsla(8, 90%, 62%, 0.55)');
     expect(timingCellColor(1)).toBe('hsla(132, 75%, 52%, 0.88)');
   });
 
