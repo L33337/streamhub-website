@@ -41,6 +41,8 @@ import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
 import { RecentStreamsSection } from '@/components/web/RecentStreamsSection';
 import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
 import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
+import { InsightsTeaserCard } from '@/components/web/streamer/InsightsTeaserCard';
+import { buildInsightsTeaser } from '@/lib/streamer-insights';
 import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 
@@ -72,6 +74,8 @@ interface StreamerPageData {
   history: PublicStreamHistory[];
   stats: PublicStreamerStats | null;
   rankings: PublicStreamerRankings | null;
+  /** M24: teaser payload for the insights subpage; null = don't render the card. */
+  insightsTeaser: { bestDay: string; median: number } | null;
   now: Date;
 }
 
@@ -152,13 +156,23 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // (collapses every error to null) and 1h-cached like stats — ranks move
   // nightly at most.
   const rankingsCall = api.getStreamerRankings(slug);
+  // M24 insights teaser. Best-effort inside the client (errors → null),
+  // 1h-cached — nightly aggregate.
+  const insightsCall = api.getStreamerInsights(slug);
 
   const streamer = await streamerCall;
   if (!streamer) {
     // 404: discard the in-flight section calls. allSettled attaches a handler to
     // each so a rejected live/upcoming fetch can't surface as an unhandled
     // rejection — but we do NOT await it, so notFound() is not delayed.
-    void Promise.allSettled([liveCall, upcomingCall, historyCall, statsCall, rankingsCall]);
+    void Promise.allSettled([
+      liveCall,
+      upcomingCall,
+      historyCall,
+      statsCall,
+      rankingsCall,
+      insightsCall,
+    ]);
     return {
       streamer: null,
       liveSlots: [],
@@ -166,6 +180,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       history: [],
       stats: null,
       rankings: null,
+      insightsTeaser: null,
       now,
     };
   }
@@ -173,12 +188,13 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // Valid slug: await the section batch. Every call is now best-effort (each
   // has its own rejection handler that degrades to []/null), so this Promise.all
   // can no longer reject — a partial outage renders a degraded page, not a 500.
-  const [liveSlots, upcomingSlots, history, stats, rankings] = await Promise.all([
+  const [liveSlots, upcomingSlots, history, stats, rankings, insights] = await Promise.all([
     liveCall,
     upcomingCall,
     historyCall,
     statsCall,
     rankingsCall,
+    insightsCall,
   ]);
 
   return {
@@ -188,6 +204,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     history,
     stats,
     rankings,
+    insightsTeaser: buildInsightsTeaser(insights),
     now,
   };
 });
@@ -225,7 +242,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function StreamerPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, liveSlots, upcomingSlots, history, stats, rankings, now } =
+  const { streamer, liveSlots, upcomingSlots, history, stats, rankings, insightsTeaser, now } =
     await loadStreamerPage(slug);
   if (!streamer) notFound();
 
@@ -459,6 +476,17 @@ export default async function StreamerPage({ params }: Props) {
 
       {stats && !showEmpty && (
         <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />
+      )}
+
+      {/* M24: insights teaser — the ONLY internal entry to the (noindex)
+          insights subpage, so it renders whenever the data exists. */}
+      {insightsTeaser && (
+        <InsightsTeaserCard
+          slug={streamer.id}
+          name={streamer.name}
+          bestDay={insightsTeaser.bestDay}
+          median={insightsTeaser.median}
+        />
       )}
 
       {recentStreams.length > 0 && (
