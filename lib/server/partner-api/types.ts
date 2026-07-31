@@ -140,6 +140,110 @@ export interface PublicGame {
   // per UTC weekday-hour cell over 28d (168 ints, index = weekday*24+hour,
   // weekday 0 = Monday). Null while the nightly aggregate warms up.
   hour_histogram?: number[] | null;
+  // Present ONLY when requested via include=timing (M24): viewer-demand vs
+  // streamer-competition stats. Null while the nightly aggregate warms up.
+  timing?: GameTiming | null;
+}
+
+// ============================================
+// M24 timing insights (mirrors _shared/partner-games.ts + partner-insights.ts)
+// ============================================
+// Every field optional for deploy skew (old API, new site) — treat undefined
+// like null. Series cells are null for "not observed" — NEVER coerce to 0.
+
+/** One recommended weekday-hour cell. dow/hour are UTC, dow 0 = Monday (ISO). */
+export interface TimingBestSlot {
+  dow: number;
+  hour: number;
+  /** Opportunity score = viewers / streamers in this cell. */
+  score: number;
+  viewers: number;
+  streamers: number;
+}
+
+export interface GameTiming {
+  // 168 cells, index = dow*24+hour (UTC, Monday=0); null cell = observed on
+  // < 2 distinct days (sampling gap, not "0 viewers").
+  viewers_histogram?: (number | null)[] | null;
+  streamers_histogram?: (number | null)[] | null;
+  days_histogram?: (number | null)[] | null;
+  best_slots?: TimingBestSlot[] | null;
+  // 12 cells: median CCV per hour-into-stream (cell 11 = >=12h); null below 5 samples.
+  ramp_curve?: (number | null)[] | null;
+  avg_viewers?: number | null;
+  avg_streamers?: number | null;
+  /** avg_viewers / avg_streamers — the /best-games-to-stream sort key. */
+  overall_score?: number | null;
+  tracked_streamers?: number;
+  sample_count?: number;
+  is_trending?: boolean;
+}
+
+/** One row of GET /v1/games/best-to-stream (already sorted by overall_score desc). */
+export interface BestGameEntry {
+  category: string;
+  overall_score?: number;
+  avg_viewers?: number | null;
+  avg_streamers?: number | null;
+  best_slot?: TimingBestSlot | null;
+  tracked_streamers?: number;
+  sample_count?: number;
+  is_trending?: boolean;
+  box_art_url?: string | null;
+  twitch_game_id?: string | null;
+}
+
+/** One aggregation cell of the streamer insights: median CCV + sample count. */
+export interface InsightsMedianCell {
+  median: number | null;
+  samples: number;
+}
+
+export interface InsightsCategoryEntry {
+  category: string;
+  median: number | null;
+  samples: number;
+  /** Observed streamed hours in this category (1 sample = 1 hour). */
+  hours: number;
+}
+
+export interface InsightsGameToTry {
+  category: string;
+  overall_score: number;
+  avg_viewers?: number | null;
+  avg_streamers?: number | null;
+  is_trending?: boolean;
+}
+
+export interface InsightsScheduleReliability {
+  time_tier?: 'reliable' | 'medium' | 'unreliable' | 'unknown';
+  time_hit_rate?: number | null;
+  /** Signed minutes; positive = starts late. */
+  median_start_deviation_minutes?: number | null;
+  no_show_count?: number;
+  sample?: number;
+}
+
+// Mirror of GET /v1/streamers/{id}/insights (M24). sample_count 0 = viewer
+// data still collecting (all series null).
+export interface StreamerInsights {
+  streamer_id: string;
+  window_days?: number;
+  sample_count: number;
+  timezone?: string | null;
+  vacation_until?: string | null;
+  overall_median?: number | null;
+  main_category?: string | null;
+  weekday_viewers?: InsightsMedianCell[] | null;
+  hour_viewers?: InsightsMedianCell[] | null;
+  category_viewers?: InsightsCategoryEntry[] | null;
+  ramp_curve?: InsightsMedianCell[] | null;
+  consistency_percentile?: number | null;
+  follower_band?: string | null;
+  ccv_percentile_in_size_band?: number | null;
+  schedule_reliability?: InsightsScheduleReliability | null;
+  games_to_try?: InsightsGameToTry[];
+  refreshed_at?: string | null;
 }
 
 // One platform's recording of a session, as carried in `PublicStreamHistory.vods`.

@@ -127,6 +127,14 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.5,
   },
   {
+    // M24 opportunity ranking. Listed while it warms up (page emits noindex
+    // below MIN_INDEXABLE_BEST_GAMES rows, same treatment as climbers).
+    url: `${SITE_URL}/best-games-to-stream`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.6,
+  },
+  {
     url: `${SITE_URL}/developers`,
     lastModified: BUILD_TIME,
     changeFrequency: 'monthly',
@@ -253,6 +261,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.5,
         });
       }
+    }
+
+    // M24 /game/{slug}/best-time pages. ONE call — the best-to-stream list
+    // returns exactly the categories passing the page's own tracked>=5 gate,
+    // so this is an exact (not proxy) index gate. Best-effort: if the endpoint
+    // is unavailable (older API), just omit the subpages — deliberately NOT
+    // rethrowing like the blocks above, because these URLs are additive.
+    try {
+      const best = await api.listBestGamesToStream();
+      const hubSlugs = new Set(
+        gamesResp.data.map((g) => gameSlug(g.category)).filter((s) => s.length > 0),
+      );
+      for (const entry of best.data) {
+        const slug = gameSlug(entry.category);
+        // Only categories that also have a hub page — /best-time resolves its
+        // category through the same catalog and 404s otherwise.
+        if (!slug || !hubSlugs.has(slug)) continue;
+        gameUrls.push({
+          url: `${SITE_URL}/game/${slug}/best-time`,
+          changeFrequency: 'weekly',
+          priority: 0.5,
+        });
+      }
+    } catch (err) {
+      console.warn(
+        '[sitemap] best-to-stream unavailable, omitting /best-time URLs:',
+        err instanceof Error ? err.message : err,
+      );
     }
   } catch (err) {
     // The sitemap is all-or-nothing: NEVER serve a truncated list. A degraded

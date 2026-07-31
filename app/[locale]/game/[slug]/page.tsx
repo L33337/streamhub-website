@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import {
   getPartnerApi,
+  type GameTiming,
   type PublicGame,
   type PublicStreamSlot,
   type PublicStreamer,
@@ -25,7 +26,9 @@ import {
 import { isGameHubIndexable } from '@/lib/rankings';
 import { schedulePlatforms } from '@/lib/game-schedule';
 import { isUsableHistogram } from '@/lib/game-heatmap';
+import { MIN_INDEXABLE_TIMING_STREAMERS } from '@/lib/game-timing';
 import { StreamTimesHeatmap } from '@/components/web/games/StreamTimesHeatmap';
+import { BestSlotChips } from '@/components/web/games/BestSlotChips';
 import { FollowGameButton } from '@/components/web/games/FollowGameButton';
 import { GameDaySection } from '@/components/web/games/GameDaySection';
 import { ScheduleFilters } from '@/components/web/games/ScheduleFilters';
@@ -78,6 +81,9 @@ interface GamePageData {
   // UTC weekday-hour histogram (168 minutes cells) for the "When is {game}
   // streamed?" heatmap; null while the aggregate warms up or on API error.
   hourHistogram: number[] | null;
+  // M24: timing stats from the same call (include=timing) — feeds the
+  // best-time preview chips; null while warming up / on API error.
+  timing: GameTiming | null;
   now: Date;
 }
 
@@ -98,6 +104,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     rankedStreamers: [],
     related: [],
     hourHistogram: null,
+    timing: null,
     now,
   };
 
@@ -150,21 +157,24 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
       limit: RANK_FETCH_LIMIT,
       revalidate: 3600,
     }),
-    // "When is {game} streamed?" heatmap — single-row lookup with the opt-in
-    // histogram field (nightly aggregate; 1h data cache is plenty fresh).
-    // Degrades to null against an older API that rejects the params.
+    // "When is {game} streamed?" heatmap + M24 best-time preview — one
+    // single-row lookup with both opt-in fields (nightly aggregates; 1h data
+    // cache is plenty fresh). Degrades to null against an older API that
+    // rejects the params.
     api.listGames({
       category: game.category,
-      include: 'hour_histogram',
+      include: 'hour_histogram,timing',
       limit: 1,
       revalidate: 3600,
     }),
   ]);
 
   let hourHistogram: number[] | null = null;
+  let timing: GameTiming | null = null;
   if (histogramCall.status === 'fulfilled') {
-    const value = histogramCall.value.data[0]?.hour_histogram;
-    if (isUsableHistogram(value)) hourHistogram = value;
+    const row = histogramCall.value.data[0];
+    if (isUsableHistogram(row?.hour_histogram)) hourHistogram = row.hour_histogram;
+    timing = row?.timing ?? null;
   }
 
   return {
@@ -175,6 +185,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     rankedStreamers: rankedCall.status === 'fulfilled' ? rankedCall.value.data : [],
     related,
     hourHistogram,
+    timing,
     now,
   };
 });
@@ -281,9 +292,18 @@ export default async function GamePage({ params }: Props) {
     rankedStreamers,
     related,
     hourHistogram,
+    timing,
     now,
   } = await loadGamePage(slug);
   if (!category || !game) notFound();
+
+  // M24 best-time preview: only with real slot data past the tracked gate —
+  // mirrors the /best-time page's own indexability gate so the hub never
+  // links into a warming-up subpage.
+  const bestSlots =
+    (timing?.tracked_streamers ?? 0) >= MIN_INDEXABLE_TIMING_STREAMERS
+      ? (timing?.best_slots ?? [])
+      : [];
 
   // Dedupe streamers across live + upcoming; live first, then alphabetical.
   const liveIds = new Set(liveSlots.map((s) => s.streamer_id));
@@ -801,6 +821,40 @@ export default async function GamePage({ params }: Props) {
             When is {category} streamed?
           </h2>
           <StreamTimesHeatmap category={category} histogram={hourHistogram} />
+        </section>
+      )}
+
+      {bestSlots.length > 0 && (
+        <section
+          aria-labelledby="best-time-heading"
+          id="best-time"
+          className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 id="best-time-heading" className="text-xl font-bold text-white">
+              Best time to stream {category}
+            </h2>
+            {timing?.is_trending === true && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-accent-pink/40 bg-background-elevated px-2.5 py-0.5 text-xs font-semibold text-accent-pink">
+                ▲ Trending
+              </span>
+            )}
+          </div>
+          <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+            For streamers: the windows where {category} viewers outnumber live{' '}
+            {category} channels the most.
+          </p>
+          <div className="mt-3">
+            <BestSlotChips slots={bestSlots} />
+          </div>
+          <p className="mt-3 text-sm">
+            <Link
+              href={`/game/${slug}/best-time`}
+              className="text-accent-cyan hover:text-text-primary"
+            >
+              Full opportunity heatmap &amp; analysis →
+            </Link>
+          </p>
         </section>
       )}
 
