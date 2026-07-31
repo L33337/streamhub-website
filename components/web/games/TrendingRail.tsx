@@ -24,7 +24,11 @@ export function TrendingRail({
   return (
     <section aria-label={L.trending.aria} className="mt-10">
       <h2 className="text-xl font-bold text-white">{L.trending.heading}</h2>
-      <p className="mt-1 text-xs text-text-muted">{L.trending.subtitle}</p>
+      {/* Hidden on phones for the same reason as the homepage rail — same
+          line, same section, so the two pages stay in step. */}
+      <p className="mt-1 hidden text-xs text-text-muted sm:block">
+        {L.trending.subtitle}
+      </p>
       <ul className="mt-3 flex gap-3 overflow-x-auto pb-2">
         {trending.map((t) => {
           const slug = catalogSlugByName.get(t.game_name);
