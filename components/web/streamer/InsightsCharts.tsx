@@ -10,6 +10,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { InsightsMedianCell } from '@/lib/server/partner-api';
 import { localUtcOffsetHours } from '@/lib/game-heatmap';
+import { formatStatValue } from '@/lib/format/number';
 import {
   WEEKDAY_LABELS,
   shiftHourCells,
@@ -20,42 +21,72 @@ function subscribe(): () => void {
   return () => {};
 }
 
+// Bars top out below 100% so value labels fit INSIDE the fixed-height chart
+// row instead of clipping at its top edge.
+const MAX_BAR_PCT = 84;
+
 function Bars({
   cells,
   labels,
   ariaLabel,
   minSamples,
+  labelMode,
 }: {
   cells: InsightsMedianCell[];
   labels: string[];
   ariaLabel: string;
   minSamples: number;
+  /** 'all' = label every bar (7 weekday bars); 'peak' = only the best bar (24 hour bars would collide). */
+  labelMode: 'all' | 'peak';
 }) {
   const max = Math.max(1, ...cells.map((c) => (c.median !== null ? c.median : 0)));
+  // Best bar = highest median among cells with a trustworthy sample count —
+  // thin-sample spikes already render dimmed and must not win the highlight.
+  let bestIdx = -1;
+  let best = -1;
+  cells.forEach((c, i) => {
+    if (c.median !== null && c.samples >= minSamples && c.median > best) {
+      best = c.median;
+      bestIdx = i;
+    }
+  });
+  const heightPct = (v: number) => Math.max(4, Math.round((v / max) * MAX_BAR_PCT));
   return (
     <div>
       <div className="flex h-28 items-end gap-1" role="img" aria-label={ariaLabel}>
         {cells.map((c, i) => {
           const thin = c.median !== null && c.samples < minSamples;
+          const isBest = i === bestIdx;
+          const showLabel =
+            c.median !== null && (labelMode === 'all' ? !thin : isBest);
           return (
             <div
               key={i}
               className="relative flex h-full flex-1 items-end"
               title={
                 c.median !== null
-                  ? `${labels[i]} · median ${Math.round(c.median)} viewers (${c.samples} samples)`
+                  ? `${labels[i]} · median ${formatStatValue(c.median)} viewers (${c.samples} samples)`
                   : `${labels[i]} · no data`
               }
             >
+              {showLabel && c.median !== null && (
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-x-[-8px] z-10 text-center text-[10px] leading-none ${
+                    isBest ? 'font-semibold text-text-primary' : 'text-text-muted'
+                  }`}
+                  style={{ bottom: `calc(${heightPct(c.median)}% + 3px)` }}
+                >
+                  {formatStatValue(c.median)}
+                </span>
+              )}
               {c.median !== null ? (
                 <div
                   aria-hidden="true"
                   className={`mx-auto w-4/5 rounded-t-[3px] ${
-                    thin ? 'bg-accent-cyan/30' : 'bg-accent-cyan/80'
+                    thin ? 'bg-accent-cyan/30' : isBest ? 'bg-accent-cyan' : 'bg-accent-cyan/70'
                   }`}
-                  style={{
-                    height: `${Math.max(4, Math.round((c.median / max) * 100))}%`,
-                  }}
+                  style={{ height: `${heightPct(c.median)}%` }}
                 />
               ) : (
                 <div
@@ -127,6 +158,7 @@ export function InsightsCharts({
               labels={[...WEEKDAY_LABELS]}
               ariaLabel="Median concurrent viewers by weekday"
               minSamples={minSamples}
+              labelMode="all"
             />
           </div>
         </div>
@@ -181,6 +213,7 @@ export function InsightsCharts({
               labels={hourLabels}
               ariaLabel="Median concurrent viewers by hour of day"
               minSamples={minSamples}
+              labelMode="peak"
             />
           </div>
         </div>

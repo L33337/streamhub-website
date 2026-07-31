@@ -22,3 +22,24 @@ export function formatCompactNumber(
     return new Intl.NumberFormat('en-US', options).format(value);
   }
 }
+
+/**
+ * Display form for M24 stat values (viewers/channel scores, medians, channel
+ * counts) whose raw magnitude spans 0.1 … 50,000+. One rule everywhere so
+ * columns stay comparable:
+ *   < 10    → one decimal ("7.7", "2" — trailing .0 dropped)
+ *   < 1000  → integer ("499")
+ *   ≥ 1000  → compact ("8.9K", "50K")
+ * The decimals of the raw aggregates ("45808.6") are sampling noise, not
+ * precision — never show them above 10. Returns '' for null/non-finite so
+ * callers keep their own null branches ("—").
+ */
+export function formatStatValue(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '';
+  if (value < 10) {
+    const rounded = Math.round(value * 10) / 10;
+    return `${rounded}`;
+  }
+  if (value < 1000) return `${Math.round(value)}`;
+  return formatCompactNumber(value, 'en');
+}

@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
@@ -11,9 +12,10 @@ import {
 import { applyLocaleSeo } from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { gameSlug } from '@/lib/game-slug';
-import { formatCompactNumber } from '@/lib/format/number';
+import { formatCompactNumber, formatStatValue } from '@/lib/format/number';
 import {
   COLLECTING_THRESHOLD,
+  bestMedianCategory,
   formatFollowerBand,
   isOnVacation,
   rampMedians,
@@ -128,6 +130,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
   const topShare = sizeBenchmarkTopShare(insights?.ccv_percentile_in_size_band);
   const band = formatFollowerBand(insights?.follower_band);
   const vacation = isOnVacation(insights?.vacation_until);
+  const bestCategory = bestMedianCategory(categoryRows);
 
   const gameLink = (category: string): string | null => {
     const s = gameSlug(category);
@@ -150,9 +153,32 @@ export default async function StreamerInsightsPage({ params }: Props) {
         / Insights
       </p>
 
-      <h1 className="mt-3 text-pretty text-3xl font-bold text-white md:text-4xl">
-        {`${streamer.name} — streaming insights`}
-      </h1>
+      {/* Identity header: without the avatar the page reads like a detached
+          report — the streamer page look anchors it (and the way back). */}
+      <div className="mt-3 flex items-center gap-4">
+        {streamer.avatar_url && (
+          <Image
+            src={streamer.avatar_url}
+            alt=""
+            width={80}
+            height={80}
+            className="h-14 w-14 shrink-0 rounded-full border-2 border-accent-cyan/40 sm:h-20 sm:w-20"
+          />
+        )}
+        <div className="min-w-0">
+          <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
+            {`${streamer.name} — streaming insights`}
+          </h1>
+          {(streamer.follower_count != null || insights?.main_category) && (
+            <p className="mt-1 text-sm text-text-muted">
+              {streamer.follower_count != null &&
+                `${formatCompactNumber(streamer.follower_count)} followers`}
+              {streamer.follower_count != null && insights?.main_category && ' · '}
+              {insights?.main_category && `mostly streams ${insights.main_category}`}
+            </p>
+          )}
+        </div>
+      </div>
       <p className="mt-3 max-w-2xl text-text-secondary">
         When does {streamer.name} pull the most viewers — and where is room to
         grow? Based on hourly concurrent-viewer samples over the last{' '}
@@ -259,11 +285,18 @@ export default async function StreamerInsightsPage({ params }: Props) {
               <h2 id="category-perf-heading" className="text-xl font-bold text-white">
                 Category performance
               </h2>
-              <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-                <table className="w-full min-w-[480px] text-sm">
+              <p className="mt-1 text-sm text-text-secondary">
+                Sorted by hours observed — the categories {streamer.name} actually
+                lives in come first.
+              </p>
+              {/* No min-width / no h-scroll: on phones the hours column moves
+                  into a subtext line under the category name instead of
+                  living off-screen behind an invisible horizontal scroll. */}
+              <div className="mt-4 rounded-xl bg-background-elevated p-1 gradient-border">
+                <table className="w-full text-sm">
                   <caption className="sr-only">
                     Median concurrent viewers per category, last{' '}
-                    {insights?.window_days ?? 56} days
+                    {insights?.window_days ?? 56} days, sorted by hours observed
                   </caption>
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
@@ -273,7 +306,10 @@ export default async function StreamerInsightsPage({ params }: Props) {
                       <th scope="col" className="px-3 py-2 text-right font-semibold">
                         Median viewers
                       </th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">
+                      <th
+                        scope="col"
+                        className="hidden px-3 py-2 text-right font-semibold sm:table-cell"
+                      >
                         Hours observed
                       </th>
                     </tr>
@@ -281,25 +317,36 @@ export default async function StreamerInsightsPage({ params }: Props) {
                   <tbody>
                     {categoryRows.map((row) => {
                       const s = gameLink(row.category);
+                      const isBest = row.category === bestCategory;
                       return (
                         <tr key={row.category} className="border-t border-divider">
                           <th scope="row" className="px-3 py-2 text-left font-medium">
-                            {s ? (
-                              <Link
-                                href={`/game/${s}/best-time`}
-                                prefetch={false}
-                                className="text-text-primary hover:text-accent-cyan"
-                              >
-                                {row.category}
-                              </Link>
-                            ) : (
-                              <span className="text-text-primary">{row.category}</span>
-                            )}
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              {s ? (
+                                <Link
+                                  href={`/game/${s}/best-time`}
+                                  prefetch={false}
+                                  className="text-text-primary hover:text-accent-cyan"
+                                >
+                                  {row.category}
+                                </Link>
+                              ) : (
+                                <span className="text-text-primary">{row.category}</span>
+                              )}
+                              {isBest && (
+                                <span className="rounded-full border border-accent-cyan/40 px-1.5 py-0.5 text-[10px] font-semibold text-accent-cyan">
+                                  Highest median
+                                </span>
+                              )}
+                            </span>
+                            <span className="mt-0.5 block text-[11px] font-normal text-text-muted sm:hidden">
+                              {`${row.hours} h observed`}
+                            </span>
                           </th>
                           <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
-                            {row.median !== null ? Math.round(row.median) : '—'}
+                            {row.median !== null ? formatStatValue(row.median) : '—'}
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
+                          <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
                             {row.hours}
                           </td>
                         </tr>
@@ -327,7 +374,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
                     <>
                       <span className="font-semibold">{g.category}</span>
                       <span className="ml-2 text-xs text-text-muted">
-                        ~{Math.round(g.overall_score * 10) / 10} viewers/channel
+                        {`~${formatStatValue(g.overall_score)} viewers/channel`}
                       </span>
                       {g.is_trending === true && (
                         <span className="ml-2 text-xs font-semibold text-accent-pink">
@@ -364,6 +411,9 @@ export default async function StreamerInsightsPage({ params }: Props) {
                 Consistency &amp; benchmark
               </h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {/* Whichever half is missing renders an explanatory placeholder
+                    instead of an empty grid slot — the section title promises
+                    both, and "how do I unlock this?" beats a silent gap. */}
                 {relUsable && rel && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
@@ -413,7 +463,20 @@ export default async function StreamerInsightsPage({ params }: Props) {
                     </ul>
                   </div>
                 )}
-                {topShare !== null && band && (
+                {!relUsable && (
+                  <div className="rounded-xl border border-dashed border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Schedule reliability
+                    </p>
+                    <p className="mt-2 text-sm text-text-secondary">
+                      Not enough scored schedule announcements yet. Once 5
+                      announced streams have been evaluated against what
+                      actually happened, punctuality stats appear here
+                      automatically.
+                    </p>
+                  </div>
+                )}
+                {topShare !== null && band ? (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                       Size benchmark
@@ -423,6 +486,17 @@ export default async function StreamerInsightsPage({ params }: Props) {
                     </p>
                     <p className="mt-1 text-sm text-text-secondary">
                       of channels with {band} by median concurrent viewers.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Size benchmark
+                    </p>
+                    <p className="mt-2 text-sm text-text-secondary">
+                      Needs enough similar-sized tracked channels for a fair
+                      comparison — this fills in automatically as coverage
+                      grows.
                     </p>
                   </div>
                 )}

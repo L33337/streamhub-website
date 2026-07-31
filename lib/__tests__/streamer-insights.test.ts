@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { InsightsMedianCell, StreamerInsights } from '../server/partner-api';
 import {
   COLLECTING_THRESHOLD,
+  bestMedianCategory,
   bestWeekday,
   buildInsightsTeaser,
   formatFollowerBand,
@@ -125,6 +126,41 @@ describe('usableCategoryRows', () => {
   it('empty on absent input', () => {
     expect(usableCategoryRows(null)).toEqual([]);
     expect(usableCategoryRows(undefined)).toEqual([]);
+  });
+});
+
+describe('bestMedianCategory', () => {
+  const row = (category: string, median: number | null, hours: number) => ({
+    category,
+    median,
+    samples: hours,
+    hours,
+  });
+  it('picks the highest median among rows with enough observed hours', () => {
+    const rows = [
+      row('Counter-Strike', 8654, 232),
+      row('DayZ', 9817, 35),
+      row('Escape from Tarkov', 12332, 28),
+    ];
+    expect(bestMedianCategory(rows)).toBe('Escape from Tarkov');
+  });
+  it('a short-observed spike never wins the marker', () => {
+    const rows = [
+      row('Counter-Strike', 8654, 232),
+      row('Warhammer 40,000: Darktide', 9488, 89),
+      row('One-off event', 50000, 3), // below the 10h gate
+    ];
+    expect(bestMedianCategory(rows)).toBe('Warhammer 40,000: Darktide');
+  });
+  it('null when fewer than 2 rows qualify (superlative needs comparison)', () => {
+    expect(bestMedianCategory([row('Only game', 500, 100)])).toBeNull();
+    expect(
+      bestMedianCategory([row('A', 500, 100), row('B', 400, 4)]),
+    ).toBeNull();
+    expect(bestMedianCategory([])).toBeNull();
+    expect(
+      bestMedianCategory([row('A', null, 100), row('B', null, 50)]),
+    ).toBeNull();
   });
 });
 

@@ -4,6 +4,7 @@
 
 import Link from 'next/link';
 import { BarChart3 } from 'lucide-react';
+import { formatStatValue } from '@/lib/format/number';
 
 export function InsightsTeaserCard({
   slug,
@@ -34,7 +35,7 @@ export function InsightsTeaserCard({
                 (the documented "VALORANTstreamers" bug). */}
             {'Best day: '}
             <span className="font-semibold text-text-primary">{bestDay}</span>
-            {` · ~${median} median viewers — viewer patterns, category performance & benchmarks`}
+            {` · ~${formatStatValue(median)} median viewers — viewer patterns, category performance & benchmarks`}
           </span>
         </span>
         <span aria-hidden="true" className="shrink-0 text-accent-cyan">

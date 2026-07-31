@@ -4,9 +4,16 @@
 // threshold) render as dashed placeholders, visually distinct from "low".
 //
 // `secondary` draws a comparison series behind the primary bars (insights
-// page: streamer vs their main category).
+// page: streamer vs their main category). The peak bar is highlighted and
+// carries a value label — without at least one number the chart shows a shape
+// but answers nothing (and touch users can't reach the title tooltips).
 
 import { RAMP_CELLS, rampBarLabel } from '@/lib/game-timing';
+import { formatStatValue } from '@/lib/format/number';
+
+// Bars top out below 100% so the peak value label fits INSIDE the fixed-height
+// chart row instead of clipping at its top edge.
+const MAX_BAR_PCT = 86;
 
 export function RampBars({
   primary,
@@ -24,7 +31,16 @@ export function RampBars({
     ...primary.filter((v): v is number => v !== null),
     ...(secondary ?? []).filter((v): v is number => v !== null),
   );
-  const heightPct = (v: number) => Math.max(4, Math.round((v / max) * 100));
+  const heightPct = (v: number) => Math.max(4, Math.round((v / max) * MAX_BAR_PCT));
+
+  let peakIdx = -1;
+  let peak = -1;
+  primary.forEach((v, i) => {
+    if (v !== null && v > peak) {
+      peak = v;
+      peakIdx = i;
+    }
+  });
 
   return (
     <div>
@@ -36,18 +52,28 @@ export function RampBars({
         {Array.from({ length: RAMP_CELLS }, (_, i) => {
           const p = primary[i] ?? null;
           const s = secondary?.[i] ?? null;
+          const isPeak = i === peakIdx;
           return (
             <div
               key={i}
               className="relative flex h-full flex-1 items-end"
               title={
                 p !== null
-                  ? `${rampBarLabel(i)} · ${Math.round(p)} median viewers${
-                      s !== null ? ` (${secondaryLabel ?? 'category'}: ${Math.round(s)})` : ''
+                  ? `${rampBarLabel(i)} · ${formatStatValue(p)} median viewers${
+                      s !== null ? ` (${secondaryLabel ?? 'category'}: ${formatStatValue(s)})` : ''
                     }`
                   : `${rampBarLabel(i)} · not enough data`
               }
             >
+              {p !== null && isPeak && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-[-6px] z-20 text-center text-[10px] font-semibold leading-none text-text-primary"
+                  style={{ bottom: `calc(${heightPct(p)}% + 3px)` }}
+                >
+                  {formatStatValue(p)}
+                </span>
+              )}
               {s !== null && (
                 <div
                   aria-hidden="true"
@@ -58,7 +84,9 @@ export function RampBars({
               {p !== null ? (
                 <div
                   aria-hidden="true"
-                  className="relative z-10 mx-auto w-3/5 rounded-t-[3px] bg-accent-cyan/80"
+                  className={`relative z-10 mx-auto w-3/5 rounded-t-[3px] ${
+                    isPeak ? 'bg-accent-cyan' : 'bg-accent-cyan/70'
+                  }`}
                   style={{ height: `${heightPct(p)}%` }}
                 />
               ) : (

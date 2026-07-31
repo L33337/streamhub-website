@@ -9,6 +9,7 @@ import { useSyncExternalStore } from 'react';
 import type { TimingBestSlot } from '@/lib/server/partner-api';
 import { localUtcOffsetHours } from '@/lib/game-heatmap';
 import { formatSlotLabel, shiftSlot } from '@/lib/game-timing';
+import { formatStatValue } from '@/lib/format/number';
 
 function subscribe(): () => void {
   return () => {};
@@ -41,7 +42,7 @@ export function BestSlotChips({ slots }: { slots: TimingBestSlot[] }) {
                 {formatSlotLabel(local.dow, local.hour)}
               </span>
               <span className="whitespace-nowrap text-xs text-text-muted">
-                ~{Math.round(slot.score * 10) / 10} viewers/channel
+                {`~${formatStatValue(slot.score)} viewers/channel`}
               </span>
             </li>
           );
