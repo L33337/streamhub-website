@@ -107,9 +107,9 @@ export const en: HubLex = {
     endcap: {
       title: 'Take your lineup with you.',
       bullets: [
-        'Push alerts the moment your streamers go live',
-        'Up-next widget on your home screen',
-        'Favorites in sync — phone & web',
+        'Follow your favorite streamer',
+        'Stream schedule overview',
+        'Stats, highlights and more!',
       ],
       webLead: 'Prefer the browser?',
       webLink: 'Create a free account',

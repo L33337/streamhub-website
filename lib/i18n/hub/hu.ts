@@ -99,9 +99,9 @@ export const hu: HubLex = {
     endcap: {
       title: 'Vidd magaddal a műsorodat.',
       bullets: [
-        'Push-értesítés, amint a streamereid élőben vannak',
-        'Következő-stream widget a kezdőképernyőn',
-        'Kedvencek szinkronban — telefonon és weben',
+        'Kövesd a kedvenc streameredet',
+        'Műsorrend egy pillantásra',
+        'Statisztikák, klipek és még több!',
       ],
       webLead: 'Inkább böngészőben?',
       webLink: 'Hozz létre ingyenes fiókot',
