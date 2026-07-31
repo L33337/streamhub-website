@@ -69,7 +69,14 @@ export function HeaderUserMenu({
         // `before:-inset-1` lifts the touch target to 44px without changing the
         // 36px visual box — the header height is a layout contract
         // (--header-height feeds every sticky offset on the site).
-        className="relative inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-sm font-semibold text-accent-cyan transition-colors before:absolute before:-inset-1 before:content-[''] hover:bg-accent-cyan/20"
+        // `max-[359px]:ml-auto`: the header's single auto margin normally sits
+        // on the search button, which pushes it, this button and the hamburger
+        // together against the right edge. Below 360px that button hides (it
+        // is exactly this sign-in label that leaves no room for it), taking
+        // the auto margin with it — so this becomes the first right-hand
+        // control and inherits the job. Signed IN there is no `data-signin`,
+        // the search button stays, and this never applies.
+        className="relative inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 px-3 text-sm font-semibold text-accent-cyan transition-colors before:absolute before:-inset-1 before:content-[''] hover:bg-accent-cyan/20 max-[359px]:ml-auto"
       >
         {signInLabel}
       </Link>

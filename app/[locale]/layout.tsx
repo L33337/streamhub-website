@@ -230,7 +230,16 @@ export default async function RootLayout({
               {AUTH_ENABLED && (
                 <HeaderUserMenu locale={locale} signInLabel={chrome.nav.signIn} />
               )}
-              <div className="ml-auto md:hidden">
+              {/* No `ml-auto` of its own above 360px: the search button
+                  already carries one, and TWO auto margins in a flex row split
+                  the free space between them — which is what pushed the
+                  hamburger to the far edge and left the search icon and the
+                  sign-in button stranded mid-row. With one auto margin all
+                  three controls sit together against the right edge.
+                  Below 360px the search button steps out (see SearchBar) and
+                  takes the auto margin with it — the sign-in button carries it
+                  there instead (HeaderUserMenu). */}
+              <div className="md:hidden">
                 <MobileHeaderMenu locale={locale} strings={chrome.nav} />
               </div>
             </div>
