@@ -234,6 +234,32 @@ panel under the header.
 - Below 360px the icon still steps out while a sign-in button is rendered
   (`max-[359px]:[&:has(~[data-signin])]:hidden`) — four fixed controls do not
   fit a 320px screen in any locale that spells sign-in out.
+- **Exactly ONE `ml-auto` in the header row.** A flex row splits its free space
+  between two auto margins, so a second one (it was on the hamburger wrapper)
+  pins that control to the edge and strands everything before it mid-row. The
+  margin lives on the search button; below 360px, where that button hides, the
+  sign-in link carries it (`max-[359px]:ml-auto` in `HeaderUserMenu`). If you
+  add a control, do not give it its own auto margin.
+
+## `--header-height` is the OUTER height, in two tiers (2026-07-31)
+
+`:root { --header-height: 57px }` + `65px` from `lg`, **including the 1px
+bottom border** — every `top-[var(--header-height)]` sub-nav aligns to that
+edge and every `scroll-mt-[calc(var(--header-height)+…)]` anchor clears it.
+
+- It was a flat 56px until this round, i.e. 1px short on a phone and **9px
+  short on a desktop** (the search input is 44px tall, the mobile controls
+  36px). Every sticky sub-nav — home section nav, /live jump nav, program time
+  bar, feed chips — parked that far UNDER the header, and jump targets landed
+  behind the pinned bar. Nothing errored; it just looked slightly wrong.
+- **The header row's height is pinned (`h-14 lg:h-16`), not derived from its
+  content.** Change one and you must change the other. A control taller than
+  the row now overflows visibly instead of silently desynchronising every
+  sub-nav on the site — that is the point of pinning it.
+- Regression check: scroll until a sub-nav pins, then
+  `header.getBoundingClientRect().bottom - subnav.getBoundingClientRect().top`
+  must be 0. Disable `scroll-behavior: smooth` first (globals.css sets it on
+  `html`) or the measurement runs mid-animation and reads nonsense.
 
 # Release 2026-07-31 — three homepage branches merged together
 
