@@ -87,7 +87,14 @@ export function HomeTrendingRail({
   return (
     <section aria-label={L.trending.aria}>
       <FeedSectionHeader title={L.trending.heading} />
-      <p className="-mt-2 mb-3 text-xs text-text-muted">{L.trending.subtitle}</p>
+      {/* Phone: the heading and the box art already say what this is, so the
+          line only costs vertical space above the fold. It stays in the HTML
+          (display:none) and the section's aria-label carries the same meaning,
+          so nothing is lost for screen readers. `-mt-2 mb-3` go with it when
+          it hides, which is exactly the spacing the sort control wants. */}
+      <p className="-mt-2 mb-3 hidden text-xs text-text-muted sm:block">
+        {L.trending.subtitle}
+      </p>
       <HomeTrendingRailClient
         tiles={tiles}
         orders={buildTrendingOrders(sortItems)}
