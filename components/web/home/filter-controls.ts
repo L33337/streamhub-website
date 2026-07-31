@@ -29,25 +29,41 @@ export const FILTER_SELECT_CLASS =
  * as the game-ranking explorer so the site has one "pick a metric" language,
  * with three deliberate homepage deviations:
  *
- * - `min-h-11` again: the ranking page's `py-1.5` buttons are ~30px, under the
- *   44px touch minimum. Desktop-first page there, phone-first here.
+ * - **The GROUP is 44px tall, not each button** (36px button + 3px padding +
+ *   1px border per side), so it lines up with the `FILTER_SELECT_CLASS` pills
+ *   of the live rail and the lineup. 44px buttons made the bordered group 54px,
+ *   which towered over them. The touch minimum is still met: an invisible
+ *   `::before` grows the hit area back to 44px vertically — the same trick as
+ *   `touchTargetExpander` (lib/ui/positioning.ts), but inset on the Y axis
+ *   ONLY, because a symmetric `-inset-1` would have neighbouring segments
+ *   overlap each other's hit area and the later sibling would steal the edge
+ *   of the earlier one.
  * - **Exactly one row, always** (`flex-nowrap` + `shrink-0`): a wrapping group
  *   pushed the rail down and read as two unrelated controls on a phone. The
  *   labels are kept short per locale so all four fit a 390px screen, but a
- *   long translation or a 320px device must scroll, not wrap — hence
- *   `overflow-x-auto` with the rail's hidden-scrollbar treatment rather than
- *   `overflow-hidden`, which would cut an option off with no way to reach it.
+ *   long translation or a 320px device must scroll, not wrap — hence the
+ *   scroller rather than `overflow-hidden`, which would cut an option off with
+ *   no way to reach it.
  * - Tighter type and padding below `sm`, where the budget is ~334px for four
  *   buttons; from `sm` up they relax to the ranking explorer's sizing.
  *
- * Pair with `w-fit max-w-full` at the call site: `w-fit` alone would let the
- * group grow past its container instead of scrolling inside it.
+ * The scroller is a SEPARATE element from the bordered group on purpose.
+ * `overflow-x: auto` computes `overflow-y` to `auto` as well, and a scroll
+ * container clips at its padding box — putting the overflow on the group
+ * itself sheared the buttons' `::before` down to a 42px hit area. The
+ * scroller's own `py-1.5` gives that overflow room to live in — 6px against
+ * the `::before`'s 4px+ of growth, so the hit area never sits flush against
+ * the clip edge — and `-my-1.5` cancels the padding again so the control
+ * still occupies exactly its 44px.
  */
+export const FILTER_SEGMENT_SCROLLER_CLASS =
+  '-my-1.5 overflow-x-auto py-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
 export const FILTER_SEGMENT_GROUP_CLASS =
-  'flex flex-nowrap gap-0.5 overflow-x-auto rounded-lg border border-border-default p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-1';
+  'flex w-fit flex-nowrap gap-0.5 rounded-lg border border-border-default p-[3px] sm:gap-1';
 
 export const FILTER_SEGMENT_BUTTON_CLASS =
-  'min-h-11 shrink-0 whitespace-nowrap rounded-md px-2 text-[11px] font-semibold transition-colors sm:px-3 sm:text-xs';
+  "relative min-h-9 shrink-0 whitespace-nowrap rounded-md px-2 text-[11px] font-semibold transition-colors before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] sm:px-3 sm:text-xs";
 
 export const FILTER_SEGMENT_BUTTON_ACTIVE_CLASS = 'bg-accent-cyan/20 text-accent-cyan';
 
