@@ -77,7 +77,7 @@ export const fr: HubLex = {
     clipsFilterMatches: (count) => `${count} clip${count === 1 ? '' : 's'}`,
     clipsFilterEmpty: 'Aucun clip ne correspond à ces filtres.',
     quickFactsTitle: 'En bref',
-    quickFactsSub: 'Sur les 7 derniers jours de streams suivis',
+    quickFactsSub: 'Des chiffres tirés des streams que nous suivons',
     factPredictionLabel: 'Vérif des prédictions',
     factPrediction: (hits, total) =>
       `Pour ${hits} des ${total} prédictions à probabilité élevée, le stream a démarré à moins de deux heures de l’horaire prévu.`,
@@ -89,6 +89,28 @@ export const fr: HubLex = {
       `${name} a lancé à l’heure ${hits} de ses ${total} derniers streams annoncés.`,
     factPauseLabel: 'En pause',
     factPause: (name) => `${name} fait une pause jusqu’à cette date.`,
+    factMarathonLabel: 'Marathon de la semaine',
+    factMarathon: (name) => `${name} est resté en live aussi longtemps d’affilée.`,
+    factComebackLabel: 'Retour de la semaine',
+    factComeback: (name, days) => `${name} revient après ${days} jours sans stream.`,
+    factPrimeTimeLabel: 'Prime time',
+    factPrimeTime: (total) =>
+      `Plus de streams démarrent à cette heure qu’à n’importe quelle autre, sur ${total} streams en 4 semaines.`,
+    factBusiestDayLabel: 'Jour le plus chargé',
+    factBusiestDay: (total) =>
+      `Le jour de la semaine où démarrent le plus de streams, sur ${total} streams en 4 semaines.`,
+    factLocalTimeNote: 'ton fuseau horaire',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'Catégorie de la semaine',
+    factTopCategory: (category, streamers) =>
+      `Streams sur ${category} ces 7 derniers jours, par ${streamers} ${streamers === 1 ? 'streameur' : 'streameurs'}.`,
+    factCompetitionLabel: 'Niveau de concurrence',
+    factCompetition: (category) =>
+      `Chaînes suivies en live sur ${category} en même temps, en moyenne — la catégorie la plus chargée chez nous.`,
+    factRoomLabel: 'Place à prendre',
+    factRoom: (category, channels) =>
+      `Spectateurs par chaîne sur ${category}, avec seulement ${channels} chaînes suivies en live en même temps.`,
+    factRoomSlotLabel: 'Meilleur créneau',
     risersTitle: 'Les ascensions de la semaine',
     risersLink: 'Tous les classements →',
     risersGained: (delta) => `${delta} followers en 7 jours`,

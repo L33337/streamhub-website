@@ -20,6 +20,20 @@ const nStreams = (n: number): string =>
     other: `${n} трансляції`,
   });
 
+/** "від 3 стримерів" — genitive after "від" (quick fact: category of the week). */
+const fromNStreamers = (n: number): string =>
+  pluralForms('uk', n, {
+    one: `${n} стримера`,
+    other: `${n} стримерів`,
+  });
+
+/** "після 16 днів" — genitive after "після" (quick fact: comeback of the week). */
+const afterNDays = (n: number): string =>
+  pluralForms('uk', n, {
+    one: `${n} дня`,
+    other: `${n} днів`,
+  });
+
 /** "у 2 іграх" — locative counted games. */
 const inGames = (n: number): string =>
   pluralForms('uk', n, {
@@ -106,7 +120,7 @@ export const uk: HubLex = {
     clipsFilterMatches: (count) => `Кліпів: ${count}`,
     clipsFilterEmpty: 'Немає кліпів за цими фільтрами.',
     quickFactsTitle: 'Коротко про головне',
-    quickFactsSub: 'За стримами останніх 7 днів',
+    quickFactsSub: 'Цифри зі стримів, які ми відстежуємо',
     factPredictionLabel: 'Перевірка прогнозів',
     factPrediction: (hits, total) =>
       `У ${hits} із ${total} прогнозів із високою ймовірністю стрим почався в межах двох годин від передбаченого часу.`,
@@ -118,6 +132,29 @@ export const uk: HubLex = {
       `${name} вчасно розпочав ${hits} з ${total} останніх анонсованих стримів.`,
     factPauseLabel: 'На паузі',
     factPause: (name) => `${name} на паузі до цієї дати.`,
+    factMarathonLabel: 'Марафон тижня',
+    factMarathon: (name) => `Стільки ${name} був у ефірі без перерви.`,
+    factComebackLabel: 'Повернення тижня',
+    factComeback: (name, days) =>
+      `${name} повернувся після ${afterNDays(days)} без стримів.`,
+    factPrimeTimeLabel: 'Прайм-тайм',
+    factPrimeTime: (total) =>
+      `О цій годині стартує найбільше стримів — із ${total} трансляцій за 4 тижні.`,
+    factBusiestDayLabel: 'Найзавантаженіший день',
+    factBusiestDay: (total) =>
+      `День тижня, коли стартує найбільше стримів — із ${total} трансляцій за 4 тижні.`,
+    factLocalTimeNote: 'твій часовий пояс',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'Категорія тижня',
+    factTopCategory: (category, streamers) =>
+      `Стрими в ${category} за останні 7 днів, від ${fromNStreamers(streamers)}.`,
+    factCompetitionLabel: 'Рівень конкуренції',
+    factCompetition: (category) =>
+      `Стільки відстежуваних каналів у середньому в ефірі в ${category} одночасно — найзавантаженіша категорія в нас.`,
+    factRoomLabel: 'Вільна ніша',
+    factRoom: (category, channels) =>
+      `Глядачів на канал у ${category} — за лише ${channels} відстежуваних каналів у ефірі одночасно.`,
+    factRoomSlotLabel: 'Найкращий час',
     risersTitle: 'Злети тижня',
     risersLink: 'Усі рейтинги →',
     risersGained: (delta) => `${delta} підписників за 7 днів`,

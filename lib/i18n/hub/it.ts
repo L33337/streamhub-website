@@ -72,7 +72,7 @@ export const it: HubLex = {
     clipsFilterMatches: (count) => `${count} clip`,
     clipsFilterEmpty: 'Nessuna clip corrisponde a questi filtri.',
     quickFactsTitle: 'Fatti in breve',
-    quickFactsSub: 'Dagli ultimi 7 giorni di stream tracciati',
+    quickFactsSub: 'Numeri dagli stream che tracciamo',
     factPredictionLabel: 'Verifica previsioni',
     factPrediction: (hits, total) =>
       `Per ${hits} delle ${total} previsioni con probabilità alta lo stream è iniziato entro due ore dall’orario previsto.`,
@@ -84,6 +84,28 @@ export const it: HubLex = {
       `${name} ha iniziato in orario ${hits} dei suoi ultimi ${total} stream annunciati.`,
     factPauseLabel: 'In pausa',
     factPause: (name) => `${name} è in pausa fino a questa data.`,
+    factMarathonLabel: 'Maratona della settimana',
+    factMarathon: (name) => `${name} è rimasto live tutto questo tempo di fila.`,
+    factComebackLabel: 'Ritorno della settimana',
+    factComeback: (name, days) => `${name} è tornato dopo ${days} giorni senza stream.`,
+    factPrimeTimeLabel: 'Prime time',
+    factPrimeTime: (total) =>
+      `A quest’ora partono più stream che in qualsiasi altra, su ${total} stream in 4 settimane.`,
+    factBusiestDayLabel: 'Giorno più pieno',
+    factBusiestDay: (total) =>
+      `Il giorno della settimana in cui partono più stream, su ${total} stream in 4 settimane.`,
+    factLocalTimeNote: 'il tuo fuso orario',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'Categoria della settimana',
+    factTopCategory: (category, streamers) =>
+      `Stream su ${category} negli ultimi 7 giorni, da ${streamers} ${streamers === 1 ? 'streamer' : 'streamer'}.`,
+    factCompetitionLabel: 'Livello di concorrenza',
+    factCompetition: (category) =>
+      `Canali tracciati live su ${category} in contemporanea, in media: la categoria più affollata che seguiamo.`,
+    factRoomLabel: 'Spazio libero',
+    factRoom: (category, channels) =>
+      `Spettatori per canale su ${category}, con soli ${channels} canali tracciati live in contemporanea.`,
+    factRoomSlotLabel: 'Momento migliore',
     risersTitle: 'In ascesa questa settimana',
     risersLink: 'Tutte le classifiche →',
     risersGained: (delta) => `${delta} follower in 7 giorni`,

@@ -72,7 +72,7 @@ export const hu: HubLex = {
     clipsFilterMatches: (count) => `${count} klip`,
     clipsFilterEmpty: 'Egy klip sem felel meg ezeknek a szűrőknek.',
     quickFactsTitle: 'Gyors tények',
-    quickFactsSub: 'Az elmúlt 7 nap követett streamjeiből',
+    quickFactsSub: 'Számok az általunk követett streamekből',
     factPredictionLabel: 'Előrejelzés-ellenőrzés',
     factPrediction: (hits, total) =>
       `${total} magas valószínűségű előrejelzésből ${hits} esetében a stream az előre jelzett időponthoz képest két órán belül elindult.`,
@@ -83,6 +83,28 @@ export const hu: HubLex = {
       `${name} az utolsó ${total} bejelentett streamből ${hits} alkalommal indult időben.`,
     factPauseLabel: 'Szünetel',
     factPause: (name) => `${name} eddig a dátumig szünetet tart.`,
+    factMarathonLabel: 'A hét maratonja',
+    factMarathon: (name) => `Ennyi ideig volt ${name} egyhuzamban élőben.`,
+    factComebackLabel: 'A hét visszatérése',
+    factComeback: (name, days) => `${name} ${days} stream nélküli nap után tért vissza.`,
+    factPrimeTimeLabel: 'Főműsoridő',
+    factPrimeTime: (total) =>
+      `Ebben az órában indul a legtöbb stream — 4 hét ${total} adása alapján.`,
+    factBusiestDayLabel: 'A legsűrűbb nap',
+    factBusiestDay: (total) =>
+      `A hét napja, amikor a legtöbb stream indul — 4 hét ${total} adása alapján.`,
+    factLocalTimeNote: 'a te időzónád',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'A hét kategóriája',
+    factTopCategory: (category, streamers) =>
+      `${category} streamek az elmúlt 7 napban, ${streamers} streamertől.`,
+    factCompetitionLabel: 'Versenyszint',
+    factCompetition: (category) =>
+      `Ennyi követett csatorna van átlagosan egyszerre élőben a(z) ${category} kategóriában — nálunk ez a legzsúfoltabb.`,
+    factRoomLabel: 'Szabad rés',
+    factRoom: (category, channels) =>
+      `Nézők csatornánként a(z) ${category} kategóriában — mindössze ${channels} követett csatorna van egyszerre élőben.`,
+    factRoomSlotLabel: 'A legjobb időpont',
     risersTitle: 'A hét feltörekvői',
     risersLink: 'Minden ranglista →',
     risersGained: (delta) => `${delta} követő 7 nap alatt`,

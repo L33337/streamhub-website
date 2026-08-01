@@ -20,6 +20,20 @@ const nStreams = (n: number): string =>
     other: `${n} transmisji`,
   });
 
+/** "od 3 streamerów" — genitive after "od" (quick fact: category of the week). */
+const fromNStreamers = (n: number): string =>
+  pluralForms('pl', n, {
+    one: `${n} streamera`,
+    other: `${n} streamerów`,
+  });
+
+/** "po 16 dniach" — locative after "po" (quick fact: comeback of the week). */
+const afterNDays = (n: number): string =>
+  pluralForms('pl', n, {
+    one: `${n} dniu`,
+    other: `${n} dniach`,
+  });
+
 /** "w 3 kategoriach" — locative counted categories. */
 const inCategories = (n: number): string =>
   pluralForms('pl', n, {
@@ -101,7 +115,7 @@ export const pl: HubLex = {
     clipsFilterMatches: (count) => `Klipy: ${count}`,
     clipsFilterEmpty: 'Żaden klip nie pasuje do tych filtrów.',
     quickFactsTitle: 'Szybkie fakty',
-    quickFactsSub: 'Z ostatnich 7 dni śledzonych streamów',
+    quickFactsSub: 'Liczby ze streamów, które śledzimy',
     factPredictionLabel: 'Sprawdzian prognoz',
     factPrediction: (hits, total) =>
       `W ${hits} z ${total} prognoz o wysokim prawdopodobieństwie stream zaczął się w ciągu dwóch godzin od przewidywanej pory.`,
@@ -113,6 +127,29 @@ export const pl: HubLex = {
       `${name} punktualnie zaczął ${hits} z ${total} ostatnich zapowiedzianych streamów.`,
     factPauseLabel: 'Na przerwie',
     factPause: (name) => `${name} ma przerwę do tej daty.`,
+    factMarathonLabel: 'Maraton tygodnia',
+    factMarathon: (name) => `Tyle ${name} był na żywo bez przerwy.`,
+    factComebackLabel: 'Powrót tygodnia',
+    factComeback: (name, days) =>
+      `${name} wraca po ${afterNDays(days)} bez transmisji.`,
+    factPrimeTimeLabel: 'Prime time',
+    factPrimeTime: (total) =>
+      `O tej godzinie startuje najwięcej transmisji — z ${total} transmisji w 4 tygodnie.`,
+    factBusiestDayLabel: 'Najbardziej zapełniony dzień',
+    factBusiestDay: (total) =>
+      `Dzień tygodnia, w którym startuje najwięcej transmisji — z ${total} transmisji w 4 tygodnie.`,
+    factLocalTimeNote: 'twoja strefa czasowa',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'Kategoria tygodnia',
+    factTopCategory: (category, streamers) =>
+      `Transmisje w ${category} z ostatnich 7 dni, od ${fromNStreamers(streamers)}.`,
+    factCompetitionLabel: 'Poziom konkurencji',
+    factCompetition: (category) =>
+      `Tyle śledzonych kanałów nadaje w ${category} jednocześnie, średnio — najbardziej zatłoczona kategoria u nas.`,
+    factRoomLabel: 'Wolna nisza',
+    factRoom: (category, channels) =>
+      `Widzowie na kanał w ${category} — przy zaledwie ${channels} śledzonych kanałach na żywo jednocześnie.`,
+    factRoomSlotLabel: 'Najlepsza pora',
     risersTitle: 'Wzloty tygodnia',
     risersLink: 'Wszystkie rankingi →',
     risersGained: (delta) => `${delta} obserwujących w 7 dni`,

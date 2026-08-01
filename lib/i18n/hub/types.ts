@@ -211,6 +211,45 @@ export interface HubLex {
     factPauseLabel: string;
     /** Big value is the localized return date, rendered by the component. */
     factPause(name: string): string;
+    /**
+     * Section expansion 2026-08-01. Big values are rendered by the component
+     * (a duration, a clock reading, a weekday, a count), so these are the
+     * sentences underneath. Category and streamer names stay untranslated.
+     */
+    factMarathonLabel: string;
+    /** The category, when known, is shown separately — do not ask for it here. */
+    factMarathon(name: string): string;
+    factComebackLabel: string;
+    /** Agrees with the day count; `days` is always >= 14. */
+    factComeback(name: string, days: number): string;
+    factPrimeTimeLabel: string;
+    /**
+     * `total` is a pre-formatted session count ("7.6K"). Big value is the hour
+     * itself, which depends on the viewer's timezone — keep every number that
+     * the timezone would change OUT of this sentence.
+     */
+    factPrimeTime(total: string): string;
+    factBusiestDayLabel: string;
+    /** Same contract as factPrimeTime; big value is the weekday name. */
+    factBusiestDay(total: string): string;
+    /** Suffix marking a timezone-dependent value, e.g. "your local time". */
+    factLocalTimeNote: string;
+    /** Its pre-hydration counterpart — the server can only render UTC. */
+    factUtcNote: string;
+    factTopCategoryLabel: string;
+    /** Big value is the session count; `streamers` agrees grammatically. */
+    factTopCategory(category: string, streamers: number): string;
+    factCompetitionLabel: string;
+    /** Big value is the average number of concurrently live tracked channels. */
+    factCompetition(category: string): string;
+    factRoomLabel: string;
+    /**
+     * Big value is viewers per channel. `channels` is pre-formatted ("2.1") —
+     * a decimal that no language pluralizes, so it travels as a string.
+     */
+    factRoom(category: string, channels: string): string;
+    /** Label of the best-slot line, rendered as "{label}: Fri 11 PM". */
+    factRoomSlotLabel: string;
     risersTitle: string;
     risersLink: string;
     /** Secondary line of a riser row; delta is preformatted incl. sign. */

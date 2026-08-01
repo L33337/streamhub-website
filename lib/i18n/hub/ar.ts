@@ -23,6 +23,26 @@ const nStreams = (n: number): string =>
     other: `${n} بث`,
   });
 
+/** "16 يومًا" — counted days (quick fact: comeback of the week). */
+const nDays = (n: number): string =>
+  pluralForms('ar', n, {
+    one: 'يوم واحد',
+    two: 'يومين',
+    few: `${n} أيام`,
+    many: `${n} يومًا`,
+    other: `${n} يوم`,
+  });
+
+/** "3 ستريمرز" — counted streamers (quick fact: category of the week). */
+const nStreamers = (n: number): string =>
+  pluralForms('ar', n, {
+    one: 'ستريمر واحد',
+    two: 'ستريمرين',
+    few: `${n} ستريمرز`,
+    many: `${n} ستريمرًا`,
+    other: `${n} ستريمر`,
+  });
+
 /** "3 فئات" — counted categories. */
 const nCategories = (n: number): string =>
   pluralForms('ar', n, {
@@ -104,7 +124,7 @@ export const ar: HubLex = {
     clipsFilterMatches: (count) => `${count} مقطع`,
     clipsFilterEmpty: 'لا توجد مقاطع تطابق هذه الفلاتر.',
     quickFactsTitle: 'حقائق سريعة',
-    quickFactsSub: 'من آخر 7 أيام من البثوث المتتبَّعة',
+    quickFactsSub: 'أرقام من البثوث التي نتتبعها',
     factPredictionLabel: 'فحص التوقعات',
     factPrediction: (hits, total) =>
       `في ${hits} من أصل ${total} توقعًا مرتفع الاحتمالية بدأ البث في غضون ساعتين من الموعد المتوقع.`,
@@ -115,6 +135,28 @@ export const ar: HubLex = {
       `بدأ ${name} في الموعد ${hits} من آخر ${total} بثًا معلنًا.`,
     factPauseLabel: 'في استراحة',
     factPause: (name) => `${name} في استراحة حتى هذا التاريخ.`,
+    factMarathonLabel: 'ماراثون الأسبوع',
+    factMarathon: (name) => `هذه المدة التي بقي فيها ${name} على الهواء دفعة واحدة.`,
+    factComebackLabel: 'عودة الأسبوع',
+    factComeback: (name, days) => `عاد ${name} بعد ${nDays(days)} بلا بث.`,
+    factPrimeTimeLabel: 'وقت الذروة',
+    factPrimeTime: (total) =>
+      `في هذه الساعة يبدأ أكبر عدد من البثوث، من إجمالي ${total} بث خلال 4 أسابيع.`,
+    factBusiestDayLabel: 'أكثر أيام الأسبوع ازدحامًا',
+    factBusiestDay: (total) =>
+      `اليوم الذي يبدأ فيه أكبر عدد من البثوث، من إجمالي ${total} بث خلال 4 أسابيع.`,
+    factLocalTimeNote: 'توقيتك المحلي',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'فئة الأسبوع',
+    factTopCategory: (category, streamers) =>
+      `بثوث ${category} في آخر 7 أيام، من ${nStreamers(streamers)}.`,
+    factCompetitionLabel: 'مستوى المنافسة',
+    factCompetition: (category) =>
+      `هذا متوسط عدد القنوات المتتبَّعة التي تبث في ${category} في الوقت نفسه — أكثر فئة ازدحامًا لدينا.`,
+    factRoomLabel: 'فرصة متاحة',
+    factRoom: (category, channels) =>
+      `مشاهدون لكل قناة في ${category}، مع ${channels} قنوات متتبَّعة فقط على الهواء في الوقت نفسه.`,
+    factRoomSlotLabel: 'أفضل وقت',
     risersTitle: 'صاعدو الأسبوع',
     risersLink: 'كل التصنيفات ←',
     risersGained: (delta) => `${delta} متابعًا في 7 أيام`,

@@ -76,7 +76,7 @@ export const es: HubLex = {
     clipsFilterMatches: (count) => `${count} ${count === 1 ? 'clip' : 'clips'}`,
     clipsFilterEmpty: 'Ningún clip coincide con estos filtros.',
     quickFactsTitle: 'Datos rápidos',
-    quickFactsSub: 'De los últimos 7 días de streams registrados',
+    quickFactsSub: 'Cifras de los streams que registramos',
     factPredictionLabel: 'Chequeo de predicciones',
     factPrediction: (hits, total) =>
       `En ${hits} de ${total} predicciones de probabilidad alta, el stream empezó a menos de dos horas de lo previsto.`,
@@ -88,6 +88,28 @@ export const es: HubLex = {
       `${name} empezó a tiempo ${hits} de sus últimos ${total} streams anunciados.`,
     factPauseLabel: 'De descanso',
     factPause: (name) => `${name} está de descanso hasta esta fecha.`,
+    factMarathonLabel: 'Maratón de la semana',
+    factMarathon: (name) => `${name} estuvo en directo todo ese tiempo del tirón.`,
+    factComebackLabel: 'Regreso de la semana',
+    factComeback: (name, days) => `${name} vuelve tras ${days} días sin stream.`,
+    factPrimeTimeLabel: 'Hora punta',
+    factPrimeTime: (total) =>
+      `A esta hora empiezan más streams que a ninguna otra, sobre ${total} streams en 4 semanas.`,
+    factBusiestDayLabel: 'Día más cargado',
+    factBusiestDay: (total) =>
+      `El día de la semana en que empiezan más streams, sobre ${total} streams en 4 semanas.`,
+    factLocalTimeNote: 'tu zona horaria',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'Categoría de la semana',
+    factTopCategory: (category, streamers) =>
+      `Streams de ${category} en los últimos 7 días, de ${streamers} ${streamers === 1 ? 'streamer' : 'streamers'}.`,
+    factCompetitionLabel: 'Nivel de competencia',
+    factCompetition: (category) =>
+      `Canales registrados en directo en ${category} a la vez, de media: la categoría más concurrida que seguimos.`,
+    factRoomLabel: 'Hueco libre',
+    factRoom: (category, channels) =>
+      `Espectadores por canal en ${category}, con solo ${channels} canales registrados en directo a la vez.`,
+    factRoomSlotLabel: 'Mejor momento',
     risersTitle: 'Los que más suben esta semana',
     risersLink: 'Todos los rankings →',
     risersGained: (delta) => `${delta} seguidores en 7 días`,
