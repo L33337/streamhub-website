@@ -355,6 +355,34 @@ Web-Vitals tooling for the perf-health runbook (`StreamHub/docs/performance-heal
 - Schedule-page LCP diagnosis (M20 S1.6, 2026-07-13): **live-slot pages** (`thumbnail_url` set) have the hero thumbnail as LCP element — it now carries `priority`. **Prediction-slot pages** (no thumbnail) have a text `<p>` LCP like the streamer page; their avatar-fallback hero deliberately stays lazy.
 - **Every dynamic route that should be ISR-cached MUST export `generateStaticParams`** (an empty array is fine). Without it, Next builds the route as `ƒ` (per-request dynamic) and never caches the HTML — `export const revalidate` alone does nothing for the route cache. This bit `/schedule/[id]` until M20 S1.6 (every visitor paid a full server render, `Cache-Control: private, no-store`); `/streamer/[slug]` documents the same pattern. Check the build output: the route must show `●`, not `ƒ`.
 
+# Testing against protected Preview deployments (2026-08-02)
+
+Preview deployments sit behind Vercel Authentication: a bare request gets **302 → `vercel.com/sso-api`**, which reads like a broken deploy but is just the login wall. Do not disable the protection — use the project's **Protection Bypass for Automation** secret, which is project-wide (all previews, every future deploy, no per-deployment setup).
+
+The secret lives in `.env.development.local` as `VERCEL_AUTOMATION_BYPASS_SECRET` (gitignored; also injected into every Vercel environment under the same name).
+
+- **curl / Node scripts** — send it as a header:
+  ```bash
+  curl -sI -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" "https://<preview>/en"
+  ```
+- **Browser (Chrome DevTools MCP)** — navigate ONCE with the query params, then browse normally:
+  ```
+  https://<preview>/en?x-vercel-protection-bypass=<secret>&x-vercel-set-bypass-cookie=true
+  ```
+  Vercel answers 307 (stripping the params) and sets a HttpOnly `_vercel_jwt` cookie scoped to that hostname, valid **7 days** — every later click, `_next/image` request and fetch on that deployment passes without the header.
+
+Finding the preview URL:
+
+- Branch alias pattern is `streamhub-website-git-<slugified-branch>-wernerschuetze303-2327s-projects.vercel.app`. The team slug alone is 31 chars, so the whole label **must stay ≤63 chars** → the branch name has ~14 chars of room. Longer branch names get a truncated+hashed alias that is not derivable — grab that URL from the Vercel dashboard or the PR comment.
+- Build state for a pushed branch, without the dashboard (needs the `GH_TOKEN` trick from the root `CLAUDE.md`):
+  ```bash
+  gh api repos/L33337/streamhub-website/commits/$(git rev-parse origin/<branch>)/statuses \
+    --jq '.[] | "\(.state)  \(.target_url)"'
+  ```
+  `target_url` is the *inspector* page, not the deployment host.
+
+Verified 2026-08-02 against `streamhub-website-git-main-wernerschuetze303-2327s-projects.vercel.app`: no header → 302 sso-api; with header → 200 + full HTML.
+
 # Repo hygiene (added 2026-07-07 after a stale-branch cleanup)
 
 - `main` is the single source of truth and the GitHub default branch; it is protected against force-pushes and deletion. Vercel deploys production from `main`.
