@@ -45,4 +45,7 @@ export type {
   InsightsCategoryEntry,
   InsightsGameToTry,
   InsightsScheduleReliability,
+  InsightsMonthlyTrendEntry,
+  InsightsFollowerPoint,
+  InsightsCategoryMarket,
 } from './types';
