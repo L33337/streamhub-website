@@ -35,6 +35,7 @@ import { StreamerHero } from '@/components/web/StreamerHero';
 import { LastStreamCard } from '@/components/web/LastStreamCard';
 import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
+import { toDayCounts } from '@/lib/day-counts';
 import { CollapsibleSchedule } from '@/components/web/CollapsibleSchedule';
 import { EmptyDayRow } from '@/components/web/EmptyDayRow';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
@@ -421,7 +422,7 @@ export default async function StreamerPage({ params }: Props) {
             <>
               <DayNavBar
                 days={sevenDays}
-                grouped={grouped}
+                counts={toDayCounts(sevenDays, grouped)}
                 todayUtc={todayUtc}
                 language={locale}
               />

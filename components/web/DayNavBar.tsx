@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { PublicStreamSlot } from '@/lib/server/partner-api';
+import type { DayCount } from '@/lib/day-counts';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { slotLexFor } from '@/lib/i18n-slot';
 import { localDateKey, utcDateShortLabel } from '@/lib/format/time';
 
 interface Props {
   days: string[];
-  grouped: Map<string, PublicStreamSlot[]>;
+  /** Per-day counts keyed by UTC date — build with `toDayCounts` on the server. */
+  counts: Record<string, DayCount>;
   todayUtc: string;
   /** Localizes day labels/counts/aria; default 'en' keeps the game-page caller byte-identical. */
   language?: string;
@@ -24,7 +25,7 @@ function subscribeToNothing(): () => void {
   return () => {};
 }
 
-export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
+export function DayNavBar({ days, counts, todayUtc, language = 'en' }: Props) {
   const L = slotLexFor(language);
   const lang = resolveUiLang(language);
   const [activeDay, setActiveDay] = useState<string | null>(null);
@@ -74,14 +75,14 @@ export function DayNavBar({ days, grouped, todayUtc, language = 'en' }: Props) {
         role="list"
       >
         {days.map((dateKey) => {
-          const slots = grouped.get(dateKey) ?? [];
+          const day = counts[dateKey] ?? { total: 0, active: 0 };
           // A cancelled slot is a stream that is NOT happening — counting it as
           // "1 stream" made quiet days look busy.
-          const count = slots.filter((s) => s.slot_kind !== 'cancelled').length;
+          const count = day.active;
           const label = utcDateShortLabel(dateKey, referenceToday, lang);
           // Still linkable when the only entries are cancellations: the day
           // section exists and says something worth reading.
-          const disabled = slots.length === 0;
+          const disabled = day.total === 0;
           const dayNum = new Date(dateKey + 'T00:00:00Z').getUTCDate();
           if (disabled) {
             return (

@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { buildBreadcrumbJsonLd, jsonLdHtml, applyLocaleSeo } from '@/lib/seo';
+import {
+  buildBreadcrumbJsonLd,
+  jsonLdHtml,
+  applyLocaleSeo,
+  pickMetaDescription,
+} from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import {
   formatGrowthPercent,
@@ -37,9 +42,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const best = topClimber(movers);
   const url = `${SITE_URL}/rankings/climbers`;
   const title = 'Biggest Climbers This Week — Streamer Rankings';
-  const description = best
-    ? `${best.climber.entry.streamer.name} climbed ${best.climber.delta} places in the ${best.movers.spec.h1.toLowerCase()} ranking this week. Weekly movers across the Streamer Times leaderboards: climbers, new top-100 entries and follower growth. Updated daily.`
-    : 'Weekly movers across the Streamer Times leaderboards: who climbed the rankings, who entered the top 100, and who gained the most followers. Updated daily.';
+  // Richest-first against the 155-char budget (Bing flags >160; the combined
+  // leader + boilerplate variant ran 192).
+  const description = pickMetaDescription(
+    best
+      ? `${best.climber.entry.streamer.name} climbed ${best.climber.delta} places in the ${best.movers.spec.h1.toLowerCase()} ranking this week. Plus new top-100 entries and the biggest follower gains.`
+      : '',
+    best
+      ? `${best.climber.entry.streamer.name} climbed ${best.climber.delta} places this week. Plus new top-100 entries and the biggest follower gains.`
+      : '',
+    'Weekly movers across the Streamer Times leaderboards: who climbed, who entered the top 100, and who gained the most followers.',
+  );
   const meta: Metadata = {
     title,
     description,

@@ -7,6 +7,7 @@
 
 import type { PublicRankingEntry, RankingMetric } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
+import { pickMetaDescription } from '@/lib/seo';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -83,6 +84,19 @@ export function formatDurationMinutes(minutes: number | null | undefined): strin
 function compact(value: number | null | undefined): string {
   const s = formatCompactNumber(value ?? null, 'en');
   return s === '' ? '—' : s;
+}
+
+/**
+ * Leaderboard meta description: the current leader's headline number in front
+ * of the metric's evergreen explanation, clamped to the 155-char budget.
+ *
+ * The leader clause is what makes each ranking's snippet unique, but the name
+ * is unbounded user data — so when the pair overflows (Bing flagged these at
+ * 168+ chars on 2026-08-01) the LEAD is dropped and the evergreen sentence
+ * shown whole, rather than either being cut mid-word.
+ */
+function buildRankingDescription(lead: string, evergreen: string): string {
+  return pickMetaDescription(`${lead}${evergreen}`, evergreen);
 }
 
 /** 12400 → "+12.4K" (gain column; negatives render "−" defensively). */
@@ -179,10 +193,12 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         n,
       ),
     buildDescription: (top) =>
-      (top?.values.follower_count
-        ? `${top.streamer.name} leads with ${compact(top.values.follower_count)} ${followerNoun(top)}. `
-        : '') +
-      'The most followed livestreamers we track, ranked by channel followers and subscribers across Twitch and YouTube. Updated daily.',
+      buildRankingDescription(
+        top?.values.follower_count
+          ? `${top.streamer.name} leads with ${compact(top.values.follower_count)} ${followerNoun(top)}. `
+          : '',
+        'The most followed livestreamers on Twitch and YouTube, ranked by followers and subscribers. Updated daily.',
+      ),
     buildIntro: (n, top) =>
       `The ${n} most followed streamers on Streamer Times, ranked by channel followers on Twitch and subscribers on YouTube.` +
       (top?.values.follower_count
@@ -231,10 +247,12 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         n,
       ),
     buildDescription: (top) =>
-      (top?.values.follower_gain_7d
-        ? `${top.streamer.name} gained ${compact(top.values.follower_gain_7d)} ${followerNoun(top)} in the last 7 days. `
-        : '') +
-      'The fastest growing livestreamers we track, ranked by follower and subscriber gain over the last 7 days across Twitch and YouTube. Updated daily.',
+      buildRankingDescription(
+        top?.values.follower_gain_7d
+          ? `${top.streamer.name} gained ${compact(top.values.follower_gain_7d)} ${followerNoun(top)} in the last 7 days. `
+          : '',
+        'The fastest growing livestreamers, ranked by follower gain over the last 7 days. Updated daily.',
+      ),
     buildIntro: (n, top) =>
       `The ${n} fastest growing streamers on Streamer Times, ranked by follower and subscriber gain over the last 7 days.` +
       (top?.values.follower_gain_7d
@@ -288,10 +306,12 @@ export const RANKING_PAGES: RankingPageSpec[] = [
         n,
       ),
     buildDescription: (top) =>
-      (top?.values.avg_view_count
-        ? `${top.streamer.name} leads with ${compact(top.values.avg_view_count)} average live viewers. `
-        : '') +
-      'Livestreamers ranked by median concurrent viewers over the last 28 days, across Twitch and YouTube. Updated daily.',
+      buildRankingDescription(
+        top?.values.avg_view_count
+          ? `${top.streamer.name} leads with ${compact(top.values.avg_view_count)} average live viewers. `
+          : '',
+        'Livestreamers ranked by median concurrent viewers over the last 28 days. Updated daily.',
+      ),
     buildIntro: (n, top) =>
       `The ${n} most watched streamers we track, ranked by their typical concurrent live audience over the last 28 days.` +
       (top?.values.avg_view_count
@@ -335,10 +355,12 @@ export const RANKING_PAGES: RankingPageSpec[] = [
     h1: 'Most active streamers',
     buildTitle: () => 'Most Active Streamers — Hours Streamed & Streams per Week',
     buildDescription: (top) =>
-      (top?.values.hours_streamed_28d
-        ? `${top.streamer.name} leads with ${formatHours(top.values.hours_streamed_28d)} streamed in the last 28 days. `
-        : '') +
-      'Livestreamers ranked by total hours streamed in the last 28 days, with streams per week and typical stream length. Updated daily.',
+      buildRankingDescription(
+        top?.values.hours_streamed_28d
+          ? `${top.streamer.name} leads with ${formatHours(top.values.hours_streamed_28d)} streamed in the last 28 days. `
+          : '',
+        'Livestreamers ranked by total hours streamed in the last 28 days. Updated daily.',
+      ),
     buildIntro: (n, top) =>
       `The ${n} most active streamers of the last 28 days, ranked by total hours live on Twitch and YouTube.` +
       (top?.values.hours_streamed_28d
@@ -388,10 +410,12 @@ export const RANKING_PAGES: RankingPageSpec[] = [
     h1: 'Most punctual streamers',
     buildTitle: () => 'Most Punctual Streamers — Schedule Reliability Ranking',
     buildDescription: (top) =>
-      (top?.values.time_hit_rate
-        ? `${top.streamer.name} starts on time for ${formatHitRate(top.values.time_hit_rate)} of announced streams. `
-        : '') +
-      'Streamers ranked by how reliably they go live when their announced Twitch schedule says they will. Updated daily.',
+      buildRankingDescription(
+        top?.values.time_hit_rate
+          ? `${top.streamer.name} starts on time for ${formatHitRate(top.values.time_hit_rate)} of announced streams. `
+          : '',
+        'Streamers ranked by how reliably they start their announced Twitch streams on time.',
+      ),
     buildIntro: (n, top) =>
       `The ${n} streamers who most reliably start their announced Twitch streams on time.` +
       (top?.values.time_hit_rate

@@ -27,8 +27,9 @@ export async function generateMetadata({
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : "en";
   const meta: Metadata = {
     title: "Download Streamer Times — Go-Live Alerts & AI Stream Predictions",
+    // ≤155 chars (Bing flags >160; this ran 168).
     description:
-      "Download Streamer Times free for iOS and Android. AI-powered live predictions, EPG grid view, and instant go-live alerts for your favorite Twitch and YouTube streamers.",
+      "Download Streamer Times free for iOS and Android: AI-powered live predictions, EPG grid and instant go-live alerts for Twitch and YouTube streamers.",
     alternates: { canonical: "https://streamertimes.tv/app" },
     openGraph: {
       title: "Download Streamer Times — Go-Live Alerts & AI Predictions",
