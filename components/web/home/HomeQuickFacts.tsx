@@ -1,17 +1,35 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import type { HomeQuickFacts as HomeQuickFactsData } from '@/lib/server/quick-facts';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
-import { formatCompactNumber } from '@/lib/format/number';
+import { formatCompactNumber, formatStatValue } from '@/lib/format/number';
+import { formatDuration } from '@/lib/format/time';
+import {
+  hourLabels as buildHourLabels,
+  weekdayLabels as buildWeekdayLabels,
+  hourStamp,
+  rotateFacts,
+  MIN_QUICK_FACT_CARDS,
+} from '@/lib/home/quick-facts';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
+import {
+  LocalBestSlot,
+  LocalBusiestDay,
+  LocalPrimeTime,
+  LocalTimeNote,
+} from './QuickFactLocal';
 
 interface FactCard {
   key: string;
   kickerClass: string;
   label: string;
-  big: string;
+  /** ReactNode, not string: the timezone-dependent values are client islands. */
+  big: ReactNode;
   text: string;
-  /** Streamer page link — the prediction aggregate has none. */
+  /** Optional third line — a category chip, a best slot, a timezone hint. */
+  note?: ReactNode;
+  /** Streamer/game page link — aggregates without a subject have none. */
   href: string | null;
   highlight: boolean;
 }
@@ -28,24 +46,41 @@ function formatUntilDate(iso: string, locale: UiLang): string {
 }
 
 /**
- * "Quick facts" (homepage rebuild 2026-07-27): the anonymous siblings of the
- * feed's info cards — high-confidence prediction accuracy, weekly peak, M14
- * punctuality, next announced break. Each fact is optional; the section
- * hides below two cards so a lonely stat never dangles. NOTE: page.tsx
- * mirrors the two-card rule for the section-nav chip — keep them in sync.
+ * "Quick facts" (homepage rebuild 2026-07-27, expanded 2026-08-01): the
+ * anonymous siblings of the feed's info cards. The pool now holds eleven
+ * candidates — prediction accuracy, weekly peak, M14 punctuality, next break,
+ * marathon, comeback, prime time, busiest day, top category, competition level
+ * and room to grow — of which four render, cycling forward by one per hour
+ * (see rotateFacts: server-side only, so nothing can mismatch on hydration).
+ *
+ * Each fact is optional; the section hides below MIN_QUICK_FACT_CARDS so a
+ * lonely stat never dangles. NOTE: page.tsx mirrors that rule for the
+ * section-nav chip via countQuickFacts() — keep both reading the same list.
  */
 export function HomeQuickFacts({
   facts,
   locale = 'en',
+  now = new Date(),
 }: {
   facts: HomeQuickFactsData;
   locale?: UiLang;
+  /** Injectable for tests/screenshots; drives which four cards this hour shows. */
+  now?: Date;
 }) {
   const L = hubLexFor(locale);
+  const dayLabels = buildWeekdayLabels(locale);
+  const hourLabels = buildHourLabels(locale);
+  const localNote = (
+    <LocalTimeNote local={L.homeFeed.factLocalTimeNote} utc={L.homeFeed.factUtcNote} />
+  );
 
-  const cards: FactCard[] = [];
+  // Canonical pool order — the rotation offset is an index into THIS list, so
+  // reordering it changes which cards a given hour yields (harmless, but keep
+  // it stable so the cycle stays predictable while debugging).
+  const pool: FactCard[] = [];
+
   if (facts.prediction) {
-    cards.push({
+    pool.push({
       key: 'prediction',
       kickerClass: 'text-accent-cyan',
       label: L.homeFeed.factPredictionLabel,
@@ -55,8 +90,106 @@ export function HomeQuickFacts({
       highlight: true,
     });
   }
+  if (facts.marathon) {
+    pool.push({
+      key: 'marathon',
+      kickerClass: 'text-accent-pink',
+      label: L.homeFeed.factMarathonLabel,
+      big: formatDuration(facts.marathon.minutes),
+      text: L.homeFeed.factMarathon(facts.marathon.streamerName),
+      // Category names are brands — shown raw, never translated.
+      note: facts.marathon.category,
+      href: `/streamer/${facts.marathon.streamerId}`,
+      highlight: false,
+    });
+  }
+  if (facts.comeback) {
+    pool.push({
+      key: 'comeback',
+      kickerClass: 'text-live',
+      label: L.homeFeed.factComebackLabel,
+      big: `${facts.comeback.gapDays}`,
+      text: L.homeFeed.factComeback(facts.comeback.streamerName, facts.comeback.gapDays),
+      href: `/streamer/${facts.comeback.streamerId}`,
+      highlight: false,
+    });
+  }
+  if (facts.startHistogram) {
+    const total = formatCompactNumber(facts.startHistogram.total, locale);
+    pool.push({
+      key: 'prime-time',
+      kickerClass: 'text-accent-cyan',
+      label: L.homeFeed.factPrimeTimeLabel,
+      big: <LocalPrimeTime cells={facts.startHistogram.cells} hourLabels={hourLabels} />,
+      text: L.homeFeed.factPrimeTime(total),
+      note: localNote,
+      href: null,
+      highlight: false,
+    });
+    pool.push({
+      key: 'busiest-day',
+      kickerClass: 'text-confidence-medium',
+      label: L.homeFeed.factBusiestDayLabel,
+      big: <LocalBusiestDay cells={facts.startHistogram.cells} dayLabels={dayLabels} />,
+      text: L.homeFeed.factBusiestDay(total),
+      note: localNote,
+      href: null,
+      highlight: false,
+    });
+  }
+  if (facts.topCategory) {
+    pool.push({
+      key: 'top-category',
+      kickerClass: 'text-accent-cyan',
+      label: L.homeFeed.factTopCategoryLabel,
+      big: formatCompactNumber(facts.topCategory.sessions, locale),
+      text: L.homeFeed.factTopCategory(
+        facts.topCategory.category,
+        facts.topCategory.streamers,
+      ),
+      href: facts.topCategoryLink?.hasHub ? `/game/${facts.topCategoryLink.slug}` : null,
+      highlight: false,
+    });
+  }
+  if (facts.competition) {
+    pool.push({
+      key: 'competition',
+      kickerClass: 'text-live',
+      label: L.homeFeed.factCompetitionLabel,
+      big: formatStatValue(facts.competition.avgStreamers, locale),
+      text: L.homeFeed.factCompetition(facts.competition.category),
+      href: facts.competition.hasHub
+        ? `/game/${facts.competition.slug}`
+        : '/best-games-to-stream',
+      highlight: false,
+    });
+  }
+  if (facts.roomToGrow) {
+    pool.push({
+      key: 'room-to-grow',
+      kickerClass: 'text-confidence-medium',
+      label: L.homeFeed.factRoomLabel,
+      big: formatStatValue(facts.roomToGrow.score, locale),
+      text: L.homeFeed.factRoom(
+        facts.roomToGrow.category,
+        formatStatValue(facts.roomToGrow.avgStreamers, locale),
+      ),
+      note: facts.roomToGrow.bestSlot ? (
+        <LocalBestSlot
+          slot={facts.roomToGrow.bestSlot}
+          label={L.homeFeed.factRoomSlotLabel}
+          dayLabels={dayLabels}
+          hourLabels={hourLabels}
+          localNote={L.homeFeed.factLocalTimeNote}
+          utcNote={L.homeFeed.factUtcNote}
+        />
+      ) : undefined,
+      href: '/best-games-to-stream',
+      highlight: false,
+    });
+  }
   if (facts.peak) {
-    cards.push({
+    pool.push({
       key: 'peak',
       kickerClass: 'text-live',
       label: L.homeFeed.factPeakLabel,
@@ -67,7 +200,7 @@ export function HomeQuickFacts({
     });
   }
   if (facts.reliable) {
-    cards.push({
+    pool.push({
       key: 'reliable',
       kickerClass: 'text-confidence-medium',
       label: L.homeFeed.factReliableLabel,
@@ -82,7 +215,7 @@ export function HomeQuickFacts({
     });
   }
   if (facts.pause) {
-    cards.push({
+    pool.push({
       key: 'pause',
       kickerClass: 'text-accent-pink',
       label: L.homeFeed.factPauseLabel,
@@ -93,7 +226,8 @@ export function HomeQuickFacts({
     });
   }
 
-  if (cards.length < 2) return null;
+  if (pool.length < MIN_QUICK_FACT_CARDS) return null;
+  const cards = rotateFacts(pool, hourStamp(now));
 
   return (
     <section aria-label={L.homeFeed.quickFactsTitle}>
@@ -114,6 +248,9 @@ export function HomeQuickFacts({
               <span className="mt-1 block text-xs leading-relaxed text-text-secondary">
                 {card.text}
               </span>
+              {card.note ? (
+                <span className="mt-1 block text-[11px] text-text-muted">{card.note}</span>
+              ) : null}
             </>
           );
           const cardClass = `block h-full rounded-xl border p-4 ${

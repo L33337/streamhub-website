@@ -33,13 +33,31 @@ export function formatCompactNumber(
  * The decimals of the raw aggregates ("45808.6") are sampling noise, not
  * precision — never show them above 10. Returns '' for null/non-finite so
  * callers keep their own null branches ("—").
+ *
+ * `lang` localizes the separators ("2.1" → de "2,1"). It defaults to 'en'
+ * because the M24 pages that introduced this helper are English-only bodies;
+ * the homepage quick facts (2026-08-01) are the first localized caller, where
+ * an en-US "2.1" would read as a THOUSANDS separator in de/es/it/pt.
  */
-export function formatStatValue(value: number | null | undefined): string {
+export function formatStatValue(value: number | null | undefined, lang = 'en'): string {
   if (value == null || !Number.isFinite(value)) return '';
-  if (value < 10) {
-    const rounded = Math.round(value * 10) / 10;
-    return `${rounded}`;
+  const locale = lang === 'en' ? 'en-US' : lang;
+  if (value < 1000) {
+    // < 10 keeps one decimal, above that the decimals are noise.
+    const options: Intl.NumberFormatOptions = {
+      maximumFractionDigits: value < 10 ? 1 : 0,
+      // Nothing below 1000 groups; without this a rounded 999.6 would become
+      // "1,000" where the previous implementation printed "1000".
+      useGrouping: false,
+    };
+    try {
+      return new Intl.NumberFormat(locale, options).format(value);
+    } catch {
+      return new Intl.NumberFormat('en-US', options).format(value);
+    }
   }
-  if (value < 1000) return `${Math.round(value)}`;
-  return formatCompactNumber(value, 'en');
+  // Round BEFORE compacting: de/ja have no short form below 10,000, so an
+  // unrounded 9347.2 would render as "9347,2" — a decimal on a value whose
+  // decimals are sampling noise. English is unaffected ("9.3K" either way).
+  return formatCompactNumber(Math.round(value), lang);
 }

@@ -4,7 +4,13 @@ import { getPartnerApi, type PublicStreamSlot } from '@/lib/server/partner-api';
 import { fetchTrendingRail } from '@/lib/server/trending';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { fetchTopClipsOfWeek } from '@/lib/server/home-clips';
-import { fetchHomeQuickFacts, type HomeQuickFacts } from '@/lib/server/quick-facts';
+import {
+  countQuickFacts,
+  EMPTY_QUICK_FACTS,
+  fetchHomeQuickFacts,
+  type HomeQuickFacts,
+} from '@/lib/server/quick-facts';
+import { MIN_QUICK_FACT_CARDS } from '@/lib/home/quick-facts';
 import { fetchFeaturedStreamers } from '@/lib/server/home-featured';
 import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
@@ -283,9 +289,7 @@ export default async function HomePage({ params }: Props) {
           languages: {} as Record<string, string>,
         };
   const quickFacts: HomeQuickFacts =
-    factsCall.status === 'fulfilled'
-      ? factsCall.value
-      : { prediction: null, peak: null, reliable: null, pause: null };
+    factsCall.status === 'fulfilled' ? factsCall.value : EMPTY_QUICK_FACTS;
   const featuredStreamers =
     featuredIdsCall.status === 'fulfilled' ? featuredIdsCall.value : null;
   const featuredIds = featuredStreamers
@@ -393,14 +397,9 @@ export default async function HomePage({ params }: Props) {
   const risersVisible = riserEntries.some(
     (entry) => typeof entry.values.follower_gain_7d === 'number',
   );
-  const quickFactCount = [
-    quickFacts.prediction,
-    quickFacts.peak,
-    quickFacts.reliable,
-    quickFacts.pause,
-  ].filter(Boolean).length;
+  const quickFactCount = countQuickFacts(quickFacts);
   const statsVisible =
-    quickFactCount >= 2 ||
+    quickFactCount >= MIN_QUICK_FACT_CARDS ||
     risersVisible ||
     mostStreamed.length > 0 ||
     mostWatchedEntries.length > 0 ||

@@ -72,7 +72,7 @@ export const ja: HubLex = {
     clipsFilterMatches: (count) => `${count}件のクリップ`,
     clipsFilterEmpty: 'この条件に合うクリップはありません。',
     quickFactsTitle: 'クイックファクト',
-    quickFactsSub: '過去7日間のトラッキングデータより',
+    quickFactsSub: 'トラッキング中の配信から',
     factPredictionLabel: '予測チェック',
     factPrediction: (hits, total) =>
       `確度「高」の予測${total}件のうち${hits}件で、予測時刻から2時間以内に配信が始まりました。`,
@@ -83,6 +83,28 @@ export const ja: HubLex = {
       `${name}さんは直近の告知配信${total}件中${hits}件を時間どおりに開始しました。`,
     factPauseLabel: 'お休み中',
     factPause: (name) => `${name}さんはこの日までお休みです。`,
+    factMarathonLabel: '今週のマラソン配信',
+    factMarathon: (name) => `${name}さんがぶっ通しで配信した長さです。`,
+    factComebackLabel: '今週の復帰',
+    factComeback: (name, days) => `${name}さんが${days}日ぶりに配信に戻りました。`,
+    factPrimeTimeLabel: 'ゴールデンタイム',
+    factPrimeTime: (total) =>
+      `この時間帯に始まる配信がいちばん多く、4週間で${total}件の配信が対象です。`,
+    factBusiestDayLabel: 'いちばん忙しい曜日',
+    factBusiestDay: (total) =>
+      `配信の開始がいちばん多い曜日で、4週間で${total}件の配信が対象です。`,
+    factLocalTimeNote: 'あなたのタイムゾーン',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: '今週のカテゴリ',
+    factTopCategory: (category, streamers) =>
+      `過去7日間の${category}の配信数です（${streamers}人の配信者）。`,
+    factCompetitionLabel: '競合レベル',
+    factCompetition: (category) =>
+      `${category}で同時に配信しているトラッキング対象チャンネルの平均数です。当サイトでいちばん混み合うカテゴリです。`,
+    factRoomLabel: '狙い目のニッチ',
+    factRoom: (category, channels) =>
+      `${category}のチャンネルあたり視聴者数です。同時配信中のトラッキング対象チャンネルはわずか${channels}件。`,
+    factRoomSlotLabel: 'ベストな時間帯',
     risersTitle: '今週の急上昇',
     risersLink: 'すべてのランキング →',
     risersGained: (delta) => `7日間でフォロワー${delta}`,

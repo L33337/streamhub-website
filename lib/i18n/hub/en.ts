@@ -80,7 +80,7 @@ export const en: HubLex = {
     clipsFilterMatches: (count) => `${count} ${count === 1 ? 'clip' : 'clips'}`,
     clipsFilterEmpty: 'No clip matches these filters.',
     quickFactsTitle: 'Quick facts',
-    quickFactsSub: 'From the last 7 days of tracked streams',
+    quickFactsSub: 'Numbers from the streams we track',
     factPredictionLabel: 'Prediction check',
     factPrediction: (hits, total) =>
       `${hits} of ${total} high-confidence forecasts hit the two-hour window around the predicted start.`,
@@ -91,6 +91,29 @@ export const en: HubLex = {
       `${name} started ${hits} of ${total} recent announced streams on time.`,
     factPauseLabel: 'On a break',
     factPause: (name) => `${name} is on a break until this date.`,
+    factMarathonLabel: 'Marathon of the week',
+    factMarathon: (name) => `${name} stayed live that long in one go.`,
+    factComebackLabel: 'Comeback of the week',
+    factComeback: (name, days) =>
+      `${name} is back after ${days} days without a stream.`,
+    factPrimeTimeLabel: 'Prime time',
+    factPrimeTime: (total) =>
+      `More streams start at this hour than at any other, across ${total} broadcasts in 4 weeks.`,
+    factBusiestDayLabel: 'Busiest day',
+    factBusiestDay: (total) =>
+      `The weekday that starts the most streams, across ${total} broadcasts in 4 weeks.`,
+    factLocalTimeNote: 'your local time',
+    factUtcNote: 'UTC',
+    factTopCategoryLabel: 'Category of the week',
+    factTopCategory: (category, streamers) =>
+      `Streams in ${category} over the last 7 days, from ${streamers} ${streamers === 1 ? 'streamer' : 'streamers'}.`,
+    factCompetitionLabel: 'Competition level',
+    factCompetition: (category) =>
+      `Tracked channels live in ${category} at the same time, on average — the most crowded category we follow.`,
+    factRoomLabel: 'Room to grow',
+    factRoom: (category, channels) =>
+      `Viewers per channel in ${category}, with only ${channels} tracked channels live at once.`,
+    factRoomSlotLabel: 'Best time',
     risersTitle: 'Risers of the week',
     risersLink: 'All rankings →',
     risersGained: (delta) => `${delta} followers in 7 days`,

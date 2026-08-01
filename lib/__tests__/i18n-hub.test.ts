@@ -81,6 +81,26 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.factReliable', L.homeFeed.factReliable('NachtFalke', 5, 5)],
     ['homeFeed.factPauseLabel', L.homeFeed.factPauseLabel],
     ['homeFeed.factPause', L.homeFeed.factPause('NachtFalke')],
+    ['homeFeed.factMarathonLabel', L.homeFeed.factMarathonLabel],
+    ['homeFeed.factMarathon', L.homeFeed.factMarathon('NachtFalke')],
+    ['homeFeed.factComebackLabel', L.homeFeed.factComebackLabel],
+    ['homeFeed.factComeback', L.homeFeed.factComeback('NachtFalke', 16)],
+    ['homeFeed.factComeback.21', L.homeFeed.factComeback('NachtFalke', 21)],
+    ['homeFeed.factComeback.22', L.homeFeed.factComeback('NachtFalke', 22)],
+    ['homeFeed.factPrimeTimeLabel', L.homeFeed.factPrimeTimeLabel],
+    ['homeFeed.factPrimeTime', L.homeFeed.factPrimeTime('7.6K')],
+    ['homeFeed.factBusiestDayLabel', L.homeFeed.factBusiestDayLabel],
+    ['homeFeed.factBusiestDay', L.homeFeed.factBusiestDay('7.6K')],
+    ['homeFeed.factLocalTimeNote', L.homeFeed.factLocalTimeNote],
+    ['homeFeed.factUtcNote', L.homeFeed.factUtcNote],
+    ['homeFeed.factTopCategoryLabel', L.homeFeed.factTopCategoryLabel],
+    ['homeFeed.factTopCategory', L.homeFeed.factTopCategory('Just Chatting', 146)],
+    ['homeFeed.factTopCategory.one', L.homeFeed.factTopCategory('Just Chatting', 1)],
+    ['homeFeed.factCompetitionLabel', L.homeFeed.factCompetitionLabel],
+    ['homeFeed.factCompetition', L.homeFeed.factCompetition('Just Chatting')],
+    ['homeFeed.factRoomLabel', L.homeFeed.factRoomLabel],
+    ['homeFeed.factRoom', L.homeFeed.factRoom('IRL', '2.1')],
+    ['homeFeed.factRoomSlotLabel', L.homeFeed.factRoomSlotLabel],
     ['homeFeed.risersTitle', L.homeFeed.risersTitle],
     ['homeFeed.risersLink', L.homeFeed.risersLink],
     ['homeFeed.risersGained', L.homeFeed.risersGained('+12.4K')],
@@ -362,6 +382,30 @@ describe('HUB_STRINGS lexica', () => {
     expect(intro).toContain('4');
     expect(intro).toContain('3');
     expect(intro).toContain('6');
+  });
+
+  // Every quick-fact sentence sits under a big value the component renders
+  // separately. A translation that drops its placeholder would leave the card
+  // talking about nobody (name) or about nothing (category).
+  it.each([...UI_LANGS])('%s keeps the subject in every quick-fact sentence', (lang) => {
+    const L = HUB_STRINGS[lang].homeFeed;
+    expect(L.factMarathon('NachtFalke')).toContain('NachtFalke');
+    expect(L.factComeback('NachtFalke', 16)).toContain('NachtFalke');
+    expect(L.factComeback('NachtFalke', 16)).toContain('16');
+    expect(L.factTopCategory('Just Chatting', 146)).toContain('Just Chatting');
+    expect(L.factTopCategory('Just Chatting', 146)).toContain('146');
+    expect(L.factCompetition('Just Chatting')).toContain('Just Chatting');
+    expect(L.factRoom('IRL', '2.1')).toContain('IRL');
+    expect(L.factRoom('IRL', '2.1')).toContain('2.1');
+  });
+
+  // The sample size is the only number in these two sentences — the hour and
+  // the weekday are timezone-dependent and are rendered by the client island,
+  // so a translation must never inline one of its own.
+  it.each([...UI_LANGS])('%s carries the sample size in the histogram facts', (lang) => {
+    const L = HUB_STRINGS[lang].homeFeed;
+    expect(L.factPrimeTime('7.6K')).toContain('7.6K');
+    expect(L.factBusiestDay('7.6K')).toContain('7.6K');
   });
 
   it('hubLexFor falls back to English for unknown locales', () => {
