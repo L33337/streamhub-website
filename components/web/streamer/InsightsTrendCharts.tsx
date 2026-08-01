@@ -54,8 +54,15 @@ export function MonthlyTrendChart({
   );
   if (!months) return null;
 
-  const max = Math.max(1, ...months.map((m) => m.peak ?? m.median ?? 0));
-  const heightPct = (v: number) => Math.max(4, Math.round((v / max) * MAX_BAR_PCT));
+  // Scale on medians; peaks join the scale only up to 3× the median max — a
+  // single raid/event spike (real prod case: 137K peak over a 9K median)
+  // must not flatten every bar. Peaks beyond the cap pin to the top edge;
+  // the tooltip carries the true number.
+  const maxMedian = Math.max(1, ...months.map((m) => m.median ?? 0));
+  const maxPeak = Math.max(0, ...months.map((m) => m.peak ?? 0));
+  const max = Math.max(maxMedian, Math.min(maxPeak, 3 * maxMedian));
+  const heightPct = (v: number) =>
+    Math.max(4, Math.min(MAX_BAR_PCT + 8, Math.round((v / max) * MAX_BAR_PCT)));
   const hasFaded = months.some((m) => m.isCurrent || m.isPreTracking);
 
   return (
