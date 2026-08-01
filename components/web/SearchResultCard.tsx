@@ -4,6 +4,7 @@ import type { PublicStreamer } from '@/lib/server/partner-api';
 import { LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 export interface SearchResultStreamer extends PublicStreamer {
   is_live: boolean;
@@ -25,7 +26,7 @@ export function SearchResultCard({ streamer, compact = false }: Props) {
     >
       {streamer.avatar_url ? (
         <Image
-          src={streamer.avatar_url}
+          src={sizedAvatarUrl(streamer.avatar_url, avatarSize)}
           alt={streamer.name}
           width={avatarSize}
           height={avatarSize}

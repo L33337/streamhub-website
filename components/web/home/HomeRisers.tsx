@@ -8,6 +8,7 @@ import { formatCompactNumber } from '@/lib/format/number';
 import { formatSignedCompact } from '@/lib/rankings';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * "Risers of the week" (homepage rebuild 2026-07-27): top of the
@@ -52,7 +53,7 @@ export function HomeRisers({
               </span>
               {entry.streamer.avatar_url ? (
                 <Image
-                  src={entry.streamer.avatar_url}
+                  src={sizedAvatarUrl(entry.streamer.avatar_url, 32)}
                   alt={entry.streamer.name}
                   width={32}
                   height={32}

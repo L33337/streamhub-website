@@ -11,6 +11,7 @@ import {
   type PublicStreamSlot,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
@@ -708,7 +709,7 @@ export default async function GamePage({ params }: Props) {
                         >
                           {row.avatarUrl ? (
                             <Image
-                              src={row.avatarUrl}
+                              src={sizedAvatarUrl(row.avatarUrl, 36)}
                               alt={row.name}
                               width={36}
                               height={36}
@@ -795,7 +796,7 @@ export default async function GamePage({ params }: Props) {
               >
                 {s.avatar ? (
                   <Image
-                    src={s.avatar}
+                    src={sizedAvatarUrl(s.avatar, 48)}
                     alt={s.name}
                     width={48}
                     height={48}

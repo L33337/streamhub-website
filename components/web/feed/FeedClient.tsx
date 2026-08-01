@@ -24,6 +24,7 @@ import {
   logFeedEvent,
   flushFeedEvents,
 } from '@/lib/feed/events';
+import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 import { SEEN_COOKIE, SEEN_COOKIE_MAX_AGE_SECONDS } from '@/lib/feed/constants';
 import {
   reorderDiscover,
@@ -954,7 +955,16 @@ export function FeedClient({
                 briefingSeen ? '' : 'ring-2 ring-accent-cyan ring-offset-2 ring-offset-background'
               }`}
             >
-              <Image src={briefingThumb} alt="" fill unoptimized sizes="48px" className="object-cover" />
+              <Image
+                // Either a stream thumbnail or an avatar, in a 48px circle —
+                // both helpers no-op on a URL of the other shape.
+                src={sizedCdnImageUrl(sizedAvatarUrl(briefingThumb, 48), 48)}
+                alt=""
+                fill
+                unoptimized
+                sizes="48px"
+                className="object-cover"
+              />
             </span>
           )}
           <span className="min-w-0">
@@ -1303,7 +1313,7 @@ export function FeedClient({
                     <div className="relative h-32 w-24 overflow-hidden rounded-lg bg-background-highlight transition-transform motion-safe:hover:scale-[1.03]">
                       {game.boxArtUrl ? (
                         <Image
-                          src={game.boxArtUrl}
+                          src={sizedCdnImageUrl(game.boxArtUrl, 96)}
                           alt=""
                           fill
                           unoptimized

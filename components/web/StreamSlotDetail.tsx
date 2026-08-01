@@ -8,6 +8,7 @@ import {
   LiveBadge,
   PlatformBadge,
 } from './Badges';
+import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 import { InitialsAvatar } from './InitialsAvatar';
 import { LocalTime } from './LocalTime';
 import { WatchButtons } from './WatchButtons';
@@ -129,7 +130,8 @@ function HeroThumbnail({ slot }: { slot: PublicStreamSlot }) {
     return (
       <div className="gradient-border relative aspect-video w-full overflow-hidden">
         <Image
-          src={slot.thumbnail_url}
+          // 640px is the widest this hero gets (see the sizes prop below).
+          src={sizedCdnImageUrl(slot.thumbnail_url, 640)}
           alt={slot.title}
           fill
           unoptimized
@@ -153,7 +155,7 @@ function HeroThumbnail({ slot }: { slot: PublicStreamSlot }) {
     return (
       <div className="gradient-border relative flex aspect-video w-full items-center justify-center overflow-hidden bg-background-highlight">
         <Image
-          src={slot.avatar_url}
+          src={sizedAvatarUrl(slot.avatar_url, 160)}
           alt={`${slot.streamer_name} avatar`}
           width={160}
           height={160}
@@ -190,7 +192,7 @@ function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; classNa
     >
       {slot.avatar_url ? (
         <Image
-          src={slot.avatar_url}
+          src={sizedAvatarUrl(slot.avatar_url, 48)}
           // The Link's aria-label already names the target, so this costs
           // screen readers nothing and gains the crawler image context.
           alt={slot.streamer_name}

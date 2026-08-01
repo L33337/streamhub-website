@@ -20,6 +20,7 @@ import {
   type ExternalSearchResult,
   type SearchPlatform,
 } from '@/lib/web/streamerSearch';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import { LiveBadge, PlatformBadge } from '../Badges';
 import { InitialsAvatar } from '../InitialsAvatar';
 import type { OnboardingSuggestion } from './types';
@@ -82,7 +83,7 @@ function PickCard({ streamer }: { streamer: OnboardingSuggestion }) {
 
       {streamer.avatarUrl ? (
         <Image
-          src={streamer.avatarUrl}
+          src={sizedAvatarUrl(streamer.avatarUrl, 56)}
           alt=""
           width={56}
           height={56}
@@ -131,7 +132,7 @@ function AddPickCard({
     >
       {result.avatarUrl ? (
         <Image
-          src={result.avatarUrl}
+          src={sizedAvatarUrl(result.avatarUrl, 56)}
           alt=""
           width={56}
           height={56}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { X, Play, Quote, CalendarClock, CalendarX2, BarChart3 } from 'lucide-react';
 import { logFeedEvent } from '@/lib/feed/events';
+import { sizedCdnImageUrl } from '@/lib/format/image-size';
 
 export type BriefingCardKind = 'clip' | 'fan-moment' | 'today' | 'changes' | 'recap';
 
@@ -127,7 +128,17 @@ export function BriefingOverlay({
           <h2 className="text-xl font-bold text-white">{card.headline}</h2>
           {card.thumbnailUrl ? (
             <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-lg bg-background-highlight">
-              <Image src={card.thumbnailUrl} alt="" fill unoptimized className="object-cover" />
+              <Image
+                src={sizedCdnImageUrl(card.thumbnailUrl, 320)}
+                alt=""
+                fill
+                unoptimized
+                // Was missing entirely, so this defaulted to 100vw and asked
+                // for the widest bucket in a modal card that never exceeds
+                // ~320px.
+                sizes="320px"
+                className="object-cover"
+              />
             </div>
           ) : null}
           {card.body ? (

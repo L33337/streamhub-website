@@ -7,6 +7,7 @@ import {
   publicSlotToIcsSlot,
   splitCollapsibleSlots,
 } from '@/lib/game-schedule';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { utcDateAbsoluteLabel } from '@/lib/format/time';
 import { DayLabel } from '@/components/web/DayLabel';
@@ -35,7 +36,7 @@ function CompactSlotRow({ slot }: { slot: PublicStreamSlot }) {
       >
         {slot.avatar_url ? (
           <Image
-            src={slot.avatar_url}
+            src={sizedAvatarUrl(slot.avatar_url, 24)}
             alt={slot.streamer_name}
             width={24}
             height={24}

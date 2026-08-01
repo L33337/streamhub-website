@@ -11,6 +11,7 @@ import {
   useState,
   useTransition,
 } from 'react';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import type { Platform, PublicStreamer } from '@/lib/server/partner-api';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { LiveBadge, PlatformBadge } from './Badges';
@@ -431,7 +432,7 @@ function DropdownResult({
     >
       {streamer.avatar_url ? (
         <Image
-          src={streamer.avatar_url}
+          src={sizedAvatarUrl(streamer.avatar_url, 32)}
           alt={streamer.name}
           width={32}
           height={32}

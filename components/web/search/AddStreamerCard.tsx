@@ -13,6 +13,7 @@ import {
   type AddStreamerErrorInfo,
   type ExternalSearchResult,
 } from '@/lib/web/streamerSearch';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import type { AddedStreamer } from '@/hooks/useStreamerAdd';
 
 interface Props {
@@ -39,7 +40,7 @@ export function AddStreamerCard({
       <div className="flex items-center gap-3">
         {result.avatarUrl ? (
           <Image
-            src={result.avatarUrl}
+            src={sizedAvatarUrl(result.avatarUrl, 64)}
             alt={result.displayName}
             width={64}
             height={64}

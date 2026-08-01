@@ -13,6 +13,7 @@ import {
   LiveBadge,
   PlatformBadge,
 } from './Badges';
+import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 import { SlotStatusText } from './SlotStatusText';
 
 /**
@@ -117,7 +118,8 @@ export function SlotCard({
         >
           {slot.thumbnail_url ? (
             <Image
-              src={slot.thumbnail_url}
+              // The widest bucket of thumbSizes (224px at lg, 144px compact).
+              src={sizedCdnImageUrl(slot.thumbnail_url, compact ? 144 : 224)}
               alt={slot.title?.trim() || slot.streamer_name}
               fill
               unoptimized
@@ -126,7 +128,7 @@ export function SlotCard({
             />
           ) : slot.avatar_url ? (
             <Image
-              src={slot.avatar_url}
+              src={sizedAvatarUrl(slot.avatar_url, compact ? 144 : 224)}
               alt={slot.streamer_name}
               fill
               unoptimized

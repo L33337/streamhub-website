@@ -53,7 +53,12 @@ export function ClipCard({
         {!thumbnailError && clip.thumbnailUrl ? (
           <Image
             src={clip.thumbnailUrl}
-            alt=""
+            // Not decorative for crawlers: Bing's SEO report counts an empty
+            // alt as a missing one, and the homepage rail alone ships 24 of
+            // these. Screen readers never reach it — the <a> above carries an
+            // aria-label, which replaces the subtree — so a descriptive alt
+            // costs nothing in double-announcement.
+            alt={clipThumbnailAlt(clip.title, streamerName)}
             fill
             unoptimized
             sizes="200px"
@@ -97,4 +102,18 @@ export function ClipCard({
       </div>
     </a>
   );
+}
+
+/**
+ * Alt text for a clip thumbnail. English on purpose, like the card's
+ * aria-label and its "Untitled clip" fallback: the clip title is content in the
+ * streamer's language, and the two-word frame around it is not worth a lexicon
+ * round-trip through a client component (CLAUDE.md D6).
+ */
+export function clipThumbnailAlt(
+  title: string | null | undefined,
+  streamerName?: string,
+): string {
+  const subject = title?.trim() || 'Twitch clip';
+  return streamerName ? `${subject} — clip by ${streamerName}` : subject;
 }

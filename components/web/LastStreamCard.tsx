@@ -5,6 +5,7 @@ import { historyPlatforms, historyVodLinks } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
+import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 
 function PlaceholderThumbnail({ name }: { name: string }) {
   const letter = (name?.trim()?.[0] ?? '?').toUpperCase();
@@ -73,7 +74,8 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
       <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
         {thumbnailUrl ? (
           <Image
-            src={thumbnailUrl}
+            // 224px is the widest this box gets (THUMB_SIZES' lg bucket).
+            src={sizedCdnImageUrl(thumbnailUrl, 224)}
             alt={title}
             fill
             unoptimized
@@ -82,7 +84,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
           />
         ) : avatarUrl ? (
           <Image
-            src={avatarUrl}
+            src={sizedAvatarUrl(avatarUrl, 224)}
             alt={streamerName}
             fill
             unoptimized

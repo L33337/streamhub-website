@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { SettingsSection } from './SettingsSection';
 import { InitialsAvatar } from './InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 interface Props {
   email: string | null;
@@ -34,7 +35,7 @@ export function AccountInfoSection({
       <div className="flex items-center gap-4">
         {avatarUrl ? (
           <Image
-            src={avatarUrl}
+            src={sizedAvatarUrl(avatarUrl, 64)}
             alt=""
             width={64}
             height={64}

@@ -7,6 +7,7 @@ import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { formatCompactNumber } from '@/lib/format/number';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * "Most streamed this week" (homepage, 2026-07-27): featured streamers by
@@ -44,7 +45,7 @@ export function HomeMostStreamed({
               </span>
               {entry.avatarUrl ? (
                 <Image
-                  src={entry.avatarUrl}
+                  src={sizedAvatarUrl(entry.avatarUrl, 32)}
                   alt={entry.name}
                   width={32}
                   height={32}

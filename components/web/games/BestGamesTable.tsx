@@ -22,6 +22,7 @@ import {
   type BestGameRow,
   type BestGamesSort,
 } from '@/lib/best-games';
+import { sizedCdnImageUrl } from '@/lib/format/image-size';
 
 function subscribe(): () => void {
   return () => {};
@@ -43,7 +44,7 @@ function GameCell({ row, rank }: { row: BestGameRow; rank: number }) {
       </span>
       {row.boxArtUrl ? (
         <Image
-          src={row.boxArtUrl}
+          src={sizedCdnImageUrl(row.boxArtUrl, 30)}
           alt=""
           width={30}
           height={40}

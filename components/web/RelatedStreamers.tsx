@@ -5,6 +5,7 @@ import {
   PartnerApiError,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
@@ -156,7 +157,7 @@ export async function RelatedStreamers({
           >
             {s.avatar_url ? (
               <Image
-                src={s.avatar_url}
+                src={sizedAvatarUrl(s.avatar_url, 26)}
                 alt={s.name}
                 width={26}
                 height={26}

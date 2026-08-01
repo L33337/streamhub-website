@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthProvider';
 import { AUTH_UI_VISIBLE } from '@/lib/auth-flag';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { initialsFromName } from './InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 function avatarUrlFromUser(user: ReturnType<typeof useAuth>['user']): string | null {
   if (!user) return null;
@@ -98,7 +99,7 @@ export function HeaderUserMenu({
       >
         {avatar ? (
           <Image
-            src={avatar}
+            src={sizedAvatarUrl(avatar, 36)}
             alt=""
             width={36}
             height={36}

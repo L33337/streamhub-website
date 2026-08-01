@@ -7,6 +7,7 @@ import { formatCompactNumber } from '@/lib/format/number';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * "Most watched" duo (homepage rebuild 2026-07-27): top-5 streamers by median
@@ -89,7 +90,7 @@ export function HomeMostWatched({
                     <span className={`${iconSlotClass} w-7`}>
                       {entry.streamer.avatar_url ? (
                         <Image
-                          src={entry.streamer.avatar_url}
+                          src={sizedAvatarUrl(entry.streamer.avatar_url, 28)}
                           alt={entry.streamer.name}
                           width={28}
                           height={28}

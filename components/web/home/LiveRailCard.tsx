@@ -8,6 +8,7 @@ import {
   liveRuntimeFrom,
   liveWatchUrl,
 } from '@/lib/home/live-rail';
+import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 import type { LiveCardSlot } from '@/lib/home/slot-payload';
 import { slotLexFor } from '@/lib/i18n-slot';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
@@ -84,7 +85,7 @@ export function LiveRailCard({
         <div className="relative aspect-video w-full overflow-hidden bg-background-highlight">
           {slot.thumbnail_url ? (
             <Image
-              src={slot.thumbnail_url}
+              src={sizedCdnImageUrl(slot.thumbnail_url, 268)}
               // Language-neutral by construction: the stream's own title (or
               // the streamer name) rather than an English chrome phrase, which
               // would leak onto all 11 non-English locales.
@@ -127,7 +128,7 @@ export function LiveRailCard({
             <span className="relative inline-flex shrink-0 rounded-full border-2 border-live">
               {slot.avatar_url ? (
                 <Image
-                  src={slot.avatar_url}
+                  src={sizedAvatarUrl(slot.avatar_url, 28)}
                   // Deliberately empty: secondary to the thumbnail above, and
                   // the streamer name follows as visible text — a repeat here
                   // only makes screen readers say it twice.
@@ -250,7 +251,10 @@ function ThumbnailFallback({ slot }: { slot: LiveCardSlot }) {
   if (slot.avatar_url) {
     return (
       <Image
-        src={slot.avatar_url}
+        // Blurred at 60% opacity behind a 268px box, so it needs no more
+        // detail than a normal avatar slot — and the helper's never-upscale
+        // cap keeps a 268px ask from resolving to Twitch's 600x600.
+        src={sizedAvatarUrl(slot.avatar_url, 96)}
         // Stands in as the card's primary visual here, so it carries the name.
         alt={slot.streamer_name}
         fill
