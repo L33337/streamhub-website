@@ -30,6 +30,21 @@
   --color-border-accent: #00F0FF;
   --color-divider: #1F1F2A;
 
+  /* Insights viz palette (2026-08-01): charts speak violet + heat so the data
+     never competes with the cyan site chrome. viz = series fill (in the dark
+     lightness band, no alpha tricks needed), viz-bright = peak/hero,
+     viz-soft = lines/kickers/badges, viz-benchmark = deliberately desaturated
+     reference series. delta-up/-down are luminance-matched (softer than
+     live/accent-pink) and must NEVER appear without a +/− sign — under
+     red-green color blindness the pair is close (ΔE 4.6), the sign carries
+     the direction. */
+  --color-viz: #8B5CF6;
+  --color-viz-bright: #C4B5FD;
+  --color-viz-soft: #A78BFA;
+  --color-viz-benchmark: #64748B;
+  --color-delta-up: #34D399;
+  --color-delta-down: #FB7185;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

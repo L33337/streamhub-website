@@ -11,7 +11,7 @@
 // tap-to-select detail line under the grid — touch devices have no hover, so
 // without the detail line phones could see the colors but never the numbers.
 // The best-opportunity cell starts selected (ring), which also answers "where
-// IS that window?" without hunting for the greenest cell.
+// IS that window?" without hunting for the hottest cell.
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { localUtcOffsetHours } from '@/lib/game-heatmap';
@@ -32,27 +32,28 @@ function subscribe(): () => void {
   return () => {};
 }
 
-// One semantic scale for every mode: red = bad hour for a streamer, green =
-// good hour. Competition inverts its raw values inside timingGoodness (fewer
-// live channels = green), so green ALWAYS reads "favorable for you" and the
-// legend never flips direction between modes.
+// One semantic scale for every mode: the heat ramp — cold violet = bad hour
+// for a streamer, glowing gold = prime time. Competition inverts its raw
+// values inside timingGoodness (fewer live channels = hotter), so the glow
+// ALWAYS reads "favorable for you" and the legend never flips direction
+// between modes.
 const MODE_META: Record<TimingMode, { label: string; legend: string }> = {
   opportunity: {
     label: 'Opportunity',
-    legend: 'viewers per live channel — green = good time to stream, red = crowded or slow',
+    legend: 'viewers per live channel — the brighter the glow, the better your shot at getting discovered',
   },
   viewers: {
     label: 'Viewers',
-    legend: 'average concurrent viewers — green = most people watching, red = few viewers',
+    legend: 'average concurrent viewers — gold = everyone’s watching, dark = quiet hours',
   },
   streamers: {
     label: 'Competition',
-    legend: 'average live channels — green = little competition, red = crowded',
+    legend: 'average live channels — gold = the field is clear, dark = crowded',
   },
 };
 
 const HOUR_TICKS = new Set([0, 6, 12, 18]);
-// Goodness steps for the legend swatches, worst (red) → best (green).
+// Goodness steps for the legend swatches, cold (violet) → glowing (gold).
 const LEGEND_STEPS = [0, 0.25, 0.5, 0.75, 1];
 const MODES: TimingMode[] = ['opportunity', 'viewers', 'streamers'];
 // Grid geometry shared by render + initial-scroll math: the day-label column
@@ -250,7 +251,7 @@ export function BestTimeHeatmap({
         className="mt-3 flex flex-wrap items-center gap-1 text-[10px] text-text-muted"
         aria-hidden="true"
       >
-        <span className="mr-1">Worse</span>
+        <span className="mr-1">Cold</span>
         {LEGEND_STEPS.map((g) => (
           <span
             key={g}
@@ -258,7 +259,7 @@ export function BestTimeHeatmap({
             style={{ backgroundColor: timingCellColor(g) }}
           />
         ))}
-        <span className="ml-1 mr-3">Better</span>
+        <span className="ml-1 mr-3">Prime time</span>
         <span className="h-3 w-3 rounded-[2px] border border-dashed border-white/10" />
         <span className="ml-1">No data</span>
       </div>

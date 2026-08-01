@@ -141,7 +141,7 @@ function quantile(values: number[], p: number): number {
 /**
  * Winsorized p10..p90 color band over a plain value sample. Shared by the
  * heatmap (168 cells) and the insights bar charts (7/24 bars) so every
- * red-to-green surface normalizes the same way. Null for an empty sample.
+ * heat-scaled surface normalizes the same way. Null for an empty sample.
  */
 export function timingScaleOf(values: number[]): TimingScale | null {
   if (values.length === 0) return null;
@@ -218,9 +218,9 @@ export function cellValueForMode(cell: TimingCell, mode: TimingMode): number | n
  * scale.hi → 1). Relative-to-this-game on purpose: an opportunity score has
  * no absolute meaning across games, so the map answers "which hours of MY
  * game's week are better/worse". The Competition mode inverts — FEWER live
- * channels is the favorable end — so green always means "good for you".
+ * channels is the favorable end — so the hot end always means "good for you".
  * Flat band (hi <= lo, e.g. all observed cells identical) → every observed
- * hour is equally fine → 1 (green), never an arbitrary red/neutral split.
+ * hour is equally fine → 1 (glowing), never an arbitrary cold/neutral split.
  * Null when the cell or the whole mode has no data.
  */
 export function timingGoodness(
@@ -235,20 +235,51 @@ export function timingGoodness(
 }
 
 /**
- * Cell color for a semantic goodness value: red (bad hour) → yellow →
- * green (good hour). The red end runs brighter/more saturated than the
- * green end (user-tuned 2026-08-01: "kräftiger, leuchtender") while opacity
- * still rises toward "good", so good cells keep the strongest visual pull
- * and the detail line / tooltips carry the exact numbers.
- * Deterministic string (rounded) so SSR and client markup stay identical.
+ * Cell color for a semantic goodness value: the HEAT scale (2026-08-01
+ * redesign, replacing the red→green traffic light). Deep violet (cold, weak
+ * hour) → magenta → orange → gold (glowing, prime time) — "where it glows is
+ * the best time". Lightness rises strictly monotonically (OKLab L 0.29 →
+ * 0.90), so the scale stays correctly ordered in grayscale and under every
+ * kind of color blindness; no red/green axis involved. The cold end sits
+ * deliberately close to the page background: a cold CELL receding is the
+ * message, and dashed "no data" cells stay visually distinct.
+ *
+ * The 33 steps below are OKLab-interpolated between five anchors
+ * (#3A1878 · #7E22CE · #C026D3 · #F97316 · #FDE047, anchors on index
+ * 0/8/16/24/32) and PRECOMPUTED as literals: Math.cbrt/Math.pow are not
+ * guaranteed bit-identical across JS engines, and this string must match
+ * byte-for-byte between SSR and client.
  */
+const HEAT_TABLE = [
+  '#3a1878', '#421a82', '#4a1b8d', '#531d97',
+  '#5b1ea2', '#641fad', '#6c20b8', '#7521c3',
+  '#7e22ce', '#8624cf', '#8e25cf', '#9627d0',
+  '#9f27d1', '#a728d1', '#af28d2', '#b827d2',
+  '#c026d3', '#c63bc3', '#cc49b3', '#d354a2',
+  '#da5c90', '#e1637c', '#e96966', '#f16f49',
+  '#f97316', '#fb821d', '#fc9024', '#fe9e2a',
+  '#feac30', '#ffb936', '#ffc63c', '#fed341',
+  '#fde047',
+] as const;
+
 export function timingCellColor(goodness: number): string {
   const g = Math.max(0, Math.min(1, goodness));
-  const hue = Math.round(8 + 124 * g); // 8° red → 132° green
-  const sat = Math.round(90 - 15 * g);
-  const light = Math.round(62 - 10 * g);
-  const alpha = (0.55 + 0.33 * g).toFixed(2);
-  return `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+  return HEAT_TABLE[Math.round(g * (HEAT_TABLE.length - 1))];
+}
+
+/**
+ * Heat color for BARS (insights weekday/hour charts). Bars are marks, not
+ * cells: the darkest heat step may recede on the heatmap, but a bar that
+ * vanishes into the background reads as "no data" instead of "weak hour".
+ * The floor lifts the cold end to ~2:1 against #0A0A0F (index 7, #7521c3)
+ * while keeping the identical hue path, so bar and heatmap colors never
+ * contradict each other.
+ */
+const BAR_FLOOR = 0.22;
+
+export function timingBarColor(goodness: number): string {
+  const g = Math.max(0, Math.min(1, goodness));
+  return timingCellColor(BAR_FLOOR + (1 - BAR_FLOOR) * g);
 }
 
 /** "Tuesday 20:00" (already-shifted dow/hour). */
