@@ -16,15 +16,25 @@ import { formatCompactNumber, formatStatValue } from '@/lib/format/number';
 import {
   COLLECTING_THRESHOLD,
   bestMedianCategory,
+  followerStats,
+  followersPerStreamHour,
   formatFollowerBand,
   isOnVacation,
+  marketByCategory,
+  marketDeltaPct,
+  monthlyViewerDelta,
   rampMedians,
   sizeBenchmarkTopShare,
   usableCategoryRows,
   usableCells,
+  usableMonthlyTrend,
 } from '@/lib/streamer-insights';
 import { buildRampView } from '@/lib/game-timing';
 import { InsightsCharts } from '@/components/web/streamer/InsightsCharts';
+import {
+  FollowerGrowthChart,
+  MonthlyTrendChart,
+} from '@/components/web/streamer/InsightsTrendCharts';
 import { RampBars } from '@/components/web/games/RampBars';
 import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
 
@@ -131,6 +141,23 @@ export default async function StreamerInsightsPage({ params }: Props) {
   const band = formatFollowerBand(insights?.follower_band);
   const vacation = isOnVacation(insights?.vacation_until);
   const bestCategory = bestMedianCategory(categoryRows);
+
+  // 2026-08-01 expansion: viewer trend, follower growth, rhythm, market.
+  const trendMonths = usableMonthlyTrend(
+    insights?.monthly_trend ?? null,
+    insights?.tracked_since ?? null,
+  );
+  const viewerDelta = monthlyViewerDelta(trendMonths);
+  const followers = followerStats(insights?.follower_trend);
+  const perHour = followersPerStreamHour(
+    followers?.gain30 ?? null,
+    insights?.observed_hours_30d,
+  );
+  const market = marketByCategory(insights?.category_market);
+  const hasRhythm =
+    stats?.has_stats === true &&
+    (stats.streams_per_week != null || stats.hours_streamed != null);
+  const preTracking = (trendMonths ?? []).some((m) => m.isPreTracking);
 
   const gameLink = (category: string): string | null => {
     const s = gameSlug(category);
@@ -249,6 +276,56 @@ export default async function StreamerInsightsPage({ params }: Props) {
             </section>
           )}
 
+          {trendMonths && (
+            <section aria-labelledby="viewer-trend-heading" className="mt-10">
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <h2 id="viewer-trend-heading" className="text-xl font-bold text-white">
+                  Viewer trend by month
+                </h2>
+                {viewerDelta && (
+                  <p className="text-sm text-text-muted">
+                    {viewerDelta.latest.label}{' '}
+                    <span
+                      className={`font-semibold ${
+                        viewerDelta.pct > 0
+                          ? 'text-live'
+                          : viewerDelta.pct < 0
+                            ? 'text-accent-pink'
+                            : 'text-text-secondary'
+                      }`}
+                    >
+                      {viewerDelta.pct > 0 ? '+' : ''}
+                      {viewerDelta.pct}%
+                    </span>{' '}
+                    vs {viewerDelta.previous.label}
+                  </p>
+                )}
+              </div>
+              <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+                Median and sampled peak concurrent viewers per calendar month —
+                growing, flat or cooling at a glance.
+              </p>
+              <div className="mt-4 max-w-2xl">
+                <MonthlyTrendChart
+                  trend={insights?.monthly_trend ?? null}
+                  trackedSince={insights?.tracked_since ?? null}
+                />
+              </div>
+              {preTracking && insights?.tracked_since && (
+                <p className="mt-2 max-w-2xl text-xs text-text-muted">
+                  Tracking started{' '}
+                  {new Date(insights.tracked_since).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                  {' — '}earlier months only show what the onboarding backfill
+                  could recover.
+                </p>
+              )}
+            </section>
+          )}
+
           {ramp && streamerRamp && (
             <section aria-labelledby="ramp-heading" className="mt-10">
               <h2 id="ramp-heading" className="text-xl font-bold text-white">
@@ -280,6 +357,150 @@ export default async function StreamerInsightsPage({ params }: Props) {
             </section>
           )}
 
+          {followers && (
+            <section aria-labelledby="follower-growth-heading" className="mt-10">
+              <h2 id="follower-growth-heading" className="text-xl font-bold text-white">
+                Follower growth
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+                Daily follower counts. Twitch shares subscriber and
+                unique-viewer numbers only with the broadcaster, so follower
+                growth — and followers gained per streamed hour — is the
+                closest honest read on how well streams convert viewers into
+                an audience.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {followers.gain7 !== null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Last 7 days
+                    </p>
+                    <p
+                      className={`mt-2 text-2xl font-bold ${
+                        followers.gain7 > 0
+                          ? 'text-live'
+                          : followers.gain7 < 0
+                            ? 'text-accent-pink'
+                            : 'text-text-secondary'
+                      }`}
+                    >
+                      {followers.gain7 > 0 ? '+' : ''}
+                      {formatCompactNumber(followers.gain7)}
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">followers</p>
+                  </div>
+                )}
+                {followers.gain30 !== null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Last 30 days
+                    </p>
+                    <p
+                      className={`mt-2 text-2xl font-bold ${
+                        followers.gain30 > 0
+                          ? 'text-live'
+                          : followers.gain30 < 0
+                            ? 'text-accent-pink'
+                            : 'text-text-secondary'
+                      }`}
+                    >
+                      {followers.gain30 > 0 ? '+' : ''}
+                      {formatCompactNumber(followers.gain30)}
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">followers</p>
+                  </div>
+                )}
+                {perHour !== null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Per streamed hour
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                      ≈{formatStatValue(perHour)}
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      new followers (last 30 days)
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 max-w-2xl">
+                <FollowerGrowthChart points={followers.points} />
+              </div>
+              {followers.spanDays < 60 && (
+                <p className="mt-2 max-w-2xl text-xs text-text-muted">
+                  We started recording daily follower counts in July 2026 — this
+                  chart covers {followers.spanDays} days so far and grows over
+                  time.
+                </p>
+              )}
+            </section>
+          )}
+
+          {hasRhythm && stats && (
+            <section aria-labelledby="rhythm-heading" className="mt-10">
+              <h2 id="rhythm-heading" className="text-xl font-bold text-white">
+                Streaming rhythm
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+                How often and how long {streamer.name} goes live, from the last{' '}
+                {stats.window_days} days of broadcasts
+                {stats.typical_start && stats.typical_end && (
+                  <>
+                    {' — '}typically{' '}
+                    <span className="font-semibold text-text-primary">
+                      {stats.typical_start}–{stats.typical_end}
+                    </span>{' '}
+                    ({stats.timezone})
+                  </>
+                )}
+                .
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {stats.streams_per_week != null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Streams per week
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                      {formatStatValue(stats.streams_per_week)}
+                    </p>
+                  </div>
+                )}
+                {stats.active_days_per_week != null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Active days per week
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                      {formatStatValue(stats.active_days_per_week)}
+                    </p>
+                  </div>
+                )}
+                {stats.typical_duration_minutes != null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Typical stream
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                      {formatStatValue(stats.typical_duration_minutes / 60)} h
+                    </p>
+                  </div>
+                )}
+                {stats.hours_streamed != null && (
+                  <div className="rounded-xl border border-border-default bg-background-elevated p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                      Hours in {stats.window_days} days
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                      {formatStatValue(stats.hours_streamed)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {categoryRows.length > 0 && (
             <section aria-labelledby="category-perf-heading" className="mt-10">
               <h2 id="category-perf-heading" className="text-xl font-bold text-white">
@@ -306,6 +527,14 @@ export default async function StreamerInsightsPage({ params }: Props) {
                       <th scope="col" className="px-3 py-2 text-right font-semibold">
                         Median viewers
                       </th>
+                      {market.size > 0 && (
+                        <th
+                          scope="col"
+                          className="hidden px-3 py-2 text-right font-semibold sm:table-cell"
+                        >
+                          Vs. typical channel
+                        </th>
+                      )}
                       <th
                         scope="col"
                         className="hidden px-3 py-2 text-right font-semibold sm:table-cell"
@@ -318,6 +547,16 @@ export default async function StreamerInsightsPage({ params }: Props) {
                     {categoryRows.map((row) => {
                       const s = gameLink(row.category);
                       const isBest = row.category === bestCategory;
+                      const m = market.get(row.category);
+                      const delta = marketDeltaPct(row.median, m);
+                      const deltaText =
+                        delta !== null ? `${delta > 0 ? '+' : ''}${delta}%` : null;
+                      const deltaClass =
+                        delta !== null && delta > 0
+                          ? 'text-live'
+                          : delta !== null && delta < 0
+                            ? 'text-accent-pink'
+                            : 'text-text-secondary';
                       return (
                         <tr key={row.category} className="border-t border-divider">
                           <th scope="row" className="px-3 py-2 text-left font-medium">
@@ -338,14 +577,33 @@ export default async function StreamerInsightsPage({ params }: Props) {
                                   Highest median
                                 </span>
                               )}
+                              {m?.is_trending === true && (
+                                <span className="text-[10px] font-semibold text-accent-pink">
+                                  ▲ Trending
+                                </span>
+                              )}
                             </span>
                             <span className="mt-0.5 block text-[11px] font-normal text-text-muted sm:hidden">
                               {`${row.hours} h observed`}
+                              {deltaText && (
+                                <>
+                                  {' · '}
+                                  <span className={deltaClass}>{deltaText}</span> vs
+                                  typical channel
+                                </>
+                              )}
                             </span>
                           </th>
                           <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
                             {row.median !== null ? formatStatValue(row.median) : '—'}
                           </td>
+                          {market.size > 0 && (
+                            <td
+                              className={`hidden px-3 py-2 text-right font-semibold tabular-nums sm:table-cell ${deltaClass}`}
+                            >
+                              {deltaText ?? '—'}
+                            </td>
+                          )}
                           <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
                             {row.hours}
                           </td>
@@ -355,6 +613,15 @@ export default async function StreamerInsightsPage({ params }: Props) {
                   </tbody>
                 </table>
               </div>
+              {market.size > 0 && (
+                <p className="mt-2 max-w-2xl text-xs text-text-muted">
+                  “Vs. typical channel” compares {streamer.name}&apos;s median
+                  with the category&apos;s average viewers per live tracked
+                  channel over 28 days. Big channels pull that average up, so
+                  small streamers land below 0% in most categories — compare
+                  across rows, not against zero.
+                </p>
+              )}
             </section>
           )}
 

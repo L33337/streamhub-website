@@ -224,20 +224,53 @@ export interface InsightsScheduleReliability {
   sample?: number;
 }
 
+// One calendar month of the insights monthly trend (ascending, UTC months;
+// the newest entry is usually partial). median/peak = sampled CCV, null
+// below 5 samples that month; streams/hours = session-merged history.
+export interface InsightsMonthlyTrendEntry {
+  month: string; // "YYYY-MM"
+  median: number | null;
+  peak: number | null;
+  samples: number;
+  streams: number;
+  hours: number;
+}
+
+export interface InsightsFollowerPoint {
+  date: string; // "YYYY-MM-DD"
+  count: number;
+}
+
+// 28d market context for one of the streamer's own categories.
+export interface InsightsCategoryMarket {
+  category: string;
+  avg_viewers_per_channel: number;
+  avg_live_channels?: number | null;
+  tracked_streamers: number;
+  is_trending: boolean;
+}
+
 // Mirror of GET /v1/streamers/{id}/insights (M24). sample_count 0 = viewer
-// data still collecting (all series null).
+// data still collecting (all series null). The 2026-08-01 additions
+// (monthly_trend, follower_trend, observed_hours_30d, category_market,
+// tracked_since) are optional for deploy skew — old API, new site.
 export interface StreamerInsights {
   streamer_id: string;
   window_days?: number;
   sample_count: number;
   timezone?: string | null;
   vacation_until?: string | null;
+  tracked_since?: string | null;
   overall_median?: number | null;
   main_category?: string | null;
   weekday_viewers?: InsightsMedianCell[] | null;
   hour_viewers?: InsightsMedianCell[] | null;
   category_viewers?: InsightsCategoryEntry[] | null;
   ramp_curve?: InsightsMedianCell[] | null;
+  monthly_trend?: InsightsMonthlyTrendEntry[] | null;
+  follower_trend?: InsightsFollowerPoint[] | null;
+  observed_hours_30d?: number | null;
+  category_market?: InsightsCategoryMarket[] | null;
   consistency_percentile?: number | null;
   follower_band?: string | null;
   ccv_percentile_in_size_band?: number | null;

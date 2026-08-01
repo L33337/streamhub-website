@@ -5,7 +5,10 @@
 
 import type {
   InsightsCategoryEntry,
+  InsightsCategoryMarket,
+  InsightsFollowerPoint,
   InsightsMedianCell,
+  InsightsMonthlyTrendEntry,
   StreamerInsights,
 } from '@/lib/server/partner-api';
 
@@ -182,6 +185,213 @@ export function rampMedians(
   const usable = usableCells(cells ?? null, 12);
   if (!usable) return null;
   return usable.map((c) => c.median);
+}
+
+// ============================================
+// Monthly viewer/activity trend (2026-08-01)
+// ============================================
+
+const MONTH_RE = /^\d{4}-\d{2}$/;
+const MONTH_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+] as const;
+const MONTH_LONG = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
+export interface MonthlyTrendView extends InsightsMonthlyTrendEntry {
+  /** Short axis label ("Jul"). */
+  label: string;
+  /** Full label for tooltips ("July 2026"). */
+  longLabel: string;
+  /** The still-running calendar month — numbers are not final. */
+  isCurrent: boolean;
+  /**
+   * Month began before we started tracking this streamer — history/samples
+   * for it are partial by construction (onboarding backfill), so a low bar
+   * here is a coverage artifact, not a quiet month.
+   */
+  isPreTracking: boolean;
+}
+
+/** "2026-07" → { short: "Jul", long: "July 2026" }; null on junk. */
+export function formatTrendMonth(month: string): { short: string; long: string } | null {
+  if (!MONTH_RE.test(month)) return null;
+  const m = Number(month.slice(5, 7));
+  if (m < 1 || m > 12) return null;
+  return { short: MONTH_SHORT[m - 1], long: `${MONTH_LONG[m - 1]} ${month.slice(0, 4)}` };
+}
+
+/**
+ * Monthly trend view model. Returns null unless at least 2 months carry a
+ * real median (a one-point "trend" is not a chart) — activity-only months
+ * still render once that gate passes.
+ */
+export function usableMonthlyTrend(
+  trend: InsightsMonthlyTrendEntry[] | null | undefined,
+  trackedSince: string | null | undefined,
+  now = new Date(),
+): MonthlyTrendView[] | null {
+  if (!Array.isArray(trend) || trend.length < 2) return null;
+  const currentMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const trackedMonth = (() => {
+    if (!trackedSince) return null;
+    const t = new Date(trackedSince);
+    if (Number.isNaN(t.getTime())) return null;
+    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`;
+  })();
+
+  const out: MonthlyTrendView[] = [];
+  for (const e of trend) {
+    if (!e || typeof e.month !== 'string') return null;
+    const labels = formatTrendMonth(e.month);
+    if (!labels) return null;
+    if (
+      (e.median !== null && !Number.isFinite(e.median)) ||
+      (e.peak !== null && !Number.isFinite(e.peak)) ||
+      !Number.isFinite(e.samples) ||
+      !Number.isFinite(e.streams) ||
+      !Number.isFinite(e.hours)
+    ) {
+      return null;
+    }
+    out.push({
+      ...e,
+      label: labels.short,
+      longLabel: labels.long,
+      isCurrent: e.month === currentMonth,
+      isPreTracking: trackedMonth !== null && e.month < trackedMonth,
+    });
+  }
+  const withMedian = out.filter((m) => m.median !== null).length;
+  return withMedian >= 2 ? out : null;
+}
+
+/**
+ * Median-viewers delta between the two most recent FULL months that carry a
+ * median (the running month would compare a partial against a whole). Null
+ * when fewer than 2 qualify.
+ */
+export function monthlyViewerDelta(
+  months: MonthlyTrendView[] | null,
+): { latest: MonthlyTrendView; previous: MonthlyTrendView; pct: number } | null {
+  if (!months) return null;
+  const full = months.filter((m) => !m.isCurrent && !m.isPreTracking && m.median !== null);
+  if (full.length < 2) return null;
+  const latest = full[full.length - 1];
+  const previous = full[full.length - 2];
+  const prev = previous.median as number;
+  if (prev <= 0) return null;
+  return {
+    latest,
+    previous,
+    pct: Math.round((((latest.median as number) - prev) / prev) * 100),
+  };
+}
+
+// ============================================
+// Follower growth (2026-08-01)
+// ============================================
+
+export interface FollowerStats {
+  points: InsightsFollowerPoint[];
+  current: number;
+  /** Gain vs the newest snapshot >= 7 days before the last one; null when the series is too short. */
+  gain7: number | null;
+  /** Gain vs the newest snapshot >= 30 days before the last one. */
+  gain30: number | null;
+  /** Days covered by the series (last - first). */
+  spanDays: number;
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+}
+
+/** Follower series → stats; null below 2 usable points. */
+export function followerStats(
+  trend: InsightsFollowerPoint[] | null | undefined,
+): FollowerStats | null {
+  if (!Array.isArray(trend)) return null;
+  const points = trend.filter(
+    (p) =>
+      p &&
+      typeof p.date === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(p.date) &&
+      typeof p.count === 'number' &&
+      Number.isFinite(p.count),
+  );
+  if (points.length < 2) return null;
+  const last = points[points.length - 1];
+  const baseline = (minDays: number): InsightsFollowerPoint | null => {
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (daysBetween(points[i].date, last.date) >= minDays) return points[i];
+    }
+    return null;
+  };
+  const b7 = baseline(7);
+  const b30 = baseline(30);
+  return {
+    points,
+    current: last.count,
+    gain7: b7 ? last.count - b7.count : null,
+    gain30: b30 ? last.count - b30.count : null,
+    spanDays: daysBetween(points[0].date, last.date),
+  };
+}
+
+/**
+ * "≈ N new followers per streamed hour" proxy: 30d follower gain over 30d
+ * observed streamed hours. Needs >= 10 observed hours (a 2-hour month makes
+ * the ratio scream) and a non-negative gain — a decline per hour is noise,
+ * not a conversion rate.
+ */
+export function followersPerStreamHour(
+  gain30: number | null,
+  observedHours30d: number | null | undefined,
+): number | null {
+  if (gain30 === null || gain30 < 0) return null;
+  if (typeof observedHours30d !== 'number' || observedHours30d < 10) return null;
+  return Math.round((gain30 / observedHours30d) * 10) / 10;
+}
+
+// ============================================
+// Category market context (2026-08-01)
+// ============================================
+
+/** Category → market entry map (defensive; empty map on junk). */
+export function marketByCategory(
+  market: InsightsCategoryMarket[] | null | undefined,
+): Map<string, InsightsCategoryMarket> {
+  const map = new Map<string, InsightsCategoryMarket>();
+  if (!Array.isArray(market)) return map;
+  for (const m of market) {
+    if (
+      m &&
+      typeof m.category === 'string' &&
+      m.category.length > 0 &&
+      typeof m.avg_viewers_per_channel === 'number' &&
+      Number.isFinite(m.avg_viewers_per_channel) &&
+      m.avg_viewers_per_channel > 0
+    ) {
+      map.set(m.category, m);
+    }
+  }
+  return map;
+}
+
+/**
+ * Signed percent of the streamer's median vs the category's average viewers
+ * per live channel ("vs. typical channel"). Null when either side is unusable.
+ */
+export function marketDeltaPct(
+  median: number | null,
+  market: InsightsCategoryMarket | undefined,
+): number | null {
+  if (median === null || !Number.isFinite(median) || !market) return null;
+  return Math.round((median / market.avg_viewers_per_channel - 1) * 100);
 }
 
 /** Vacation banner only for real future dates. */
