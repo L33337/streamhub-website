@@ -74,6 +74,14 @@ export function MonthlyTrendChart({
       >
         {months.map((m) => {
           const faded = m.isCurrent || m.isPreTracking;
+          // When the peak marker sits within label height of the bar cap,
+          // the value label moves above the dot instead of colliding with it.
+          const barPct = m.median !== null ? heightPct(m.median) : 0;
+          const peakPct = m.peak !== null ? heightPct(m.peak) : null;
+          const labelBottom =
+            peakPct !== null && peakPct - barPct < 10
+              ? `calc(${peakPct}% + 10px)`
+              : `calc(${barPct}% + 4px)`;
           return (
             <div
               key={m.month}
@@ -85,7 +93,7 @@ export function MonthlyTrendChart({
                   <span
                     aria-hidden="true"
                     className="absolute inset-x-[-6px] z-10 text-center text-[10px] leading-none text-text-muted"
-                    style={{ bottom: `calc(${heightPct(m.median)}% + 4px)` }}
+                    style={{ bottom: labelBottom }}
                   >
                     {formatStatValue(m.median)}
                   </span>
