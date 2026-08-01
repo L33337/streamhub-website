@@ -10,6 +10,7 @@ import { PlatformBadge } from '@/components/web/Badges';
 import { formatLocalTimeRange } from '@/lib/program/logic';
 import type { StreamSlot } from '@/lib/feed/types';
 import type { Platform } from '@/lib/server/partner-api';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 export function MissedSlotRow({ slot }: { slot: StreamSlot }) {
   return (
@@ -21,7 +22,7 @@ export function MissedSlotRow({ slot }: { slot: StreamSlot }) {
     >
       {slot.avatarUrl ? (
         <Image
-          src={slot.avatarUrl}
+          src={sizedAvatarUrl(slot.avatarUrl, 40)}
           alt=""
           width={40}
           height={40}

@@ -11,6 +11,7 @@ import { FavoriteButton } from '@/components/web/FavoriteButton';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { LiveBadge } from '@/components/web/Badges';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * "Popular streamers" discover grid (homepage rebuild 2026-07-27; feedback
@@ -67,7 +68,7 @@ export function HomeDiscoverGrid({
               >
                 {streamer.avatar_url ? (
                   <Image
-                    src={streamer.avatar_url}
+                    src={sizedAvatarUrl(streamer.avatar_url, 40)}
                     alt={streamer.name}
                     width={40}
                     height={40}

@@ -4,6 +4,7 @@ import { hubLexFor } from '@/lib/i18n-hub';
 import type { UiLang } from '@/lib/i18n-core';
 import { AUTH_UI_VISIBLE, signInGateRedirect } from '@/lib/auth-flag';
 import { GetAppLink } from '@/components/web/GetAppLink';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * Shared box metrics of both CTAs — equal split on a phone, natural width from
@@ -64,7 +65,7 @@ export function HomeInterruptCard({
             {avatars.map((url, index) => (
               <Image
                 key={url}
-                src={url}
+                src={sizedAvatarUrl(url, 40)}
                 // Deliberately empty: the wrapper is aria-hidden, this stack is
                 // pure decoration for the headline next to it.
                 alt=""

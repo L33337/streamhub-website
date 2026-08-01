@@ -13,6 +13,7 @@ import { FavoriteButton } from '@/components/web/FavoriteButton';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { PlatformBadge } from '@/components/web/Badges';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * "Streamer Wiki" — the page-bottom section (2026-07-31). Replaces the
@@ -107,7 +108,7 @@ export function HomeStreamerWiki({
                 <span className="flex items-center gap-3 pr-10">
                   {streamer.avatar_url ? (
                     <Image
-                      src={streamer.avatar_url}
+                      src={sizedAvatarUrl(streamer.avatar_url, 48)}
                       alt=""
                       width={48}
                       height={48}

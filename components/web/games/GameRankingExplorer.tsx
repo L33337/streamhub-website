@@ -10,6 +10,7 @@ import {
   type GameRankingRow,
   type GameRankingSortMode,
 } from '@/lib/game-ranking';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import { formatCompactNumber } from '@/lib/format/number';
 import { languageDisplayName } from '@/lib/format/language';
 import { formatHours } from '@/lib/rankings';
@@ -219,7 +220,7 @@ export function GameRankingExplorer({
                       >
                         {row.avatarUrl ? (
                           <Image
-                            src={row.avatarUrl}
+                            src={sizedAvatarUrl(row.avatarUrl, 36)}
                             alt={row.name}
                             width={36}
                             height={36}

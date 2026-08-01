@@ -6,6 +6,7 @@ import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { languageDisplayName } from '@/lib/format/language';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 interface Props {
   /** sr-only table caption, e.g. "Streamers ranked by follower count". */
@@ -232,7 +233,7 @@ export function RankingTable({
                   >
                     {streamer.avatar_url ? (
                       <Image
-                        src={streamer.avatar_url}
+                        src={sizedAvatarUrl(streamer.avatar_url, 36)}
                         alt={streamer.name}
                         width={36}
                         height={36}

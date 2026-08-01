@@ -8,6 +8,7 @@ import {
   listFavoriteStreamers,
   type FavoriteStreamerRow,
 } from '@/lib/supabase/favorites';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
@@ -91,7 +92,7 @@ function FavoriteCard({
     >
       {streamer.avatar_url ? (
         <Image
-          src={streamer.avatar_url}
+          src={sizedAvatarUrl(streamer.avatar_url, 56)}
           alt=""
           width={56}
           height={56}

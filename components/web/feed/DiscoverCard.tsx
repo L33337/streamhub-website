@@ -8,6 +8,7 @@ import { buildDiscoverReasonLabel, buildDiscoverStatsLine } from '@/lib/feed/log
 import { PlatformBadge } from '@/components/web/Badges';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * Channel URL for a Discover recommendation (port of the app's
@@ -59,7 +60,7 @@ export function DiscoverCard({
       <div className="flex items-center gap-3">
         {!avatarError && recommendation.avatarUrl ? (
           <Image
-            src={recommendation.avatarUrl}
+            src={sizedAvatarUrl(recommendation.avatarUrl, 48)}
             alt=""
             width={48}
             height={48}

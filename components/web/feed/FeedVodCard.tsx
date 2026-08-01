@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { FeedRecentStream } from '@/lib/feed/types';
 import { endedAgoLabel, formatDuration } from '@/lib/feed/logic';
 import { initialsFromName } from '@/components/web/InitialsAvatar';
+import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 
 /**
  * "New for you" card (M16, port of the app's FeedVodCard): a stream that
@@ -28,7 +29,7 @@ export function FeedVodCard({
       <div className="relative aspect-video w-32 shrink-0 bg-background-highlight sm:w-40">
         {!thumbnailError && stream.thumbnailUrl ? (
           <Image
-            src={stream.thumbnailUrl}
+            src={sizedCdnImageUrl(stream.thumbnailUrl, 160)}
             alt=""
             fill
             unoptimized
@@ -39,7 +40,7 @@ export function FeedVodCard({
         ) : !avatarError && stream.avatarUrl ? (
           <div className="flex h-full w-full items-center justify-center">
             <Image
-              src={stream.avatarUrl}
+              src={sizedAvatarUrl(stream.avatarUrl, 48)}
               alt=""
               width={48}
               height={48}

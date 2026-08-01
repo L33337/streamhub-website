@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { PlatformBadge } from '@/components/web/Badges';
 import type { FavoriteStreamerRow } from '@/lib/supabase/favorites';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 export function OfflineFavoriteRow({
   streamer,
@@ -28,7 +29,7 @@ export function OfflineFavoriteRow({
     >
       {streamer.avatar_url ? (
         <Image
-          src={streamer.avatar_url}
+          src={sizedAvatarUrl(streamer.avatar_url, 40)}
           alt=""
           width={40}
           height={40}

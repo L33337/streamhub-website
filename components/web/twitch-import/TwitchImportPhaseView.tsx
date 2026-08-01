@@ -8,6 +8,7 @@
 import Image from 'next/image';
 import { initialsFromName } from '../InitialsAvatar';
 import type { TwitchImportState } from './useTwitchImport';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 interface Props {
   state: TwitchImportState;
@@ -80,7 +81,7 @@ export function TwitchImportPhaseView({ state }: Props) {
                     />
                     {f.avatarUrl ? (
                       <Image
-                        src={f.avatarUrl}
+                        src={sizedAvatarUrl(f.avatarUrl, 32)}
                         alt=""
                         width={32}
                         height={32}

@@ -5,6 +5,7 @@ import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { languageDisplayName } from '@/lib/format/language';
+import { sizedAvatarUrl } from '@/lib/format/image-size';
 
 /**
  * Hero card for the current #1 of a /rankings leaderboard page — rendered
@@ -55,7 +56,7 @@ export function RankingSpotlight({
         >
           {streamer.avatar_url ? (
             <Image
-              src={streamer.avatar_url}
+              src={sizedAvatarUrl(streamer.avatar_url, 64)}
               alt={streamer.name}
               width={64}
               height={64}
