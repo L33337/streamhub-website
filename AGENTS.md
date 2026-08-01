@@ -355,6 +355,52 @@ Web-Vitals tooling for the perf-health runbook (`StreamHub/docs/performance-heal
 - Schedule-page LCP diagnosis (M20 S1.6, 2026-07-13): **live-slot pages** (`thumbnail_url` set) have the hero thumbnail as LCP element — it now carries `priority`. **Prediction-slot pages** (no thumbnail) have a text `<p>` LCP like the streamer page; their avatar-fallback hero deliberately stays lazy.
 - **Every dynamic route that should be ISR-cached MUST export `generateStaticParams`** (an empty array is fine). Without it, Next builds the route as `ƒ` (per-request dynamic) and never caches the HTML — `export const revalidate` alone does nothing for the route cache. This bit `/schedule/[id]` until M20 S1.6 (every visitor paid a full server render, `Cache-Control: private, no-store`); `/streamer/[slug]` documents the same pattern. Check the build output: the route must show `●`, not `ƒ`.
 
+# Remote images: request the size we render (2026-08-02)
+
+Every avatar and stream thumbnail renders through `next/image` with
+`unoptimized`, so **whatever the API stored is exactly what the browser
+downloads** — no srcset, no resizing, no format conversion. Both upstream APIs
+store their LARGEST variant (YouTube `=s800`, Twitch `-300x300`), and those were
+being painted into 28–64px circles.
+
+`lib/format/image-size.ts` rewrites the URL at RENDER time — never before
+storing, so the stored URL stays the canonical largest one and a future layout
+that needs a bigger avatar just asks for a bigger size.
+
+- `sizedAvatarUrl(url, cssPx)` — YouTube: replace everything from the first `=`
+  with `=s<N>-c-k-c0x00ffffff-no-rj`. Twitch: snap to the FIXED buckets
+  28/50/70/150/300/600, because an arbitrary size 404s on `jtv_user_pictures`
+  (unlike the two paths below).
+- `sizedCdnImageUrl(url, cssWidth)` — live previews (`previews-ttv/…-440x248.jpg`)
+  and box art (`ttv-boxart/…-285x380.jpg`), whose paths take ARBITRARY sizes.
+  Aspect ratio is preserved from the stored URL.
+- `cssPx` is the CSS size of the box, NOT a device-pixel guess: the helper
+  applies the 2× DPR headroom itself, so every call site states the same thing.
+  For a `fill` image, pass the largest entry of its `sizes` prop.
+- **Never upscale** — the cap is not a nicety. Without it an avatar rendered
+  into a wide box (the blurred thumbnail fallback asks for ~268px) resolves to
+  Twitch's 600x600 bucket, which is 298 KB against the stored 112 KB: the
+  helper would have made pages BIGGER. Unknown hosts are returned unchanged, so
+  a new CDN degrades to today's behaviour rather than to a broken URL.
+
+**Do NOT "fix" this by dropping `unoptimized`.** `GameBoxArt` is the one
+deliberate exception (small closed set, stable URLs → the optimizer cache hits
+almost every time, see the comment there); avatars and stream thumbnails change
+per stream and would churn that cache for no gain. That is also why `/games`
+was the only page in the survey with zero waste.
+
+Measured before the change (14 page types, cold cache, CDP): 17.4 MB of images,
+**15.7 MB of it pixels no screen could resolve**. Worst pages were `/streamers`
+(4.36 MB images), `/rankings/most-followed` (3.18 MB) and `/live` (3.10 MB) —
+all list pages, i.e. the waste scaled with the row count. Contract-checked
+against 1,175 live production URLs before shipping: **−85.6 % on the rewritten
+ones, zero 404s, none bigger.**
+
+`/live` was the third-worst page and was invisible to every code search:
+`app/[locale]/live/page.tsx` contains a stray NUL byte, so ripgrep classifies it
+as binary and silently skips it. It is the only such file in the repo — if a
+site-wide sweep ever comes up suspiciously clean, check for that.
+
 # Testing against protected Preview deployments (2026-08-02)
 
 Preview deployments sit behind Vercel Authentication: a bare request gets **302 → `vercel.com/sso-api`**, which reads like a broken deploy but is just the login wall. Do not disable the protection — use the project's **Protection Bypass for Automation** secret, which is project-wide (all previews, every future deploy, no per-deployment setup).
