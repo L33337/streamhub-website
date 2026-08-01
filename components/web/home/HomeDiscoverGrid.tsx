@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { CalendarClock } from 'lucide-react';
+import { Icon } from '@/components/web/icons/IconSprite';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import type { FeaturedStreamer } from '@/lib/server/home-featured';
 import { hubLexFor } from '@/lib/i18n-hub';
@@ -102,9 +102,9 @@ export function HomeDiscoverGrid({
                   )}
                   {showNext && (
                     <span className="mt-0.5 flex min-w-0 items-center gap-1.5 truncate text-xs text-text-secondary">
-                      <CalendarClock
+                      <Icon
+                        name="calendar-clock"
                         size={11}
-                        aria-hidden="true"
                         className="shrink-0 text-accent-cyan"
                       />
                       <NextStreamTime

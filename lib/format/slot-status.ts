@@ -119,6 +119,23 @@ function formatZoneHour(iso: string, timeZone: string | null, lang = 'en'): stri
   return `${localizedHourLabel(d.getUTCHours(), lang)} UTC`;
 }
 
+/**
+ * The slot fields the status line is derived from — deliberately narrower than
+ * `PublicStreamSlot` so the homepage's pruned deferred payloads
+ * (`lib/home/slot-payload.ts`) satisfy it. Every existing caller passes a full
+ * DTO, which is assignable.
+ */
+export type SlotStatusInput = Pick<
+  PublicStreamSlot,
+  | 'start_time'
+  | 'duration_minutes'
+  | 'status'
+  | 'is_always_on'
+  | 'streamer_timezone'
+  | 'slot_kind'
+  | 'is_predicted'
+>;
+
 export interface SlotStatusParts {
   /** The dominant line: viewer-local time (UTC on the server snapshot). */
   primary: string;
@@ -148,7 +165,7 @@ export interface SlotStatusParts {
  * `lang` localizes the phrasing via lib/i18n-slot.ts.
  */
 export function getStatusParts(
-  slot: PublicStreamSlot,
+  slot: SlotStatusInput,
   useUtc = false,
   lang = 'en',
 ): SlotStatusParts {
@@ -201,7 +218,7 @@ export function getStatusParts(
  * that need one string (aria labels, tests, plain text).
  */
 export function getStatusText(
-  slot: PublicStreamSlot,
+  slot: SlotStatusInput,
   useUtc = false,
   lang = 'en',
 ): string {

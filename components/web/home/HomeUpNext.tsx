@@ -10,6 +10,7 @@ import {
   LINEUP_TIME_HOURS,
   LINEUP_VISIBLE_COUNT,
 } from '@/lib/home/lineup-filters';
+import { toLineupCardSlot } from '@/lib/home/slot-payload';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { SlotCard } from '@/components/web/SlotCard';
 import { HomeUpNextFilters } from './HomeUpNextFilters';
@@ -160,7 +161,13 @@ export function HomeUpNext({
           upsellStrings={favoritesStrings}
           bellStrings={bellStrings}
           ssrCards={ssrCards}
-          deferredSlots={deferredSlots}
+          // Pruned to what SlotCard renders, with the reasoning already
+          // resolved for THIS locale: a full DTO would ship a dozen unread
+          // fields plus both copy variants, once per card, in the flight
+          // payload (lib/home/slot-payload.ts).
+          deferredSlots={deferredSlots.map((slot) =>
+            toLineupCardSlot(slot, locale),
+          )}
           listClassName={listClass}
           locale={locale}
         />

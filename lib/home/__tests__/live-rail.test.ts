@@ -11,8 +11,10 @@ import {
   matchesLiveFilters,
   normalizeSlotLanguage,
   pickBiggestLiveSlots,
+  splitLiveSlots,
   LIVE_RAIL_DEFAULT_VISIBLE,
   LIVE_RAIL_POOL_MAX,
+  LIVE_RAIL_SSR_COUNT,
 } from '../live-rail';
 import { liveRuntimeLexFor, LIVE_RUNTIME_STRINGS } from '@/lib/i18n/live-runtime';
 import { UI_LANGS } from '@/lib/i18n-core';
@@ -464,5 +466,50 @@ describe('computeVisibleLiveIds', () => {
     expect(computeVisibleLiveIds(items, '', '', 3)).toContain('c');
     expect(computeVisibleLiveIds(items, '', 'de', 3)).not.toContain('c');
     expect(computeVisibleLiveIds(items, 'VALORANT', '', 5)).not.toContain('c');
+  });
+});
+
+describe('splitLiveSlots', () => {
+  const pool = Array.from({ length: 90 }, (_, i) => ({ id: `s${i}` }));
+
+  it('splits the pool into a head and a tail without losing or reordering', () => {
+    const { ssr, deferred } = splitLiveSlots(pool);
+    expect(ssr).toHaveLength(LIVE_RAIL_SSR_COUNT);
+    expect([...ssr, ...deferred]).toEqual(pool);
+  });
+
+  // Load-bearing: the unfiltered rail is `computeVisibleLiveIds` over an empty
+  // selection, i.e. the first LIVE_RAIL_DEFAULT_VISIBLE ids. If the SSR head
+  // were shorter, part of the resting state would depend on client rendering —
+  // a gap for crawlers and JS-less browsers.
+  it('server-renders at least the whole unfiltered cut', () => {
+    expect(LIVE_RAIL_SSR_COUNT).toBeGreaterThanOrEqual(LIVE_RAIL_DEFAULT_VISIBLE);
+    const { ssr } = splitLiveSlots(pool);
+    const items = ssr.map((s) => ({
+      id: s.id,
+      category: '',
+      language: '',
+      languageLabel: '',
+    }));
+    const restingIds = computeVisibleLiveIds(
+      pool.map((s) => ({ id: s.id, category: '', language: '', languageLabel: '' })),
+      '',
+      '',
+      LIVE_RAIL_DEFAULT_VISIBLE,
+    );
+    // Every card visible at rest is one the SERVER rendered.
+    const ssrIds = new Set(items.map((i) => i.id));
+    for (const id of restingIds) expect(ssrIds).toContain(id);
+  });
+
+  it('never lets a caller undercut the visible cut', () => {
+    const { ssr } = splitLiveSlots(pool, 3);
+    expect(ssr).toHaveLength(LIVE_RAIL_DEFAULT_VISIBLE);
+  });
+
+  it('leaves nothing deferred when the sweep fits in the head', () => {
+    const { ssr, deferred } = splitLiveSlots(pool.slice(0, 5));
+    expect(ssr).toHaveLength(5);
+    expect(deferred).toEqual([]);
   });
 });

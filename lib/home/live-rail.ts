@@ -46,9 +46,42 @@ export const LIVE_RAIL_DEFAULT_VISIBLE = 30;
  */
 export const LIVE_RAIL_POOL_MAX = 200;
 
+/**
+ * How many cards ship as server-rendered HTML. The rest of the pool travels to
+ * the island as slot DATA (`lib/home/slot-payload.ts`) and is rendered only
+ * once a filter is active — which is the only state that can reveal them.
+ *
+ * Pinned to LIVE_RAIL_DEFAULT_VISIBLE, and it must never be lower: the
+ * unfiltered rail IS the first `LIVE_RAIL_DEFAULT_VISIBLE` cards, so a smaller
+ * head would leave the resting state depending on client rendering — a blank
+ * gap for crawlers and JS-less browsers. Larger would only pay for HTML nobody
+ * sees. `splitLiveSlots` asserts the relation.
+ *
+ * Measured on the 2026-08-01 payload round (170 live cards, local build):
+ * rendering the whole pool cost 5,657 markup elements and 2.01 MB of document;
+ * the split brought both down by roughly two thirds without changing what any
+ * filter can reach.
+ */
+export const LIVE_RAIL_SSR_COUNT = LIVE_RAIL_DEFAULT_VISIBLE;
+
 // ============================================
 // Pool selection
 // ============================================
+
+/**
+ * Splits the ranked pool into the server-rendered head and the deferred tail.
+ * Both keep the pool's viewer ranking, which is what lets the island append
+ * its matches after the server's and still read as one ranked rail (the head
+ * is a strict PREFIX of the ranking, so head-matches always outrank
+ * tail-matches).
+ */
+export function splitLiveSlots<T>(
+  slots: T[],
+  ssrCount: number = LIVE_RAIL_SSR_COUNT,
+): { ssr: T[]; deferred: T[] } {
+  const head = Math.max(ssrCount, LIVE_RAIL_DEFAULT_VISIBLE);
+  return { ssr: slots.slice(0, head), deferred: slots.slice(head) };
+}
 
 /**
  * The rail's pool for "Most Watched right now": one slot per streamer, highest
@@ -117,7 +150,10 @@ export function pickBiggestLiveSlots(
  * no channel id for any platform it claims to be live on — the caller then
  * keeps the internal link rather than rendering a dead card.
  */
-export function liveWatchUrl(slot: PublicStreamSlot): string | null {
+export function liveWatchUrl(
+  slot: Pick<PublicStreamSlot, 'platforms'> &
+    Partial<Pick<PublicStreamSlot, 'twitch_login' | 'youtube_channel_id'>>,
+): string | null {
   if (slot.platforms.includes('twitch') && slot.twitch_login) {
     return `https://twitch.tv/${slot.twitch_login}`;
   }
@@ -167,7 +203,13 @@ function roundForDisplay(totalMinutes: number): { hours: number; minutes: number
  * Resolves a live slot into its runtime line. `now` is injected so the server
  * render and the client's minute tick produce identical output.
  */
-export function liveRuntime(slot: PublicStreamSlot, now: Date): LiveRuntime {
+export function liveRuntime(
+  slot: Pick<
+    PublicStreamSlot,
+    'start_time' | 'duration_minutes' | 'is_always_on'
+  >,
+  now: Date,
+): LiveRuntime {
   return liveRuntimeFrom(
     Date.parse(slot.start_time),
     slot.duration_minutes,

@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Play, Eye } from 'lucide-react';
 import type { FeedClip } from '@/lib/feed/types';
+import { Icon } from '@/components/web/icons/IconSprite';
 import { formatViews, formatClipDuration } from '@/lib/feed/logic';
 
 /**
@@ -62,11 +62,11 @@ export function ClipCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Play size={28} className="text-text-muted" strokeWidth={1.5} />
+            <Icon name="play" size={28} className="text-text-muted" strokeWidth={1.5} />
           </div>
         )}
         <div className="absolute left-1/2 top-1/2 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/50">
-          <Play size={14} className="text-white" fill="currentColor" strokeWidth={1} />
+          <Icon name="play" size={14} className="text-white" fill="currentColor" strokeWidth={1} />
         </div>
         {duration && (
           <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-px text-[10px] font-semibold text-white">
@@ -74,7 +74,7 @@ export function ClipCard({
           </span>
         )}
         <span className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded bg-black/70 px-1 py-px text-[10px] font-semibold text-white">
-          <Eye size={10} strokeWidth={2} />
+          <Icon name="eye" size={10} />
           {formatViews(clip.viewCount)}
         </span>
       </div>

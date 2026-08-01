@@ -1,8 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { PublicStreamSlot } from '@/lib/server/partner-api';
-import { getStatusParts } from '@/lib/format/slot-status';
+import { getStatusParts, type SlotStatusInput } from '@/lib/format/slot-status';
 
 function subscribe(): () => void {
   return () => {};
@@ -14,7 +13,7 @@ export function SlotStatusText({
   slot,
   language = 'en',
 }: {
-  slot: PublicStreamSlot;
+  slot: SlotStatusInput;
   language?: string;
 }) {
   const text = useSyncExternalStore(
