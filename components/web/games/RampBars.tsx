@@ -7,6 +7,12 @@
 // page: streamer vs their main category). The peak bar is highlighted and
 // carries a value label — without at least one number the chart shows a shape
 // but answers nothing (and touch users can't reach the title tooltips).
+//
+// Colors (2026-08-01 redesign): primary = viz violet with the peak in
+// viz-bright — identity charts speak violet, cyan stays site chrome. The
+// secondary backdrop is viz-benchmark (desaturated slate) at 55%: the old
+// white/10 sat at 1.35:1 against the page and was effectively invisible,
+// which killed the chart's whole point ("compared with the category").
 
 import { RAMP_CELLS, rampBarLabel } from '@/lib/game-timing';
 import { formatStatValue } from '@/lib/format/number';
@@ -77,7 +83,7 @@ export function RampBars({
               {s !== null && (
                 <div
                   aria-hidden="true"
-                  className="absolute bottom-0 left-0 right-0 rounded-t-[3px] bg-white/10"
+                  className="absolute bottom-0 left-0 right-0 rounded-t-[3px] bg-viz-benchmark/55"
                   style={{ height: `${heightPct(s)}%` }}
                 />
               )}
@@ -85,7 +91,7 @@ export function RampBars({
                 <div
                   aria-hidden="true"
                   className={`relative z-10 mx-auto w-3/5 rounded-t-[3px] ${
-                    isPeak ? 'bg-accent-cyan' : 'bg-accent-cyan/70'
+                    isPeak ? 'bg-viz-bright' : 'bg-viz'
                   }`}
                   style={{ height: `${heightPct(p)}%` }}
                 />
@@ -109,10 +115,10 @@ export function RampBars({
       {secondary && (
         <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-[2px] bg-accent-cyan/80" /> {primaryLabel}
+            <span className="h-2.5 w-2.5 rounded-[2px] bg-viz" /> {primaryLabel}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-[2px] bg-white/10" />{' '}
+            <span className="h-2.5 w-2.5 rounded-[2px] bg-viz-benchmark/55" />{' '}
             {secondaryLabel ?? 'Category'}
           </span>
         </p>

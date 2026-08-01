@@ -9,6 +9,9 @@
 // live in the tooltip. The running month and pre-tracking months render
 // faded — a partial month must not read as a slump (or a spike).
 //
+// Colors (2026-08-01 redesign): identity charts speak viz violet (bars =
+// viz, peak dots / end markers = viz-bright), cyan stays site chrome.
+//
 // FollowerGrowthChart — single-series SVG line (2px, area wash, end dot with
 // a surface ring) over the daily follower snapshots, with a nearest-point
 // hover/tap tooltip. Single series → no legend box (the section title names
@@ -100,7 +103,7 @@ export function MonthlyTrendChart({
                   {m.peak !== null && m.peak > m.median && (
                     <span
                       aria-hidden="true"
-                      className={`absolute left-1/2 z-10 h-2 w-2 -translate-x-1/2 rounded-full bg-accent-cyan/45 ring-2 ring-background ${
+                      className={`absolute left-1/2 z-10 h-2 w-2 -translate-x-1/2 rounded-full bg-viz-bright/70 ring-2 ring-background ${
                         faded ? 'opacity-40' : ''
                       }`}
                       style={{ bottom: `${heightPct(m.peak)}%` }}
@@ -108,7 +111,7 @@ export function MonthlyTrendChart({
                   )}
                   <div
                     aria-hidden="true"
-                    className={`w-full max-w-6 rounded-t-[4px] bg-accent-cyan ${
+                    className={`w-full max-w-6 rounded-t-[4px] bg-viz ${
                       faded ? 'opacity-40' : ''
                     }`}
                     style={{ height: `${heightPct(m.median)}%` }}
@@ -139,11 +142,11 @@ export function MonthlyTrendChart({
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-text-muted">
         <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-accent-cyan" />
+          <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-viz" />
           median viewers
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-accent-cyan/45" />
+          <span className="inline-block h-2 w-2 rounded-full bg-viz-bright/70" />
           sampled peak
         </span>
         <span>&times; = streams that month</span>
@@ -238,7 +241,7 @@ export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[
         <svg
           ref={svgRef}
           viewBox={`0 0 ${W} ${H}`}
-          className="block h-36 w-full text-accent-cyan"
+          className="block h-36 w-full text-viz-soft"
           role="img"
           aria-label={`Follower count from ${formatDay(points[0].date)} to ${formatDay(last.date)}`}
           preserveAspectRatio="none"
@@ -261,13 +264,13 @@ export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[
         {active && active !== last && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-cyan ring-2 ring-background"
+            className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-viz-bright ring-2 ring-background"
             style={{ left: `${(active.x / W) * 100}%`, top: `${(active.y / H) * 100}%` }}
           />
         )}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-cyan ring-2 ring-background"
+          className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-viz-bright ring-2 ring-background"
           style={{ left: `${(last.x / W) * 100}%`, top: `${(last.y / H) * 100}%` }}
         />
       </div>

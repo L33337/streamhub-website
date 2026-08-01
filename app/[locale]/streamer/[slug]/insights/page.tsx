@@ -114,12 +114,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return applyLocaleSeo(meta, locale, `/streamer/${encodeURIComponent(slug)}/insights`);
 }
 
+// 2026-08-01 redesign: tiers wear the page's delta pair (good/bad) with the
+// viz violet as the neutral middle — the neon live/pink pair clashed and
+// cyan is reserved for site chrome on this page.
 const TIER_STYLE: Record<string, string> = {
-  reliable: 'border-live/40 text-live',
-  medium: 'border-accent-cyan/40 text-accent-cyan',
-  unreliable: 'border-accent-pink/40 text-accent-pink',
+  reliable: 'border-delta-up/40 text-delta-up',
+  medium: 'border-viz-soft/40 text-viz-soft',
+  unreliable: 'border-delta-down/40 text-delta-down',
   unknown: 'border-border-default text-text-muted',
 };
+
+// Shared tile-label style: violet mono kicker over a white value — the
+// HomeQuickFacts pattern (colored kicker carries identity, white number
+// carries the reading).
+const KICKER = 'font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-viz-soft';
 
 export default async function StreamerInsightsPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
@@ -189,7 +197,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
             alt=""
             width={80}
             height={80}
-            className="h-14 w-14 shrink-0 rounded-full border-2 border-accent-cyan/40 sm:h-20 sm:w-20"
+            className="h-14 w-14 shrink-0 rounded-full border-2 border-viz-soft/40 sm:h-20 sm:w-20"
           />
         )}
         <div className="min-w-0">
@@ -213,7 +221,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
       </p>
 
       {vacation && insights?.vacation_until && (
-        <p className="mt-4 rounded-lg border border-accent-cyan/30 bg-background-elevated px-4 py-3 text-sm text-text-secondary">
+        <p className="mt-4 rounded-lg border border-viz-soft/30 bg-background-elevated px-4 py-3 text-sm text-text-secondary">
           {streamer.name} has announced a break until{' '}
           <span className="font-semibold text-text-primary">
             {new Date(insights.vacation_until).toLocaleDateString('en-US', {
@@ -288,9 +296,9 @@ export default async function StreamerInsightsPage({ params }: Props) {
                     <span
                       className={`font-semibold ${
                         viewerDelta.pct > 0
-                          ? 'text-live'
+                          ? 'text-delta-up'
                           : viewerDelta.pct < 0
-                            ? 'text-accent-pink'
+                            ? 'text-delta-down'
                             : 'text-text-secondary'
                       }`}
                     >
@@ -372,15 +380,15 @@ export default async function StreamerInsightsPage({ params }: Props) {
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {followers.gain7 !== null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Last 7 days
                     </p>
                     <p
                       className={`mt-2 text-2xl font-bold ${
                         followers.gain7 > 0
-                          ? 'text-live'
+                          ? 'text-delta-up'
                           : followers.gain7 < 0
-                            ? 'text-accent-pink'
+                            ? 'text-delta-down'
                             : 'text-text-secondary'
                       }`}
                     >
@@ -392,15 +400,15 @@ export default async function StreamerInsightsPage({ params }: Props) {
                 )}
                 {followers.gain30 !== null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Last 30 days
                     </p>
                     <p
                       className={`mt-2 text-2xl font-bold ${
                         followers.gain30 > 0
-                          ? 'text-live'
+                          ? 'text-delta-up'
                           : followers.gain30 < 0
-                            ? 'text-accent-pink'
+                            ? 'text-delta-down'
                             : 'text-text-secondary'
                       }`}
                     >
@@ -412,10 +420,10 @@ export default async function StreamerInsightsPage({ params }: Props) {
                 )}
                 {perHour !== null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Per streamed hour
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                    <p className="mt-2 text-2xl font-bold text-white">
                       ≈{formatStatValue(perHour)}
                     </p>
                     <p className="mt-1 text-sm text-text-secondary">
@@ -459,40 +467,40 @@ export default async function StreamerInsightsPage({ params }: Props) {
               <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {stats.streams_per_week != null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Streams per week
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                    <p className="mt-2 text-2xl font-bold text-white">
                       {formatStatValue(stats.streams_per_week)}
                     </p>
                   </div>
                 )}
                 {stats.active_days_per_week != null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Active days per week
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                    <p className="mt-2 text-2xl font-bold text-white">
                       {formatStatValue(stats.active_days_per_week)}
                     </p>
                   </div>
                 )}
                 {stats.typical_duration_minutes != null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Typical stream
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                    <p className="mt-2 text-2xl font-bold text-white">
                       {formatStatValue(stats.typical_duration_minutes / 60)} h
                     </p>
                   </div>
                 )}
                 {stats.hours_streamed != null && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Hours in {stats.window_days} days
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                    <p className="mt-2 text-2xl font-bold text-white">
                       {formatStatValue(stats.hours_streamed)}
                     </p>
                   </div>
@@ -553,9 +561,9 @@ export default async function StreamerInsightsPage({ params }: Props) {
                         delta !== null ? `${delta > 0 ? '+' : ''}${delta}%` : null;
                       const deltaClass =
                         delta !== null && delta > 0
-                          ? 'text-live'
+                          ? 'text-delta-up'
                           : delta !== null && delta < 0
-                            ? 'text-accent-pink'
+                            ? 'text-delta-down'
                             : 'text-text-secondary';
                       return (
                         <tr key={row.category} className="border-t border-divider">
@@ -573,7 +581,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
                                 <span className="text-text-primary">{row.category}</span>
                               )}
                               {isBest && (
-                                <span className="rounded-full border border-accent-cyan/40 px-1.5 py-0.5 text-[10px] font-semibold text-accent-cyan">
+                                <span className="rounded-full border border-viz-soft/40 px-1.5 py-0.5 text-[10px] font-semibold text-viz-soft">
                                   Highest median
                                 </span>
                               )}
@@ -594,7 +602,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
                               )}
                             </span>
                           </th>
-                          <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
+                          <td className="px-3 py-2 text-right font-semibold tabular-nums text-text-primary">
                             {row.median !== null ? formatStatValue(row.median) : '—'}
                           </td>
                           {market.size > 0 && (
@@ -683,7 +691,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
                     both, and "how do I unlock this?" beats a silent gap. */}
                 {relUsable && rel && (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Schedule reliability
                     </p>
                     <p className="mt-2">
@@ -732,7 +740,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
                 )}
                 {!relUsable && (
                   <div className="rounded-xl border border-dashed border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Schedule reliability
                     </p>
                     <p className="mt-2 text-sm text-text-secondary">
@@ -745,10 +753,12 @@ export default async function StreamerInsightsPage({ params }: Props) {
                 )}
                 {topShare !== null && band ? (
                   <div className="rounded-xl border border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Size benchmark
                     </p>
-                    <p className="mt-2 text-2xl font-bold text-accent-cyan">
+                    {/* The page's one hero number — the only value allowed to
+                        wear the bright viz accent. */}
+                    <p className="mt-2 text-2xl font-bold text-viz-bright">
                       Top {topShare}%
                     </p>
                     <p className="mt-1 text-sm text-text-secondary">
@@ -757,7 +767,7 @@ export default async function StreamerInsightsPage({ params }: Props) {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-border-default bg-background-elevated p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    <p className={KICKER}>
                       Size benchmark
                     </p>
                     <p className="mt-2 text-sm text-text-secondary">

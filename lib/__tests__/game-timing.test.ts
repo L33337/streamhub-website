@@ -12,6 +12,7 @@ import {
   rampBarLabel,
   shiftNullableSeries,
   shiftSlot,
+  timingBarColor,
   timingCellColor,
   timingGoodness,
   timingScaleOf,
@@ -208,29 +209,65 @@ describe('timingGoodness', () => {
     expect(timingGoodness(50, null, 'opportunity')).toBeNull();
   });
 
-  it('flat band (all observed cells identical) → every hour equally fine = green', () => {
+  it('flat band (all observed cells identical) → every hour equally fine = hot end', () => {
     const flat = { lo: 50, hi: 50 };
     expect(timingGoodness(50, flat, 'opportunity')).toBe(1);
     expect(timingGoodness(50, flat, 'streamers')).toBe(1);
   });
 });
 
+/** Relative sRGB luminance of a #rrggbb hex — the grayscale reading. */
+function luminance(hex: string): number {
+  const lin = (i: number) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(1) + 0.7152 * lin(3) + 0.0722 * lin(5);
+}
+
 describe('timingCellColor', () => {
-  it('maps worst to red and best to green with rising opacity', () => {
-    expect(timingCellColor(0)).toBe('hsla(8, 90%, 62%, 0.55)');
-    expect(timingCellColor(1)).toBe('hsla(132, 75%, 52%, 0.88)');
+  it('maps worst to cold violet and best to glowing gold', () => {
+    expect(timingCellColor(0)).toBe('#3a1878');
+    expect(timingCellColor(1)).toBe('#fde047');
   });
 
-  it('passes through yellow mid-scale', () => {
-    const mid = timingCellColor(0.5);
-    const hue = Number(/hsla\((\d+),/.exec(mid)?.[1]);
-    expect(hue).toBeGreaterThan(45);
-    expect(hue).toBeLessThan(95);
+  it('hits the heat anchors at the quarter steps (violet → magenta → orange)', () => {
+    expect(timingCellColor(0.25)).toBe('#7e22ce');
+    expect(timingCellColor(0.5)).toBe('#c026d3');
+    expect(timingCellColor(0.75)).toBe('#f97316');
+  });
+
+  it('luminance rises strictly monotonically — the scale stays ordered in grayscale', () => {
+    let prev = -1;
+    for (let i = 0; i <= 32; i++) {
+      const l = luminance(timingCellColor(i / 32));
+      expect(l).toBeGreaterThan(prev);
+      prev = l;
+    }
   });
 
   it('clamps out-of-range goodness to the scale ends', () => {
     expect(timingCellColor(-0.5)).toBe(timingCellColor(0));
     expect(timingCellColor(1.5)).toBe(timingCellColor(1));
+  });
+});
+
+describe('timingBarColor', () => {
+  it('floors the cold end so the weakest bar stays visible as a mark', () => {
+    expect(timingBarColor(0)).toBe(timingCellColor(0.22));
+    expect(timingBarColor(0)).not.toBe(timingCellColor(0));
+    expect(luminance(timingBarColor(0))).toBeGreaterThan(luminance(timingCellColor(0)));
+  });
+
+  it('tops out at the same gold as the cell scale and stays monotone', () => {
+    expect(timingBarColor(1)).toBe(timingCellColor(1));
+    expect(luminance(timingBarColor(0.5))).toBeGreaterThan(luminance(timingBarColor(0)));
+    expect(luminance(timingBarColor(1))).toBeGreaterThan(luminance(timingBarColor(0.5)));
+  });
+
+  it('clamps like the cell scale', () => {
+    expect(timingBarColor(-1)).toBe(timingBarColor(0));
+    expect(timingBarColor(2)).toBe(timingBarColor(1));
   });
 });
 

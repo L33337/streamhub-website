@@ -189,11 +189,10 @@ export default async function BestTimePage({ params }: Props) {
             </p>
           )}
           <p className="mt-3 max-w-2xl text-text-secondary">
-            When do {category} viewers outnumber {category} streamers? The heatmap
-            below compares hourly viewer demand with live-channel competition —
-            green cells are the windows where a new stream has the best chance
-            of being found, red cells are hours where the competition outweighs
-            the audience.
+            {/* One template literal — adjacent JSX text nodes drop the space
+                after an expression when the text run wraps lines (the
+                documented "VALORANTstreamers" bug). */}
+            {`When do ${category} viewers outnumber ${category} streamers? The heatmap below compares hourly viewer demand with live-channel competition — the brighter a cell glows, the better your odds of getting discovered. Gold is prime time; dark violet means you'd be streaming into the void.`}
           </p>
         </div>
       </div>
