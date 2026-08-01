@@ -35,6 +35,16 @@ export function HomeMostWatched({
     'mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted';
   const rowClass =
     'flex items-center gap-3 rounded-lg border border-border-default bg-background-elevated px-3 py-2 transition-colors hover:border-accent-cyan/50';
+  // The two columns sit side by side from `md`, so their rows must be the same
+  // height — and nothing in the layout enforces that, because the row height is
+  // driven by whichever ICON is taller. Box art is a 285/380 portrait: 24px wide
+  // renders 32px tall, while the avatar is a 28px circle, so the streamer rows
+  // came out 4px shorter than the category rows next to them (measured 46 vs 50
+  // in prod). Both icons therefore live in a slot of one fixed height, and the
+  // avatar (still 28px, incl. the InitialsAvatar fallback) is centred in it —
+  // only the SLOT grows. Below `sm` the name/value stack makes the text taller
+  // than either icon, so both columns are text-driven and equal there anyway.
+  const iconSlotClass = 'flex h-8 shrink-0 items-center justify-center';
   // Name and value share one line only where the value fits beside it. On a
   // phone they stack: several locales spell the metric out ("214,9 тыс.
   // зрителей (медиана)" is 209px) — wider than the whole row on a 320px
@@ -76,18 +86,20 @@ export function HomeMostWatched({
                     >
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    {entry.streamer.avatar_url ? (
-                      <Image
-                        src={entry.streamer.avatar_url}
-                        alt={entry.streamer.name}
-                        width={28}
-                        height={28}
-                        unoptimized
-                        className="h-7 w-7 shrink-0 rounded-full object-cover"
-                      />
-                    ) : (
-                      <InitialsAvatar name={entry.streamer.name} size={28} />
-                    )}
+                    <span className={`${iconSlotClass} w-7`}>
+                      {entry.streamer.avatar_url ? (
+                        <Image
+                          src={entry.streamer.avatar_url}
+                          alt={entry.streamer.name}
+                          width={28}
+                          height={28}
+                          unoptimized
+                          className="h-7 w-7 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <InitialsAvatar name={entry.streamer.name} size={28} />
+                      )}
+                    </span>
                     <span className={valueStackClass}>
                       <span className="truncate text-sm font-bold text-white">
                         {entry.streamer.name}
@@ -119,7 +131,7 @@ export function HomeMostWatched({
                     >
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    <span className="w-6 shrink-0 overflow-hidden rounded">
+                    <span className={`${iconSlotClass} w-6 overflow-hidden rounded`}>
                       <GameBoxArt
                         boxArtUrl={game.box_art_url}
                         name={game.category}
