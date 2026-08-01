@@ -18,6 +18,7 @@ import { SiteFooter } from "@/components/web/SiteFooter";
 import { LocaleSuggestionBanner } from "@/components/web/LocaleSuggestionBanner";
 import { UI_LANGS, isUiLang, localeHref, type UiLang } from "@/lib/i18n-core";
 import { chromeLexFor } from "@/lib/i18n-chrome";
+import { IconSpriteDefs } from "@/components/web/icons/IconSprite";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -166,6 +167,12 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background">
+        {/* Symbol definitions for the per-card icons (heart, eye, bell, …).
+            Mounted here so every page has them before any <use> reference:
+            they are the icons whose count scales with the data, and on a
+            card-heavy page they were 120 KB of repeated path markup. Inert and
+            zero-sized — see components/web/icons/IconSprite.tsx. */}
+        <IconSpriteDefs />
         <Providers>
           <header className="sticky top-0 z-50 border-b border-divider bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
             {/* The height is PINNED, not derived from the content (it used to

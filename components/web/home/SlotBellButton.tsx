@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell } from 'lucide-react';
 import { touchTargetExpander } from '@/lib/ui/positioning';
+import { Icon } from '@/components/web/icons/IconSprite';
 import { HomeUpsellSheet, type UpsellSheetStrings } from './HomeUpsellSheet';
 
 /**
@@ -34,7 +34,8 @@ export function SlotBellButton({
         // last and carries the caller's `absolute right-3 top-3`.
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-background-elevated/90 text-text-muted transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan ${touchTargetExpander(className, 'lg')} ${className}`}
       >
-        <Bell size={13} aria-hidden="true" />
+        {/* Sprite reference: one bell per lineup card. */}
+        <Icon name="bell" size={13} />
       </button>
       {open && <HomeUpsellSheet strings={strings} onClose={() => setOpen(false)} />}
     </>

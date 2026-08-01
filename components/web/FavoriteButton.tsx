@@ -6,6 +6,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { slotLexFor } from '@/lib/i18n-slot';
 import { AUTH_UI_VISIBLE } from '@/lib/auth-flag';
 import { touchTargetExpander } from '@/lib/ui/positioning';
+import { Icon } from '@/components/web/icons/IconSprite';
 
 type Size = 'sm' | 'md';
 
@@ -28,28 +29,12 @@ const SIZE_CLASSES: Record<Size, { button: string; icon: number; expander: 'md' 
   md: { button: 'h-10 w-10', icon: 20, expander: 'sm' },
 };
 
-function HeartIcon({
-  filled,
-  size,
-}: {
-  filled: boolean;
-  size: number;
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth={filled ? 0 : 2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
+// The heart glyph lives in the document-wide sprite: this button renders once
+// per card, so it was the single most repeated piece of markup on the site
+// (165 copies on the homepage alone). `Icon` reproduces the former inline SVG
+// exactly, including the filled/outlined switch.
+function HeartIcon({ filled, size }: { filled: boolean; size: number }) {
+  return <Icon name="heart" size={size} filled={filled} />;
 }
 
 export function FavoriteButton({

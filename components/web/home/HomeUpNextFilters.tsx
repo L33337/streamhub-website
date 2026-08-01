@@ -9,8 +9,8 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { Lock, RotateCcw } from 'lucide-react';
-import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import type { UiLang } from '@/lib/i18n-core';
+import type { LineupCardSlot } from '@/lib/home/slot-payload';
 import { SlotCard } from '@/components/web/SlotCard';
 import { SlotBellButton } from './SlotBellButton';
 import { FILTER_SELECT_CLASS } from './filter-controls';
@@ -118,8 +118,12 @@ export function HomeUpNextFilters({
   bellStrings: UpsellSheetStrings;
   /** Server-rendered `<li>` cards, placed in the same grid as the deferred ones. */
   ssrCards: React.ReactNode[];
-  /** The pool beyond the server-rendered head, rendered here on demand. */
-  deferredSlots: PublicStreamSlot[];
+  /**
+   * The pool beyond the server-rendered head, rendered here on demand —
+   * pruned to what SlotCard reads, reasoning already resolved for the page's
+   * locale (`toLineupCardSlot`).
+   */
+  deferredSlots: LineupCardSlot[];
   listClassName: string;
   locale: UiLang;
 }) {

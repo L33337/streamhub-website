@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { CalendarClock } from 'lucide-react';
+import { Icon } from '@/components/web/icons/IconSprite';
 import type { PublicStreamSlot, PublicStreamer } from '@/lib/server/partner-api';
 import type { WikiFeedStats } from '@/lib/home/streamer-wiki';
 import { truncateBio } from '@/lib/home/streamer-wiki';
@@ -177,9 +177,9 @@ export function HomeStreamerWiki({
                   </span>
                 ) : showNext ? (
                   <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-accent-cyan/40 bg-background-highlight px-2.5 py-1">
-                    <CalendarClock
+                    <Icon
+                      name="calendar-clock"
                       size={12}
-                      aria-hidden="true"
                       className="shrink-0 text-accent-cyan"
                     />
                     <span className="truncate text-[11px] font-semibold text-accent-cyan">

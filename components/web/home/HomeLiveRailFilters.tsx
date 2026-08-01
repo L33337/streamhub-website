@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { RotateCcw } from 'lucide-react';
 import type { UiLang } from '@/lib/i18n-core';
 import { liveRuntimeLexFor } from '@/lib/i18n/live-runtime';
@@ -13,7 +20,15 @@ import {
   LIVE_RAIL_DEFAULT_VISIBLE,
   type LiveFilterItem,
 } from '@/lib/home/live-rail';
+import type { LiveCardSlot } from '@/lib/home/slot-payload';
+import {
+  getMinuteClockSnapshot,
+  getServerMinuteClockSnapshot,
+  subscribeMinuteClock,
+} from '@/lib/home/minute-clock';
+import { RailScroller } from '@/components/web/feed/RailScroller';
 import { FILTER_SELECT_CLASS } from './filter-controls';
+import { LiveRailCard } from './LiveRailCard';
 
 export interface LiveFilterStrings {
   categoryLabel: string;
@@ -34,15 +49,18 @@ export interface LiveFilterStrings {
 }
 
 /**
- * Category + language dropdowns over the server-rendered "Most Watched right
- * now" rail, plus the minute tick that keeps the runtime lines honest.
+ * Category + language dropdowns over the "Most Watched right now" rail, plus
+ * the minute tick that keeps the runtime lines honest.
  *
- * Same philosophy as HomeUpNextFilters: the cards stay fully server-rendered
- * and this wrapper only toggles `hidden` on `li[data-live-id]`. The rail
- * ships the ENTIRE live sweep, of which the server already hid everything
- * past LIVE_RAIL_DEFAULT_VISIBLE — so an unfiltered mount reproduces the
- * served markup exactly, and a filter can reveal a match at any rank. A
- * JS-less browser keeps the top cut and inert dropdowns.
+ * The pool is SPLIT (2026-08-01, mirroring `HomeUpNextFilters`): `ssrCards` is
+ * the server-rendered head — the unfiltered cut — whose visibility this wrapper
+ * toggles imperatively, while `deferredSlots` is the rest of the live sweep as
+ * DATA. Those cards are rendered HERE, and only once a filter is active, which
+ * is the only state that can reveal them. So the filters still reach a stream
+ * at rank 84 without the homepage paying ~170 cards of DOM up front. **The two
+ * regimes must not fight**: the imperative pass deliberately skips
+ * `[data-live-deferred]`, because React owns those nodes.
+ *
  * Two additions the lineup filter doesn't need:
  *
  * - **Cross-filtered option counts.** Picking "German" narrows the category
@@ -50,27 +68,43 @@ export interface LiveFilterStrings {
  *   selected. The initial (unfiltered) render matches the server's option list
  *   exactly, so hydration is clean.
  * - **Runtime tick.** "~2 h left" is served from ISR HTML that can be up to a
- *   minute old, and a tab left open ages arbitrarily. Every 60 s the labels are
- *   re-derived from `data-live-start` / `data-live-duration` with the same pure
- *   formatter the server used — including the flip to "Longer than expected"
- *   when an estimate lapses while the page is open.
+ *   minute old, and a tab left open ages arbitrarily. Every 60 s the SSR labels
+ *   are re-derived from `data-live-start` / `data-live-duration` with the same
+ *   pure formatter the server used — including the flip to "Longer than
+ *   expected" when an estimate lapses while the page is open. Deferred cards
+ *   take the same clock as a PROP and re-render instead; they carry none of
+ *   those data attributes, so the two paths can never both own a label.
  */
 export function HomeLiveRailFilters({
   items,
   strings,
   locale,
-  children,
+  ssrCards,
+  deferredSlots,
 }: {
   items: LiveFilterItem[];
   strings: LiveFilterStrings;
   locale: UiLang;
-  children: React.ReactNode;
+  /** Server-rendered `<li>` cards, placed in the same rail as the deferred ones. */
+  ssrCards: React.ReactNode[];
+  /** The sweep beyond the server-rendered head, rendered here on demand. */
+  deferredSlots: LiveCardSlot[];
 }) {
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const categoryId = useId();
   const languageId = useId();
+  // Drives the DEFERRED cards' runtime lines only. Its server snapshot is null
+  // and that is safe here: no deferred card can render server-side (the
+  // unfiltered visible set is the SSR head by construction), so `?? 0` is
+  // unreachable in practice and merely keeps the type honest.
+  const now = useSyncExternalStore(
+    subscribeMinuteClock,
+    getMinuteClockSnapshot,
+    getServerMinuteClockSnapshot,
+  );
+  const runtimeLex = useMemo(() => liveRuntimeLexFor(locale), [locale]);
 
   // Options for one dropdown are counted over the pool narrowed by the OTHER
   // dropdown — never by itself, or picking a value would collapse its own list
@@ -124,13 +158,25 @@ export function HomeLiveRailFilters({
     [items, activeCategory, activeLanguage],
   );
 
+  // Only the deferred cards the current selection actually reveals. Unfiltered
+  // this is empty — `visibleIds` is then the SSR head's prefix, which contains
+  // no deferred id — so the resting rail is pure server HTML.
+  const deferredVisible = useMemo(
+    () => deferredSlots.filter((slot) => visibleIds.has(slot.id)),
+    [deferredSlots, visibleIds],
+  );
+
+  // Server-rendered cards only: the deferred ones are a React-controlled list
+  // below, so mutating their `hidden` here would be two owners for one node.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    container.querySelectorAll<HTMLElement>('li[data-live-id]').forEach((node) => {
-      node.hidden = !visibleIds.has(node.dataset.liveId ?? '');
-    });
-    // Going from 130 cards to 5 (or back) leaves the horizontal scroller
+    container
+      .querySelectorAll<HTMLElement>('li[data-live-id]:not([data-live-deferred])')
+      .forEach((node) => {
+        node.hidden = !visibleIds.has(node.dataset.liveId ?? '');
+      });
+    // Going from 30 cards to 5 (or back) leaves the horizontal scroller
     // parked wherever the previous set ended — often past the end of the new
     // one, i.e. on empty space.
     container
@@ -140,13 +186,14 @@ export function HomeLiveRailFilters({
       });
   }, [visibleIds]);
 
-  // Runtime lines: re-derived on mount (the served HTML may be a minute stale)
-  // and every minute after.
+  // Runtime lines of the SERVER-rendered cards: re-derived on mount (the
+  // served HTML may be a minute stale) and every minute after. Deferred cards
+  // are excluded by construction — they carry no `data-live-runtime`.
   useEffect(() => {
     const container = containerRef.current;
     const lex = liveRuntimeLexFor(locale);
     const refresh = () => {
-      const now = Date.now();
+      const nowMs = Date.now();
       container
         ?.querySelectorAll<HTMLElement>('[data-live-runtime]')
         .forEach((node) => {
@@ -155,7 +202,7 @@ export function HomeLiveRailFilters({
           const alwaysOn = node.dataset.liveAlwayson === '1';
           if (!Number.isFinite(start)) return;
           const text = formatLiveRuntime(
-            liveRuntimeFrom(start, duration, alwaysOn, now),
+            liveRuntimeFrom(start, duration, alwaysOn, nowMs),
             lex,
           );
           // An empty line would collapse the card's meta row and shift the
@@ -225,7 +272,27 @@ export function HomeLiveRailFilters({
         )}
       </div>
 
-      {children}
+      {/* ONE rail for both regimes. The server's cards arrive as an array of
+          <li> and the deferred ones are appended after them, which keeps the
+          list in viewer-rank order (the head is a strict prefix of the
+          ranking, so every head match outranks every tail match) AND keeps
+          every card in the same horizontal flex row. Hidden cards are
+          display:none, so they leave the flow entirely and leave no gap. */}
+      <RailScroller contentClassName="pb-2">
+        <ul className="flex gap-3">
+          {ssrCards}
+          {deferredVisible.map((slot) => (
+            <LiveRailCard
+              key={slot.id}
+              slot={slot}
+              locale={locale}
+              nowMs={now ?? 0}
+              runtimeLex={runtimeLex}
+              deferred
+            />
+          ))}
+        </ul>
+      </RailScroller>
 
       {/* Unreachable by construction: an option is only offered when it has a
           match in the pool the other dropdown already narrowed, and the clamp

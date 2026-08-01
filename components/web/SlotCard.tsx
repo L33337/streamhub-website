@@ -4,7 +4,8 @@ import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
 import { slotLexFor } from '@/lib/i18n-slot';
 import { localeHref, resolveUiLang } from '@/lib/i18n-core';
-import { pickReasoning } from '@/lib/slot-copy';
+import type { SlotStatusInput } from '@/lib/format/slot-status';
+import { pickReasoning, type SlotCopyFields } from '@/lib/slot-copy';
 import {
   AlwaysOnBadge,
   CancelledBadge,
@@ -13,6 +14,29 @@ import {
   PlatformBadge,
 } from './Badges';
 import { SlotStatusText } from './SlotStatusText';
+
+/**
+ * Exactly the slot fields this card renders — narrower than `PublicStreamSlot`
+ * on purpose, so the homepage can hand it a pruned payload
+ * (`lib/home/slot-payload.ts`, which pays for every field once per deferred
+ * card in the RSC flight). Every other caller passes a full DTO, which is
+ * assignable. Adding a field to the card means adding it here, and that is the
+ * point: the pruner then fails to compile instead of shipping `undefined`.
+ */
+export type SlotCardSlot = SlotStatusInput &
+  SlotCopyFields &
+  Pick<
+    PublicStreamSlot,
+    | 'id'
+    | 'streamer_name'
+    | 'title'
+    | 'category'
+    | 'platforms'
+    | 'thumbnail_url'
+    | 'avatar_url'
+    | 'confidence'
+    | 'viewer_count'
+  >;
 
 function PlaceholderThumbnail({ name }: { name: string }) {
   const letter = (name?.trim()?.[0] ?? '?').toUpperCase();
@@ -38,7 +62,7 @@ export function SlotCard({
   compact = false,
   reserveTopRight = false,
 }: {
-  slot: PublicStreamSlot;
+  slot: SlotCardSlot;
   language?: string;
   /** Extra badges rendered next to the status line (CANCELLED/NEW/UNCERTAIN). */
   topBadges?: React.ReactNode;
