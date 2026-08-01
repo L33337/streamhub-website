@@ -43,8 +43,14 @@ const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   title: "Streamer Times - Your Livestream Guide for Twitch & YouTube",
+  // ≤155 chars (Bing flags >160; this ran 165). This is not just the homepage's
+  // copy — it is the FALLBACK every page inherits when its own generateMetadata
+  // returns without a description, e.g. the "Game not found" / "Streamer not
+  // found" early returns, which is what a transient Partner API failure looks
+  // like during an ISR regeneration. An over-long default therefore leaks onto
+  // real pages, not only onto 404s.
   description:
-    "Streamer Times: Your Livestream Guide. AI-powered predictions, EPG grid view, and real-time notifications for Twitch and YouTube streamers. Free for iOS and Android.",
+    "Streamer Times: Your Livestream Guide. AI-powered predictions, EPG grid and go-live alerts for Twitch and YouTube. Free for iOS and Android.",
   authors: [{ name: "Streamer Times" }],
   metadataBase: new URL("https://streamertimes.tv"),
   openGraph: {

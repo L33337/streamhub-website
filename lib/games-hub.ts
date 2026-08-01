@@ -17,6 +17,7 @@ import type { GamesSortMode } from '@/lib/games-sort';
 import { MIN_INDEXABLE_GAME_STREAMERS } from '@/lib/rankings';
 import { gameSlug } from '@/lib/game-slug';
 import { formatCompactNumber } from '@/lib/format/number';
+import { pickMetaDescription } from '@/lib/seo';
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -111,7 +112,11 @@ export const GAMES_HUB_VIEWS: GamesHubViewSpec[] = [
         s.totalHours28d != null && s.totalHours28d >= 100
           ? ` Over ${formatCompactNumber(Math.round(s.totalHours28d))} hours streamed in 28 days.`
           : '';
-      return `Which games get streamed the most? ${gameCountPhrase(s.gameCount)} ranked by broadcast hours on Twitch and YouTube.${hours}`;
+      // ≤155 chars (Bing flags >160; with the hours clause this ran 165).
+      return pickMetaDescription(
+        `Which games get streamed the most? ${gameCountPhrase(s.gameCount)} ranked by broadcast hours on Twitch and YouTube.${hours}`,
+        `Which games get streamed the most? ${gameCountPhrase(s.gameCount)} ranked by broadcast hours on Twitch and YouTube.`,
+      );
     },
     methodologyNote:
       'Ordered by hours broadcast in the last 28 days — time streamed, not time watched.',

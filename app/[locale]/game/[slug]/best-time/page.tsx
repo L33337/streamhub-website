@@ -3,7 +3,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPartnerApi, type GameTiming, type PublicGame } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
+import {
+  applyLocaleSeo,
+  buildBreadcrumbJsonLd,
+  jsonLdHtml,
+  pickMetaDescription,
+} from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { findGameBySlug } from '@/lib/game-slug';
 import {
@@ -89,12 +94,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // from the nightly aggregate (UTC label, changes rarely) — never live
   // numbers here.
   const top = usable ? timing?.best_slots?.[0] : null;
-  const slotSentence = top
-    ? ` Data says ${TIMING_DAY_NAMES[top.dow]} around ${String(top.hour).padStart(2, '0')}:00 UTC works best right now.`
+  // The concrete best slot is the answer searchers want, so it leads when it
+  // exists — the generic heatmap sentence is what gets dropped, not truncated.
+  // ≤155 chars (Bing flags >160; both sentences together ran 197).
+  const slotLead = top
+    ? `${TIMING_DAY_NAMES[top.dow]} around ${String(top.hour).padStart(2, '0')}:00 UTC works best right now. `
     : '';
   const meta: Metadata = {
     title: `Best Time to Stream ${category} — Viewers vs Competition`,
-    description: `When should you stream ${category}? Weekly heatmap of viewer demand vs live-channel competition from hourly samples of tracked Twitch channels.${slotSentence}`,
+    description: pickMetaDescription(
+      `When should you stream ${category}? ${slotLead}Weekly heatmap of viewer demand vs live-channel competition.`,
+      `When should you stream ${category}? ${slotLead}`,
+      `When should you stream ${category}? Weekly heatmap of viewer demand vs live-channel competition.`,
+    ),
     alternates: { canonical: url },
     openGraph: {
       title: `Best time to stream ${category}`,

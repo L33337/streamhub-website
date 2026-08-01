@@ -8,7 +8,13 @@ import {
   type PublicRankingEntry,
   type PublicStreamSlot,
 } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, buildVideoGameJsonLd, jsonLdHtml } from '@/lib/seo';
+import {
+  applyLocaleSeo,
+  buildBreadcrumbJsonLd,
+  buildVideoGameJsonLd,
+  jsonLdHtml,
+  pickMetaDescription,
+} from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
@@ -190,7 +196,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (page === null) {
     return { title: 'Not found — StreamerTimes', robots: { index: false, follow: false } };
   }
-  const { category, game, rows } = await loadGameRanking(slug);
+  const { category, rows } = await loadGameRanking(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
   const url =
     page === 1
@@ -199,17 +205,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const top = rows[0];
   // Coarse, slow-moving numbers only — never live viewer counts in metadata
   // (hourly churn hurts SEO more than the numbers help; see /game/[slug]).
-  const hours = game?.hours_28d;
-  const hoursSentence =
-    hours != null && hours >= 10
-      ? ` ~${formatCompactNumber(Math.round(hours), 'en')} hours streamed in the last 28 days.`
-      : '';
-  const description =
-    (top
-      ? `${top.name} leads with ${formatCompactNumber(top.followerCount, 'en')} followers. `
-      : '') +
-    `The top ${category} streamers ranked by channel followers across Twitch and YouTube — full leaderboard with live status, hours streamed and next streams, updated daily.` +
-    hoursSentence;
+  //
+  // Richest-first assembly against the 155-char budget (Bing flags >160). The
+  // old single template concatenated leader + full boilerplate + an "~N hours
+  // streamed" sentence and reached 241 chars for Fortnite.
+  const leadIn = top
+    ? `${top.name} leads with ${formatCompactNumber(top.followerCount, 'en')} followers. `
+    : '';
+  const description = pickMetaDescription(
+    `${leadIn}The top ${category} streamers on Twitch and YouTube ranked by followers, with live status and next streams. Updated daily.`,
+    `${leadIn}The top ${category} streamers ranked by followers, with live status and next streams.`,
+    `The top ${category} streamers on Twitch and YouTube ranked by followers, with live status and next streams. Updated daily.`,
+  );
   const meta: Metadata = {
     title:
       page === 1

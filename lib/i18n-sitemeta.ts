@@ -52,19 +52,19 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Streamer Rankings — Most Followed, Most Watched & Most Active',
       description:
-        'Live leaderboards for Twitch and YouTube streamers: the most followed, fastest growing, most watched, most active and most punctual streamers we track, plus rankings by game. Updated daily.',
+        'Leaderboards for Twitch and YouTube streamers: most followed, fastest growing, most watched, most active and most punctual, plus rankings by game.',
     },
   },
   de: {
     home: {
       title: 'Sendeplan, Highlights & Statistiken — Twitch & YouTube | StreamerTimes',
       description:
-        'Sendepläne, Highlights der Woche und Kanal-Statistiken für Twitch und YouTube — alles an einem Ort. Sieh, wer gerade live ist und wann deine Favoriten starten.',
+        'Sendepläne, Highlights der Woche und Kanal-Statistiken für Twitch und YouTube. Sieh, wer gerade live ist und wann deine Favoriten starten.',
     },
     live: {
       title: 'Wer ist jetzt live auf Twitch & YouTube? | StreamerTimes',
       description:
-        'Alle Streamer, die gerade auf Twitch und YouTube live sind, gruppiert nach Spiel und Kategorie — plus wer in den nächsten Stunden startet. Minütlich aktualisiert.',
+        'Alle Streamer, die gerade auf Twitch und YouTube live sind, nach Spiel gruppiert — plus wer in den nächsten Stunden startet. Minütlich aktualisiert.',
     },
     streamers: {
       title: 'Alle Streamer A–Z — Twitch & YouTube Sendepläne | StreamerTimes',
@@ -86,12 +86,12 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     home: {
       title: 'Programación, clips y estadísticas — Twitch y YouTube | StreamerTimes',
       description:
-        'Programación de directos, clips de la semana y estadísticas de canales de Twitch y YouTube, todo en un mismo sitio. Mira quién está en directo y cuándo empiezan tus favoritos.',
+        'Programación de directos, clips de la semana y estadísticas de canales de Twitch y YouTube. Mira quién está en directo y cuándo empiezan tus favoritos.',
     },
     live: {
       title: '¿Quién está en directo en Twitch y YouTube? | StreamerTimes',
       description:
-        'Todos los streamers en directo ahora en Twitch y YouTube, agrupados por juego y categoría — y quién empieza en las próximas horas. Se actualiza cada minuto.',
+        'Todos los streamers en directo ahora en Twitch y YouTube, por juego — y quién empieza en las próximas horas. Se actualiza cada minuto.',
     },
     streamers: {
       title: 'Todos los streamers A–Z — Horarios de Twitch y YouTube | StreamerTimes',
@@ -106,19 +106,19 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Rankings de streamers — Más seguidos, más vistos y más activos',
       description:
-        'Rankings de streamers de Twitch y YouTube: más seguidos, mayor crecimiento, más vistos, más activos y más puntuales, más rankings por juego. Actualizado a diario.',
+        'Rankings de streamers de Twitch y YouTube: más seguidos, mayor crecimiento, más vistos, más activos y más puntuales, más rankings por juego.',
     },
   },
   fr: {
     home: {
       title: 'Programme, clips & stats — Twitch & YouTube | StreamerTimes',
       description:
-        'Programme des streams, clips de la semaine et stats des chaînes Twitch et YouTube, au même endroit. Vois qui est en live et quand tes streamers préférés commencent.',
+        'Programme des streams, clips de la semaine et stats des chaînes Twitch et YouTube. Vois qui est en live et quand tes streamers préférés commencent.',
     },
     live: {
       title: 'Qui est en live sur Twitch & YouTube ? | StreamerTimes',
       description:
-        'Tous les streamers en live en ce moment sur Twitch et YouTube, groupés par jeu et catégorie — et qui démarre dans les prochaines heures. Mis à jour chaque minute.',
+        'Tous les streamers en live sur Twitch et YouTube, groupés par jeu — et qui démarre dans les prochaines heures. Mis à jour chaque minute.',
     },
     streamers: {
       title: 'Tous les streamers A–Z — Horaires Twitch & YouTube | StreamerTimes',
@@ -133,14 +133,14 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Classements des streamers — les plus suivis, vus et actifs',
       description:
-        'Classements Twitch et YouTube : plus suivis, plus forte croissance, plus regardés, plus actifs et plus ponctuels, plus des classements par jeu. Mis à jour chaque jour.',
+        'Classements Twitch et YouTube : plus suivis, plus forte croissance, plus regardés, plus actifs et plus ponctuels, plus des classements par jeu.',
     },
   },
   pt: {
     home: {
       title: 'Programação, clipes e estatísticas — Twitch e YouTube | StreamerTimes',
       description:
-        'Programação de streams, clipes da semana e estatísticas de canais da Twitch e do YouTube em um só lugar. Veja quem está ao vivo e quando seus favoritos começam.',
+        'Programação de streams, clipes da semana e estatísticas de canais da Twitch e do YouTube. Veja quem está ao vivo e quando seus favoritos começam.',
     },
     live: {
       title: 'Quem está ao vivo na Twitch e no YouTube? | StreamerTimes',
@@ -160,14 +160,14 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Rankings de streamers — Mais seguidos, vistos e ativos',
       description:
-        'Rankings de streamers de Twitch e YouTube: mais seguidos, maior crescimento, mais assistidos, mais ativos e mais pontuais, além de rankings por jogo. Atualizado diariamente.',
+        'Rankings de streamers de Twitch e YouTube: mais seguidos, maior crescimento, mais assistidos, mais ativos e mais pontuais, além de rankings por jogo.',
     },
   },
   it: {
     home: {
       title: 'Programmazione, clip e statistiche — Twitch e YouTube | StreamerTimes',
       description:
-        'Programmazione degli stream, clip della settimana e statistiche dei canali Twitch e YouTube in un unico posto. Scopri chi è in diretta e quando iniziano i tuoi preferiti.',
+        'Programmazione degli stream, clip della settimana e statistiche dei canali Twitch e YouTube. Scopri chi è in diretta e quando iniziano i tuoi preferiti.',
     },
     live: {
       title: 'Chi è in diretta su Twitch e YouTube? | StreamerTimes',
@@ -186,7 +186,7 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Classifiche streamer — più seguiti, più visti e più attivi',
       description:
-        'Classifiche degli streamer Twitch e YouTube: più seguiti, crescita più rapida, più visti, più attivi e più puntuali, più classifiche per gioco. Aggiornate ogni giorno.',
+        'Classifiche degli streamer Twitch e YouTube: più seguiti, crescita più rapida, più visti, più attivi e più puntuali, più classifiche per gioco.',
     },
   },
   ru: {
@@ -213,7 +213,7 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Рейтинги стримеров — подписчики, зрители и активность',
       description:
-        'Рейтинги стримеров Twitch и YouTube: больше всего подписчиков, самый быстрый рост, больше всего зрителей и часов в эфире, пунктуальность — плюс рейтинги по играм. Обновляются ежедневно.',
+        'Рейтинги стримеров Twitch и YouTube: подписчики, рост, зрители, часы в эфире и пунктуальность — плюс рейтинги по играм. Обновляются ежедневно.',
     },
   },
   ja: {
@@ -267,7 +267,7 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Рейтинги стримерів — підписники, глядачі й активність',
       description:
-        'Рейтинги стримерів Twitch і YouTube: найбільше підписників, найшвидше зростання, найбільше глядачів і годин в ефірі, пунктуальність — плюс рейтинги за іграми. Оновлюються щодня.',
+        'Рейтинги стримерів Twitch і YouTube: підписники, зростання, глядачі, години в ефірі та пунктуальність — плюс рейтинги за іграми. Оновлюються щодня.',
     },
   },
   ar: {
@@ -294,14 +294,14 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'تصنيفات الستريمرز — الأكثر متابعة ومشاهدة ونشاطًا',
       description:
-        'تصنيفات ستريمرز Twitch وYouTube: الأكثر متابعة، الأسرع نموًا، الأكثر مشاهدة، الأكثر نشاطًا والأكثر التزامًا بالمواعيد — إضافة إلى تصنيفات حسب اللعبة. تُحدَّث يوميًا.',
+        'تصنيفات ستريمرز Twitch وYouTube: الأكثر متابعة، الأسرع نموًا، الأكثر مشاهدة والأكثر نشاطًا — إضافة إلى تصنيفات حسب اللعبة. تُحدَّث يوميًا.',
     },
   },
   hu: {
     home: {
       title: 'Műsorrend, klipek és statisztikák — Twitch & YouTube | StreamerTimes',
       description:
-        'Stream-műsorrend, a hét klipjei és csatornastatisztikák a Twitchről és a YouTube-ról, mind egy helyen. Nézd meg, ki van élőben, és mikor kezdenek a kedvenceid.',
+        'Stream-műsorrend, a hét klipjei és csatornastatisztikák a Twitchről és a YouTube-ról. Nézd meg, ki van élőben, és mikor kezdenek a kedvenceid.',
     },
     live: {
       title: 'Ki van most élőben Twitchen és YouTube-on? | StreamerTimes',
@@ -321,7 +321,7 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Streamer-ranglisták — legtöbb követő, néző és adás',
       description:
-        'Ranglisták Twitch- és YouTube-streamerekről: legtöbb követő, leggyorsabb növekedés, legtöbb néző, legtöbb adásóra és legpontosabb kezdés — plusz játékonkénti ranglisták. Naponta frissül.',
+        'Ranglisták Twitch- és YouTube-streamerekről: követők, növekedés, nézők, adásórák és pontos kezdés — plusz játékonkénti ranglisták. Naponta frissül.',
     },
   },
   pl: {
@@ -338,7 +338,7 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     streamers: {
       title: 'Wszyscy streamerzy A–Z — harmonogramy Twitch i YouTube | StreamerTimes',
       description:
-        'Przeglądaj wszystkich streamerów Twitcha i YouTube na Streamer Times, od A do Z. Kto jest na żywo, nadchodzące harmonogramy i streamy przewidziane przez AI.',
+        'Przeglądaj streamerów Twitcha i YouTube na Streamer Times, od A do Z. Kto jest na żywo, nadchodzące harmonogramy i streamy przewidziane przez AI.',
     },
     games: {
       title: 'Najpopularniejsze gry na Twitchu i YouTube | StreamerTimes',
@@ -348,7 +348,7 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
     rankings: {
       title: 'Rankingi streamerów — najczęściej obserwowani i oglądani',
       description:
-        'Rankingi streamerów Twitcha i YouTube: najwięcej obserwujących, najszybszy wzrost, najwięcej widzów i godzin, największa punktualność — plus rankingi według gier. Aktualizowane codziennie.',
+        'Rankingi streamerów Twitcha i YouTube: obserwujący, wzrost, widzowie, godziny i punktualność — plus rankingi według gier. Aktualizowane codziennie.',
     },
   },
 };

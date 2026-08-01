@@ -71,15 +71,24 @@ export function GameDaySection({
   dateKey,
   label,
   slots,
+  hiddenCount = 0,
   language = 'en',
 }: {
   dateKey: string;
   /** UTC-referenced day label; DayLabel re-decides Today/Tomorrow per viewer. */
   label: string;
   slots: PublicStreamSlot[];
+  /**
+   * Slots this day has but the page does not render (page-weight cap — see
+   * `capDaySlots`). Counted in the heading so the day never under-reports
+   * itself, and surfaced as a line of copy so the omission is visible rather
+   * than silent.
+   */
+  hiddenCount?: number;
   language?: string;
 }) {
   const { full, low } = splitCollapsibleSlots(slots);
+  const totalCount = slots.length + hiddenCount;
   const absoluteLabel = utcDateAbsoluteLabel(dateKey, resolveUiLang(language));
   return (
     <section
@@ -94,7 +103,7 @@ export function GameDaySection({
       >
         <DayLabel dateKey={dateKey} serverLabel={label} language={language} />
         <span className="text-sm font-normal text-text-muted">
-          {slots.length} stream{slots.length === 1 ? '' : 's'}
+          {totalCount} stream{totalCount === 1 ? '' : 's'}
         </span>
       </h2>
       {full.length > 0 && (
@@ -143,6 +152,13 @@ export function GameDaySection({
             ))}
           </ul>
         </details>
+      )}
+      {hiddenCount > 0 && (
+        <p className="mt-3 text-xs text-text-muted">
+          {hiddenCount} more prediction{hiddenCount === 1 ? '' : 's'} for this
+          day {hiddenCount === 1 ? 'is' : 'are'} not shown. Open a streamer&apos;s
+          page for their full schedule.
+        </p>
       )}
     </section>
   );

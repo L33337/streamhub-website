@@ -11,7 +11,13 @@ import {
   type PublicStreamSlot,
   type PublicStreamer,
 } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, buildVideoGameJsonLd, jsonLdHtml } from '@/lib/seo';
+import {
+  applyLocaleSeo,
+  buildBreadcrumbJsonLd,
+  buildVideoGameJsonLd,
+  jsonLdHtml,
+  pickMetaDescription,
+} from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
@@ -32,7 +38,9 @@ import { BestSlotChips } from '@/components/web/games/BestSlotChips';
 import { FollowGameButton } from '@/components/web/games/FollowGameButton';
 import { GameDaySection } from '@/components/web/games/GameDaySection';
 import { ScheduleFilters } from '@/components/web/games/ScheduleFilters';
+import { capDaySlots } from '@/lib/game-schedule';
 import { DayNavBar } from '@/components/web/DayNavBar';
+import { toDayCounts } from '@/lib/day-counts';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { GameBoxArt } from '@/components/web/games/GameCard';
@@ -216,14 +224,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     await loadGamePage(slug);
   if (!category) return { title: 'Game not found — StreamerTimes' };
   const url = `${SITE_URL}/game/${slug}`;
-  // Coarse, slow-moving numbers only (streamer_count changes daily at most,
-  // hours_28d nightly). NEVER live viewer counts here — hourly metadata churn
-  // hurts SEO more than the numbers help.
-  const hours = game?.hours_28d;
-  const hoursSentence =
-    hours != null && hours >= 10
-      ? ` ~${formatCompactNumber(Math.round(hours), 'en')} hours streamed in the last 28 days.`
-      : '';
   // Top names from the SAME ranking the visible "Most followed" table renders —
   // they target "streamer + game" searches. follower_count refreshes daily, so
   // the names are stable between crawls; when the ranking call degraded (or no
@@ -232,14 +232,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const names = topGameStreamerNames(rankedStreamers, 3);
   const namesLead =
     names.length > 0
-      ? `${formatNameList(names)} lead${names.length === 1 ? 's' : ''} the ranking — see`
-      : `See ${category} streamers ranked by followers,`;
+      ? `${formatNameList(names)} lead${names.length === 1 ? 's' : ''} the ${category} ranking. `
+      : '';
+  const twoNamesLead =
+    names.length > 1 ? `${formatNameList(names.slice(0, 2))} lead the ${category} ranking. ` : '';
   const ogNames = names.length > 0 ? ` — ${formatNameList(names)} —` : ',';
+  // Description budget is 155 chars (Bing flags >160, Google truncates ~155),
+  // so the copy is assembled richest-first and the first fitting variant wins:
+  // three names → two names → no names. The old single template appended a
+  // "~1.2K hours streamed" sentence on top of the full boilerplate and landed
+  // at 227 chars for Fortnite — everything past the first sentence was cut by
+  // both engines anyway, so the hours sentence is gone rather than shortened.
+  const tail = `Who is live now, upcoming streams and AI-predicted schedules on Twitch and YouTube.`;
   const meta: Metadata = {
     // No streamer count in the title: it changes daily → title churn on every
     // re-crawl, and the chars are better spent on the stable keywords.
     title: `${category} Streamers — Live Now, Rankings & Schedule`,
-    description: `Who are the most followed ${category} streamers? ${namesLead} who is live now, upcoming streams, and AI-predicted schedules across Twitch and YouTube.${hoursSentence}`,
+    description: pickMetaDescription(
+      `${namesLead}${tail}`,
+      `${twoNamesLead}${tail}`,
+      `The most followed ${category} streamers. ${tail}`,
+      tail,
+    ),
     alternates: { canonical: url },
     openGraph: {
       title: `${category} streamers — live now, rankings & schedule`,
@@ -928,16 +942,24 @@ export default async function GamePage({ params }: Props) {
                 German day headings under English section titles would read
                 worse than consistent English. The viewer-local "Today" fix in
                 DayNavBar/DayLabel is language-independent and applies anyway. */}
-            <DayNavBar days={sevenDays} grouped={grouped} todayUtc={todayUtc} />
+            <DayNavBar
+              days={sevenDays}
+              counts={toDayCounts(sevenDays, grouped)}
+              todayUtc={todayUtc}
+            />
             {sevenDays.map((dateKey) => {
-              const slots = grouped.get(dateKey) ?? [];
-              if (slots.length === 0) return null;
+              const daySlots = grouped.get(dateKey) ?? [];
+              if (daySlots.length === 0) return null;
+              // Page-weight cap — see MAX_SLOTS_PER_DAY. Applied per day so a
+              // busy Monday cannot push Saturday and Sunday out of the page.
+              const { slots, hidden } = capDaySlots(daySlots);
               return (
                 <GameDaySection
                   key={dateKey}
                   dateKey={dateKey}
                   label={utcDateLabel(dateKey, todayUtc)}
                   slots={slots}
+                  hiddenCount={hidden}
                 />
               );
             })}

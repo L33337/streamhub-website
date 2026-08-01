@@ -39,9 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale === 'en'
         ? 'Streamer Rankings — Most Followed, Most Watched & Most Active'
         : localized.title,
+    // ≤155 chars (Bing flags >160; this listed all five metrics and ran 189).
     description:
       locale === 'en'
-        ? 'Live leaderboards for Twitch and YouTube streamers: the most followed, fastest growing, most watched, most active and most punctual streamers we track, plus rankings by game. Updated daily.'
+        ? 'Leaderboards for Twitch and YouTube streamers: most followed, fastest growing, most watched, most active and most punctual, plus rankings by game.'
         : localized.description,
     alternates: { canonical: `${SITE_URL}/rankings` },
     openGraph: {

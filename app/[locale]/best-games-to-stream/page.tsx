@@ -2,7 +2,12 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { applyLocaleSeo, buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
+import {
+  applyLocaleSeo,
+  buildBreadcrumbJsonLd,
+  jsonLdHtml,
+  pickMetaDescription,
+} from '@/lib/seo';
 import { formatStatValue } from '@/lib/format/number';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import {
@@ -61,7 +66,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : '';
   const meta: Metadata = {
     title: 'Best Games to Stream Right Now — Viewers vs Competition',
-    description: `${lead}Categories ranked by viewers per live channel from hourly samples of tracked Twitch channels — find the games where an audience is easiest to reach. Updated daily.`,
+    // ≤155 chars (Bing flags >160; lead + full methodology sentence ran 230).
+    // The methodology belongs on the page, not in the snippet.
+    description: pickMetaDescription(
+      `${lead}Twitch categories ranked by viewers per live channel — find the games where an audience is easiest to reach. Updated daily.`,
+      `${lead}Twitch categories ranked by viewers per live channel. Updated daily.`,
+      'Twitch categories ranked by viewers per live channel — find the games where an audience is easiest to reach. Updated daily.',
+    ),
     alternates: { canonical: url },
     openGraph: {
       title: 'Best games to stream right now',

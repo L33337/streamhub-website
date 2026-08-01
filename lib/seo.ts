@@ -310,10 +310,65 @@ const MAX_TITLE = 60; // Google truncates SERP titles around here
 const MAX_DESC = 155; // and descriptions around here
 const MAX_STREAM_TITLE = 70; // budget for the (often long) embedded stream title
 
-/** Truncate on a word boundary and append an ellipsis, trimming trailing punctuation. */
+/**
+ * Hard ceiling for any <meta name="description">. Bing Webmaster Tools reports
+ * "Meta Description too long or too short" outside 25–160 characters, and
+ * Google truncates the SERP snippet around 155-160 — so anything past this is
+ * bytes nobody ever reads. 155 leaves a character of slack under Bing's 160.
+ *
+ * The streamer pages have enforced this since M22 (`MAX_DESC`); the hub pages
+ * (game, rankings, best-time, /app) each assembled their own template string
+ * and shipped 165-241 characters until 2026-08-01, when Bing flagged
+ * /game/fortnite at 227.
+ */
+export const MAX_META_DESCRIPTION = MAX_DESC;
+
+/**
+ * Last-resort clamp for a meta description: collapses whitespace and truncates
+ * on a word boundary with an ellipsis.
+ *
+ * This is a NET, not the primary mechanism. A description that reaches it ends
+ * in "…", which reads like the page ran out of things to say — so callers
+ * should assemble their copy from progressively leaner candidates (see
+ * `pickMetaDescription`) and let this catch only the pathological inputs
+ * (a 90-character category name, an absurdly long streamer name).
+ */
+export function clampMetaDescription(text: string): string {
+  return truncate(text.trim().replace(/\s+/gu, ' '), MAX_DESC);
+}
+
+/**
+ * First candidate that fits the description budget, richest first.
+ *
+ * The pattern every hub page uses: the fullest copy names concrete entities
+ * ("Ninja, auronplay and Jynxzi lead the Fortnite ranking…") which is what
+ * earns the click, but those names are user data of unbounded length. Rather
+ * than truncating the rich variant mid-name, fall back to a leaner one that
+ * still reads as a whole sentence. The final candidate is clamped, so this
+ * always returns something within budget.
+ */
+export function pickMetaDescription(...candidates: string[]): string {
+  const cleaned = candidates.map((c) => c.trim().replace(/\s+/gu, ' ')).filter(Boolean);
+  return (
+    cleaned.find((c) => c.length <= MAX_DESC) ??
+    clampMetaDescription(cleaned[cleaned.length - 1] ?? '')
+  );
+}
+
+/**
+ * Truncate on a word boundary and append an ellipsis, trimming trailing
+ * punctuation. The RESULT is guaranteed ≤ `max` — the ellipsis is part of the
+ * budget, not added on top of it.
+ *
+ * (Before 2026-08-01 the ellipsis was appended after slicing to `max`, so a
+ * single unbroken token longer than the limit — a pathological stream title,
+ * or a category name with no spaces — came back at `max + 1`. Harmless for the
+ * SERP, but it made "≤ MAX" untrue, which is exactly the property the callers
+ * rely on.)
+ */
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
-  const cut = text.slice(0, max);
+  const cut = text.slice(0, max - 1);
   const lastSpace = cut.lastIndexOf(' ');
   const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
   return base.replace(/[\s.,;:!?'"„“”«»-]+$/u, '') + '…';

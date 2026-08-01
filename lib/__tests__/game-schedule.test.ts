@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
+  capDaySlots,
   isIcsExportable,
+  MAX_SLOTS_PER_DAY,
   publicSlotToIcsSlot,
   schedulePlatforms,
   splitCollapsibleSlots,
@@ -110,5 +112,61 @@ describe('schedulePlatforms', () => {
 
   it('returns empty for an empty schedule', () => {
     expect(schedulePlatforms([])).toEqual([]);
+  });
+});
+
+// Page-weight cap. Bing flagged /game/fortnite (1.20 MB) and would have
+// flagged /game/just-chatting (1.55 MB) under its 1 MB "Html size is too long"
+// soft limit; each rendered slot costs ~6 KB of markup + RSC flight payload.
+describe('capDaySlots', () => {
+  it('passes a day under the cap through untouched', () => {
+    const slots = [slot({ id: 'a' }), slot({ id: 'b' })];
+    const out = capDaySlots(slots, 5);
+    expect(out.slots).toBe(slots);
+    expect(out.hidden).toBe(0);
+  });
+
+  it('drops low-confidence predictions before full cards', () => {
+    const slots = [
+      slot({ id: 'low1', confidence: 'low' }),
+      slot({ id: 'high1', confidence: 'high' }),
+      slot({ id: 'low2', confidence: 'low' }),
+      slot({ id: 'med1', confidence: 'medium' }),
+      slot({ id: 'low3', confidence: 'low' }),
+    ];
+    const out = capDaySlots(slots, 3);
+    expect(out.slots.map((s) => s.id)).toEqual(['low1', 'high1', 'med1']);
+    expect(out.hidden).toBe(2);
+  });
+
+  it('preserves the original chronological order of what it keeps', () => {
+    const slots = [
+      slot({ id: 'a', confidence: 'low' }),
+      slot({ id: 'b', confidence: 'high' }),
+      slot({ id: 'c', confidence: 'low' }),
+    ];
+    expect(capDaySlots(slots, 2).slots.map((s) => s.id)).toEqual(['a', 'b']);
+  });
+
+  // Without this the cap would bound nothing for a category whose predictions
+  // are all high-confidence — exactly the busy categories that triggered it.
+  it('still caps a day made entirely of full cards', () => {
+    const slots = Array.from({ length: 30 }, (_, i) =>
+      slot({ id: `h${i}`, confidence: 'high' }),
+    );
+    const out = capDaySlots(slots, 12);
+    expect(out.slots).toHaveLength(12);
+    expect(out.hidden).toBe(18);
+  });
+
+  it('keeps kept + hidden equal to the input, so the heading stays honest', () => {
+    for (const size of [0, 1, 11, 12, 13, 40, 200]) {
+      const slots = Array.from({ length: size }, (_, i) =>
+        slot({ id: `s${i}`, confidence: i % 3 === 0 ? 'high' : 'low' }),
+      );
+      const out = capDaySlots(slots);
+      expect(out.slots.length + out.hidden).toBe(size);
+      expect(out.slots.length).toBeLessThanOrEqual(MAX_SLOTS_PER_DAY);
+    }
   });
 });
