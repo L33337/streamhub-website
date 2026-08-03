@@ -376,8 +376,10 @@ export const de: HubLex = {
         ? `, dazu ${upcomingCount} ${upcomingCount === 1 ? 'kommender Stream' : 'kommende Streams'} in den nächsten 7 Tagen.`
         : '.') +
       superlative,
+    // Klammer statt satzfinalem Wert: das deutsche Kompaktformat endet selbst
+    // mit Punkt ("19,2 Mio.") und würde sonst "Mio.." erzeugen.
     superlative: (category, name, value, isTwitch) =>
-      ` Die meisten ${isTwitch ? 'Follower' : 'Abonnenten'} hat hier ${name} mit ${value}.`,
+      ` Die meisten ${isTwitch ? 'Follower' : 'Abonnenten'} hat hier ${name} (${value}).`,
     onPageAria: 'Auf dieser Seite',
     navLiveNow: 'Jetzt live',
     navTopStreamers: 'Top-Streamer',
@@ -517,9 +519,11 @@ export const de: HubLex = {
     aboutRanking: 'Über dieses Ranking',
     faqMostFollowedQ: (category) =>
       `Welcher ${category}-Streamer hat die meisten Follower?`,
+    // Werte in Klammern bzw. mittig im Satz — "Mio."-Kompaktformat darf nie
+    // direkt vor dem Satzpunkt stehen (s. superlative).
     faqMostFollowedA: (category, top, second) => {
-      const runnerUp = second ? `, vor ${second.name} mit ${second.value}` : '';
-      return `${top.name} hat aktuell die meisten ${top.isTwitch ? 'Follower' : 'Abonnenten'} aller ${category}-Streamer, die wir tracken — ${top.value}${runnerUp}. Die Zahlen werden täglich aktualisiert.`;
+      const runnerUp = second ? `, vor ${second.name} (${second.value})` : '';
+      return `${top.name} hat mit ${top.value} aktuell die meisten ${top.isTwitch ? 'Follower' : 'Abonnenten'} aller ${category}-Streamer, die wir tracken${runnerUp}. Die Zahlen werden täglich aktualisiert.`;
     },
     faqHowManyQ: (category) => `Wie viele Streamer streamen ${category}?`,
     faqHowManyA: (category, count, activity) => {
