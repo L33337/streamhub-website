@@ -132,7 +132,10 @@ function HeroThumbnail({ slot }: { slot: PublicStreamSlot }) {
         <Image
           // 640px is the widest this hero gets (see the sizes prop below).
           src={sizedCdnImageUrl(slot.thumbnail_url, 640)}
-          alt={slot.title}
+          // `title` is typed non-null but the API does return "" for slots the
+          // enrichment has not filled in yet — and an empty alt reads as a
+          // missing one to Bing. Same fallback as SlotCard.
+          alt={slot.title?.trim() || slot.streamer_name}
           fill
           unoptimized
           // LCP element on live-slot pages (Lighthouse 2026-07-13: without

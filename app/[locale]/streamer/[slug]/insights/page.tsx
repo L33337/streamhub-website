@@ -194,7 +194,9 @@ export default async function StreamerInsightsPage({ params }: Props) {
         {streamer.avatar_url && (
           <Image
             src={streamer.avatar_url}
-            alt=""
+            // Identity image of the page, not decoration next to a repeated
+            // name — the <h1> below reads "<name> — streaming insights".
+            alt={`${streamer.name} avatar`}
             width={80}
             height={80}
             className="h-14 w-14 shrink-0 rounded-full border-2 border-viz-soft/40 sm:h-20 sm:w-20"

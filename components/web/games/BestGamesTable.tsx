@@ -45,7 +45,10 @@ function GameCell({ row, rank }: { row: BestGameRow; rank: number }) {
       {row.boxArtUrl ? (
         <Image
           src={sizedCdnImageUrl(row.boxArtUrl, 30)}
-          alt=""
+          // The row's primary visual, so it carries the game name — same shape
+          // as GameCard on /games. Empty here cost 49 "missing alt" hits per
+          // Bing site scan, one per ranked row.
+          alt={`${row.category} box art`}
           width={30}
           height={40}
           unoptimized
