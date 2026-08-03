@@ -28,12 +28,13 @@ import type {
   ScheduleChangeRow,
   FeedFunFact,
   StreamerBreak,
-  DiscoverStats,
   NewStreamerCandidate,
   FeedEngagementStats,
   YouTubeUpload,
   TrendingGame,
+  FavoriteWeekHistoryRow,
 } from './types';
+import type { FeedQuickFactRow } from './quick-facts';
 import {
   transformStreamSlot,
   transformFeedRecentStream,
@@ -260,6 +261,10 @@ export async function fetchInterestProfile(
  * Scored Discover candidates. The profile goes back to the RPC as raw jsonb
  * — snake_case fields, exactly as compute_user_interest_profile returned
  * them, which is why the raw payload is re-assembled here.
+ *
+ * The FEED no longer calls this (its Discover section became the Streamer Wiki
+ * on 2026-08-03) — `/onboarding` still does, as the fallback for its pick step
+ * when the Partner API is unavailable. Do not delete with the feed cleanup.
  */
 export async function fetchDiscoverRecommendations(
   supabase: SupabaseClient,
@@ -493,42 +498,74 @@ export async function fetchStreamerBreaks(
   }));
 }
 
+// ============================================
+// 2026-08-03 — "Your favorites in numbers" + week leaderboard
+// ============================================
+
 /**
- * At-a-glance stats for Discover cards (M18 Phase 2B): follower count from
- * streamers + 28d stream count from the nightly feed-stats cache.
+ * The favorites' finished VOD intervals of the last 7 days, for the week
+ * leaderboard.
+ *
+ * `source='vod'` only — the same source the homepage's "Most streamed this
+ * week" ranks over. `stream_slot` rows are the live-slot twin of every VOD
+ * plus synthetic always-on fragments, so mixing the two would count each
+ * broadcast twice.
+ *
+ * These rows feed BOTH the leaderboard and the Monday recap total: the two
+ * cards render next to each other, and a shared source is the only way they
+ * cannot contradict one another.
+ *
+ * `ended_at` is selected, not just the duration: both consumers union
+ * overlapping intervals (simulcast twins, split VODs) and need real bounds.
  */
-export async function fetchDiscoverStats(
+export async function fetchFavoritesWeekHistory(
   supabase: SupabaseClient,
   streamerIds: string[],
-): Promise<DiscoverStats[]> {
+  since: Date,
+): Promise<FavoriteWeekHistoryRow[]> {
   if (streamerIds.length === 0) return [];
 
-  const ids = streamerIds.slice(0, MAX_STREAMER_IDS);
-  const [streamersResult, statsResult] = await Promise.all([
-    supabase.from('streamers').select('id, follower_count').in('id', ids),
-    supabase.from('streamer_feed_stats').select('streamer_id, streams_28d').in('streamer_id', ids),
-  ]);
+  const { data, error } = await supabase
+    .from('stream_history')
+    .select('streamer_id, started_at, ended_at, category, duration_minutes')
+    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
+    .eq('source', 'vod')
+    .gte('started_at', since.toISOString())
+    .order('started_at', { ascending: true })
+    .limit(1000);
 
-  if (streamersResult.error) {
-    throw new Error(`Failed to fetch discover stats: ${streamersResult.error.message}`);
+  if (error) {
+    throw new Error(`Failed to fetch favorites week history: ${error.message}`);
   }
 
-  const streamsMap = new Map<string, number>();
-  if (!statsResult.error) {
-    ((statsResult.data ?? []) as { streamer_id: string; streams_28d: number | null }[]).forEach(
-      (row) => {
-        if (row.streams_28d !== null) streamsMap.set(row.streamer_id, row.streams_28d);
-      },
-    );
+  return (data ?? []) as FavoriteWeekHistoryRow[];
+}
+
+/**
+ * Personalized quick facts (StreamHub migration 20260803090000). The RPC is
+ * granted to `authenticated` only and scopes itself to the ids we pass, so it
+ * must run under the viewer's session — never the anon client.
+ *
+ * Returns raw `(fact_key, payload)` rows; parsing lives in lib/feed/quick-facts.
+ * An older database without the function surfaces as an error here, which the
+ * caller swallows into a hidden section — the website may ship before the
+ * migration lands.
+ */
+export async function fetchFeedQuickFacts(
+  supabase: SupabaseClient,
+  streamerIds: string[],
+): Promise<FeedQuickFactRow[]> {
+  if (streamerIds.length === 0) return [];
+
+  const { data, error } = await supabase.rpc('feed_quick_facts', {
+    p_streamer_ids: streamerIds.slice(0, MAX_STREAMER_IDS),
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch feed quick facts: ${error.message}`);
   }
 
-  return ((streamersResult.data ?? []) as { id: string; follower_count: number | null }[]).map(
-    (row) => ({
-      streamerId: row.id,
-      followerCount: row.follower_count,
-      streams28d: streamsMap.get(row.id) ?? null,
-    }),
-  );
+  return (data ?? []) as FeedQuickFactRow[];
 }
 
 // ============================================
@@ -592,34 +629,10 @@ export async function fetchNewStreamers(
   }));
 }
 
-/**
- * Favorites' live time of the last 7 days (weekly recap card, M18 P2C).
- * source='stream_slot' rows only — vod rows can duplicate the same stream.
- */
-export async function fetchWeeklyActivity(
-  supabase: SupabaseClient,
-  streamerIds: string[],
-): Promise<Array<{ durationMinutes: number | null; category: string | null }>> {
-  if (streamerIds.length === 0) return [];
-
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-  const { data, error } = await supabase
-    .from('stream_history')
-    .select('duration_minutes, category')
-    .in('streamer_id', streamerIds.slice(0, MAX_STREAMER_IDS))
-    .eq('source', 'stream_slot')
-    .gte('ended_at', since.toISOString())
-    .limit(500);
-
-  if (error) {
-    throw new Error(`Failed to fetch weekly activity: ${error.message}`);
-  }
-
-  return ((data ?? []) as { duration_minutes: number | null; category: string | null }[]).map(
-    (row) => ({ durationMinutes: row.duration_minutes, category: row.category }),
-  );
-}
+// fetchWeeklyActivity() lived here until 2026-08-03. It read `stream_slot`
+// rows for the Monday recap while the week leaderboard reads `vod` rows, so
+// the two cards — which render next to each other — could not agree.
+// fetchFavoritesWeekHistory now feeds both.
 
 /**
  * Hour histograms (UTC bins) for the given streamers — powers the

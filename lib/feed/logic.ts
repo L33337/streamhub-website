@@ -12,21 +12,26 @@ import {
   UP_NEXT_LIMIT,
   CLIPS_LIMIT,
   CLIPS_PER_STREAMER,
-  DISCOVER_SHOWN,
-  DISCOVER_MAX_PER_CATEGORY,
 } from './constants';
 import type {
   StreamSlot,
   StreamStatus,
   FeedClip,
   FeedRecentStream,
-  DiscoverRecommendation,
   UserInterestProfile,
   HomeLiveEntry,
   PredictionFunFact,
   PredictionFunFactRow,
   FeedEngagementStats,
+  TrendingGame,
+  FavoriteWeekHistoryRow,
+  WeekLeaderboardEntry,
 } from './types';
+// The homepage's interval union, reused verbatim so the feed's favorites
+// leaderboard counts sessions exactly like "Most streamed this week" does.
+// lib/home/logic.ts is pure and client-safe (its only import is type-only);
+// lib/server/most-streamed.ts is the `server-only` wrapper — never import that.
+import { rankWeekStreamed } from '@/lib/home/logic';
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -248,58 +253,6 @@ export function rankClipsSplit(
 }
 
 /**
- * M18 P4: dismissed Discover candidates sink (score × 0.5) before the
- * diversity pass — suppressed, never removed (decays with the 60d window).
- * Mirrored in the app's useHomeFeed — keep in sync.
- */
-export function applyDismissSuppression(
-  candidates: DiscoverRecommendation[],
-  engagement: FeedEngagementStats | null,
-): DiscoverRecommendation[] {
-  if (!engagement) return candidates;
-  const dismissedStreamers = new Set(engagement.dismissedStreamers);
-  const dismissedCategories = new Set(engagement.dismissedCategories);
-  return candidates
-    .map((candidate) => {
-      const suppressed =
-        dismissedStreamers.has(candidate.streamerId) ||
-        (!!candidate.topCategory && dismissedCategories.has(candidate.topCategory));
-      return { candidate, adjusted: suppressed ? candidate.score * 0.5 : candidate.score };
-    })
-    .sort((a, b) => b.adjusted - a.adjusted)
-    .map((entry) => entry.candidate);
-}
-
-/**
- * MMR-lite diversity pass over the score-ordered Discover candidates: pick
- * DISCOVER_SHOWN entries with at most DISCOVER_MAX_PER_CATEGORY per dominant
- * category, backfilling by plain score when diversity leaves gaps.
- */
-export function diversityPass(candidates: DiscoverRecommendation[]): DiscoverRecommendation[] {
-  const picked: DiscoverRecommendation[] = [];
-  const perCategory = new Map<string, number>();
-
-  for (const candidate of candidates) {
-    if (picked.length >= DISCOVER_SHOWN) break;
-    const key = candidate.topCategory ?? `__none_${candidate.streamerId}`;
-    const count = perCategory.get(key) ?? 0;
-    if (count >= DISCOVER_MAX_PER_CATEGORY) continue;
-    perCategory.set(key, count + 1);
-    picked.push(candidate);
-  }
-
-  if (picked.length < DISCOVER_SHOWN) {
-    for (const candidate of candidates) {
-      if (picked.length >= DISCOVER_SHOWN) break;
-      if (!picked.some((p) => p.streamerId === candidate.streamerId)) {
-        picked.push(candidate);
-      }
-    }
-  }
-  return picked;
-}
-
-/**
  * Chip candidates: top-6 profile affinity categories (by weight), then
  * categories present in the feed sections, deduped, max 8.
  */
@@ -334,48 +287,179 @@ export function deriveChipCategories(
   return result.slice(0, 8);
 }
 
+// ============================================
+// "Who streamed most this week" (favorites leaderboard)
+// ============================================
+
 /**
- * "Why recommended" chip copy from the RPC's reason code. Kept short — it
- * renders inside a one-line chip.
+ * The viewer's most-streamed favorites of the last 7 days.
+ *
+ * Hours and session counts come from `rankWeekStreamed`, the same interval
+ * union the homepage's "Most streamed this week" uses — a simulcast writes one
+ * stream_history row per platform and Twitch splits one night into several
+ * VODs, so counting rows would double or triple the real number (CLAUDE.md
+ * "Session counting").
+ *
+ * Returns [] below MIN_WEEK_LEADERBOARD_ENTRIES: a leaderboard of one is not a
+ * leaderboard, it is a fact about a single streamer — and the section already
+ * has better cards for that. The hide rule lives here rather than in the
+ * component so it is covered by tests.
  */
-export function buildDiscoverReasonLabel(rec: DiscoverRecommendation): string {
-  switch (rec.reason) {
-    case 'category':
-      if (rec.reasonCategory && rec.reasonCategoryFavorites > 1) {
-        return `Streams ${rec.reasonCategory}, like ${rec.reasonCategoryFavorites} of your favorites`;
-      }
-      if (rec.reasonCategory) {
-        return `Streams ${rec.reasonCategory}`;
-      }
-      return 'Matches your interests';
-    case 'language':
-      return 'Streams in your language';
-    case 'schedule':
-      return 'Live when you usually watch';
-    case 'active':
-      return 'Very active recently';
-    case 'popular':
-    default:
-      return 'Popular on Streamer Times';
+export const MIN_WEEK_LEADERBOARD_ENTRIES = 2;
+
+export function buildWeekLeaderboard(
+  rows: FavoriteWeekHistoryRow[],
+  since: Date,
+  now: Date,
+  nameMap: Record<string, string>,
+  top = 3,
+): WeekLeaderboardEntry[] {
+  // Oversample before the name join: a favorite whose display name we do not
+  // know would otherwise consume one of the three visible slots and then be
+  // dropped, silently shortening the list.
+  const ranked = rankWeekStreamed(rows, since, now, top * 3);
+
+  // Minutes per category per streamer — `duration_minutes` rather than the
+  // interval, because a session can span several categories and only the row
+  // knows which minutes belonged to which game.
+  const minutesByStreamer = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    const category = row.category?.trim();
+    if (!category) continue;
+    const minutes = row.duration_minutes;
+    if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) continue;
+    const byCategory = minutesByStreamer.get(row.streamer_id) ?? new Map<string, number>();
+    byCategory.set(category, (byCategory.get(category) ?? 0) + minutes);
+    minutesByStreamer.set(row.streamer_id, byCategory);
   }
+
+  const entries: WeekLeaderboardEntry[] = [];
+  for (const item of ranked) {
+    const name = nameMap[item.streamerId];
+    if (!name || item.hours <= 0) continue;
+    const byCategory = minutesByStreamer.get(item.streamerId);
+    let topCategory: string | null = null;
+    if (byCategory) {
+      // Ties resolve alphabetically so the card does not reshuffle between two
+      // equally-streamed games on every render.
+      topCategory =
+        [...byCategory.entries()].sort(
+          (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+        )[0]?.[0] ?? null;
+    }
+    entries.push({
+      streamerId: item.streamerId,
+      name,
+      hours: item.hours,
+      sessions: item.sessions,
+      topCategory,
+    });
+    if (entries.length === top) break;
+  }
+
+  return entries.length >= MIN_WEEK_LEADERBOARD_ENTRIES ? entries : [];
 }
 
 /**
- * An active category chip REORDERS Discover (matches float to the top) but
- * never filters it. Stable for equal keys.
+ * The Monday recap's totals, computed from the SAME rows as the leaderboard.
+ *
+ * These two cards sit next to each other on Mondays, so they must not be able
+ * to disagree. Before 2026-08-03 the recap summed `source='stream_slot'` rows
+ * while the leaderboard unions `source='vod'` intervals — a viewer comparing
+ * "32 h this week" against three per-streamer rows adding up to 66 h reads
+ * that as a bug, and rightly so.
+ *
+ * `streams` therefore counts SESSIONS, not rows: a simulcast writes one row
+ * per platform and Twitch splits a long night into several VODs (CLAUDE.md
+ * "Session counting"). The old row count over-reported both.
  */
-export function reorderDiscover(
-  discover: DiscoverRecommendation[],
-  selectedCategory: string | null,
-): DiscoverRecommendation[] {
-  if (selectedCategory === null) return discover;
-  return [...discover].sort((a, b) => {
-    const aMatch =
-      a.topCategory === selectedCategory || a.reasonCategory === selectedCategory ? 1 : 0;
-    const bMatch =
-      b.topCategory === selectedCategory || b.reasonCategory === selectedCategory ? 1 : 0;
-    return bMatch - aMatch;
+export function computeFavoritesWeekTotals(
+  rows: FavoriteWeekHistoryRow[],
+  since: Date,
+  now: Date,
+): WeeklyRecapData | null {
+  const ranked = rankWeekStreamed(rows, since, now, Number.MAX_SAFE_INTEGER);
+  const totalHours = ranked.reduce((sum, entry) => sum + entry.hours, 0);
+  const streams = ranked.reduce((sum, entry) => sum + entry.sessions, 0);
+  // Same floors as the card it replaces: under two streams or an hour of live
+  // time there is no week to recap.
+  if (streams < 2 || totalHours < 1) return null;
+
+  const minutesByCategory = new Map<string, number>();
+  for (const row of rows) {
+    const category = row.category?.trim();
+    const minutes = row.duration_minutes;
+    if (!category || typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) {
+      continue;
+    }
+    minutesByCategory.set(category, (minutesByCategory.get(category) ?? 0) + minutes);
+  }
+  const topCategory =
+    [...minutesByCategory.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ??
+    null;
+
+  return { totalHours: Math.round(totalHours), streams, topCategory };
+}
+
+// ============================================
+// Trending games — "your streamers play this"
+// ============================================
+
+export interface PersonalizedTrendingGame extends TrendingGame {
+  /** Distinct favorites seen in this category across the loaded sections. */
+  favoriteCount: number;
+}
+
+/**
+ * Floats the trending games the viewer's own favorites are actually playing to
+ * the front of the rail and annotates them with a count.
+ *
+ * Deliberately a re-ORDER, not a filter: the rail's job is "what is big on
+ * Twitch right now", and filtering it to the viewer's categories would usually
+ * leave one tile or none. Matching is exact name equality — `trending_games`
+ * and `stream_slots.category` both carry Twitch's own category names, and a
+ * fuzzy match here would claim a streamer plays a game they do not.
+ *
+ * liveNow's featured SUGGESTIONS are excluded: those are channels the viewer
+ * does not follow, so counting them would make "your streamers" untrue.
+ */
+export function personalizeTrendingGames(
+  games: TrendingGame[],
+  sections: {
+    liveNow?: HomeLiveEntry[];
+    upNext?: StreamSlot[];
+    recent?: FeedRecentStream[];
+    clips?: FeedClip[];
+  },
+): PersonalizedTrendingGame[] {
+  const streamersByCategory = new Map<string, Set<string>>();
+  const add = (category: string | null | undefined, streamerId: string | undefined) => {
+    const trimmed = category?.trim();
+    if (!trimmed || !streamerId) return;
+    const set = streamersByCategory.get(trimmed) ?? new Set<string>();
+    set.add(streamerId);
+    streamersByCategory.set(trimmed, set);
+  };
+
+  sections.liveNow?.forEach((entry) => {
+    if (entry.isFeaturedSuggestion) return;
+    add(entry.slot.category, entry.slot.streamerId);
   });
+  sections.upNext?.forEach((slot) => add(slot.category, slot.streamerId));
+  sections.recent?.forEach((stream) => add(stream.category, stream.streamerId));
+  sections.clips?.forEach((clip) => add(clip.category, clip.streamerId));
+
+  const annotated = games.map((game) => ({
+    ...game,
+    favoriteCount: streamersByCategory.get(game.gameName.trim())?.size ?? 0,
+  }));
+
+  // Stable partition: matches keep their Twitch rank order among themselves,
+  // and so does the remainder.
+  return [
+    ...annotated.filter((game) => game.favoriteCount > 0),
+    ...annotated.filter((game) => game.favoriteCount === 0),
+  ];
 }
 
 /** Best prediction hit: the row with the smallest |actual − predicted|. */
@@ -474,25 +558,6 @@ export function buildReliabilityLabel(reliability: {
   }
 }
 
-/**
- * "≈120K followers · 12 streams in 28d" for Discover cards (M18 Phase 2B).
- * Renders only the parts we have; null when neither is available.
- * Keep the wording in sync with the app's DiscoverStreamerCard.
- */
-export function buildDiscoverStatsLine(stats: {
-  followerCount: number | null;
-  streams28d: number | null;
-}): string | null {
-  const parts: string[] = [];
-  if (typeof stats.followerCount === 'number' && stats.followerCount > 0) {
-    parts.push(`≈${formatViews(stats.followerCount)} followers`);
-  }
-  if (typeof stats.streams28d === 'number' && stats.streams28d > 0) {
-    parts.push(`${stats.streams28d} stream${stats.streams28d === 1 ? '' : 's'} in 28d`);
-  }
-  return parts.length > 0 ? parts.join(' · ') : null;
-}
-
 // ============================================
 // M18 Phase 2C — M13-backlog card helpers
 // (mirrored in the app's src/utils/feedCards.ts — keep in sync)
@@ -532,41 +597,10 @@ export interface WeeklyRecapData {
   topCategory: string | null;
 }
 
-/**
- * Aggregates a week of favorites' stream history into the Monday recap card.
- * Null when there is too little to celebrate (<2 streams or <1h total).
- */
-export function computeWeeklyRecap(
-  rows: Array<{ durationMinutes: number | null; category: string | null }>,
-): WeeklyRecapData | null {
-  if (rows.length < 2) return null;
-
-  let totalMinutes = 0;
-  const byCategory = new Map<string, number>();
-  for (const row of rows) {
-    const minutes = row.durationMinutes ?? 0;
-    totalMinutes += minutes;
-    if (row.category) {
-      byCategory.set(row.category, (byCategory.get(row.category) ?? 0) + minutes);
-    }
-  }
-  if (totalMinutes < 60) return null;
-
-  let topCategory: string | null = null;
-  let topMinutes = 0;
-  for (const [category, minutes] of byCategory) {
-    if (minutes > topMinutes) {
-      topMinutes = minutes;
-      topCategory = category;
-    }
-  }
-
-  return {
-    totalHours: Math.round(totalMinutes / 60),
-    streams: rows.length,
-    topCategory,
-  };
-}
+// The row-summing computeWeeklyRecap() that used to live here was replaced by
+// computeFavoritesWeekTotals() on 2026-08-03: it counted stream_history ROWS
+// as streams, which double-counts simulcasts and split VODs, and it read a
+// different source than the week leaderboard rendered right above it.
 
 export interface PeakRecord {
   streamerId: string;

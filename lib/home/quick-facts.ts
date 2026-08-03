@@ -117,7 +117,17 @@ export function parseComeback(payload: unknown): ComebackFact | null {
   return { streamerId, streamerName, gapDays };
 }
 
-export function parseStartHistogram(payload: unknown): StartHistogramFact | null {
+/**
+ * `minSessions` is a parameter because the same payload shape is produced for
+ * ONE VIEWER's favorites by the feed's `feed_quick_facts()` RPC, where a
+ * roster-sized floor would silence the cards permanently. The default keeps
+ * the homepage's behaviour byte-for-byte; the feed passes its own, lower floor
+ * AND words its cards less absolutely (see lib/feed/quick-facts.ts).
+ */
+export function parseStartHistogram(
+  payload: unknown,
+  minSessions: number = MIN_HISTOGRAM_SESSIONS,
+): StartHistogramFact | null {
   if (!isRecord(payload)) return null;
   const { cells } = payload;
   if (!Array.isArray(cells) || cells.length !== HEATMAP_CELLS) return null;
@@ -127,7 +137,7 @@ export function parseStartHistogram(payload: unknown): StartHistogramFact | null
   // Trust the array, not the reported total: they can only disagree if the
   // payload is malformed, and every card cites `total` as its sample size.
   const total = (cells as number[]).reduce((sum, c) => sum + c, 0);
-  if (total < MIN_HISTOGRAM_SESSIONS) return null;
+  if (total < minSessions) return null;
   return { cells: cells as number[], total };
 }
 

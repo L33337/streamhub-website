@@ -2,22 +2,26 @@
 // Runs the section fetches in parallel with per-section error isolation
 // (a failed section renders a retry row, never kills the feed), then applies
 // the client-side glue: is_hidden filtering, status/dedupe, clip ranking,
-// discover diversity pass, chip derivation.
+// chip derivation.
 //
 // Works with both the server client (initial render in app/feed/page.tsx)
 // and the browser client (FeedClient refresh) — favorites are re-fetched
 // here so a refresh reflects favorite changes made in the meantime.
+//
+// The RANKINGS blocks and the Streamer Wiki are deliberately NOT loaded here:
+// they read the Partner API from the server only, never change minute to
+// minute, and would otherwise be re-fetched by every client refresh. They come
+// from lib/server/feed-extras.ts as page props instead.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { listFavoriteStreamers } from '@/lib/supabase/favorites';
-import { DISCOVER_CANDIDATES, MORE_FAV_CLIPS_MAX } from './constants';
+import { MORE_FAV_CLIPS_MAX } from './constants';
 import type {
   FeedData,
   FeedSectionKey,
   StreamSlot,
   FeedRecentStream,
   FeedClip,
-  DiscoverRecommendation,
   TrendingCategory,
   UserInterestProfile,
   PredictionFunFact,
@@ -25,13 +29,15 @@ import type {
   ScheduleChange,
   FeedFunFact,
   StreamerBreak,
-  DiscoverStats,
   NewStreamerCandidate,
   FeedEngagementStats,
   YouTubeUpload,
   TrendingGame,
+  WeekLeaderboardEntry,
   VolatileFeed,
 } from './types';
+import type { FeedQuickFacts } from './quick-facts';
+import { buildFeedQuickFacts } from './quick-facts';
 import {
   fetchStreamSlots,
   fetchLiveFeaturedSlots,
@@ -39,35 +45,34 @@ import {
   fetchClipsForStreamers,
   fetchTopClipsExcluding,
   fetchInterestProfile,
-  fetchDiscoverRecommendations,
   fetchTrendingCategories,
   fetchPredictionFunFact,
   fetchScheduleReliability,
   fetchRecentScheduleChanges,
   fetchFanMoments,
   fetchStreamerBreaks,
-  fetchDiscoverStats,
   fetchNewStreamers,
-  fetchWeeklyActivity,
   fetchHourHistograms,
   fetchPeakHistory,
   fetchEngagementStats,
   fetchYouTubeUploads,
   fetchTrendingGames,
   fetchHiddenStreamerIds,
+  fetchFavoritesWeekHistory,
+  fetchFeedQuickFacts,
 } from './service';
 import {
   deriveLiveAndUpNext,
   rankClipsSplit,
   orderClipsByPopularity,
-  diversityPass,
-  applyDismissSuppression,
   deriveChipCategories,
   typicalStartHourUtc,
   circularHourDiff,
-  computeWeeklyRecap,
+  computeFavoritesWeekTotals,
   findPeakRecord,
+  buildWeekLeaderboard,
   MISSED_HOUR_DIFF,
+  MIN_WEEK_LEADERBOARD_ENTRIES,
 } from './logic';
 
 export interface LoadFeedOptions {
@@ -130,18 +135,16 @@ export async function loadFeed(
     }
   })();
 
-  const discoverTask = (async (): Promise<{
-    profile: UserInterestProfile | null;
-    candidates: DiscoverRecommendation[];
-  }> => {
+  // The interest profile outlived the Discover section it was introduced for
+  // (removed 2026-08-03): the category chips rank by it, the announcement card
+  // gates on its top affinity, and the interests-invite card reads
+  // isDerivedFromSeedOnly. Failure is silent — those three degrade, the feed
+  // does not.
+  const profileTask = (async (): Promise<UserInterestProfile | null> => {
     try {
-      const profile = await fetchInterestProfile(supabase);
-      const candidates = await fetchDiscoverRecommendations(supabase, profile, DISCOVER_CANDIDATES);
-      // M18 P4: suppression + diversity run after the engagement row arrives.
-      return { profile, candidates };
-    } catch (err) {
-      recordError('discover', err, 'Failed to load suggestions');
-      return { profile: null, candidates: [] };
+      return await fetchInterestProfile(supabase);
+    } catch {
+      return null;
     }
   })();
 
@@ -237,14 +240,39 @@ export async function loadFeed(
     }
   })();
 
-  // Weekly recap is a Monday ritual (UTC on the server) — skip otherwise.
-  const recapTask = (async () => {
+  // ONE read of the favorites' week feeds BOTH the leaderboard and the Monday
+  // recap. They render next to each other, so a shared source is what keeps
+  // "32 h this week" from contradicting three rows that add up to 66 — see
+  // computeFavoritesWeekTotals. Silent on failure; both sections hide.
+  const weekTask = (async (): Promise<{
+    leaderboard: WeekLeaderboardEntry[];
+    recap: ReturnType<typeof computeFavoritesWeekTotals>;
+  }> => {
     try {
-      if (now.getDay() !== 1 || favIds.length === 0) return null;
-      const rows = await fetchWeeklyActivity(supabase, favIds);
-      return computeWeeklyRecap(rows);
+      if (favIds.length === 0) return { leaderboard: [], recap: null };
+      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const rows = await fetchFavoritesWeekHistory(supabase, favIds, weekStart);
+      const names: Record<string, string> = {};
+      favorites.forEach((streamer) => {
+        names[streamer.id] = streamer.name;
+      });
+      return {
+        leaderboard: buildWeekLeaderboard(rows, weekStart, now, names),
+        // Monday ritual (UTC on the server) — computed only when it renders.
+        recap: now.getUTCDay() === 1 ? computeFavoritesWeekTotals(rows, weekStart, now) : null,
+      };
     } catch {
-      // Recap card silently absent on failure.
+      return { leaderboard: [], recap: null };
+    }
+  })();
+
+  // "Your favorites in numbers". The RPC ships in a separate repo, so a
+  // database without it must degrade to a hidden section rather than an error.
+  const quickFactsTask = (async (): Promise<FeedQuickFacts | null> => {
+    try {
+      if (favIds.length === 0) return null;
+      return buildFeedQuickFacts(await fetchFeedQuickFacts(supabase, favIds));
+    } catch {
       return null;
     }
   })();
@@ -253,7 +281,7 @@ export async function loadFeed(
     slotsPair,
     recentResult,
     clipsResult,
-    discoverResult,
+    profile,
     trending,
     funFactResult,
     reliability,
@@ -261,16 +289,17 @@ export async function loadFeed(
     fanMomentsResult,
     breaksResult,
     newStreamers,
-    weeklyRecap,
     engagement,
     uploadsResult,
     trendingGames,
     otherClipsResult,
+    weekResult,
+    quickFacts,
   ] = await Promise.all([
     slotsTask,
     recentTask,
     clipsTask,
-    discoverTask,
+    profileTask,
     trendingTask,
     funFactTask,
     reliabilityTask,
@@ -278,18 +307,19 @@ export async function loadFeed(
     fanMomentsTask,
     breaksTask,
     newStreamersTask,
-    recapTask,
     engagementTask,
     uploadsTask,
     trendingGamesTask,
     otherClipsTask,
+    weekTask,
+    quickFactsTask,
   ]);
 
   let [slots, featuredLiveSlots] = slotsPair;
   let recent = recentResult;
   let rawClips = clipsResult;
-  let discoverCandidates = discoverResult.candidates;
-  const { profile } = discoverResult;
+  let weekLeaderboard = weekResult.leaderboard;
+  const weeklyRecap = weekResult.recap;
   let funFact = funFactResult;
   let scheduleChanges = scheduleChangesResult;
   let fanMoments = fanMomentsResult;
@@ -308,7 +338,7 @@ export async function loadFeed(
       ...featuredLiveSlots.map((s) => s.streamerId),
       ...recent.map((r) => r.streamerId),
       ...rawClips.map((c) => c.streamerId),
-      ...discoverResult.candidates.map((d) => d.streamerId),
+      ...weekLeaderboard.map((e) => e.streamerId),
     ]);
     const hidden = await fetchHiddenStreamerIds(supabase, Array.from(candidateIds));
     if (hidden.size > 0) {
@@ -316,7 +346,11 @@ export async function loadFeed(
       featuredLiveSlots = featuredLiveSlots.filter((s) => !hidden.has(s.streamerId));
       recent = recent.filter((r) => !hidden.has(r.streamerId));
       rawClips = rawClips.filter((c) => !hidden.has(c.streamerId));
-      discoverCandidates = discoverCandidates.filter((d) => !hidden.has(d.streamerId));
+      // A hidden streamer must not survive as a leaderboard row either. The
+      // section's own two-entry minimum is re-applied so filtering cannot leave
+      // a "leaderboard" of one.
+      weekLeaderboard = weekLeaderboard.filter((e) => !hidden.has(e.streamerId));
+      if (weekLeaderboard.length < MIN_WEEK_LEADERBOARD_ENTRIES) weekLeaderboard = [];
       if (funFact && hidden.has(funFact.streamerId)) funFact = null;
       scheduleChanges = scheduleChanges.filter((c) => !hidden.has(c.streamerId));
       fanMoments = fanMoments.filter((f) => !hidden.has(f.streamerId));
@@ -326,31 +360,6 @@ export async function loadFeed(
   } catch {
     // Filtering is polish, not correctness.
   }
-
-  // M18 P4: Discover pipeline — dismiss suppression, then the diversity pass.
-  const rankedCandidates = applyDismissSuppression(discoverCandidates, engagement);
-  const discover = diversityPass(rankedCandidates);
-
-  // M18 P2B + P2C: two independent tail fetches — Discover stats (needs the
-  // ranked candidates from Phase 3) and the unusual-start / record detection
-  // (needs the recently-active favorites from Phase 2). Neither depends on the
-  // other, so run them concurrently — one round-trip wave instead of two.
-  // Each keeps its own error isolation (a failure is a silently-absent card).
-  const discoverStatsTask = (async (): Promise<Record<string, DiscoverStats>> => {
-    const map: Record<string, DiscoverStats> = {};
-    try {
-      const stats = await fetchDiscoverStats(
-        supabase,
-        rankedCandidates.map((rec) => rec.streamerId),
-      );
-      stats.forEach((entry) => {
-        map[entry.streamerId] = entry;
-      });
-    } catch {
-      // Stats line silently absent on failure.
-    }
-    return map;
-  })();
 
   const recordsTask = (async (): Promise<{
     missedStream: FeedRecentStream | null;
@@ -382,10 +391,7 @@ export async function loadFeed(
     return { missedStream: missed, peakRecord: peak };
   })();
 
-  const [discoverStatsMap, { missedStream, peakRecord }] = await Promise.all([
-    discoverStatsTask,
-    recordsTask,
-  ]);
+  const { missedStream, peakRecord } = await recordsTask;
 
   const { liveNow, upNext } = deriveLiveAndUpNext(slots, featuredLiveSlots, now);
   const { top: clips, more: favMoreClips } = rankClipsSplit(rawClips, engagement);
@@ -405,12 +411,6 @@ export async function loadFeed(
         ]
       : favMoreClips;
   const chipCategories = deriveChipCategories(profile, liveNow, upNext, recent, clips);
-
-  // M18 P3: Discover candidates 6–12 for the load-more region (already
-  // hidden-filtered and suppression-ordered above).
-  const moreDiscover = rankedCandidates.filter(
-    (candidate) => !discover.some((picked) => picked.streamerId === candidate.streamerId),
-  );
 
   const avatarMap: Record<string, string> = {};
   favorites.forEach((streamer) => {
@@ -437,7 +437,6 @@ export async function loadFeed(
     upNext,
     recent,
     clips,
-    discover,
     trending,
     funFact,
     profile,
@@ -445,15 +444,15 @@ export async function loadFeed(
     scheduleChanges,
     fanMoments,
     streamerBreaks,
-    discoverStatsMap,
     newStreamers,
     weeklyRecap,
     missedStream,
     peakRecord,
     moreClips,
-    moreDiscover,
     uploads,
     trendingGames,
+    weekLeaderboard,
+    quickFacts,
     chipCategories,
     sectionErrors: errors,
     avatarMap,

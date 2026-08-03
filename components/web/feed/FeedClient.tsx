@@ -3,15 +3,22 @@
 // Client half of /feed (M16) — port of the app's Home screen composition
 // (StreamHub app/(tabs)/home.tsx). The server component fetches the initial
 // FeedData; this component owns interactivity: category chips (filter
-// live/upNext/recent/clips, REORDER discover), feed-event logging, refresh
-// (client refetch with the session-fixed `since`), the last-seen watermark
-// cookie, and the 5-minute auto-refresh.
+// live/upNext/recent/clips), feed-event logging, refresh (client refetch with
+// the session-fixed `since`), the last-seen watermark cookie, and the
+// 5-minute auto-refresh.
 //
 // Feed UX round 2026-07-22 (website-only, no app counterpart yet):
 // sticky chips, RailScroller affordances, dismiss-undo with delayed event
 // logging, "updated ago" + new-live pill, Up Next day grouping + relative
 // time + .ics export, inline info-card cap, 2-col density grids, lightbox
 // playlist navigation, trending-game tiles → internal /game hubs.
+//
+// Expansion round 2026-08-03 (website-only): sticky section nav, Rankings
+// blocks (server prop — Partner API), "Who streamed most this week" +
+// "Your favorites in numbers", favorites-aware trending tiles, and the
+// removal of Discover in favour of the Streamer Wiki, which page.tsx renders
+// as a SERVER sibling below this component (it needs Map/Set props and the
+// hub lexicon, neither of which can cross a client boundary).
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -27,10 +34,10 @@ import {
 import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 import { SEEN_COOKIE, SEEN_COOKIE_MAX_AGE_SECONDS } from '@/lib/feed/constants';
 import {
-  reorderDiscover,
   buildReliabilityLabel,
   formatPeak,
   deriveChipCategories,
+  personalizeTrendingGames,
   relativeStartLabel,
   groupUpNextSlots,
   updatedAgoLabel,
@@ -43,7 +50,6 @@ import type {
   StreamSlot,
   FeedRecentStream,
   FeedClip,
-  DiscoverRecommendation,
   StreamerReliability,
   ScheduleChange,
   YouTubeUpload,
@@ -58,12 +64,16 @@ import { LiveRail } from './LiveRail';
 import { FeedVodCard } from './FeedVodCard';
 import { ClipCard } from './ClipCard';
 import { ClipLightbox } from './ClipLightbox';
-import { DiscoverCard } from './DiscoverCard';
 import { FeedInfoCard } from './FeedInfoCard';
 import { RailScroller } from './RailScroller';
 import { FeedSnackbar } from './FeedSnackbar';
 import { SectionErrorRow, EmptyFavoritesCard, EmptyFilterHint } from './FeedStates';
 import { BriefingOverlay, type BriefingCard } from './BriefingOverlay';
+import { FeedRankings } from './FeedRankings';
+import { FeedQuickFactsSection, FeedWeekLeaderboard } from './FeedStats';
+import { HomeSectionNav, type HomeSectionNavItem } from '@/components/web/home/HomeSectionNav';
+import type { FeedRankingsData } from '@/lib/feed/rankings';
+import { FEED_ANCHORS, FEED_SECTION_ANCHOR_CLASS } from '@/lib/feed/anchors';
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 /** Re-render cadence for relative-time labels (countdowns, "updated ago"). */
@@ -73,9 +83,30 @@ const UNDO_WINDOW_MS = 5 * 1000;
 /** Max inline info cards per page view — the rest waits for the next visit. */
 const MAX_INLINE_INFO_CARDS = 3;
 
+/**
+ * Sticky offset of the category chips.
+ *
+ * The 61px is the rendered height of HomeSectionNav — py-2 (16) + a 44px chip
+ * + its bottom border — and is therefore a CONTRACT with that component: if
+ * its padding or chip height changes, this literal and
+ * FEED_SECTION_ANCHOR_CLASS (lib/feed/anchors.ts) must follow, or the two
+ * sticky bars overlap.
+ *
+ * Written out rather than composed from a constant on purpose: Tailwind only
+ * generates classes it can see as literal strings in the source, so a
+ * template-interpolated arbitrary value would silently produce no CSS at all.
+ */
+const CHIPS_STICKY_BELOW_NAV = 'top-[calc(var(--header-height)+61px)]';
+const CHIPS_STICKY_ALONE = 'top-[var(--header-height)]';
+
 // Canonical feed section order for impressions + scroll depth (M18 Phase 0).
 // Keep in sync with the app's home.tsx and docs/feed-kpis.md (StreamHub repo).
-const SECTION_ORDER = ['live', 'upnext', 'recent', 'clips', 'discover', 'info'] as const;
+//
+// DEVIATION (2026-08-03): the website replaced 'discover' with 'rankings' and
+// 'stats'. These are free-text item ids in feed_events (no DB constraint on
+// this vocabulary — only item_type is constrained), so the app's rows and the
+// website's stay readable side by side.
+const SECTION_ORDER = ['live', 'upnext', 'recent', 'clips', 'rankings', 'stats', 'info'] as const;
 type FeedSection = (typeof SECTION_ORDER)[number];
 
 function writeSeenCookie(): void {
@@ -201,6 +232,10 @@ export function FeedClient({
   userId,
   analyticsEnabled,
   gameHubSlugs = {},
+  rankings = null,
+  sectionNav = [],
+  hourLabels = [],
+  dayLabels = [],
 }: {
   /** Localized page heading (the <h1>); server-resolved from the page locale. */
   title?: string;
@@ -210,6 +245,22 @@ export function FeedClient({
   analyticsEnabled: boolean;
   /** Category name → /game/<slug> for games with a hub page (server-resolved). */
   gameHubSlugs?: Record<string, string>;
+  /**
+   * Rankings blocks — a PAGE prop, not part of FeedData: the Partner API is
+   * server-only and the data is hourly-cached, so a client refresh must not
+   * try to reload it. Hrefs arrive locale-prefixed for the same reason this
+   * component has no locale of its own.
+   */
+  rankings?: FeedRankingsData | null;
+  /** Sticky section-nav chips, pre-filtered server-side to sections that exist. */
+  sectionNav?: HomeSectionNavItem[];
+  /**
+   * Clock/weekday label tables for the timezone-dependent quick facts, built
+   * on the server so no Intl formatting happens in the browser (the
+   * lib/home/quick-facts contract).
+   */
+  hourLabels?: string[];
+  dayLabels?: string[];
 }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
@@ -265,7 +316,6 @@ export function FeedClient({
   const sinceRef = useRef(new Date(sinceIso));
   const refreshingRef = useRef(false);
   const lastLoadedRef = useRef(Date.now());
-  const loggedDiscoverIdsRef = useRef('');
   const tokenRef = useRef<string | null>(null);
 
   // Live streamer ids of the CURRENT data — lets the volatile refresh detect
@@ -473,22 +523,6 @@ export function FeedClient({
     };
   }, [volatileRefresh]);
 
-  // One impression per Discover recommendation set (CTR denominator).
-  useEffect(() => {
-    if (data.discover.length === 0) return;
-    const key = data.discover.map((rec) => rec.streamerId).join(',');
-    if (loggedDiscoverIdsRef.current === key) return;
-    loggedDiscoverIdsRef.current = key;
-    data.discover.forEach((rec) => {
-      logFeedEvent({
-        event: 'impression',
-        itemType: 'discover',
-        streamerId: rec.streamerId,
-        category: rec.topCategory,
-      });
-    });
-  }, [data.discover]);
-
   const handleSelectCategory = useCallback((category: string | null) => {
     setSelectedCategory(category);
     if (category) {
@@ -560,33 +594,6 @@ export function FeedClient({
     });
     setLightbox((prev) => (prev ? { ...prev, clip: next } : prev));
   }, []);
-
-  const handleDiscoverOpen = useCallback((rec: DiscoverRecommendation) => {
-    logFeedEvent({
-      event: 'tap',
-      itemType: 'discover',
-      streamerId: rec.streamerId,
-      category: rec.topCategory,
-    });
-  }, []);
-
-  const handleDiscoverFavorite = useCallback(
-    (rec: DiscoverRecommendation, nowFavorited: boolean) => {
-      if (nowFavorited) {
-        logFeedEvent({
-          event: 'favorite_from_feed',
-          itemType: 'discover',
-          streamerId: rec.streamerId,
-          category: rec.topCategory,
-        });
-        // Reinforce the mental model: favorites drive the feed.
-        showSnackbar({
-          message: `Added ${rec.name} — their streams will show up in your feed.`,
-        });
-      }
-    },
-    [showSnackbar],
-  );
 
   // M18 P5: upload tap → new tab (the card is an <a>); log like a VOD watch.
   const handleUploadOpen = useCallback((upload: YouTubeUpload) => {
@@ -693,16 +700,28 @@ export function FeedClient({
   const clips = data.clips.filter(
     (clip) => matches(clip.category) && !dismissedKeys.has(`clip:${clip.id}`),
   );
+
+  // Trending tiles the viewer's own favorites are playing float to the front
+  // and get a marker. Reads the UNFILTERED sections on purpose: the rail only
+  // renders when no chip is active, and "your streamers play this" is a fact
+  // about the whole feed, not about the current filter.
+  const personalizedTrendingGames = useMemo(
+    () =>
+      personalizeTrendingGames(data.trendingGames, {
+        liveNow: data.liveNow,
+        upNext: data.upNext,
+        recent: data.recent,
+        clips: data.clips,
+      }),
+    [data.trendingGames, data.liveNow, data.upNext, data.recent, data.clips],
+  );
+
   const allFilteredEmpty =
     selectedCategory !== null &&
     liveEntries.length === 0 &&
     upNext.length === 0 &&
     recent.length === 0 &&
     clips.length === 0;
-  const visibleDiscover = data.discover.filter(
-    (rec) => !dismissedKeys.has(`discover:${rec.streamerId}`),
-  );
-  const orderedDiscover = reorderDiscover(visibleDiscover, selectedCategory);
 
   // Up Next day grouping (client-only: buckets follow the viewer's timezone).
   const upNextGroups: Array<{ label: string | null; slots: StreamSlot[] }> = mounted
@@ -877,11 +896,6 @@ export function FeedClient({
         .filter((stream) => matches(stream.category) && !shownRecentIds.has(stream.id))
         .slice(0, 15)
     : [];
-  const moreDiscoverVisible = moreExpanded
-    ? data.moreDiscover.filter((rec) => !dismissedKeys.has(`discover:${rec.streamerId}`))
-    : [];
-  const discoverTitle =
-    data.profile?.isDerivedFromSeedOnly || !data.hasFavorites ? 'Popular right now' : 'Discover';
   const funFactName = data.funFact ? data.nameMap[data.funFact.streamerId] : undefined;
   const topTrend = data.trending[0];
 
@@ -896,6 +910,10 @@ export function FeedClient({
   const funFactVisible = !!(data.funFact && funFactName) && !dismissedKeys.has('info:funfact');
   const trendingHintVisible =
     !!(topTrend && topTrend.deltaPercent > 0) && !dismissedKeys.has('info:trending');
+  // "On the rise" — falls out of the rankings data at no extra cost. Positive
+  // gain is already guaranteed by the view-model.
+  const riser = rankings?.favRiser ?? null;
+  const riserVisible = !!riser && !dismissedKeys.has(`info:riser-${riser.streamerId}`);
   const inlineInfoCandidates: string[] = [
     ...scheduleChangeCards.map((change) => `info:schedule-${change.scheduleId}`),
     ...breakCards.map((brk) => `info:break-${brk.streamerId}`),
@@ -906,9 +924,31 @@ export function FeedClient({
     ...(trendingHintVisible ? ['info:trending'] : []),
     ...(recap ? ['info:recap'] : []),
     ...(record ? [`info:milestone-${record.streamerId}`] : []),
+    // After the record, before the announcement: a weekly-evergreen card
+    // should fill quiet days rather than crowd out the time-sensitive ones.
+    ...(riserVisible && riser ? [`info:riser-${riser.streamerId}`] : []),
     ...(announcement ? [`info:newstreamer-${announcement.streamerId}`] : []),
   ];
   const visibleInfoKeys = new Set(inlineInfoCandidates.slice(0, MAX_INLINE_INFO_CARDS));
+
+  // Nav chips for the two sections a category filter removes entirely. Passing
+  // a NEW array whenever the filter changes is what makes this work at all:
+  // HomeSectionNav re-checks which anchors exist in its `items` effect, so a
+  // fresh identity re-prunes chips for every section the filter emptied — not
+  // just these two. Without it the chips would survive their own sections and
+  // jump nowhere.
+  const navItems = useMemo(
+    () =>
+      selectedCategory === null
+        ? sectionNav
+        : sectionNav.filter(
+            (item) => item.id !== FEED_ANCHORS.rankings && item.id !== FEED_ANCHORS.stats,
+          ),
+    [sectionNav, selectedCategory],
+  );
+
+  // Below three chips the bar is chrome without value (the homepage rule).
+  const navVisible = navItems.length >= 3;
 
   return (
     <div ref={rootRef}>
@@ -978,8 +1018,23 @@ export function FeedClient({
         </button>
       )}
 
+      {/* Page map. Only earns its sticky row from three sections up — below
+          that it is chrome without value (the homepage rule).
+          NOT wrapped in a div: a sticky element sticks only inside its parent,
+          so a wrapper sized exactly to the bar makes it scroll straight away.
+          The bleed is passed instead, matching this page's `px-4` container. */}
+      {navVisible && (
+        <HomeSectionNav items={navItems} ariaLabel="Feed sections" bleedClass="-mx-4 px-4" />
+      )}
+
       {data.chipCategories.length > 0 && (
-        <div className="sticky top-[var(--header-height)] z-30 -mx-4 mt-4 bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div
+          className={`sticky z-30 -mx-4 mt-4 bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 ${
+            // Stacks BELOW the section nav when that is present — two sticky
+            // bars at the same offset would overlap.
+            navVisible ? CHIPS_STICKY_BELOW_NAV : CHIPS_STICKY_ALONE
+          }`}
+        >
           <RailScroller>
             <CategoryChips
               categories={data.chipCategories}
@@ -993,7 +1048,7 @@ export function FeedClient({
       {!data.hasFavorites && <EmptyFavoritesCard />}
 
       {liveEntries.length > 0 ? (
-        <section aria-label="Live now" data-feed-section="live">
+        <section id={FEED_ANCHORS.live} className={FEED_SECTION_ANCHOR_CLASS} aria-label="Live now" data-feed-section="live">
           <FeedSectionHeader title="Live Now" count={liveEntries.length} live />
           <RailScroller>
             <LiveRail entries={liveEntries} onSlotTap={handleLiveTap} />
@@ -1015,7 +1070,12 @@ export function FeedClient({
       ) : null}
 
       {upNext.length > 0 && (
-        <section aria-label="Up next" data-feed-section="upnext">
+        <section
+          id={FEED_ANCHORS.upNext}
+          className={FEED_SECTION_ANCHOR_CLASS}
+          aria-label="Up next"
+          data-feed-section="upnext"
+        >
           <FeedSectionHeader
             title="Up Next"
             count={upNext.length}
@@ -1109,7 +1169,12 @@ export function FeedClient({
         })}
 
       {recent.length > 0 ? (
-        <section aria-label="New for you" data-feed-section="recent">
+        <section
+          id={FEED_ANCHORS.recent}
+          className={FEED_SECTION_ANCHOR_CLASS}
+          aria-label="New for you"
+          data-feed-section="recent"
+        >
           <FeedSectionHeader title="New for you" count={recent.length} />
           <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {recent.map((stream) => (
@@ -1150,7 +1215,12 @@ export function FeedClient({
       )}
 
       {clips.length > 0 ? (
-        <section aria-label="Highlights" data-feed-section="clips">
+        <section
+          id={FEED_ANCHORS.clips}
+          className={FEED_SECTION_ANCHOR_CLASS}
+          aria-label="Highlights"
+          data-feed-section="clips"
+        >
           <FeedSectionHeader title="Highlights" count={clips.length} />
           <RailScroller>
             <ul className="flex gap-3 pb-2" aria-label="Clip highlights">
@@ -1238,35 +1308,6 @@ export function FeedClient({
         </div>
       )}
 
-      {orderedDiscover.length > 0 ? (
-        <section aria-label={discoverTitle} data-feed-section="discover">
-          <FeedSectionHeader title={discoverTitle} />
-          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {orderedDiscover.map((rec) => (
-              <li key={`discover-${rec.streamerId}`}>
-                <Dismissable
-                  onDismiss={() =>
-                    handleDismiss(`discover:${rec.streamerId}`, 'discover', {
-                      streamerId: rec.streamerId,
-                      category: rec.topCategory,
-                    })
-                  }
-                >
-                  <DiscoverCard
-                    recommendation={rec}
-                    stats={data.discoverStatsMap[rec.streamerId]}
-                    onOpen={() => handleDiscoverOpen(rec)}
-                    onFavoriteToggled={(nowFavorited) => handleDiscoverFavorite(rec, nowFavorited)}
-                  />
-                </Dismissable>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : data.sectionErrors.discover ? (
-        <SectionErrorRow label="Couldn't load suggestions" onRetry={() => void fullRefresh()} />
-      ) : null}
-
       {funFactVisible && data.funFact && visibleInfoKeys.has('info:funfact') && (
         <div data-feed-section="info">
           <Dismissable
@@ -1302,38 +1343,85 @@ export function FeedClient({
           <FeedSectionHeader title="Big on Twitch right now" />
           <RailScroller>
             <ul className="flex gap-3 pb-2" aria-label="Trending Twitch categories">
-              {data.trendingGames.map((game) => (
-                <li key={`trending-game-${game.rank}`} className="w-24 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleTrendingGameClick(game)}
-                    className="block w-full text-left focus-visible:outline-none"
-                    aria-label={`Trending on Twitch: ${game.gameName}, rank ${game.rank}`}
-                  >
-                    <div className="relative h-32 w-24 overflow-hidden rounded-lg bg-background-highlight transition-transform motion-safe:hover:scale-[1.03]">
-                      {game.boxArtUrl ? (
-                        <Image
-                          src={sizedCdnImageUrl(game.boxArtUrl, 96)}
-                          alt=""
-                          fill
-                          unoptimized
-                          sizes="96px"
-                          className="object-cover"
-                        />
-                      ) : null}
-                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1 py-px text-[10px] font-bold text-white">
-                        #{game.rank}
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-text-secondary">
-                      {game.gameName}
-                    </p>
-                  </button>
-                </li>
-              ))}
+              {personalizedTrendingGames.map((game) => {
+                // "1 of your streamers plays this" — the noun stays plural in
+                // this construction, only the verb agrees with the count.
+                const favLabel =
+                  game.favoriteCount > 0
+                    ? `${game.favoriteCount} of your streamers ${game.favoriteCount === 1 ? 'plays' : 'play'} this`
+                    : null;
+                return (
+                  <li key={`trending-game-${game.rank}`} className="w-24 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleTrendingGameClick(game)}
+                      className="block w-full text-left focus-visible:outline-none"
+                      aria-label={`Trending on Twitch: ${game.gameName}, rank ${game.rank}${
+                        favLabel ? `. ${favLabel}` : ''
+                      }`}
+                    >
+                      <div
+                        className={`relative h-32 w-24 overflow-hidden rounded-lg bg-background-highlight transition-transform motion-safe:hover:scale-[1.03] ${
+                          // A ring rather than a badge overlay: the box art is
+                          // the recognizable part of the tile and must stay
+                          // unobstructed.
+                          favLabel ? 'ring-2 ring-accent-cyan/70' : ''
+                        }`}
+                      >
+                        {game.boxArtUrl ? (
+                          <Image
+                            src={sizedCdnImageUrl(game.boxArtUrl, 96)}
+                            alt=""
+                            fill
+                            unoptimized
+                            sizes="96px"
+                            className="object-cover"
+                          />
+                        ) : null}
+                        <span className="absolute left-1 top-1 rounded bg-black/70 px-1 py-px text-[10px] font-bold text-white">
+                          #{game.rank}
+                        </span>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-[11px] font-semibold text-text-secondary">
+                        {game.gameName}
+                      </p>
+                      {/* aria-hidden: the same fact is already in the button's
+                          accessible name, and repeating it would read twice. */}
+                      {favLabel && (
+                        <p
+                          aria-hidden="true"
+                          className="mt-0.5 line-clamp-2 text-[10px] font-semibold text-accent-cyan"
+                        >
+                          {favLabel}
+                        </p>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </RailScroller>
         </section>
+      )}
+
+      {/* Rankings + "your numbers" sit after the rails and before the closing
+          info cards: they are reference, not news, so they must not push the
+          time-sensitive sections down. Both hide while a category chip is
+          active — neither is filterable by category, and leaving them visible
+          would make the filter look broken. */}
+      {selectedCategory === null && rankings && (
+        <FeedRankings data={rankings} />
+      )}
+
+      {selectedCategory === null && (data.weekLeaderboard.length > 0 || data.quickFacts) && (
+        <div id={FEED_ANCHORS.stats} className={FEED_SECTION_ANCHOR_CLASS}>
+          <FeedWeekLeaderboard entries={data.weekLeaderboard} avatarMap={data.avatarMap} />
+          <FeedQuickFactsSection
+            facts={data.quickFacts}
+            hourLabels={hourLabels}
+            dayLabels={dayLabels}
+          />
+        </div>
       )}
 
       {recap && visibleInfoKeys.has('info:recap') && (
@@ -1368,6 +1456,27 @@ export function FeedClient({
               variant="milestone"
               headline={`${data.nameMap[record.streamerId]} hit a 90-day record`}
               body={`The latest stream peaked at ${formatPeak(record.peak)} viewers — the highest in three months.`}
+            />
+          </Dismissable>
+        </div>
+      )}
+
+      {riserVisible && riser && visibleInfoKeys.has(`info:riser-${riser.streamerId}`) && (
+        <div data-feed-section="info">
+          <Dismissable
+            onDismiss={() =>
+              handleDismiss(`info:riser-${riser.streamerId}`, 'info', {
+                itemId: `riser-${riser.streamerId}`,
+                streamerId: riser.streamerId,
+              })
+            }
+          >
+            <FeedInfoCard
+              variant="milestone"
+              headline={`${riser.name} is on the rise`}
+              body={`Gained ${riser.gainLabel} followers this week — the strongest growth among your favorites.`}
+              ctaLabel="See ranking"
+              ctaHref={riser.href}
             />
           </Dismissable>
         </div>
@@ -1450,38 +1559,11 @@ export function FeedClient({
         </section>
       )}
 
-      {moreExpanded && moreDiscoverVisible.length > 0 && (
-        <section aria-label="More to discover" data-feed-section="discover">
-          <FeedSectionHeader title="More to discover" />
-          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {moreDiscoverVisible.map((rec) => (
-              <li key={`discover-more-${rec.streamerId}`}>
-                <Dismissable
-                  onDismiss={() =>
-                    handleDismiss(`discover:${rec.streamerId}`, 'discover', {
-                      streamerId: rec.streamerId,
-                      category: rec.topCategory,
-                    })
-                  }
-                >
-                  <DiscoverCard
-                    recommendation={rec}
-                    onOpen={() => handleDiscoverOpen(rec)}
-                    onFavoriteToggled={(nowFavorited) => handleDiscoverFavorite(rec, nowFavorited)}
-                  />
-                </Dismissable>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {/* The Streamer Wiki (below, server-rendered) is the discovery surface
+          now, so "Show more" carries only the viewer's own tail. */}
+      {moreExpanded && moreClipsVisible.length === 0 && moreRecentVisible.length === 0 && (
+        <p className="mt-6 text-center text-xs text-text-muted">You&apos;re all caught up.</p>
       )}
-
-      {moreExpanded &&
-        moreClipsVisible.length === 0 &&
-        moreRecentVisible.length === 0 &&
-        moreDiscoverVisible.length === 0 && (
-          <p className="mt-6 text-center text-xs text-text-muted">You&apos;re all caught up.</p>
-        )}
 
       {newLiveCount > 0 && (
         <button

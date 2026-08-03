@@ -4,6 +4,9 @@
 // (snake_case) and are mapped in transforms.ts.
 
 import type { Platform } from '@/lib/server/partner-api';
+// Parsed fact payloads of the feed_quick_facts() RPC. Defined next to their
+// parsers rather than here; no cycle — quick-facts.ts does not import types.ts.
+import type { FeedQuickFacts } from './quick-facts';
 
 export type StreamStatus = 'live' | 'upcoming' | 'offline';
 export type FeedConfidenceLevel = 'high' | 'medium' | 'low';
@@ -150,11 +153,25 @@ export interface StreamerBreak {
   vacationUntil: string; // ISO 8601
 }
 
-// M18 Phase 2B: at-a-glance stats for Discover cards
-export interface DiscoverStats {
+// 2026-08-03: one stream_history row of a favorite, as read for the week
+// leaderboard. Extends the homepage's interval shape (streamer_id/started_at/
+// ended_at) with the two columns the leaderboard needs on top of the union:
+// the per-row category and its billed minutes.
+export interface FavoriteWeekHistoryRow {
+  streamer_id: string;
+  started_at: string;
+  ended_at: string | null;
+  category: string | null;
+  duration_minutes: number | null;
+}
+
+// 2026-08-03: one row of "Who streamed most this week".
+export interface WeekLeaderboardEntry {
   streamerId: string;
-  followerCount: number | null;
-  streams28d: number | null;
+  name: string;
+  hours: number;
+  sessions: number;
+  topCategory: string | null;
 }
 
 // M18 Phase 5: regular YouTube upload (youtube_uploads, WebSub capture)
@@ -219,6 +236,12 @@ export type FeedEventType =
   | 'story_advance'
   | 'story_complete';
 
+/**
+ * `'discover'` is KEPT although the website's Discover section was replaced by
+ * the Streamer Wiki on 2026-08-03: feed_events carries a CHECK constraint over
+ * this vocabulary, the mobile app still emits it, and the historical rows must
+ * stay readable. Retiring the member is a cross-repo migration, not a cleanup.
+ */
 export type FeedItemType =
   | 'live'
   | 'upcoming'
@@ -235,7 +258,7 @@ export interface HomeLiveEntry {
   isFeaturedSuggestion: boolean;
 }
 
-export type FeedSectionKey = 'slots' | 'recent' | 'clips' | 'discover' | 'trending';
+export type FeedSectionKey = 'slots' | 'recent' | 'clips' | 'trending';
 
 /**
  * Serializable feed payload built by loadFeed() — passed from the server
@@ -247,7 +270,6 @@ export interface FeedData {
   upNext: StreamSlot[];
   recent: FeedRecentStream[];
   clips: FeedClip[];
-  discover: DiscoverRecommendation[];
   trending: TrendingCategory[];
   funFact: PredictionFunFact | null;
   profile: UserInterestProfile | null;
@@ -259,8 +281,6 @@ export interface FeedData {
   fanMoments: FeedFunFact[];
   /** M18 P2B: favorites on announced Twitch vacation */
   streamerBreaks: StreamerBreak[];
-  /** M18 P2B: streamerId → at-a-glance stats for Discover cards */
-  discoverStatsMap: Record<string, DiscoverStats>;
   /** M18 P2C: recently added streamers (announcement card candidates) */
   newStreamers: NewStreamerCandidate[];
   /** M18 P2C: Monday (UTC) recap of the favorites' week */
@@ -271,12 +291,14 @@ export interface FeedData {
   peakRecord: { streamerId: string; peak: number } | null;
   /** M18 P3: lower-ranked clips that did not make the Highlights rail */
   moreClips: FeedClip[];
-  /** M18 P3: Discover candidates 6–12 (scored but cut by the diversity pass) */
-  moreDiscover: DiscoverRecommendation[];
   /** M18 P5: recent regular YouTube uploads of favorites ("New videos" rail) */
   uploads: YouTubeUpload[];
   /** M18 P5: Twitch top-games cache ("Big on Twitch right now" rail) */
   trendingGames: TrendingGame[];
+  /** 2026-08-03: the favorites' most-streamed of the last 7 days (top 3). */
+  weekLeaderboard: WeekLeaderboardEntry[];
+  /** 2026-08-03: "Your favorites in numbers" — feed_quick_facts() payloads. */
+  quickFacts: FeedQuickFacts | null;
   chipCategories: string[];
   sectionErrors: Partial<Record<FeedSectionKey, string>>;
   avatarMap: Record<string, string>;
