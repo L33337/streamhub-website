@@ -4,6 +4,7 @@ import { gameSlug } from '@/lib/game-slug';
 import {
   absoluteLocaleUrl,
   buildAlternates,
+  INDEXABLE_GAME_LOCALES,
   INDEXABLE_HUB_LOCALES,
   isIndexableStreamerSlug,
   latestChange,
@@ -39,6 +40,27 @@ function hubEntries(
     url: absoluteLocaleUrl(l, path),
     ...base,
     ...(languages ? { alternates: { languages } } : {}),
+  }));
+}
+
+/**
+ * M22 P4: per-locale DISCOVERY entries for the game pages — deliberately
+ * WITHOUT alternates clusters. The sitemap's game gates are PROXIES
+ * (streamer_count / live count) while the pages evaluate the real thin gate
+ * (isGameHubIndexable incl. upcoming, isRankingIndexable on ranked rows); a
+ * proxy-passing page that fails its real gate renders noindex without
+ * hreflang, and a sitemap cluster it never confirms is exactly the "no
+ * return tags" GSC error class the P3 post-deploy review eliminated for
+ * streamer entries. The pages own the clusters; the sitemap only lists both
+ * locale URLs for discovery (same rule as streamer entries).
+ */
+function gamePageEntries(
+  path: string,
+  base: Omit<MetadataRoute.Sitemap[number], 'url' | 'alternates'>,
+): MetadataRoute.Sitemap {
+  return INDEXABLE_GAME_LOCALES.map((l) => ({
+    url: absoluteLocaleUrl(l, path),
+    ...base,
   }));
 }
 
@@ -244,22 +266,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         g.streamer_count >= MIN_INDEXABLE_GAME_STREAMERS ||
         (g.live_streamer_count ?? 0) > 0
       ) {
-        gameUrls.push({
-          url: `${SITE_URL}/game/${slug}`,
-          changeFrequency: 'daily',
-          priority: 0.6,
-        });
+        gameUrls.push(
+          ...gamePageEntries(`/game/${slug}`, {
+            changeFrequency: 'daily',
+            priority: 0.6,
+          }),
+        );
       }
       // Per-game ranking pages (/rankings/game/[slug]). streamer_count >= 10 is
       // a cheap proxy for the page's own ≥10-ranked-entries index gate (exact
       // parity would cost one API call per game); the residual mismatch
       // self-corrects because sub-threshold pages emit noindex.
       if (g.streamer_count >= 10) {
-        gameUrls.push({
-          url: `${SITE_URL}/rankings/game/${slug}`,
-          changeFrequency: 'daily',
-          priority: 0.5,
-        });
+        gameUrls.push(
+          ...gamePageEntries(`/rankings/game/${slug}`, {
+            changeFrequency: 'daily',
+            priority: 0.5,
+          }),
+        );
       }
     }
 

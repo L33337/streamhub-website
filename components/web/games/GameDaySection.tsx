@@ -8,7 +8,9 @@ import {
   splitCollapsibleSlots,
 } from '@/lib/game-schedule';
 import { sizedAvatarUrl } from '@/lib/format/image-size';
-import { resolveUiLang } from '@/lib/i18n-core';
+import { localeHref, resolveUiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
+import { slotLexFor } from '@/lib/i18n-slot';
 import { utcDateAbsoluteLabel } from '@/lib/format/time';
 import { DayLabel } from '@/components/web/DayLabel';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
@@ -24,12 +26,24 @@ import { SlotIcsButton } from '@/components/web/SlotIcsButton';
 // stops being a wall of identical cards. The data-slot/data-conf/data-pf
 // attributes are the contract with ScheduleFilters (client) which toggles the
 // `hidden` attribute; keep them in sync.
+//
+// M22 P4: this is a SERVER component (rendered as `children` of the client
+// ScheduleFilters — passed-through ReactNodes never enter the client bundle),
+// so it may read the server-only hub lexicon directly instead of taking a
+// dozen string props.
 
-function CompactSlotRow({ slot }: { slot: PublicStreamSlot }) {
+function CompactSlotRow({
+  slot,
+  language,
+}: {
+  slot: PublicStreamSlot;
+  language: string;
+}) {
+  const lang = resolveUiLang(language);
   return (
     <div className="flex items-center gap-2 rounded-lg border border-border-default/60 bg-background-elevated/60 py-1.5 pl-2.5 pr-1.5">
       <Link
-        href={`/schedule/${encodeURIComponent(slot.id)}`}
+        href={localeHref(lang, `/schedule/${encodeURIComponent(slot.id)}`)}
         prefetch={false}
         className="group flex min-w-0 flex-1 items-center gap-2.5"
         aria-label={`${slot.streamer_name}: ${slot.title}`}
@@ -47,7 +61,11 @@ function CompactSlotRow({ slot }: { slot: PublicStreamSlot }) {
           <InitialsAvatar name={slot.streamer_name} size={24} className="shrink-0" />
         )}
         <span className="shrink-0 text-xs tabular-nums text-text-secondary">
-          <NextStreamTime startTime={slot.start_time} isPredicted={slot.is_predicted} />
+          <NextStreamTime
+            startTime={slot.start_time}
+            isPredicted={slot.is_predicted}
+            language={language}
+          />
         </span>
         {/* min-w-0 so this is the element that gives up width — without it the
             flex row grew past the card instead of shortening the name. */}
@@ -90,7 +108,10 @@ export function GameDaySection({
 }) {
   const { full, low } = splitCollapsibleSlots(slots);
   const totalCount = slots.length + hiddenCount;
-  const absoluteLabel = utcDateAbsoluteLabel(dateKey, resolveUiLang(language));
+  const lang = resolveUiLang(language);
+  const G = hubLexFor(language).game;
+  const S = slotLexFor(language);
+  const absoluteLabel = utcDateAbsoluteLabel(dateKey, lang);
   return (
     <section
       id={`day-${dateKey}`}
@@ -104,11 +125,11 @@ export function GameDaySection({
       >
         <DayLabel dateKey={dateKey} serverLabel={label} language={language} />
         <span className="text-sm font-normal text-text-muted">
-          {totalCount} stream{totalCount === 1 ? '' : 's'}
+          {S.nStreams(totalCount)}
         </span>
       </h2>
       {full.length > 0 && (
-        <ul className="grid gap-3" aria-label={`Streams on ${absoluteLabel}`}>
+        <ul className="grid gap-3" aria-label={S.streamsOnAria(absoluteLabel)}>
           {full.map((slot) => (
             <li
               key={slot.id}
@@ -117,7 +138,7 @@ export function GameDaySection({
               data-pf={slot.platforms.join(' ')}
             >
               <div className="relative">
-                <SlotCard slot={slot} />
+                <SlotCard slot={slot} language={language} />
                 {isIcsExportable(slot) && (
                   <SlotIcsButton
                     slot={publicSlotToIcsSlot(slot)}
@@ -137,10 +158,9 @@ export function GameDaySection({
               aria-hidden="true"
               className="shrink-0 transition-transform group-open:rotate-90"
             />
-            {low.length} more prediction{low.length === 1 ? '' : 's'} with low
-            confidence
+            {G.moreLowConfidence(low.length)}
           </summary>
-          <ul className="mt-2 grid gap-1.5" aria-label={`Low-confidence predictions on ${label}`}>
+          <ul className="mt-2 grid gap-1.5" aria-label={G.lowConfAria(label)}>
             {low.map((slot) => (
               <li
                 key={slot.id}
@@ -148,18 +168,14 @@ export function GameDaySection({
                 data-conf={slot.confidence}
                 data-pf={slot.platforms.join(' ')}
               >
-                <CompactSlotRow slot={slot} />
+                <CompactSlotRow slot={slot} language={language} />
               </li>
             ))}
           </ul>
         </details>
       )}
       {hiddenCount > 0 && (
-        <p className="mt-3 text-xs text-text-muted">
-          {hiddenCount} more prediction{hiddenCount === 1 ? '' : 's'} for this
-          day {hiddenCount === 1 ? 'is' : 'are'} not shown. Open a streamer&apos;s
-          page for their full schedule.
-        </p>
+        <p className="mt-3 text-xs text-text-muted">{G.hiddenNotShown(hiddenCount)}</p>
       )}
     </section>
   );

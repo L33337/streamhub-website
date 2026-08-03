@@ -27,7 +27,14 @@ beforeEach(() => {
     data: [streamer('germanguy', 'de'), streamer('yanks', 'en'), streamer('ytonly', null)],
     pagination: { next_cursor: null },
   });
-  listGames.mockReset().mockResolvedValue({ data: [] });
+  listGames.mockReset().mockResolvedValue({
+    data: [
+      // Passes both game gates (hub >= 5 streamers, ranking >= 10).
+      { category: 'Fortnite', streamer_count: 43, live_streamer_count: 3 },
+      // Passes the hub gate only (live), not the >= 10 ranking gate.
+      { category: 'Chess', streamer_count: 4, live_streamer_count: 1 },
+    ],
+  });
 });
 
 const urlsOf = (entries: Awaited<ReturnType<typeof sitemap>>) => entries.map((e) => e.url);
@@ -53,6 +60,28 @@ describe('sitemap — M22 locale variants', () => {
     expect(streamerEntries.length).toBeGreaterThan(0);
     for (const entry of streamerEntries) {
       expect(entry.alternates).toBeUndefined();
+    }
+  });
+
+  it('emits en+de discovery entries for game pages WITHOUT clusters (M22 P4)', async () => {
+    const entries = await sitemap();
+    const urls = urlsOf(entries);
+    // Hub page passes its proxy gate → both locale entries.
+    expect(urls).toContain('https://streamertimes.tv/game/fortnite');
+    expect(urls).toContain('https://streamertimes.tv/de/game/fortnite');
+    expect(urls).toContain('https://streamertimes.tv/game/chess');
+    expect(urls).toContain('https://streamertimes.tv/de/game/chess');
+    // Ranking page gate (>= 10) admits Fortnite only.
+    expect(urls).toContain('https://streamertimes.tv/rankings/game/fortnite');
+    expect(urls).toContain('https://streamertimes.tv/de/rankings/game/fortnite');
+    expect(urls).not.toContain('https://streamertimes.tv/rankings/game/chess');
+    // Same "no return tags" guard as streamer entries: the game gates here are
+    // proxies, the pages own the exact hreflang clusters — the sitemap must
+    // not declare clusters the pages might never confirm.
+    for (const entry of entries.filter(
+      (e) => e.url.includes('/game/') || e.url.includes('/rankings/game/'),
+    )) {
+      expect(entry.alternates, entry.url).toBeUndefined();
     }
   });
 

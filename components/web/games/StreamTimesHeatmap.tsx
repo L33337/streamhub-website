@@ -7,6 +7,12 @@
 // depends on color alone. SSR renders the deterministic UTC frame; after
 // hydration the grid shifts into the viewer's timezone (same
 // useSyncExternalStore pattern as SlotStatusText/NextStreamTime).
+//
+// M22 P4: all visible strings arrive as server-resolved labels (the hub
+// lexicon is server-only). Text around the peak value ships as PLACEHOLDER
+// TEMPLATES ({peak}, {tz}, {day}, {from}, {to}, {amount}) because the peak
+// only exists after the client-side timezone shift. The English defaults keep
+// any label-less caller byte-identical.
 
 import { useMemo, useSyncExternalStore } from 'react';
 import {
@@ -16,6 +22,49 @@ import {
   localUtcOffsetHours,
   peakBandLabel,
 } from '@/lib/game-heatmap';
+
+export interface HeatmapLabels {
+  /** Template with {peak} (rendered bold) and {tz}. */
+  summary: string;
+  summaryEmpty: string;
+  /** {tz} replacements; leading space significant: " (your local time)". */
+  tzLocal: string;
+  tzUtc: string;
+  aria: string;
+  /** aria variant with a {peak} placeholder. */
+  ariaWithPeak: string;
+  /** Cell tooltip template: {day} {from}–{to} · {amount}. */
+  tooltip: string;
+  legendLess: string;
+  legendMore: string;
+  /** Short row labels, ISO order Mon..Sun. */
+  dayShort: readonly string[];
+  /** Peak-band day names ("Mondays" / "montags"), ISO order Mon..Sun. */
+  dayNames: readonly string[];
+}
+
+const EN_LABELS: HeatmapLabels = {
+  summary:
+    'Most {category} streams run on {peak}{tz} — based on the last 4 weeks of tracked broadcasts.',
+  summaryEmpty: 'Based on the last 4 weeks of tracked broadcasts.',
+  tzLocal: ' (your local time)',
+  tzUtc: ' (UTC)',
+  aria: 'Weekly streaming heatmap for {category}.',
+  ariaWithPeak: 'Weekly streaming heatmap for {category}. Busiest window: {peak}.',
+  tooltip: '{day} {from}–{to} · {amount} streamed in 4 weeks',
+  legendLess: 'Less',
+  legendMore: 'More',
+  dayShort: HEATMAP_DAY_LABELS,
+  dayNames: [
+    'Mondays',
+    'Tuesdays',
+    'Wednesdays',
+    'Thursdays',
+    'Fridays',
+    'Saturdays',
+    'Sundays',
+  ],
+};
 
 function subscribe(): () => void {
   return () => {};
@@ -31,11 +80,14 @@ const LEGEND_STEPS = [0.15, 0.4, 0.7, 1];
 export function StreamTimesHeatmap({
   category,
   histogram,
+  labels: labelsProp,
 }: {
   category: string;
   /** 168 minutes-per-cell values, UTC frame, weekday 0 = Monday. */
   histogram: number[];
+  labels?: HeatmapLabels;
 }) {
+  const labels = labelsProp ?? EN_LABELS;
   // Server snapshot: UTC (shift 0). Client snapshot: the browser's rounded
   // whole-hour offset — constant within a session, so the store is stable.
   const shift = useSyncExternalStore(
@@ -51,20 +103,29 @@ export function StreamTimesHeatmap({
     () => false,
   );
   const view = useMemo(() => buildHeatmapView(histogram, shift), [histogram, shift]);
-  const peak = peakBandLabel(view);
+  const peak = peakBandLabel(view, labels.dayNames);
+
+  // Split the summary template at {peak} so the peak renders in its own bold
+  // span; the {tz} suffix lives in the tail on every language.
+  const summaryParts = labels.summary
+    .replace('{category}', category)
+    .split('{peak}');
+  const summaryTail = (summaryParts[1] ?? '').replace(
+    '{tz}',
+    isLocal ? labels.tzLocal : labels.tzUtc,
+  );
 
   return (
     <div>
       <p className="mt-1 text-sm text-text-secondary" suppressHydrationWarning>
         {peak ? (
           <>
-            Most {category} streams run on{' '}
+            {summaryParts[0]}
             <span className="font-semibold text-text-primary">{peak}</span>
-            {isLocal ? ' (your local time)' : ' (UTC)'} — based on the last 4
-            weeks of tracked broadcasts.
+            {summaryTail}
           </>
         ) : (
-          <>Based on the last 4 weeks of tracked broadcasts.</>
+          <>{labels.summaryEmpty}</>
         )}
       </p>
       <div className="mt-4 overflow-x-auto">
@@ -73,8 +134,8 @@ export function StreamTimesHeatmap({
           role="img"
           aria-label={
             peak
-              ? `Weekly streaming heatmap for ${category}. Busiest window: ${peak}.`
-              : `Weekly streaming heatmap for ${category}.`
+              ? labels.ariaWithPeak.replace('{category}', category).replace('{peak}', peak)
+              : labels.aria.replace('{category}', category)
           }
         >
           {/* Hour tick row */}
@@ -98,7 +159,7 @@ export function StreamTimesHeatmap({
               aria-hidden="true"
             >
               <div className="flex items-center pr-1 text-[10px] leading-none text-text-muted">
-                {HEATMAP_DAY_LABELS[day]}
+                {labels.dayShort[day]}
               </div>
               {row.map((minutes, hour) => {
                 const t = heatmapIntensity(minutes, view.max);
@@ -111,11 +172,16 @@ export function StreamTimesHeatmap({
                         ? { backgroundColor: `rgba(${CYAN}, ${0.08 + 0.84 * t})` }
                         : undefined
                     }
-                    title={`${HEATMAP_DAY_LABELS[day]} ${String(hour).padStart(2, '0')}:00–${String((hour + 1) % 24).padStart(2, '0')}:00 · ${
-                      minutes >= 60
-                        ? `${(minutes / 60).toFixed(1)}h`
-                        : `${Math.round(minutes)}min`
-                    } streamed in 4 weeks`}
+                    title={labels.tooltip
+                      .replace('{day}', labels.dayShort[day])
+                      .replace('{from}', `${String(hour).padStart(2, '0')}:00`)
+                      .replace('{to}', `${String((hour + 1) % 24).padStart(2, '0')}:00`)
+                      .replace(
+                        '{amount}',
+                        minutes >= 60
+                          ? `${(minutes / 60).toFixed(1)}h`
+                          : `${Math.round(minutes)}min`,
+                      )}
                   />
                 );
               })}
@@ -126,7 +192,7 @@ export function StreamTimesHeatmap({
             className="mt-3 flex items-center gap-1 text-[10px] text-text-muted"
             aria-hidden="true"
           >
-            <span className="mr-1">Less</span>
+            <span className="mr-1">{labels.legendLess}</span>
             <span className="h-3 w-3 rounded-[2px] bg-white/[0.04]" />
             {LEGEND_STEPS.map((t) => (
               <span
@@ -135,7 +201,7 @@ export function StreamTimesHeatmap({
                 style={{ backgroundColor: `rgba(${CYAN}, ${0.08 + 0.84 * t})` }}
               />
             ))}
-            <span className="ml-1">More</span>
+            <span className="ml-1">{labels.legendMore}</span>
           </div>
         </div>
       </div>

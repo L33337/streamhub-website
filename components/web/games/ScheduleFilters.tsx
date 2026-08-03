@@ -22,15 +22,30 @@ function chipClass(active: boolean): string {
   }`;
 }
 
+/** Server-resolved strings (M22 P4) — the hub lexicon is server-only. */
+export interface ScheduleFiltersLabels {
+  filterAria: string;
+  allPlatforms: string;
+  hideLowConfidence: string;
+}
+
+const EN_LABELS: ScheduleFiltersLabels = {
+  filterAria: 'Filter the schedule',
+  allPlatforms: 'All platforms',
+  hideLowConfidence: 'Hide low confidence',
+};
+
 export function ScheduleFilters({
   platforms,
   hasLow,
+  labels = EN_LABELS,
   children,
 }: {
   /** Platforms present in the schedule; the group renders only with ≥2. */
   platforms: string[];
   /** Whether any low-confidence slot exists (renders the hide toggle). */
   hasLow: boolean;
+  labels?: ScheduleFiltersLabels;
   children: React.ReactNode;
 }) {
   const [platform, setPlatform] = useState<PlatformFilter>('all');
@@ -70,7 +85,7 @@ export function ScheduleFilters({
         <div
           className="mt-3 flex flex-wrap items-center gap-2"
           role="group"
-          aria-label="Filter the schedule"
+          aria-label={labels.filterAria}
         >
           {showPlatformGroup && (
             <>
@@ -80,7 +95,7 @@ export function ScheduleFilters({
                 className={chipClass(platform === 'all')}
                 onClick={() => setPlatform('all')}
               >
-                All platforms
+                {labels.allPlatforms}
               </button>
               <button
                 type="button"
@@ -107,7 +122,7 @@ export function ScheduleFilters({
               className={chipClass(hideLow)}
               onClick={() => setHideLow((v) => !v)}
             >
-              Hide low confidence
+              {labels.hideLowConfidence}
             </button>
           )}
         </div>

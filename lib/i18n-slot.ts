@@ -68,6 +68,9 @@ export interface SlotLex {
   showMoreStreams(n: number): string;
   /** Collapses it again. */
   showFewerStreams: string;
+  /** M22 P4: title attributes of the NextStreamTime timestamps. */
+  nextTimePredictedTitle: string;
+  nextTimeAnnouncedTitle: string;
 }
 
 const SLOT_STRINGS: Record<UiLang, SlotLex> = {
@@ -102,6 +105,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     nextStreamPrefix: 'Next stream:',
     showMoreStreams: (n) => `Show ${n} more ${n === 1 ? 'stream' : 'streams'}`,
     showFewerStreams: 'Show fewer',
+    nextTimePredictedTitle: 'AI-predicted start time',
+    nextTimeAnnouncedTitle: 'Announced schedule start',
   },
   de: {
     statusLiveSince: (d) => `Live seit ${d}`,
@@ -139,6 +144,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showMoreStreams: (n) =>
       n === 1 ? '1 weiteren Stream anzeigen' : `${n} weitere Streams anzeigen`,
     showFewerStreams: 'Weniger anzeigen',
+    nextTimePredictedTitle: 'KI-prognostizierte Startzeit',
+    nextTimeAnnouncedTitle: 'Angekündigter Start laut Sendeplan',
   },
   es: {
     statusLiveSince: (d) => `En directo desde hace ${d}`,
@@ -174,6 +181,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     nextStreamPrefix: 'Próximo stream:',
     showMoreStreams: (n) => (n === 1 ? 'Ver 1 stream más' : `Ver ${n} streams más`),
     showFewerStreams: 'Ver menos',
+    nextTimePredictedTitle: 'Hora de inicio predicha por IA',
+    nextTimeAnnouncedTitle: 'Inicio anunciado en el horario',
   },
   fr: {
     statusLiveSince: (d) => `En live depuis ${d}`,
@@ -210,6 +219,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showMoreStreams: (n) =>
       n === 1 ? 'Voir 1 stream de plus' : `Voir ${n} streams de plus`,
     showFewerStreams: 'Voir moins',
+    nextTimePredictedTitle: "Heure de début prédite par l'IA",
+    nextTimeAnnouncedTitle: 'Début annoncé au programme',
   },
   pt: {
     statusLiveSince: (d) => `Ao vivo há ${d}`,
@@ -244,6 +255,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     nextStreamPrefix: 'Próximo stream:',
     showMoreStreams: (n) => (n === 1 ? 'Ver mais 1 stream' : `Ver mais ${n} streams`),
     showFewerStreams: 'Ver menos',
+    nextTimePredictedTitle: 'Horário de início previsto por IA',
+    nextTimeAnnouncedTitle: 'Início anunciado na agenda',
   },
   it: {
     statusLiveSince: (d) => `In diretta da ${d}`,
@@ -281,6 +294,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showMoreStreams: (n) =>
       n === 1 ? 'Mostra un altro stream' : `Mostra altri ${n} stream`,
     showFewerStreams: 'Mostra meno',
+    nextTimePredictedTitle: "Orario di inizio previsto dall'IA",
+    nextTimeAnnouncedTitle: 'Inizio annunciato in programma',
   },
   ru: {
     statusLiveSince: (d) => `В эфире уже ${d}`,
@@ -328,6 +343,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
         other: `Показать ещё ${n} стрима`,
       }),
     showFewerStreams: 'Показать меньше',
+    nextTimePredictedTitle: 'Время начала, предсказанное ИИ',
+    nextTimeAnnouncedTitle: 'Анонсированное время начала',
   },
   ja: {
     statusLiveSince: (d) => `配信開始から${d}`,
@@ -362,6 +379,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     nextStreamPrefix: '次の配信:',
     showMoreStreams: (n) => `他${n}件の配信を表示`,
     showFewerStreams: '表示を減らす',
+    nextTimePredictedTitle: 'AIが予測した開始時刻',
+    nextTimeAnnouncedTitle: '告知済みの開始時刻',
   },
   uk: {
     statusLiveSince: (d) => `В ефірі вже ${d}`,
@@ -409,6 +428,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
         other: `Показати ще ${n} стріму`,
       }),
     showFewerStreams: 'Показати менше',
+    nextTimePredictedTitle: 'Час початку, передбачений ШІ',
+    nextTimeAnnouncedTitle: 'Анонсований час початку',
   },
   ar: {
     // "مدة البث:" (broadcast duration) sidesteps the case governance that
@@ -461,6 +482,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
         other: `عرض ${n} بث إضافي`,
       }),
     showFewerStreams: 'عرض أقل',
+    nextTimePredictedTitle: 'وقت بدء متوقع بالذكاء الاصطناعي',
+    nextTimeAnnouncedTitle: 'وقت بدء معلن في الجدول',
   },
   hu: {
     // "Élőben: 2 óra" (elapsed live time) — Hungarian would need the -ja
@@ -498,6 +521,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     nextStreamPrefix: 'Következő stream:',
     showMoreStreams: (n) => `Még ${n} stream megjelenítése`,
     showFewerStreams: 'Kevesebb megjelenítése',
+    nextTimePredictedTitle: 'AI által jósolt kezdés',
+    nextTimeAnnouncedTitle: 'Bejelentett kezdési idő',
   },
   pl: {
     // "już 2 godziny" keeps Intl's nominative form grammatical ("od" would
@@ -547,6 +572,8 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
         other: `Pokaż jeszcze ${n} streama`,
       }),
     showFewerStreams: 'Pokaż mniej',
+    nextTimePredictedTitle: 'Czas startu przewidziany przez AI',
+    nextTimeAnnouncedTitle: 'Zapowiedziany czas startu',
   },
 };
 

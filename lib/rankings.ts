@@ -50,11 +50,21 @@ export function rankingCanonicalUrl(slug: string): string {
 // Value formatters (exported for tests)
 // ============================================
 
-/** 182.5 → "182.5 h", 100 → "100 h" (trailing .0 dropped). */
-export function formatHours(hours: number | null | undefined): string {
+/**
+ * 182.5 → "182.5 h", 100 → "100 h" (trailing .0 dropped). `lang` localizes
+ * the decimal separator (M22 P4: de → "182,5 h"); the default 'en' path is
+ * byte-identical to the pre-P4 output.
+ */
+export function formatHours(hours: number | null | undefined, lang = 'en'): string {
   if (hours == null || !Number.isFinite(hours)) return '—';
   const rounded = Math.round(hours * 10) / 10;
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)} h`;
+  const digits = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+  if (lang === 'en') return `${digits} h`;
+  try {
+    return `${rounded.toLocaleString(lang, { maximumFractionDigits: 1 })} h`;
+  } catch {
+    return `${digits} h`;
+  }
 }
 
 /** 0.9167 → "92%". */
@@ -121,16 +131,31 @@ export function formatGrowthPercent(percent: number | null | undefined): string 
  * Fixed en-US locale + UTC (site copy is English; avoids server-locale
  * drift across regenerations). null/invalid → null (line is omitted).
  */
-export function formatRefreshedAt(iso: string | null | undefined): string | null {
+export function formatRefreshedAt(
+  iso: string | null | undefined,
+  lang = 'en',
+): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(d);
+  // 'en' keeps the pre-M22-P4 en-US byte shape; other locales use their own
+  // medium date form.
+  const locale = lang === 'en' ? 'en-US' : lang;
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(d);
+  } catch {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(d);
+  }
 }
 
 // ============================================

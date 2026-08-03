@@ -12,15 +12,17 @@ import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
   buildVideoGameJsonLd,
+  INDEXABLE_GAME_LOCALES,
   jsonLdHtml,
   pickMetaDescription,
 } from '@/lib/seo';
-import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { formatCompactNumber } from '@/lib/format/number';
 import {
-  buildGameRankingFaq,
+  buildGameRankingFaqLocalized,
   buildGameRankingRows,
   latestFollowerRefresh,
   rankGameStreamers,
@@ -196,12 +198,13 @@ export async function generateStaticParams({
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug, page: rawPage } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const L = hubLexFor(locale).gameRanking;
   const page = parseGamePage(rawPage);
   if (page === null) {
-    return { title: 'Not found — StreamerTimes', robots: { index: false, follow: false } };
+    return { title: L.notFoundTitle, robots: { index: false, follow: false } };
   }
   const { category, rows } = await loadGameRanking(slug);
-  if (!category) return { title: 'Game not found — StreamerTimes' };
+  if (!category) return { title: hubLexFor(locale).game.notFoundTitle };
   const url =
     page === 1
       ? `${SITE_URL}/rankings/game/${slug}`
@@ -211,25 +214,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // (hourly churn hurts SEO more than the numbers help; see /game/[slug]).
   //
   // Richest-first assembly against the 155-char budget (Bing flags >160). The
-  // old single template concatenated leader + full boilerplate + an "~N hours
-  // streamed" sentence and reached 241 chars for Fortnite.
+  // lexicon's 'en' entries are byte-identical to the pre-M22-P4 inline copy.
   const leadIn = top
-    ? `${top.name} leads with ${formatCompactNumber(top.followerCount, 'en')} followers. `
+    ? L.metaLeadIn(top.name, formatCompactNumber(top.followerCount, locale))
     : '';
-  const description = pickMetaDescription(
-    `${leadIn}The top ${category} streamers on Twitch and YouTube ranked by followers, with live status and next streams. Updated daily.`,
-    `${leadIn}The top ${category} streamers ranked by followers, with live status and next streams.`,
-    `The top ${category} streamers on Twitch and YouTube ranked by followers, with live status and next streams. Updated daily.`,
-  );
+  const description = pickMetaDescription(...L.metaDescription(category, leadIn));
   const meta: Metadata = {
-    title:
-      page === 1
-        ? `Top ${category} Streamers — Ranked by Followers`
-        : `Top ${category} Streamers — Ranked by Followers — Page ${page}`,
+    title: L.metaTitle(category, page),
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: `Top ${category} streamers — ranked by followers`,
+      title: L.ogTitle(category),
       description,
       url,
       siteName: 'Streamer Times',
@@ -240,7 +235,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // opengraph-image as twitter:image once this block exists.
     twitter: {
       card: 'summary_large_image',
-      title: `Top ${category} streamers — ranked by followers`,
+      title: L.ogTitle(category),
       description,
     },
   };
@@ -252,12 +247,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (page > 1 || !isRankingIndexable(rows.length)) {
     meta.robots = { index: false, follow: true };
   }
-  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
-  // + self-canonical for every other locale variant (incoming noindex sticks).
+  // M22 P4: game pages are indexable in en+de (INDEXABLE_GAME_LOCALES);
+  // other locales viewable but noindex,follow + self-canonical (incoming
+  // noindex sticks and never gets a cluster).
   return applyLocaleSeo(
     meta,
     locale,
     page === 1 ? `/rankings/game/${slug}` : `/rankings/game/${slug}/${page}`,
+    INDEXABLE_GAME_LOCALES,
   );
 }
 
@@ -274,7 +271,11 @@ function parseGamePage(raw: string | undefined): number | null {
 }
 
 export default async function GameRankingPage({ params }: Props) {
-  const { slug, page: rawPage } = await params;
+  const { locale: rawLocale, slug, page: rawPage } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const Lex = hubLexFor(locale);
+  const L = Lex.gameRanking;
+  const C = Lex.gameChips;
   const page = parseGamePage(rawPage);
   if (page === null) notFound();
   const { category, game, ranked, rows: allRows, liveCount, liveViewerTotal, related } =
@@ -294,8 +295,8 @@ export default async function GameRankingPage({ params }: Props) {
   const top = rows[0];
 
   const breadcrumb = buildBreadcrumbJsonLd([
-    { name: 'Home', url: SITE_URL },
-    { name: 'Rankings', url: `${SITE_URL}/rankings` },
+    { name: Lex.crumbs.home, url: SITE_URL },
+    { name: Lex.crumbs.rankings, url: `${SITE_URL}/rankings` },
     { name: category },
   ]);
   // Adapt to PublicRankingEntry so the shared Person ItemList builder applies.
@@ -305,7 +306,7 @@ export default async function GameRankingPage({ params }: Props) {
     streamer,
   }));
   const itemList = buildRankingItemListJsonLd(
-    `Top ${category} streamers`,
+    Lex.rankings.topGameStreamers(category),
     itemListEntries,
   );
   // VideoGame structured data ONLY for actual video games — same gate as the
@@ -320,16 +321,26 @@ export default async function GameRankingPage({ params }: Props) {
 
   const intro =
     page === 1
-      ? `The top ${allRows.length} ${category} streamer${allRows.length === 1 ? '' : 's'} we track, ranked by channel followers and subscribers.` +
+      ? L.introPage1(allRows.length, category) +
         (top
-          ? ` ${top.name} tops the list with ${formatCompactNumber(top.followerCount, 'en')} ${top.platforms.includes('twitch') ? 'followers' : 'subscribers'}.`
+          ? L.topsTheList(
+              top.name,
+              formatCompactNumber(top.followerCount, locale),
+              top.platforms.includes('twitch'),
+            )
           : '')
-      : `Ranks ${(page - 1) * GAME_RANKING_PAGE_SIZE + 1}–${(page - 1) * GAME_RANKING_PAGE_SIZE + rows.length} of ${allRows.length} ${category} streamers we track, ranked by channel followers and subscribers.`;
+      : L.introPageN(
+          (page - 1) * GAME_RANKING_PAGE_SIZE + 1,
+          (page - 1) * GAME_RANKING_PAGE_SIZE + rows.length,
+          allRows.length,
+          category,
+        );
 
   const followerRefreshLabel = formatRefreshedAt(
     latestFollowerRefresh(ranked.map((r) => r.streamer)),
+    locale,
   );
-  const faq = buildGameRankingFaq({
+  const faq = buildGameRankingFaqLocalized(L, locale, {
     category,
     rows,
     streamerCount: game.streamer_count,
@@ -363,8 +374,8 @@ export default async function GameRankingPage({ params }: Props) {
       )}
 
       <p className="text-sm text-text-muted">
-        <Link href="/rankings" className="hover:text-accent-cyan">
-          Rankings
+        <Link href={localeHref(locale, '/rankings')} className="hover:text-accent-cyan">
+          {Lex.crumbs.rankings}
         </Link>{' '}
         / {category}
       </p>
@@ -382,7 +393,7 @@ export default async function GameRankingPage({ params }: Props) {
         )}
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-bold text-white md:text-4xl">
-            Top {category} streamers by followers
+            {L.h1(category)}
           </h1>
           {rows.length > 0 && (
             <>
@@ -390,25 +401,25 @@ export default async function GameRankingPage({ params }: Props) {
               {/* Stats chips — every chip conditional on its (nullable) field. */}
               <ul
                 className="mt-3 flex flex-wrap gap-2 text-xs"
-                aria-label={`${category} statistics`}
+                aria-label={C.aria(category)}
               >
                 <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
                   <span className="font-semibold text-text-primary">
                     {game.streamer_count}
                   </span>{' '}
-                  streamer{game.streamer_count === 1 ? '' : 's'}
+                  {C.streamersLabel(game.streamer_count)}
                 </li>
                 {liveCount > 0 && (
                   <li className="rounded-full border border-live/40 bg-background-elevated px-2.5 py-1 text-live">
-                    <span className="font-semibold">{liveCount}</span> live now
+                    <span className="font-semibold">{liveCount}</span> {C.liveNowLabel}
                     {liveViewerTotal != null && (
                       <>
                         {' '}
                         ·{' '}
                         <span className="font-semibold">
-                          {formatCompactNumber(liveViewerTotal, 'en')}
+                          {formatCompactNumber(liveViewerTotal, locale)}
                         </span>{' '}
-                        watching
+                        {C.watchingLabel}
                       </>
                     )}
                   </li>
@@ -416,18 +427,18 @@ export default async function GameRankingPage({ params }: Props) {
                 {game.hours_28d != null && game.hours_28d > 0 && (
                   <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
                     <span className="font-semibold text-text-primary">
-                      {formatCompactNumber(Math.round(game.hours_28d), 'en')}h
+                      {formatCompactNumber(Math.round(game.hours_28d), locale)}h
                     </span>{' '}
-                    streamed / 28d
+                    {C.streamedLabel}
                   </li>
                 )}
                 {game.peak_viewer_28d != null && game.peak_viewer_28d > 0 && (
                   <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
-                    Peak{' '}
+                    {C.peakLead}
                     <span className="font-semibold text-text-primary">
-                      {formatCompactNumber(game.peak_viewer_28d, 'en')}
-                    </span>{' '}
-                    viewers / 28d
+                      {formatCompactNumber(game.peak_viewer_28d, locale)}
+                    </span>
+                    {C.peakTail}
                   </li>
                 )}
                 {game.trend_delta_percent != null && (
@@ -435,10 +446,10 @@ export default async function GameRankingPage({ params }: Props) {
                     className={`rounded-full border border-border-default bg-background-elevated px-2.5 py-1 font-semibold ${
                       game.trend_delta_percent >= 0 ? 'text-live' : 'text-accent-pink'
                     }`}
-                    title="Week-over-week change in active streamers"
+                    title={C.trendTitle}
                   >
                     {game.trend_delta_percent >= 0 ? '▲' : '▼'}{' '}
-                    {Math.abs(game.trend_delta_percent)}% this week
+                    {Math.abs(game.trend_delta_percent)}%{C.trendTail}
                   </li>
                 )}
               </ul>
@@ -450,32 +461,60 @@ export default async function GameRankingPage({ params }: Props) {
       {rows.length > 0 ? (
         <>
           <p className="mt-4 max-w-2xl text-sm text-text-muted">
-            Streamers active in {category} over the last 28 days, ranked by
-            followers. Counts refresh regularly and can lag live platform
-            numbers.
-            {followerRefreshLabel && <> Follower counts refreshed {followerRefreshLabel}.</>}
+            {L.methodology(category)}
+            {followerRefreshLabel && <>{L.followersRefreshed(followerRefreshLabel)}</>}
           </p>
           <div className="mt-6">
-            <GameRankingExplorer rows={rows} category={category} />
+            <GameRankingExplorer
+              rows={rows}
+              locale={locale}
+              labels={{
+                sortAria: L.sortAria,
+                sortFollowers: L.sortFollowers,
+                sortHours: L.sortHours,
+                sortViewers: L.sortViewers,
+                filterLangAria: L.filterLangAria,
+                allChip: L.allChip,
+                noMatch: L.noMatch,
+                tableCaption: L.tableCaption(category),
+                thRank: L.thRank,
+                thStreamer: L.thStreamer,
+                thFollowers: L.thFollowers,
+                thAvgViewers: L.thAvgViewers,
+                thHours: L.thHours,
+                thShare: L.thShare,
+                thShareTitle: L.thShareTitle(category),
+                thNextStream: L.thNextStream,
+                liveNowCell: L.liveNowCell,
+                watchingTail: L.watchingTail,
+                trendNewBadge: L.trendNewBadge,
+                trendNewTitle: L.trendNewTitle,
+                trendUpTemplate: L.trendUpTemplate,
+                trendDownTemplate: L.trendDownTemplate,
+                mainGameTemplate: L.mainGameTemplate,
+              }}
+            />
           </div>
           <RankingPagination
             page={page}
             pages={pages}
             hrefFor={(n) =>
-              n === 1 ? `/rankings/game/${slug}` : `/rankings/game/${slug}/${n}`
+              localeHref(
+                locale,
+                n === 1 ? `/rankings/game/${slug}` : `/rankings/game/${slug}/${n}`,
+              )
             }
-            label={`${category} ranking pages`}
+            label={L.paginationAria(category)}
+            prevLabel={L.prev}
+            nextLabel={L.next}
           />
           {hasMissing && (
-            <p className="mt-2 text-xs text-text-muted">
-              — means we haven&apos;t collected enough data for that channel yet, for
-              example viewer sampling for recently added channels.
-            </p>
+            <p className="mt-2 text-xs text-text-muted">{L.missingDataNote}</p>
           )}
           {faq.length > 0 && (
             <section aria-labelledby="game-ranking-faq-heading" className="mt-12 max-w-2xl">
               <h2 id="game-ranking-faq-heading" className="text-xl font-bold text-white">
-                About this ranking
+                {L.aboutRanking}
               </h2>
               <dl className="mt-4 space-y-5">
                 {faq.map(({ q, a }) => (
@@ -489,46 +528,50 @@ export default async function GameRankingPage({ params }: Props) {
           )}
         </>
       ) : (
-        <p className="mt-3 max-w-2xl text-text-secondary">
-          This ranking is warming up — we need a bit more data before it&apos;s
-          meaningful. Check back soon.
-        </p>
+        <p className="mt-3 max-w-2xl text-text-secondary">{L.warmingUp}</p>
       )}
 
       {related.length > 0 && (
         <section aria-labelledby="related-rankings-heading" className="mt-12">
           <h2 id="related-rankings-heading" className="text-sm font-semibold uppercase tracking-wider text-text-muted">
-            Related rankings
+            {L.relatedRankings}
           </h2>
-          <ul className="mt-3 flex flex-wrap gap-2" aria-label="Related game rankings">
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label={L.relatedRankingsAria}>
             {related.map((r) => (
               <li key={r.category}>
                 <Link
-                  href={`/rankings/game/${r.slug}`}
+                  href={localeHref(locale, `/rankings/game/${r.slug}`)}
                   className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
                 >
-                  Top {r.category} streamers
+                  {Lex.rankings.topGameStreamers(r.category)}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-text-muted">
-            Games with overlapping streamer rosters in the last 28 days.
-          </p>
+          <p className="mt-2 text-xs text-text-muted">{Lex.game.relatedNote}</p>
         </section>
       )}
 
       <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">
-        <Link href={`/game/${slug}`} className="text-accent-cyan hover:text-text-primary">
-          Live now &amp; schedule for {category} →
+        <Link
+          href={localeHref(locale, `/game/${slug}`)}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {L.liveAndSchedule(category)}
         </Link>
         {'  ·  '}
-        <Link href="/rankings" className="text-accent-cyan hover:text-text-primary">
-          All rankings
+        <Link
+          href={localeHref(locale, '/rankings')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {L.allRankings}
         </Link>
         {'  ·  '}
-        <Link href="/games" className="text-accent-cyan hover:text-text-primary">
-          All games &amp; categories
+        <Link
+          href={localeHref(locale, '/games')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {Lex.common.allGamesCategories}
         </Link>
       </p>
     </main>

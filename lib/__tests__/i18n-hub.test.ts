@@ -264,6 +264,171 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['rankings.metricNote.most-watched', L.rankings.metricNote['most-watched']],
     ['rankings.metricNote.most-active', L.rankings.metricNote['most-active']],
     ['rankings.metricNote.most-reliable', L.rankings.metricNote['most-reliable']],
+    // --- M22 P4: game pages ---
+    ['gameChips.aria', L.gameChips.aria(GAME)],
+    ['gameChips.streamersLabel', L.gameChips.streamersLabel(5)],
+    ['gameChips.streamersLabel.one', L.gameChips.streamersLabel(1)],
+    ['gameChips.liveNowLabel', L.gameChips.liveNowLabel],
+    ['gameChips.watchingLabel', L.gameChips.watchingLabel],
+    ['gameChips.streamedLabel', L.gameChips.streamedLabel],
+    ['gameChips.streamsLabel', L.gameChips.streamsLabel(20)],
+    ['gameChips.peakLead+Tail', `${L.gameChips.peakLead}12K${L.gameChips.peakTail}`],
+    ['gameChips.trendTail', `▲ 5%${L.gameChips.trendTail}`],
+    ['gameChips.trendTitle', L.gameChips.trendTitle],
+    ['game.notFoundTitle', L.game.notFoundTitle],
+    ['game.metaTitle', L.game.metaTitle(GAME)],
+    ['game.metaDescription.3', L.game.metaDescription(GAME, ['A', 'B', 'C'])[0]],
+    ['game.metaDescription.2', L.game.metaDescription(GAME, ['A', 'B'])[1]],
+    ['game.metaDescription.0', L.game.metaDescription(GAME, [])[2]],
+    ['game.metaDescription.tail', L.game.metaDescription(GAME, [])[3]],
+    ['game.ogTitle', L.game.ogTitle(GAME)],
+    ['game.ogDescription', L.game.ogDescription(GAME, ['A', 'B'])],
+    ['game.ogDescription.none', L.game.ogDescription(GAME, [])],
+    ['game.h1', L.game.h1(GAME)],
+    ['game.intro', L.game.intro(12, GAME, 3, 9, ' X.')],
+    ['game.intro.quiet', L.game.intro(1, GAME, 0, 0, '')],
+    ['game.superlative', L.game.superlative(GAME, 'NachtFalke', '1.2M', true)],
+    ['game.superlative.yt', L.game.superlative(GAME, 'NachtFalke', '1.2M', false)],
+    ['game.onPageAria', L.game.onPageAria],
+    ['game.navLiveNow', L.game.navLiveNow],
+    ['game.navTopStreamers', L.game.navTopStreamers],
+    ['game.navBestTimes', L.game.navBestTimes],
+    ['game.navSchedule', L.game.navSchedule],
+    ['game.navRelated', L.game.navRelated],
+    ['game.followGame', L.game.followGame(GAME)],
+    ['game.followingLabel', L.game.followingLabel],
+    ['game.watchingNow', L.game.watchingNow(GAME)],
+    ['game.liveStreamsAria', L.game.liveStreamsAria(GAME)],
+    ['game.moreLiveAria', L.game.moreLiveAria(GAME)],
+    ['game.showMoreLive', L.game.showMoreLive(7)],
+    ['game.showMoreLive.one', L.game.showMoreLive(1)],
+    ['game.moreLiveInRanking', L.game.moreLiveInRanking(9, GAME)],
+    ['game.liveUpdatesNote', L.game.liveUpdatesNote],
+    ['game.mostFollowed', L.game.mostFollowed(GAME)],
+    ['game.tableCaption', L.game.tableCaption(GAME)],
+    ['game.thRank', L.game.thRank],
+    ['game.thStreamer', L.game.thStreamer],
+    ['game.thNextStream', L.game.thNextStream],
+    ['game.thFollowers', L.game.thFollowers],
+    ['game.thHours', L.game.thHours],
+    ['game.liveNowCell', L.game.liveNowCell],
+    ['game.seeFullRanking', L.game.seeFullRanking(GAME)],
+    ['game.whoStreams', L.game.whoStreams(GAME)],
+    ['game.whenStreamed', L.game.whenStreamed(GAME)],
+    ['game.heatmapSummary', L.game.heatmapSummary(GAME)],
+    ['game.heatmapSummaryEmpty', L.game.heatmapSummaryEmpty],
+    ['game.tzLocalSuffix', `x${L.game.tzLocalSuffix}`],
+    ['game.tzUtcSuffix', `x${L.game.tzUtcSuffix}`],
+    ['game.heatmapAria', L.game.heatmapAria(GAME)],
+    ['game.heatmapAriaWithPeak', L.game.heatmapAriaWithPeak(GAME)],
+    ['game.heatmapTooltip', L.game.heatmapTooltip],
+    ['game.legendLess', L.game.legendLess],
+    ['game.legendMore', L.game.legendMore],
+    ['game.heatmapDayNames', L.game.heatmapDayNames.join(', ')],
+    ['game.bestTimeToStream', L.game.bestTimeToStream(GAME)],
+    ['game.trendingBadge', L.game.trendingBadge],
+    ['game.bestTimeIntro', L.game.bestTimeIntro(GAME)],
+    ['game.fullHeatmapLink', L.game.fullHeatmapLink],
+    ['game.bestSlotsAria', L.game.bestSlotsAria],
+    ['game.viewersPerChannel', L.game.viewersPerChannel],
+    ['game.timesLocalNote', L.game.timesLocalNote],
+    ['game.timesUtcNote', L.game.timesUtcNote],
+    ['game.quietTitle', L.game.quietTitle(GAME)],
+    ['game.quietBody', L.game.quietBody(GAME)],
+    ['game.quietMeanwhile', L.game.quietMeanwhile],
+    ['game.seeWhosLive', L.game.seeWhosLive],
+    ['game.browseAllGames', L.game.browseAllGames],
+    ['game.gameStreamersChip', L.game.gameStreamersChip(GAME)],
+    ['game.scheduleAria', L.game.scheduleAria(GAME)],
+    ['game.upcomingStreams', L.game.upcomingStreams(GAME)],
+    ['game.scheduleNote', L.game.scheduleNote],
+    ['game.filterAria', L.game.filterAria],
+    ['game.allPlatforms', L.game.allPlatforms],
+    ['game.hideLowConfidence', L.game.hideLowConfidence],
+    ['game.moreLowConfidence', L.game.moreLowConfidence(4)],
+    ['game.moreLowConfidence.one', L.game.moreLowConfidence(1)],
+    ['game.lowConfAria', L.game.lowConfAria(DATE_LABEL)],
+    ['game.hiddenNotShown', L.game.hiddenNotShown(6)],
+    ['game.hiddenNotShown.one', L.game.hiddenNotShown(1)],
+    ['game.relatedGames', L.game.relatedGames],
+    ['game.relatedGamesAria', L.game.relatedGamesAria],
+    ['game.relatedNote', L.game.relatedNote],
+    ['game.allGamesFooter', L.game.allGamesFooter],
+    ['gameRanking.notFoundTitle', L.gameRanking.notFoundTitle],
+    ['gameRanking.metaTitle', L.gameRanking.metaTitle(GAME, 1)],
+    ['gameRanking.metaTitle.page', L.gameRanking.metaTitle(GAME, 3)],
+    ['gameRanking.metaLeadIn', L.gameRanking.metaLeadIn('NachtFalke', '19.2M')],
+    ['gameRanking.metaDescription.0', L.gameRanking.metaDescription(GAME, 'X. ')[0]],
+    ['gameRanking.metaDescription.1', L.gameRanking.metaDescription(GAME, 'X. ')[1]],
+    ['gameRanking.metaDescription.2', L.gameRanking.metaDescription(GAME, '')[2]],
+    ['gameRanking.ogTitle', L.gameRanking.ogTitle(GAME)],
+    ['gameRanking.h1', L.gameRanking.h1(GAME)],
+    ['gameRanking.introPage1', L.gameRanking.introPage1(43, GAME)],
+    ['gameRanking.topsTheList', L.gameRanking.topsTheList('NachtFalke', '19.2M', true)],
+    ['gameRanking.topsTheList.yt', L.gameRanking.topsTheList('NachtFalke', '19.2M', false)],
+    ['gameRanking.introPageN', L.gameRanking.introPageN(51, 98, 98, GAME)],
+    ['gameRanking.methodology', L.gameRanking.methodology(GAME)],
+    ['gameRanking.followersRefreshed', L.gameRanking.followersRefreshed(DATE_LABEL)],
+    ['gameRanking.warmingUp', L.gameRanking.warmingUp],
+    ['gameRanking.missingDataNote', L.gameRanking.missingDataNote],
+    ['gameRanking.sortAria', L.gameRanking.sortAria],
+    ['gameRanking.sortFollowers', L.gameRanking.sortFollowers],
+    ['gameRanking.sortHours', L.gameRanking.sortHours],
+    ['gameRanking.sortViewers', L.gameRanking.sortViewers],
+    ['gameRanking.filterLangAria', L.gameRanking.filterLangAria],
+    ['gameRanking.allChip', L.gameRanking.allChip],
+    ['gameRanking.noMatch', L.gameRanking.noMatch],
+    ['gameRanking.tableCaption', L.gameRanking.tableCaption(GAME)],
+    ['gameRanking.thRank', L.gameRanking.thRank],
+    ['gameRanking.thStreamer', L.gameRanking.thStreamer],
+    ['gameRanking.thFollowers', L.gameRanking.thFollowers],
+    ['gameRanking.thAvgViewers', L.gameRanking.thAvgViewers],
+    ['gameRanking.thHours', L.gameRanking.thHours],
+    ['gameRanking.thShare', L.gameRanking.thShare],
+    ['gameRanking.thShareTitle', L.gameRanking.thShareTitle(GAME)],
+    ['gameRanking.thNextStream', L.gameRanking.thNextStream],
+    ['gameRanking.liveNowCell', L.gameRanking.liveNowCell],
+    ['gameRanking.watchingTail', `${L.gameRanking.liveNowCell}${L.gameRanking.watchingTail}`],
+    ['gameRanking.trendNewBadge', L.gameRanking.trendNewBadge],
+    ['gameRanking.trendNewTitle', L.gameRanking.trendNewTitle],
+    ['gameRanking.trendUpTemplate', L.gameRanking.trendUpTemplate],
+    ['gameRanking.trendDownTemplate', L.gameRanking.trendDownTemplate],
+    ['gameRanking.mainGameTemplate', L.gameRanking.mainGameTemplate],
+    ['gameRanking.aboutRanking', L.gameRanking.aboutRanking],
+    ['gameRanking.faqMostFollowedQ', L.gameRanking.faqMostFollowedQ(GAME)],
+    [
+      'gameRanking.faqMostFollowedA',
+      L.gameRanking.faqMostFollowedA(
+        GAME,
+        { name: 'NachtFalke', value: '19.2M', isTwitch: true },
+        { name: 'Zweiter', value: '12.4M' },
+      ),
+    ],
+    [
+      'gameRanking.faqMostFollowedA.solo',
+      L.gameRanking.faqMostFollowedA(
+        GAME,
+        { name: 'NachtFalke', value: '19.2M', isTwitch: false },
+        null,
+      ),
+    ],
+    ['gameRanking.faqHowManyQ', L.gameRanking.faqHowManyQ(GAME)],
+    [
+      'gameRanking.faqHowManyA',
+      L.gameRanking.faqHowManyA(GAME, 43, { hours: '1.2K', streams: '312' }),
+    ],
+    ['gameRanking.faqHowManyA.min', L.gameRanking.faqHowManyA(GAME, 1, null)],
+    ['gameRanking.faqMeasuredQ', L.gameRanking.faqMeasuredQ],
+    ['gameRanking.faqMeasuredA', L.gameRanking.faqMeasuredA(GAME)],
+    ['gameRanking.faqShareQ', L.gameRanking.faqShareQ],
+    ['gameRanking.faqShareA', L.gameRanking.faqShareA(GAME)],
+    ['gameRanking.relatedRankings', L.gameRanking.relatedRankings],
+    ['gameRanking.relatedRankingsAria', L.gameRanking.relatedRankingsAria],
+    ['gameRanking.liveAndSchedule', L.gameRanking.liveAndSchedule(GAME)],
+    ['gameRanking.allRankings', L.gameRanking.allRankings],
+    ['gameRanking.paginationAria', L.gameRanking.paginationAria(GAME)],
+    ['gameRanking.prev', L.gameRanking.prev],
+    ['gameRanking.next', L.gameRanking.next],
   ];
 }
 
@@ -565,6 +730,196 @@ describe('English lexicon regression guard (legacy hardcoded strings)', () => {
     ]) {
       expect(L.gamesRoot.intro(meta.gameCount, live.liveStreamerCount, live.liveGameCount)).toBe(
         buildGamesHubIntro(DEFAULT_GAMES_HUB_VIEW, meta, live),
+      );
+    }
+  });
+});
+
+// --- M22 P4: game-page lexicon guards -------------------------------------------
+
+describe('game-page lexicon (M22 P4)', () => {
+  // The client components replace these placeholders at runtime — a
+  // translation that drops one renders a literal hole in the UI.
+  it.each([...UI_LANGS])('%s keeps every client-side template placeholder', (lang) => {
+    const G = HUB_STRINGS[lang].game;
+    const R = HUB_STRINGS[lang].gameRanking;
+    expect(G.heatmapSummary(GAME)).toContain('{peak}');
+    expect(G.heatmapSummary(GAME)).toContain('{tz}');
+    expect(G.heatmapAriaWithPeak(GAME)).toContain('{peak}');
+    for (const ph of ['{day}', '{from}', '{to}', '{amount}']) {
+      expect(G.heatmapTooltip, `${lang} tooltip ${ph}`).toContain(ph);
+    }
+    expect(G.viewersPerChannel).toContain('{score}');
+    expect(R.watchingTail).toContain('{value}');
+    expect(R.trendUpTemplate).toContain('{n}');
+    expect(R.trendDownTemplate).toContain('{n}');
+    expect(R.mainGameTemplate).toContain('{share}');
+  });
+
+  it.each([...UI_LANGS])('%s has 7 distinct non-empty heatmap day names', (lang) => {
+    const names = HUB_STRINGS[lang].game.heatmapDayNames;
+    expect(names).toHaveLength(7);
+    for (const n of names) expect(n.trim()).not.toBe('');
+    expect(new Set(names).size).toBe(7);
+  });
+
+  // The three sort buttons share ONE row with the language chips on phones —
+  // same budget rule as trending.sort* (the longest label drives wrapping).
+  it.each([...UI_LANGS])('%s keeps the ranking sort labels short', (lang) => {
+    const R = HUB_STRINGS[lang].gameRanking;
+    for (const label of [R.sortFollowers, R.sortHours, R.sortViewers]) {
+      expect(label.length, `${lang} "${label}"`).toBeLessThanOrEqual(28);
+    }
+  });
+
+  // Category names are proper nouns: every category-taking string must embed
+  // the name verbatim (no translation, no inflection of the name itself).
+  it.each([...UI_LANGS])('%s embeds the category name verbatim', (lang) => {
+    const L = HUB_STRINGS[lang];
+    for (const value of [
+      L.game.metaTitle(GAME),
+      L.game.h1(GAME),
+      L.game.watchingNow(GAME),
+      L.game.mostFollowed(GAME),
+      L.game.whenStreamed(GAME),
+      L.game.bestTimeToStream(GAME),
+      L.game.upcomingStreams(GAME),
+      L.gameRanking.metaTitle(GAME, 1),
+      L.gameRanking.h1(GAME),
+    ]) {
+      expect(value).toContain(GAME);
+    }
+  });
+});
+
+describe('English game-page lexicon regression guard (M22 P4)', () => {
+  const L = HUB_STRINGS.en;
+
+  it('pins the /game/[slug] metadata byte shapes', () => {
+    expect(L.game.metaTitle('Fortnite')).toBe(
+      'Fortnite Streamers — Live Now, Rankings & Schedule',
+    );
+    expect(L.game.metaDescription('Fortnite', ['Ninja', 'auronplay', 'Jynxzi'])[0]).toBe(
+      'Ninja, auronplay and Jynxzi lead the Fortnite ranking. Who is live now, upcoming streams and AI-predicted schedules on Twitch and YouTube.',
+    );
+    expect(L.game.metaDescription('Fortnite', ['Ninja'])[0]).toBe(
+      'Ninja leads the Fortnite ranking. Who is live now, upcoming streams and AI-predicted schedules on Twitch and YouTube.',
+    );
+    expect(L.game.metaDescription('Fortnite', [])[2]).toBe(
+      'The most followed Fortnite streamers. Who is live now, upcoming streams and AI-predicted schedules on Twitch and YouTube.',
+    );
+    expect(L.game.ogDescription('Fortnite', [])).toBe(
+      'The most followed Fortnite streamers, live status and stream schedule on Twitch and YouTube.',
+    );
+    expect(L.game.ogDescription('Fortnite', ['Ninja', 'Clix'])).toBe(
+      'The most followed Fortnite streamers — Ninja and Clix — live status and stream schedule on Twitch and YouTube.',
+    );
+  });
+
+  it('pins the /game/[slug] intro assembly', () => {
+    expect(L.game.intro(12, 'Fortnite', 3, 9, '')).toBe(
+      '12 streamers have Fortnite streams live or scheduled this week on Twitch and YouTube. 3 are live right now, with 9 upcoming streams in the next 7 days.',
+    );
+    expect(L.game.intro(1, 'Fortnite', 1, 1, '')).toBe(
+      '1 streamer has Fortnite streams live or scheduled this week on Twitch and YouTube. 1 is live right now, with 1 upcoming stream in the next 7 days.',
+    );
+    expect(L.game.intro(2, 'Fortnite', 0, 0, '')).toBe(
+      '2 streamers have Fortnite streams live or scheduled this week on Twitch and YouTube. None are live right now.',
+    );
+    expect(L.game.superlative('Fortnite', 'Ninja', '19.2M', true)).toBe(
+      ' The most-followed Fortnite streamer here is Ninja with 19.2M followers.',
+    );
+    expect(L.game.superlative('Fortnite', 'Ninja', '19.2M', false)).toBe(
+      ' The most-followed Fortnite streamer here is Ninja with 19.2M subscribers.',
+    );
+  });
+
+  it('pins the /rankings/game/[slug] metadata + intro byte shapes', () => {
+    expect(L.gameRanking.metaTitle('Fortnite', 1)).toBe(
+      'Top Fortnite Streamers — Ranked by Followers',
+    );
+    expect(L.gameRanking.metaTitle('Fortnite', 3)).toBe(
+      'Top Fortnite Streamers — Ranked by Followers — Page 3',
+    );
+    expect(L.gameRanking.metaLeadIn('Ninja', '19.2M')).toBe(
+      'Ninja leads with 19.2M followers. ',
+    );
+    expect(L.gameRanking.metaDescription('Fortnite', 'X. ')[0]).toBe(
+      'X. The top Fortnite streamers on Twitch and YouTube ranked by followers, with live status and next streams. Updated daily.',
+    );
+    expect(L.gameRanking.introPage1(43, 'Fortnite')).toBe(
+      'The top 43 Fortnite streamers we track, ranked by channel followers and subscribers.',
+    );
+    expect(L.gameRanking.topsTheList('Ninja', '19.2M', true)).toBe(
+      ' Ninja tops the list with 19.2M followers.',
+    );
+    expect(L.gameRanking.introPageN(51, 98, 98, 'Fortnite')).toBe(
+      'Ranks 51–98 of 98 Fortnite streamers we track, ranked by channel followers and subscribers.',
+    );
+    expect(L.gameRanking.methodology('Fortnite')).toBe(
+      'Streamers active in Fortnite over the last 28 days, ranked by followers. Counts refresh regularly and can lag live platform numbers.',
+    );
+    expect(L.gameRanking.followersRefreshed('Aug 3, 2026')).toBe(
+      ' Follower counts refreshed Aug 3, 2026.',
+    );
+  });
+
+  it('mirrors buildGameRankingFaq byte-for-byte via the localized builder', async () => {
+    const { buildGameRankingFaq, buildGameRankingFaqLocalized } = await import(
+      '../game-ranking'
+    );
+    const row = (over: Record<string, unknown>) =>
+      ({
+        rank: 1,
+        id: 'x',
+        name: 'X',
+        avatarUrl: null,
+        platforms: ['twitch'],
+        language: null,
+        followerCount: 0,
+        avgViewCount: null,
+        hours28d: null,
+        streams28d: null,
+        sharePercent: null,
+        rankDelta: null,
+        isNew: false,
+        isLive: false,
+        liveViewerCount: null,
+        nextStreamAt: null,
+        nextIsPredicted: false,
+        nextCategory: null,
+        ...over,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any;
+    const cases = [
+      {
+        category: 'Fortnite',
+        rows: [
+          row({ rank: 1, name: 'Ninja', followerCount: 19_200_000, sharePercent: 80 }),
+          row({ rank: 2, name: 'Clix', followerCount: 7_400_000 }),
+        ],
+        streamerCount: 43,
+        hours28d: 1234.5,
+        streams28d: 312,
+      },
+      {
+        category: 'Minecraft',
+        rows: [],
+        streamerCount: null,
+        hours28d: null,
+        streams28d: null,
+      },
+      {
+        category: 'Dota 2',
+        rows: [row({ rank: 1, name: 'Solo', followerCount: 5, platforms: ['youtube'] })],
+        streamerCount: 1,
+        hours28d: 3,
+        streams28d: 2,
+      },
+    ];
+    for (const params of cases) {
+      expect(buildGameRankingFaqLocalized(L.gameRanking, 'en', params)).toEqual(
+        buildGameRankingFaq(params),
       );
     }
   });

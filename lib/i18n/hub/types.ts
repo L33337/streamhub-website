@@ -1,7 +1,8 @@
 // --- Hub-pages UI lexicon type ---------------------------------------------------
 //
-// Shape of one language's lexicon for the five indexable hub-page bodies
-// (M22 P3): home /, /live, /streamers, /games (root view) and /rankings.
+// Shape of one language's lexicon for the indexable hub-page bodies: home /,
+// /live, /streamers, /games (root view) and /rankings (M22 P3), plus the
+// programmatic game pages /game/[slug] and /rankings/game/[slug] (M22 P4).
 // Server components only — see the header of lib/i18n-hub.ts.
 // `Record<UiLang, HubLex>` in lib/i18n-hub.ts turns this interface into a
 // compile-time completeness check: a missing key in any language fails
@@ -532,5 +533,241 @@ export interface HubLex {
     metricH1: Record<HubRankingMetric, string>;
     /** Per-metric methodology notes — 'en' byte-identical to RANKING_PAGES. */
     metricNote: Record<HubRankingMetric, string>;
+  };
+  /**
+   * Stats chips shared VERBATIM by /game/[slug] and /rankings/game/[slug]
+   * (M22 P4). The numeric value renders in its own bold <span>, so each chip
+   * splits into label parts around it; lead/tail strings carry their own
+   * significant leading/trailing spaces (hero.titleLead precedent). Category
+   * names are proper nouns — never translated, never inflected.
+   */
+  gameChips: {
+    /** aria-label of the chip list, e.g. "Fortnite statistics". */
+    aria(category: string): string;
+    /** After the bold count: "streamer" / "streamers" (pluralized). */
+    streamersLabel(n: number): string;
+    /** After the bold live count: "live now". */
+    liveNowLabel: string;
+    /** After the bold viewer total: "watching". */
+    watchingLabel: string;
+    /** After the bold "{X}h": "streamed / 28d". */
+    streamedLabel: string;
+    /** After the bold count: "streams / 28d" (pluralized). */
+    streamsLabel(n: number): string;
+    /** Around the bold peak-viewer number: "Peak " … " viewers / 28d". */
+    peakLead: string;
+    peakTail: string;
+    /** After "▲ {x}%": " this week" (leading space significant). */
+    trendTail: string;
+    /** title attribute of the trend chip. */
+    trendTitle: string;
+  };
+  /**
+   * /game/[slug] hub body + metadata (M22 P4). All functions return COMPLETE
+   * interpolated strings — never fragments that JSX would join as adjacent
+   * text nodes (the "VALORANTstreamers" bug class). 'en' entries are
+   * byte-identical to the previously inline strings.
+   */
+  game: {
+    // --- generateMetadata ---
+    notFoundTitle: string;
+    metaTitle(category: string): string;
+    /**
+     * Richest-first description variants for pickMetaDescription: 3-name
+     * lead → 2-name lead → nameless "most followed" sentence → bare tail.
+     * `names` are the visible ranking's top names in table order; the entry
+     * formats its own prose list (en: formatNameList, others:
+     * listConjunction) and its own verb agreement.
+     */
+    metaDescription(category: string, names: string[]): string[];
+    ogTitle(category: string): string;
+    /** OG/Twitter description; names joined em-dash style when present. */
+    ogDescription(category: string, names: string[]): string;
+    // --- hero ---
+    h1(category: string): string;
+    /**
+     * Full intro: "{shown} streamers have {cat} streams live or scheduled
+     * this week on Twitch and YouTube. {live} are live right now, with
+     * {upcoming} upcoming streams in the next 7 days." Clauses drop at 0
+     * (live clause becomes "None are live right now"); `superlative` is the
+     * pre-rendered sentence below or '' and is appended verbatim.
+     */
+    intro(
+      shown: number,
+      category: string,
+      liveCount: number,
+      upcomingCount: number,
+      superlative: string,
+    ): string;
+    /** " The most-followed {cat} streamer here is {name} with {value} followers."
+     *  Leading space significant (appended to the intro). `value` is the
+     *  locale-formatted compact number; `isTwitch` picks followers/subscribers. */
+    superlative(category: string, name: string, value: string, isTwitch: boolean): string;
+    // --- on-this-page nav ---
+    onPageAria: string;
+    navLiveNow: string;
+    navTopStreamers: string;
+    navBestTimes: string;
+    navSchedule: string;
+    navRelated: string;
+    /** "Follow {category}" chip (auth-gated FollowGameButton). */
+    followGame(category: string): string;
+    followingLabel: string;
+    // --- live section ---
+    watchingNow(category: string): string;
+    liveStreamsAria(category: string): string;
+    moreLiveAria(category: string): string;
+    showMoreLive(n: number): string;
+    moreLiveInRanking(n: number, category: string): string;
+    liveUpdatesNote: string;
+    // --- most-followed table ---
+    mostFollowed(category: string): string;
+    tableCaption(category: string): string;
+    thRank: string;
+    thStreamer: string;
+    thNextStream: string;
+    thFollowers: string;
+    /** "Hours / 28d" — deliberately distinct from the explorer's "Hours (28d)". */
+    thHours: string;
+    liveNowCell: string;
+    seeFullRanking(category: string): string;
+    // --- roster fallback (doubles as the ItemList JSON-LD name) ---
+    whoStreams(category: string): string;
+    // --- heatmap section (client props are placeholder TEMPLATES: the peak
+    //     value only exists after the client-side timezone shift) ---
+    whenStreamed(category: string): string;
+    /** Template with {peak} (bold-rendered by the component) and {tz}. */
+    heatmapSummary(category: string): string;
+    heatmapSummaryEmpty: string;
+    /** {tz} replacements, leading space significant: " (your local time)". */
+    tzLocalSuffix: string;
+    tzUtcSuffix: string;
+    /** role=img aria labels; the "with peak" form is a template with {peak}. */
+    heatmapAria(category: string): string;
+    heatmapAriaWithPeak(category: string): string;
+    /** Cell tooltip template: "{day} {from}–{to} · {amount} streamed in 4 weeks". */
+    heatmapTooltip: string;
+    legendLess: string;
+    legendMore: string;
+    /**
+     * Plural weekday names for the peak-band label ("Mondays 19:00–23:00"),
+     * ISO order Mon..Sun. Kept in the lexicon because several languages use
+     * an adverbial form ("montags") Intl cannot produce.
+     */
+    heatmapDayNames: [string, string, string, string, string, string, string];
+    // --- best-time section (M24 preview) ---
+    bestTimeToStream(category: string): string;
+    trendingBadge: string;
+    bestTimeIntro(category: string): string;
+    fullHeatmapLink: string;
+    bestSlotsAria: string;
+    /** Template: "~{score} viewers/channel". */
+    viewersPerChannel: string;
+    timesLocalNote: string;
+    timesUtcNote: string;
+    // --- quiet empty state ---
+    quietTitle(category: string): string;
+    quietBody(category: string): string;
+    quietMeanwhile: string;
+    seeWhosLive: string;
+    browseAllGames: string;
+    /** Related-games chip label, e.g. "Fortnite streamers". */
+    gameStreamersChip(category: string): string;
+    // --- schedule section ---
+    scheduleAria(category: string): string;
+    upcomingStreams(category: string): string;
+    scheduleNote: string;
+    filterAria: string;
+    allPlatforms: string;
+    hideLowConfidence: string;
+    /** GameDaySection (server component — reads the lexicon directly). */
+    moreLowConfidence(n: number): string;
+    lowConfAria(label: string): string;
+    hiddenNotShown(n: number): string;
+    // --- related games ---
+    relatedGames: string;
+    relatedGamesAria: string;
+    relatedNote: string;
+    // --- footer ---
+    allGamesFooter: string;
+  };
+  /**
+   * /rankings/game/[slug] body + metadata (M22 P4). Same authoring rules as
+   * `game`; the interactive explorer receives these as server-resolved props.
+   */
+  gameRanking: {
+    // --- generateMetadata ---
+    notFoundTitle: string;
+    metaTitle(category: string, page: number): string;
+    /** "{name} leads with {value} followers. " — trailing space significant. */
+    metaLeadIn(name: string, value: string): string;
+    /** Richest-first variants for pickMetaDescription; leadIn may be ''. */
+    metaDescription(category: string, leadIn: string): string[];
+    ogTitle(category: string): string;
+    // --- hero ---
+    h1(category: string): string;
+    introPage1(count: number, category: string): string;
+    /** " {name} tops the list with {value} followers." — leading space significant. */
+    topsTheList(name: string, value: string, isTwitch: boolean): string;
+    introPageN(from: number, to: number, total: number, category: string): string;
+    // --- methodology / freshness ---
+    methodology(category: string): string;
+    /** " Follower counts refreshed {label}." — leading space significant. */
+    followersRefreshed(label: string): string;
+    warmingUp: string;
+    missingDataNote: string;
+    // --- explorer (client props) ---
+    sortAria: string;
+    sortFollowers: string;
+    sortHours: string;
+    sortViewers: string;
+    filterLangAria: string;
+    allChip: string;
+    noMatch: string;
+    tableCaption(category: string): string;
+    thRank: string;
+    thStreamer: string;
+    thFollowers: string;
+    thAvgViewers: string;
+    thHours: string;
+    thShare: string;
+    thShareTitle(category: string): string;
+    thNextStream: string;
+    liveNowCell: string;
+    /** Template appended after liveNowCell: " · {value} watching". */
+    watchingTail: string;
+    trendNewBadge: string;
+    trendNewTitle: string;
+    /** Templates with {n}: "Up {n} since last week". */
+    trendUpTemplate: string;
+    trendDownTemplate: string;
+    /** Template: "Main game: {share}% of their recent broadcasts". */
+    mainGameTemplate: string;
+    // --- FAQ ("About this ranking") ---
+    aboutRanking: string;
+    faqMostFollowedQ(category: string): string;
+    faqMostFollowedA(
+      category: string,
+      top: { name: string; value: string; isTwitch: boolean },
+      second: { name: string; value: string } | null,
+    ): string;
+    faqHowManyQ(category: string): string;
+    faqHowManyA(
+      category: string,
+      count: number,
+      activity: { hours: string; streams: string } | null,
+    ): string;
+    faqMeasuredQ: string;
+    faqMeasuredA(category: string): string;
+    faqShareQ: string;
+    faqShareA(category: string): string;
+    // --- related / footer / pagination ---
+    relatedRankings: string;
+    relatedRankingsAria: string;
+    liveAndSchedule(category: string): string;
+    allRankings: string;
+    paginationAria(category: string): string;
+    prev: string;
+    next: string;
   };
 }

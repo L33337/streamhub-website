@@ -1,4 +1,5 @@
 import { formatCompactNumber } from '@/lib/format/number';
+import { listConjunction } from '@/lib/i18n-core';
 import type { HubLex } from './types';
 
 export const fr: HubLex = {
@@ -329,5 +330,221 @@ export const fr: HubLex = {
       'most-reliable':
         'Part des streams annoncés sur Twitch qui ont réellement commencé à ±30 minutes, sur les 20 derniers streams annoncés dans une fenêtre de 90 jours (minimum 10 évalués). Mis à jour chaque jour.',
     },
+  },
+  gameChips: {
+    aria: (category) => `Statistiques ${category}`,
+    streamersLabel: (n) => (n === 1 ? 'streamer' : 'streamers'),
+    liveNowLabel: 'en live',
+    watchingLabel: 'spectateurs',
+    streamedLabel: 'de stream · 28 jours',
+    streamsLabel: () => 'streams · 28 jours',
+    peakLead: 'Pic de ',
+    peakTail: ' spectateurs · 28 jours',
+    trendTail: ' cette semaine',
+    trendTitle: 'Évolution des streamers actifs par rapport à la semaine dernière',
+  },
+  game: {
+    notFoundTitle: 'Jeu introuvable — StreamerTimes',
+    metaTitle: (category) => `Streamers ${category} — En live, classements et horaires`,
+    metaDescription: (category, names) => {
+      const tail = `Qui est en live, streams à venir et horaires prédits par IA sur Twitch et YouTube.`;
+      const namesLead =
+        names.length > 0
+          ? `${listConjunction(names, 'fr')} ${names.length === 1 ? 'mène' : 'mènent'} le classement ${category}. `
+          : '';
+      const twoNamesLead =
+        names.length > 1
+          ? `${listConjunction(names.slice(0, 2), 'fr')} mènent le classement ${category}. `
+          : '';
+      return [
+        `${namesLead}${tail}`,
+        `${twoNamesLead}${tail}`,
+        `Les streamers ${category} les plus suivis. ${tail}`,
+        tail,
+      ];
+    },
+    ogTitle: (category) => `Streamers ${category} — en live, classements et horaires`,
+    ogDescription: (category, names) => {
+      const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'fr')} —` : ' :';
+      return `Les streamers ${category} les plus suivis${ogNames} statut live et horaires de stream sur Twitch et YouTube.`;
+    },
+    h1: (category) => `Streamers ${category} — en live et horaires`,
+    intro: (shown, category, liveCount, upcomingCount, superlative) =>
+      `${shown} streamer${shown === 1 ? ' a' : 's ont'} des streams ${category} en live ou prévus cette semaine sur Twitch et YouTube. ` +
+      (liveCount > 0
+        ? `${liveCount} ${liveCount === 1 ? 'est' : 'sont'} en live en ce moment`
+        : `Personne n'est en live en ce moment`) +
+      (upcomingCount > 0
+        ? `, avec ${upcomingCount} stream${upcomingCount === 1 ? '' : 's'} à venir dans les 7 prochains jours.`
+        : '.') +
+      superlative,
+    superlative: (category, name, value, isTwitch) =>
+      ` Le streamer ${category} le plus suivi ici est ${name}, avec ${value} ${isTwitch ? 'followers' : 'abonnés'}.`,
+    onPageAria: 'Sur cette page',
+    navLiveNow: 'En live',
+    navTopStreamers: 'Top streamers',
+    navBestTimes: 'Meilleurs créneaux',
+    navSchedule: 'Horaires',
+    navRelated: 'Jeux similaires',
+    followGame: (category) => `Suivre ${category}`,
+    followingLabel: 'Suivi',
+    watchingNow: (category) => `${category} en live maintenant`,
+    liveStreamsAria: (category) => `Streams ${category} en live`,
+    moreLiveAria: (category) => `Autres streams ${category} en live`,
+    showMoreLive: (n) =>
+      n === 1 ? 'Voir 1 chaîne de plus en live' : `Voir ${n} chaînes de plus en live`,
+    moreLiveInRanking: (n, category) =>
+      `${n} de plus en live dans le classement ${category} complet →`,
+    liveUpdatesNote:
+      'Le statut live et les spectateurs se mettent à jour toutes les quelques minutes.',
+    mostFollowed: (category) => `Streamers ${category} les plus suivis`,
+    tableCaption: (category) =>
+      `Streamers ${category} classés par followers, avec leur prochain stream attendu`,
+    thRank: '#',
+    thStreamer: 'Streamer',
+    thNextStream: 'Prochain stream',
+    thFollowers: 'Followers',
+    thHours: 'Heures / 28 j',
+    liveNowCell: 'En live',
+    seeFullRanking: (category) =>
+      `Voir le classement ${category} complet (top 50) →`,
+    whoStreams: (category) => `Streamers qui streament ${category}`,
+    whenStreamed: (category) => `Quand est-ce que ${category} est streamé ?`,
+    heatmapSummary: (category) =>
+      `La plupart des streams ${category} tournent {peak}{tz} — d'après les 4 dernières semaines de streams suivis.`,
+    heatmapSummaryEmpty: `D'après les 4 dernières semaines de streams suivis.`,
+    tzLocalSuffix: ' (ton heure)',
+    tzUtcSuffix: ' (UTC)',
+    heatmapAria: (category) => `Heatmap hebdomadaire des streams ${category}.`,
+    heatmapAriaWithPeak: (category) =>
+      `Heatmap hebdomadaire des streams ${category}. Créneau le plus actif : {peak}.`,
+    heatmapTooltip: '{day} {from}–{to} · {amount} de stream en 4 semaines',
+    legendLess: 'Moins',
+    legendMore: 'Plus',
+    heatmapDayNames: [
+      'le lundi',
+      'le mardi',
+      'le mercredi',
+      'le jeudi',
+      'le vendredi',
+      'le samedi',
+      'le dimanche',
+    ],
+    bestTimeToStream: (category) => `Meilleur moment pour streamer ${category}`,
+    trendingBadge: '▲ Tendance',
+    bestTimeIntro: (category) =>
+      `Pour les streamers : les créneaux où ${category} compte le plus de spectateurs par chaîne en live.`,
+    fullHeatmapLink: `Heatmap d'opportunités et analyse complète →`,
+    bestSlotsAria: 'Meilleurs créneaux',
+    viewersPerChannel: '~{score} spectateurs/chaîne',
+    timesLocalNote: 'Heures dans ton fuseau horaire.',
+    timesUtcNote: 'Heures en UTC.',
+    quietTitle: (category) => `Aucun stream ${category} en ce moment`,
+    quietBody: (category) =>
+      `Aucun des streamers ${category} que nous suivons n'est en live ou attendu dans les 7 prochains jours. Les horaires et prédictions IA se mettent à jour plusieurs fois par jour — reviens bientôt.`,
+    quietMeanwhile: 'En attendant',
+    seeWhosLive: 'Voir qui est en live →',
+    browseAllGames: 'Parcourir tous les jeux',
+    gameStreamersChip: (category) => `Streamers ${category}`,
+    scheduleAria: (category) => `Horaires des streams ${category}`,
+    upcomingStreams: (category) => `Streams ${category} à venir`,
+    scheduleNote:
+      `Les heures s'adaptent à ton fuseau horaire, avec l'heure du streamer à côté. Les jours suivent le calendrier UTC, donc un stream tard dans la nuit peut apparaître sous le jour suivant.`,
+    filterAria: 'Filtrer les horaires',
+    allPlatforms: 'Toutes les plateformes',
+    hideLowConfidence: 'Masquer probabilité faible',
+    moreLowConfidence: (n) =>
+      n === 1
+        ? '1 prédiction de plus à probabilité faible'
+        : `${n} prédictions de plus à probabilité faible`,
+    lowConfAria: (label) => `Prédictions à probabilité faible : ${label}`,
+    hiddenNotShown: (n) =>
+      n === 1
+        ? `1 prédiction de plus n'est pas affichée pour ce jour. Ouvre la page du streamer pour son horaire complet.`
+        : `${n} prédictions de plus ne sont pas affichées pour ce jour. Ouvre la page du streamer pour son horaire complet.`,
+    relatedGames: 'Jeux similaires',
+    relatedGamesAria: 'Jeux similaires',
+    relatedNote:
+      'Jeux dont les streamers se recoupent sur les 28 derniers jours.',
+    allGamesFooter: '← Tous les jeux et catégories',
+  },
+  gameRanking: {
+    notFoundTitle: 'Introuvable — StreamerTimes',
+    metaTitle: (category, page) =>
+      page === 1
+        ? `Top streamers ${category} — classés par followers`
+        : `Top streamers ${category} — classés par followers — Page ${page}`,
+    metaLeadIn: (name, value) => `${name} mène avec ${value} followers. `,
+    metaDescription: (category, leadIn) => [
+      `${leadIn}Les meilleurs streamers ${category} sur Twitch et YouTube, classés par followers, avec statut live et prochains streams. Mis à jour chaque jour.`,
+      `${leadIn}Les meilleurs streamers ${category} par followers, avec statut live et prochains streams.`,
+      `Les meilleurs streamers ${category} sur Twitch et YouTube, classés par followers, avec statut live et prochains streams. Mis à jour chaque jour.`,
+    ],
+    ogTitle: (category) => `Top streamers ${category} — classés par followers`,
+    h1: (category) => `Top streamers ${category} par followers`,
+    introPage1: (count, category) =>
+      `Les ${count} meilleurs streamers ${category} que nous suivons, classés par followers et abonnés de la chaîne.`,
+    topsTheList: (name, value, isTwitch) =>
+      ` ${name} est en tête avec ${value} ${isTwitch ? 'followers' : 'abonnés'}.`,
+    introPageN: (from, to, total, category) =>
+      `Rangs ${from}–${to} sur ${total} streamers ${category} que nous suivons, classés par followers et abonnés de la chaîne.`,
+    methodology: (category) =>
+      `Streamers actifs dans ${category} sur les 28 derniers jours, classés par followers. Les chiffres sont rafraîchis régulièrement et peuvent être en retard sur les plateformes.`,
+    followersRefreshed: (label) => ` Followers mis à jour : ${label}.`,
+    warmingUp:
+      `Ce classement chauffe encore — il nous faut un peu plus de données avant qu'il soit parlant. Reviens bientôt.`,
+    missingDataNote:
+      `— signifie que nous n'avons pas encore assez de données pour cette chaîne, par exemple l'échantillonnage des spectateurs pour les chaînes fraîchement ajoutées.`,
+    sortAria: 'Trier le classement',
+    sortFollowers: 'Plus suivis',
+    sortHours: `Plus d'heures (28 j)`,
+    sortViewers: 'Plus regardés',
+    filterLangAria: 'Filtrer par langue',
+    allChip: 'Tous',
+    noMatch: 'Aucun streamer ne correspond à ce filtre.',
+    tableCaption: (category) => `Streamers ${category} classés par followers`,
+    thRank: '#',
+    thStreamer: 'Streamer',
+    thFollowers: 'Followers',
+    thAvgViewers: 'Spectateurs moy.',
+    thHours: 'Heures (28 j)',
+    thShare: 'Part du jeu',
+    thShareTitle: (category) =>
+      `Part des derniers streams du streamer consacrés à ${category}`,
+    thNextStream: 'Prochain stream',
+    liveNowCell: 'En live',
+    watchingTail: ' · {value} spectateurs',
+    trendNewBadge: 'nouveau',
+    trendNewTitle: `N'était pas dans ce classement il y a une semaine`,
+    trendUpTemplate: 'Monte de {n} depuis la semaine dernière',
+    trendDownTemplate: 'Descend de {n} depuis la semaine dernière',
+    mainGameTemplate: 'Jeu principal : {share}% de ses derniers streams',
+    aboutRanking: 'À propos de ce classement',
+    faqMostFollowedQ: (category) =>
+      `Quel streamer ${category} a le plus de followers ?`,
+    faqMostFollowedA: (category, top, second) => {
+      const runnerUp = second ? `, devant ${second.name} avec ${second.value}` : '';
+      return `${top.name} est actuellement le streamer ${category} le plus suivi parmi ceux que nous suivons, avec ${top.value} ${top.isTwitch ? 'followers' : 'abonnés'}${runnerUp}. Les chiffres sont mis à jour chaque jour.`;
+    },
+    faqHowManyQ: (category) => `Combien de streamers streament ${category} ?`,
+    faqHowManyA: (category, count, activity) => {
+      const tail = activity
+        ? ` Ensemble, ils ont streamé environ ${activity.hours} heures de ${category} sur ${activity.streams} streams au cours des 28 derniers jours.`
+        : '';
+      return `Nous suivons actuellement ${count} streamer${count === 1 ? '' : 's'} qui ont streamé ${category} récemment ou l'ont à leur programme.${tail}`;
+    },
+    faqMeasuredQ: 'Comment ce classement est-il mesuré ?',
+    faqMeasuredA: (category) =>
+      `Streamers actifs dans ${category} sur les 28 derniers jours, classés par les followers de leur chaîne principale — followers de la chaîne sur Twitch ou abonnés sur YouTube. Les colonnes heures et part viennent d'un agrégat nocturne des streams ${category} terminés.`,
+    faqShareQ: 'Que signifie « Part du jeu » ?',
+    faqShareA: (category) =>
+      `La part des derniers streams d'un streamer consacrés à ${category}. 100 % signifie que c'est actuellement son seul jeu ; une part faible marque un visiteur occasionnel de la catégorie.`,
+    relatedRankings: 'Classements similaires',
+    relatedRankingsAria: 'Classements de jeux similaires',
+    liveAndSchedule: (category) => `En live et horaires de ${category} →`,
+    allRankings: 'Tous les classements',
+    paginationAria: (category) => `Pages du classement ${category}`,
+    prev: '← Précédent',
+    next: 'Suivant →',
   },
 };

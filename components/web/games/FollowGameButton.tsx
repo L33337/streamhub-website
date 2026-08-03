@@ -16,7 +16,16 @@ import { followGame, isGameFollowed, unfollowGame } from '@/lib/supabase/gameFol
 
 type State = 'hidden' | 'not-following' | 'following';
 
-export function FollowGameButton({ category }: { category: string }) {
+export function FollowGameButton({
+  category,
+  followLabel,
+  followingLabel = 'Following',
+}: {
+  category: string;
+  /** M22 P4: localized "Follow {category}" (pre-interpolated); default English. */
+  followLabel?: string;
+  followingLabel?: string;
+}) {
   const [state, setState] = useState<State>('hidden');
 
   useEffect(() => {
@@ -69,7 +78,7 @@ export function FollowGameButton({ category }: { category: string }) {
         aria-hidden="true"
         className={following ? 'fill-current' : ''}
       />
-      {following ? 'Following' : `Follow ${category}`}
+      {following ? followingLabel : (followLabel ?? `Follow ${category}`)}
     </button>
   );
 }

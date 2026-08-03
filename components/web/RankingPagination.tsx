@@ -12,6 +12,9 @@ interface Props {
   hrefFor: (page: number) => string;
   /** Accessible name of the nav landmark. */
   label: string;
+  /** M22 P4: localized prev/next; English defaults keep old callers byte-identical. */
+  prevLabel?: string;
+  nextLabel?: string;
 }
 
 /**
@@ -23,7 +26,14 @@ interface Props {
  * self-link, and why every other page is a real <a href> rather than a
  * scripted handler.
  */
-export function RankingPagination({ page, pages, hrefFor, label }: Props) {
+export function RankingPagination({
+  page,
+  pages,
+  hrefFor,
+  label,
+  prevLabel = '← Previous',
+  nextLabel = 'Next →',
+}: Props) {
   if (pages <= 1) return null;
 
   const numbers = pageWindow(page, pages);
@@ -36,7 +46,7 @@ export function RankingPagination({ page, pages, hrefFor, label }: Props) {
           rel="prev"
           className="rounded-lg border border-border-default bg-background-elevated px-3 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
         >
-          ← Previous
+          {prevLabel}
         </Link>
       )}
 
@@ -70,7 +80,7 @@ export function RankingPagination({ page, pages, hrefFor, label }: Props) {
           rel="next"
           className="rounded-lg border border-border-default bg-background-elevated px-3 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
         >
-          Next →
+          {nextLabel}
         </Link>
       )}
     </nav>

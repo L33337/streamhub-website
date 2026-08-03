@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { localizedNextLabel } from '@/lib/format/time';
 import { nextStreamLabel } from '@/lib/next-stream';
+import { slotLexFor } from '@/lib/i18n-slot';
 
 function subscribe(): () => void {
   return () => {};
@@ -14,24 +15,36 @@ function subscribe(): () => void {
  * the browser-local form ("Today 8:00 PM") after hydration — same
  * useSyncExternalStore pattern as SlotStatusText. Predicted (AI) times carry
  * a "~" prefix and an explanatory title.
+ *
+ * `language` (M22 P4) localizes the Today/Tomorrow/weekday words and the
+ * title attributes; the default 'en' keeps every existing caller
+ * byte-identical (nextStreamLabel is the original English client path).
  */
 export function NextStreamTime({
   startTime,
   isPredicted,
+  language = 'en',
 }: {
   startTime: string;
   isPredicted: boolean;
+  language?: string;
 }) {
   const text = useSyncExternalStore(
     subscribe,
-    () => nextStreamLabel(startTime),
-    () => localizedNextLabel(startTime),
+    () =>
+      language === 'en'
+        ? nextStreamLabel(startTime)
+        : localizedNextLabel(startTime, language, {
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+    () => localizedNextLabel(startTime, language),
   );
+  const L = slotLexFor(language);
   return (
     <time
       dateTime={startTime}
       suppressHydrationWarning
-      title={isPredicted ? 'AI-predicted start time' : 'Announced schedule start'}
+      title={isPredicted ? L.nextTimePredictedTitle : L.nextTimeAnnouncedTitle}
     >
       {isPredicted ? `~ ${text}` : text}
     </time>

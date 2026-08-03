@@ -16,10 +16,18 @@ import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
   buildVideoGameJsonLd,
+  INDEXABLE_GAME_LOCALES,
   jsonLdHtml,
   pickMetaDescription,
 } from '@/lib/seo';
-import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import {
+  isUiLang,
+  localeHref,
+  weekdayLong,
+  weekdayShort,
+  type UiLang,
+} from '@/lib/i18n-core';
+import { hubLexFor } from '@/lib/i18n-hub';
 import { gameSlug, findGameBySlug } from '@/lib/game-slug';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
@@ -28,7 +36,6 @@ import {
   buildGameRankingRows,
   rankGameStreamers,
   topGameStreamerNames,
-  formatNameList,
 } from '@/lib/game-ranking';
 import { isGameHubIndexable } from '@/lib/rankings';
 import { schedulePlatforms } from '@/lib/game-schedule';
@@ -226,44 +233,31 @@ export async function generateStaticParams({
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const G = hubLexFor(locale).game;
   const { category, game, liveSlots, upcomingSlots, rankedStreamers } =
     await loadGamePage(slug);
-  if (!category) return { title: 'Game not found — StreamerTimes' };
+  if (!category) return { title: G.notFoundTitle };
   const url = `${SITE_URL}/game/${slug}`;
   // Top names from the SAME ranking the visible "Most followed" table renders —
   // they target "streamer + game" searches. follower_count refreshes daily, so
   // the names are stable between crawls; when the ranking call degraded (or no
   // streamer has a usable follower count) the copy falls back to the nameless
   // variant instead of churning.
-  const names = topGameStreamerNames(rankedStreamers, 3);
-  const namesLead =
-    names.length > 0
-      ? `${formatNameList(names)} lead${names.length === 1 ? 's' : ''} the ${category} ranking. `
-      : '';
-  const twoNamesLead =
-    names.length > 1 ? `${formatNameList(names.slice(0, 2))} lead the ${category} ranking. ` : '';
-  const ogNames = names.length > 0 ? ` — ${formatNameList(names)} —` : ',';
+  //
   // Description budget is 155 chars (Bing flags >160, Google truncates ~155),
-  // so the copy is assembled richest-first and the first fitting variant wins:
-  // three names → two names → no names. The old single template appended a
-  // "~1.2K hours streamed" sentence on top of the full boilerplate and landed
-  // at 227 chars for Fortnite — everything past the first sentence was cut by
-  // both engines anyway, so the hours sentence is gone rather than shortened.
-  const tail = `Who is live now, upcoming streams and AI-predicted schedules on Twitch and YouTube.`;
+  // so the lexicon returns richest-first variants and the first fitting one
+  // wins: three names → two names → no names (the 'en' entries are
+  // byte-identical to the pre-M22-P4 inline assembly).
+  const names = topGameStreamerNames(rankedStreamers, 3);
   const meta: Metadata = {
     // No streamer count in the title: it changes daily → title churn on every
     // re-crawl, and the chars are better spent on the stable keywords.
-    title: `${category} Streamers — Live Now, Rankings & Schedule`,
-    description: pickMetaDescription(
-      `${namesLead}${tail}`,
-      `${twoNamesLead}${tail}`,
-      `The most followed ${category} streamers. ${tail}`,
-      tail,
-    ),
+    title: G.metaTitle(category),
+    description: pickMetaDescription(...G.metaDescription(category, names)),
     alternates: { canonical: url },
     openGraph: {
-      title: `${category} streamers — live now, rankings & schedule`,
-      description: `The most followed ${category} streamers${ogNames} live status and stream schedule on Twitch and YouTube.`,
+      title: G.ogTitle(category),
+      description: G.ogDescription(category, names),
       url,
       siteName: 'Streamer Times',
       type: 'website',
@@ -274,8 +268,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // no live numbers (churn rule above).
     twitter: {
       card: 'summary_large_image',
-      title: `${category} streamers — live now, rankings & schedule`,
-      description: `The most followed ${category} streamers${ogNames} live status and stream schedule on Twitch and YouTube.`,
+      title: G.ogTitle(category),
+      description: G.ogDescription(category, names),
     },
   };
   // Site convention (lib/seo.ts, rankings pages): only set robots when gating
@@ -289,9 +283,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ) {
     meta.robots = { index: false, follow: true };
   }
-  // M22 P3: en-only indexability matrix — pass-through for 'en', noindex,follow
-  // + self-canonical for every other locale variant.
-  return applyLocaleSeo(meta, locale, `/game/${slug}`);
+  // M22 P4: game pages are indexable in en+de (INDEXABLE_GAME_LOCALES); other
+  // locales viewable but noindex,follow + self-canonical (incoming noindex
+  // sticks and never gets a cluster).
+  return applyLocaleSeo(meta, locale, `/game/${slug}`, INDEXABLE_GAME_LOCALES);
 }
 
 interface GameStreamer {
@@ -303,7 +298,11 @@ interface GameStreamer {
 }
 
 export default async function GamePage({ params }: Props) {
-  const { slug } = await params;
+  const { locale: rawLocale, slug } = await params;
+  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const Lex = hubLexFor(locale);
+  const G = Lex.game;
+  const C = Lex.gameChips;
   const {
     category,
     game,
@@ -316,6 +315,11 @@ export default async function GamePage({ params }: Props) {
     now,
   } = await loadGamePage(slug);
   if (!category || !game) notFound();
+
+  // Localized weekday arrays for the client heatmap/chips (Intl-derived — no
+  // translation debt; 'en' output matches the components' English defaults).
+  const dayShort = Array.from({ length: 7 }, (_, i) => weekdayShort(i, locale));
+  const dayLong = Array.from({ length: 7 }, (_, i) => weekdayLong(i, locale));
 
   // M24 best-time preview: only with real slot data past the tracked gate —
   // mirrors the /best-time page's own indexability gate so the hub never
@@ -403,8 +407,8 @@ export default async function GamePage({ params }: Props) {
   );
 
   const breadcrumb = buildBreadcrumbJsonLd([
-    { name: 'Home', url: SITE_URL },
-    { name: 'Games', url: `${SITE_URL}/games` },
+    { name: Lex.crumbs.home, url: SITE_URL },
+    { name: Lex.crumbs.games, url: `${SITE_URL}/games` },
     { name: category },
   ]);
   // VideoGame structured data ONLY for actual video games — "Just Chatting" /
@@ -427,7 +431,7 @@ export default async function GamePage({ params }: Props) {
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: `Streamers who stream ${category}`,
+    name: G.whoStreams(category),
     itemListElement: itemListStreamers.map((s, i) => ({
       '@type': 'ListItem',
       position: i + 1,
@@ -443,22 +447,16 @@ export default async function GamePage({ params }: Props) {
   const shown = streamers.length;
   // Honest superlative line — derived ONLY from the rendered ranking (its #1),
   // never fabricated. Omitted entirely when the ranking is empty.
-  const topFollowerNoun = topStreamer?.platforms.includes('twitch')
-    ? 'followers'
-    : 'subscribers';
   const superlative =
     topStreamer && topStreamer.follower_count != null
-      ? ` The most-followed ${category} streamer here is ${topStreamer.name} with ${formatCompactNumber(topStreamer.follower_count, 'en')} ${topFollowerNoun}.`
+      ? G.superlative(
+          category,
+          topStreamer.name,
+          formatCompactNumber(topStreamer.follower_count, locale),
+          topStreamer.platforms.includes('twitch'),
+        )
       : '';
-  const intro =
-    `${shown} streamer${shown === 1 ? '' : 's'} ${shown === 1 ? 'has' : 'have'} ${category} streams live or scheduled this week on Twitch and YouTube. ` +
-    (liveCount > 0
-      ? `${liveCount} ${liveCount === 1 ? 'is' : 'are'} live right now`
-      : 'None are live right now') +
-    (upcomingSlots.length > 0
-      ? `, with ${upcomingSlots.length} upcoming stream${upcomingSlots.length === 1 ? '' : 's'} in the next 7 days.`
-      : '.') +
-    superlative;
+  const intro = G.intro(shown, category, liveCount, upcomingSlots.length, superlative);
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
@@ -478,8 +476,8 @@ export default async function GamePage({ params }: Props) {
       )}
 
       <p className="text-sm text-text-muted">
-        <Link href="/games" className="hover:text-accent-cyan">
-          Games
+        <Link href={localeHref(locale, '/games')} className="hover:text-accent-cyan">
+          {Lex.crumbs.games}
         </Link>{' '}
         / {category}
       </p>
@@ -496,29 +494,30 @@ export default async function GamePage({ params }: Props) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          {/* One interpolated string, not `{category} text`: adjacent JSX
-              children render as separate text nodes and the leading space of
-              the second one is lost, which shipped "VALORANTstreamers". */}
+          {/* One complete lexicon string, never `{category} text` fragments:
+              adjacent JSX children render as separate text nodes and the
+              leading space of the second one is lost, which shipped
+              "VALORANTstreamers". */}
           <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
-            {`${category} streamers — live now & schedule`}
+            {G.h1(category)}
           </h1>
           <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>
           {/* Stats chips — every chip conditional on its (nullable) field. */}
-          <ul className="mt-3 flex flex-wrap gap-2 text-xs" aria-label={`${category} statistics`}>
+          <ul className="mt-3 flex flex-wrap gap-2 text-xs" aria-label={C.aria(category)}>
             <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
               <span className="font-semibold text-text-primary">{game.streamer_count}</span>{' '}
-              streamer{game.streamer_count === 1 ? '' : 's'}
+              {C.streamersLabel(game.streamer_count)}
             </li>
             {liveCount > 0 && (
               <li className="rounded-full border border-live/40 bg-background-elevated px-2.5 py-1 text-live">
-                <span className="font-semibold">{liveCount}</span> live now
+                <span className="font-semibold">{liveCount}</span> {C.liveNowLabel}
                 {game.live_viewer_total != null && (
                   <>
                     {' '}
                     · <span className="font-semibold">
-                      {formatCompactNumber(game.live_viewer_total, 'en')}
+                      {formatCompactNumber(game.live_viewer_total, locale)}
                     </span>{' '}
-                    watching
+                    {C.watchingLabel}
                   </>
                 )}
               </li>
@@ -526,24 +525,24 @@ export default async function GamePage({ params }: Props) {
             {game.hours_28d != null && game.hours_28d > 0 && (
               <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
                 <span className="font-semibold text-text-primary">
-                  {formatCompactNumber(Math.round(game.hours_28d), 'en')}h
+                  {formatCompactNumber(Math.round(game.hours_28d), locale)}h
                 </span>{' '}
-                streamed / 28d
+                {C.streamedLabel}
               </li>
             )}
             {game.streams_28d != null && game.streams_28d > 0 && (
               <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
                 <span className="font-semibold text-text-primary">{game.streams_28d}</span>{' '}
-                streams / 28d
+                {C.streamsLabel(game.streams_28d)}
               </li>
             )}
             {game.peak_viewer_28d != null && game.peak_viewer_28d > 0 && (
               <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
-                Peak{' '}
+                {C.peakLead}
                 <span className="font-semibold text-text-primary">
-                  {formatCompactNumber(game.peak_viewer_28d, 'en')}
-                </span>{' '}
-                viewers / 28d
+                  {formatCompactNumber(game.peak_viewer_28d, locale)}
+                </span>
+                {C.peakTail}
               </li>
             )}
             {game.trend_delta_percent != null && (
@@ -551,14 +550,18 @@ export default async function GamePage({ params }: Props) {
                 className={`rounded-full border border-border-default bg-background-elevated px-2.5 py-1 font-semibold ${
                   game.trend_delta_percent >= 0 ? 'text-live' : 'text-accent-pink'
                 }`}
-                title="Week-over-week change in active streamers"
+                title={C.trendTitle}
               >
                 {game.trend_delta_percent >= 0 ? '▲' : '▼'}{' '}
-                {Math.abs(game.trend_delta_percent)}% this week
+                {Math.abs(game.trend_delta_percent)}%{C.trendTail}
               </li>
             )}
           </ul>
-          <FollowGameButton category={category} />
+          <FollowGameButton
+            category={category}
+            followLabel={G.followGame(category)}
+            followingLabel={G.followingLabel}
+          />
         </div>
       </div>
 
@@ -566,30 +569,30 @@ export default async function GamePage({ params }: Props) {
         ranked.length > 0 ||
         hasSchedule ||
         (related.length > 0 && !isQuiet)) && (
-        <nav aria-label="On this page" className="mt-5 flex flex-wrap gap-2 text-xs">
+        <nav aria-label={G.onPageAria} className="mt-5 flex flex-wrap gap-2 text-xs">
           {liveSlots.length > 0 && (
             <a href="#watching-now" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
-              Live now
+              {G.navLiveNow}
             </a>
           )}
           {ranked.length > 0 && (
             <a href="#most-followed" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
-              Top streamers
+              {G.navTopStreamers}
             </a>
           )}
           {hourHistogram && (
             <a href="#stream-times" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
-              Best times
+              {G.navBestTimes}
             </a>
           )}
           {hasSchedule && (
             <a href="#schedule" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
-              Schedule
+              {G.navSchedule}
             </a>
           )}
           {related.length > 0 && !isQuiet && (
             <a href="#related-games" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
-              Related games
+              {G.navRelated}
             </a>
           )}
         </nav>
@@ -602,12 +605,12 @@ export default async function GamePage({ params }: Props) {
           className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
         >
           <h2 id="watching-now-heading" className="text-xl font-bold text-white">
-            Watching {category} now
+            {G.watchingNow(category)}
           </h2>
-          <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-label={`Live ${category} streams`}>
+          <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-label={G.liveStreamsAria(category)}>
             {liveShown.map((slot) => (
               <li key={slot.id}>
-                <SlotCard slot={slot} />
+                <SlotCard slot={slot} language={locale} />
               </li>
             ))}
           </ul>
@@ -619,33 +622,31 @@ export default async function GamePage({ params }: Props) {
                   aria-hidden="true"
                   className="shrink-0 transition-transform group-open:rotate-90"
                 />
-                Show {liveMore.length} more live channel{liveMore.length === 1 ? '' : 's'}
+                {G.showMoreLive(liveMore.length)}
               </summary>
               <ul
                 className="mt-3 grid gap-3 lg:grid-cols-2"
-                aria-label={`More live ${category} streams`}
+                aria-label={G.moreLiveAria(category)}
               >
                 {liveMore.map((slot) => (
                   <li key={slot.id}>
-                    <SlotCard slot={slot} />
+                    <SlotCard slot={slot} language={locale} />
                   </li>
                 ))}
               </ul>
               {liveOverflow > 0 && (
                 <p className="mt-2 text-xs">
                   <Link
-                    href={`/rankings/game/${slug}`}
+                    href={localeHref(locale, `/rankings/game/${slug}`)}
                     className="text-accent-cyan hover:text-text-primary"
                   >
-                    {liveOverflow} more live in the full {category} ranking →
+                    {G.moreLiveInRanking(liveOverflow, category)}
                   </Link>
                 </p>
               )}
             </details>
           )}
-          <p className="mt-2 text-xs text-text-muted">
-            Live status and viewer counts update every few minutes.
-          </p>
+          <p className="mt-2 text-xs text-text-muted">{G.liveUpdatesNote}</p>
         </section>
       )}
 
@@ -656,30 +657,27 @@ export default async function GamePage({ params }: Props) {
           className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
         >
           <h2 id="most-followed-heading" className="text-xl font-bold text-white">
-            Most followed {category} streamers
+            {G.mostFollowed(category)}
           </h2>
           <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
             <table className="w-full text-sm">
-              <caption className="sr-only">
-                {category} streamers ranked by follower count, with their next
-                expected stream
-              </caption>
+              <caption className="sr-only">{G.tableCaption(category)}</caption>
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
                   <th scope="col" className="px-3 py-2 font-semibold">
-                    #
+                    {G.thRank}
                   </th>
                   <th scope="col" className="px-3 py-2 font-semibold">
-                    Streamer
+                    {G.thStreamer}
                   </th>
                   <th scope="col" className="px-3 py-2 font-semibold">
-                    Next stream
+                    {G.thNextStream}
                   </th>
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    Followers
+                    {G.thFollowers}
                   </th>
                   <th scope="col" className="hidden px-3 py-2 text-right font-semibold sm:table-cell">
-                    Hours / 28d
+                    {G.thHours}
                   </th>
                 </tr>
               </thead>
@@ -691,6 +689,7 @@ export default async function GamePage({ params }: Props) {
                       <NextStreamTime
                         startTime={row.nextStreamAt}
                         isPredicted={row.nextIsPredicted}
+                        language={locale}
                       />
                       {row.nextCategory && (
                         <span
@@ -709,7 +708,7 @@ export default async function GamePage({ params }: Props) {
                       </td>
                       <th scope="row" className="px-3 py-2 text-left font-medium">
                         <Link
-                          href={`/streamer/${encodeURIComponent(row.id)}`}
+                          href={localeHref(locale, `/streamer/${encodeURIComponent(row.id)}`)}
                           className="group flex items-center gap-3"
                         >
                           {row.avatarUrl ? (
@@ -749,7 +748,7 @@ export default async function GamePage({ params }: Props) {
                             href="#watching-now"
                             className="font-semibold text-live hover:underline"
                           >
-                            Live now
+                            {G.liveNowCell}
                           </a>
                         ) : nextDay && renderedDayKeys.has(nextDay) ? (
                           <a href={`#day-${nextDay}`} className="hover:text-accent-cyan">
@@ -760,11 +759,11 @@ export default async function GamePage({ params }: Props) {
                         )}
                       </td>
                       <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
-                        {formatCompactNumber(row.followerCount, 'en')}
+                        {formatCompactNumber(row.followerCount, locale)}
                       </td>
                       <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
                         {row.hours28d != null && row.hours28d > 0
-                          ? `${formatCompactNumber(Math.round(row.hours28d), 'en')}h`
+                          ? `${formatCompactNumber(Math.round(row.hours28d), locale)}h`
                           : '—'}
                       </td>
                     </tr>
@@ -775,10 +774,10 @@ export default async function GamePage({ params }: Props) {
           </div>
           <p className="mt-3 text-sm">
             <Link
-              href={`/rankings/game/${slug}`}
+              href={localeHref(locale, `/rankings/game/${slug}`)}
               className="text-accent-cyan hover:text-text-primary"
             >
-              See the full {category} ranking (top 50) →
+              {G.seeFullRanking(category)}
             </Link>
           </p>
         </section>
@@ -787,16 +786,16 @@ export default async function GamePage({ params }: Props) {
       {ranked.length === 0 && moreStreamers.length > 0 && (
         <section aria-labelledby="streamers-heading" className="mt-10">
           <h2 id="streamers-heading" className="text-xl font-bold text-white">
-            Streamers who stream {category}
+            {G.whoStreams(category)}
           </h2>
           <ul
             className="mt-4 grid gap-3 sm:grid-cols-2"
-            aria-label={`Streamers who stream ${category}`}
+            aria-label={G.whoStreams(category)}
           >
             {moreStreamers.map((s) => (
             <li key={s.id} className="min-w-0">
               <Link
-                href={`/streamer/${encodeURIComponent(s.id)}`}
+                href={localeHref(locale, `/streamer/${encodeURIComponent(s.id)}`)}
                 className="group flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated p-3 transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight"
               >
                 {s.avatar ? (
@@ -838,9 +837,25 @@ export default async function GamePage({ params }: Props) {
           className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
         >
           <h2 id="stream-times-heading" className="text-xl font-bold text-white">
-            When is {category} streamed?
+            {G.whenStreamed(category)}
           </h2>
-          <StreamTimesHeatmap category={category} histogram={hourHistogram} />
+          <StreamTimesHeatmap
+            category={category}
+            histogram={hourHistogram}
+            labels={{
+              summary: G.heatmapSummary(category),
+              summaryEmpty: G.heatmapSummaryEmpty,
+              tzLocal: G.tzLocalSuffix,
+              tzUtc: G.tzUtcSuffix,
+              aria: G.heatmapAria(category),
+              ariaWithPeak: G.heatmapAriaWithPeak(category),
+              tooltip: G.heatmapTooltip,
+              legendLess: G.legendLess,
+              legendMore: G.legendMore,
+              dayShort,
+              dayNames: G.heatmapDayNames,
+            }}
+          />
         </section>
       )}
 
@@ -852,27 +867,35 @@ export default async function GamePage({ params }: Props) {
         >
           <div className="flex flex-wrap items-center gap-2">
             <h2 id="best-time-heading" className="text-xl font-bold text-white">
-              Best time to stream {category}
+              {G.bestTimeToStream(category)}
             </h2>
             {timing?.is_trending === true && (
               <span className="inline-flex items-center gap-1 rounded-full border border-accent-pink/40 bg-background-elevated px-2.5 py-0.5 text-xs font-semibold text-accent-pink">
-                ▲ Trending
+                {G.trendingBadge}
               </span>
             )}
           </div>
           <p className="mt-1 max-w-2xl text-sm text-text-secondary">
-            For streamers: the windows where {category} viewers outnumber live{' '}
-            {category} channels the most.
+            {G.bestTimeIntro(category)}
           </p>
           <div className="mt-3">
-            <BestSlotChips slots={bestSlots} />
+            <BestSlotChips
+              slots={bestSlots}
+              labels={{
+                aria: G.bestSlotsAria,
+                perChannel: G.viewersPerChannel,
+                localNote: G.timesLocalNote,
+                utcNote: G.timesUtcNote,
+                dayNames: dayLong,
+              }}
+            />
           </div>
           <p className="mt-3 text-sm">
             <Link
-              href={`/game/${slug}/best-time`}
+              href={localeHref(locale, `/game/${slug}/best-time`)}
               className="text-accent-cyan hover:text-text-primary"
             >
-              Full opportunity heatmap &amp; analysis →
+              {G.fullHeatmapLink}
             </Link>
           </p>
         </section>
@@ -884,27 +907,25 @@ export default async function GamePage({ params }: Props) {
           className="mt-10 rounded-xl border border-border-default bg-background-elevated p-6"
         >
           <h2 id="quiet-heading" className="text-lg font-bold text-white">
-            No {category} streams right now
+            {G.quietTitle(category)}
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-            None of the {category} streamers we track are live or expected in
-            the next 7 days. Schedules and AI predictions refresh several times
-            a day — check back soon.
+            {G.quietBody(category)}
           </p>
           {related.length > 0 && (
             <>
               <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                In the meantime
+                {G.quietMeanwhile}
               </p>
-              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Related games">
+              <ul className="mt-2 flex flex-wrap gap-2" aria-label={G.relatedGamesAria}>
                 {related.map((r) => (
                   <li key={r.category}>
                     <Link
-                      href={`/game/${r.slug}`}
+                      href={localeHref(locale, `/game/${r.slug}`)}
                       prefetch={false}
                       className="inline-block rounded-full border border-border-default bg-background px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
                     >
-                      {r.category} streamers
+                      {G.gameStreamersChip(r.category)}
                     </Link>
                   </li>
                 ))}
@@ -912,12 +933,18 @@ export default async function GamePage({ params }: Props) {
             </>
           )}
           <p className="mt-4 text-sm">
-            <Link href="/live" className="text-accent-cyan hover:text-text-primary">
-              See who&apos;s live now →
+            <Link
+              href={localeHref(locale, '/live')}
+              className="text-accent-cyan hover:text-text-primary"
+            >
+              {G.seeWhosLive}
             </Link>
             {'  ·  '}
-            <Link href="/games" className="text-accent-cyan hover:text-text-primary">
-              Browse all games
+            <Link
+              href={localeHref(locale, '/games')}
+              className="text-accent-cyan hover:text-text-primary"
+            >
+              {G.browseAllGames}
             </Link>
           </p>
         </section>
@@ -925,33 +952,30 @@ export default async function GamePage({ params }: Props) {
 
       {hasSchedule && (
         <section
-          aria-label={`${category} stream schedule`}
+          aria-label={G.scheduleAria(category)}
           id="schedule"
           className="mt-10 scroll-mt-[calc(var(--header-height)+1.5rem)]"
         >
           <h2 className="text-xl font-bold text-white">
-            Upcoming {category} streams
+            {G.upcomingStreams(category)}
           </h2>
-          <p className="mt-1 text-xs text-text-muted">
-            Times adjust to your local timezone, with the streamer&apos;s own
-            time alongside. Days follow the UTC calendar, so a late-night
-            stream can appear under the next day.
-          </p>
+          <p className="mt-1 text-xs text-text-muted">{G.scheduleNote}</p>
           <ScheduleFilters
             platforms={schedulePlatforms(upcomingSlots)}
             hasLow={upcomingSlots.some(
               (s) => s.confidence === 'low' && s.slot_kind !== 'cancelled',
             )}
+            labels={{
+              filterAria: G.filterAria,
+              allPlatforms: G.allPlatforms,
+              hideLowConfidence: G.hideLowConfidence,
+            }}
           >
-            {/* No `language` prop on purpose: this whole page still renders
-                English chrome (M22 P4 localizes the game hub as one piece), and
-                German day headings under English section titles would read
-                worse than consistent English. The viewer-local "Today" fix in
-                DayNavBar/DayLabel is language-independent and applies anyway. */}
             <DayNavBar
               days={sevenDays}
               counts={toDayCounts(sevenDays, grouped)}
               todayUtc={todayUtc}
+              language={locale}
             />
             {sevenDays.map((dateKey) => {
               const daySlots = grouped.get(dateKey) ?? [];
@@ -963,9 +987,10 @@ export default async function GamePage({ params }: Props) {
                 <GameDaySection
                   key={dateKey}
                   dateKey={dateKey}
-                  label={utcDateLabel(dateKey, todayUtc)}
+                  label={utcDateLabel(dateKey, todayUtc, locale)}
                   slots={slots}
                   hiddenCount={hidden}
+                  language={locale}
                 />
               );
             })}
@@ -983,34 +1008,38 @@ export default async function GamePage({ params }: Props) {
             id="related-games-heading"
             className="text-sm font-semibold uppercase tracking-wider text-text-muted"
           >
-            Related games
+            {G.relatedGames}
           </h2>
-          <ul className="mt-3 flex flex-wrap gap-2" aria-label="Related games">
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label={G.relatedGamesAria}>
             {related.map((r) => (
               <li key={r.category}>
                 <Link
-                  href={`/game/${r.slug}`}
+                  href={localeHref(locale, `/game/${r.slug}`)}
                   prefetch={false}
                   className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
                 >
-                  {r.category} streamers
+                  {G.gameStreamersChip(r.category)}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-text-muted">
-            Games with overlapping streamer rosters in the last 28 days.
-          </p>
+          <p className="mt-2 text-xs text-text-muted">{G.relatedNote}</p>
         </section>
       )}
 
       <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">
-        <Link href="/games" className="text-accent-cyan hover:text-text-primary">
-          ← All games &amp; categories
+        <Link
+          href={localeHref(locale, '/games')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {G.allGamesFooter}
         </Link>
         {'  ·  '}
-        <Link href="/streamers" className="text-accent-cyan hover:text-text-primary">
-          Browse all streamers A–Z
+        <Link
+          href={localeHref(locale, '/streamers')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {Lex.common.browseStreamersAZ}
         </Link>
       </p>
     </main>
