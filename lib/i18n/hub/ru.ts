@@ -1,5 +1,5 @@
 import { formatCompactNumber } from '@/lib/format/number';
-import { pluralForms } from '@/lib/i18n-core';
+import { listConjunction, pluralForms } from '@/lib/i18n-core';
 import type { HubLex } from './types';
 
 /** "3 стримера" / "5 стримеров" — nominative counted noun. */
@@ -398,5 +398,274 @@ export const ru: HubLex = {
       'most-reliable':
         'Доля анонсированных на Twitch стримов, которые действительно начались в пределах ±30 минут, по последним 20 анонсированным стримам за 90 дней (минимум 10 оценённых). Обновляется ежедневно.',
     },
+  },
+  gameChips: {
+    aria: (category) => `Статистика ${category}`,
+    streamersLabel: (n) =>
+      pluralForms('ru', n, {
+        one: 'стример',
+        few: 'стримера',
+        many: 'стримеров',
+        other: 'стримера',
+      }),
+    liveNowLabel: 'сейчас в эфире',
+    watchingLabel: 'смотрят',
+    streamedLabel: 'стримов · 28 дней',
+    streamsLabel: (n) =>
+      pluralForms('ru', n, {
+        one: 'стрим · 28 дней',
+        few: 'стрима · 28 дней',
+        many: 'стримов · 28 дней',
+        other: 'стрима · 28 дней',
+      }),
+    peakLead: 'Пик ',
+    peakTail: ' зрителей · 28 дней',
+    trendTail: ' за неделю',
+    trendTitle: 'Изменение числа активных стримеров к прошлой неделе',
+  },
+  game: {
+    notFoundTitle: 'Игра не найдена — StreamerTimes',
+    metaTitle: (category) => `Стримеры ${category} — Сейчас в эфире, рейтинги и расписание`,
+    metaDescription: (category, names) => {
+      const tail = `Кто сейчас в эфире, ближайшие стримы и расписания, предсказанные ИИ, на Twitch и YouTube.`;
+      const namesLead =
+        names.length > 0
+          ? `${listConjunction(names, 'ru')} ${names.length === 1 ? 'возглавляет' : 'возглавляют'} рейтинг ${category}. `
+          : '';
+      const twoNamesLead =
+        names.length > 1
+          ? `${listConjunction(names.slice(0, 2), 'ru')} возглавляют рейтинг ${category}. `
+          : '';
+      return [
+        `${namesLead}${tail}`,
+        `${twoNamesLead}${tail}`,
+        `Стримеры ${category} с наибольшим числом подписчиков. ${tail}`,
+        tail,
+      ];
+    },
+    ogTitle: (category) => `Стримеры ${category} — сейчас в эфире, рейтинги и расписание`,
+    ogDescription: (category, names) => {
+      const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'ru')} —` : ':';
+      return `Стримеры ${category} с наибольшим числом подписчиков${ogNames} статус эфира и расписание стримов на Twitch и YouTube.`;
+    },
+    h1: (category) => `Стримеры ${category} — сейчас в эфире и расписание`,
+    intro: (shown, category, liveCount, upcomingCount, superlative) => {
+      const lead = pluralForms('ru', shown, {
+        one: `${shown} стример ведёт или планирует стримы по ${category} на этой неделе на Twitch и YouTube. `,
+        few: `${shown} стримера ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube. `,
+        many: `${shown} стримеров ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube. `,
+        other: `${shown} стримера ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube. `,
+      });
+      const live =
+        liveCount > 0
+          ? pluralForms('ru', liveCount, {
+              one: `${liveCount} сейчас в эфире`,
+              few: `${liveCount} сейчас в эфире`,
+              many: `${liveCount} сейчас в эфире`,
+              other: `${liveCount} сейчас в эфире`,
+            })
+          : 'Сейчас никто не в эфире';
+      const upcoming =
+        upcomingCount > 0
+          ? pluralForms('ru', upcomingCount, {
+              one: `, впереди ${upcomingCount} стрим в ближайшие 7 дней.`,
+              few: `, впереди ${upcomingCount} стрима в ближайшие 7 дней.`,
+              many: `, впереди ${upcomingCount} стримов в ближайшие 7 дней.`,
+              other: `, впереди ${upcomingCount} стрима в ближайшие 7 дней.`,
+            })
+          : '.';
+      return lead + live + upcoming + superlative;
+    },
+    superlative: (category, name, value, isTwitch) =>
+      ` Больше всего ${isTwitch ? 'фолловеров' : 'подписчиков'} здесь у ${name} — ${value}.`,
+    onPageAria: 'На этой странице',
+    navLiveNow: 'Сейчас в эфире',
+    navTopStreamers: 'Топ стримеров',
+    navBestTimes: 'Лучшее время',
+    navSchedule: 'Расписание',
+    navRelated: 'Похожие игры',
+    followGame: (category) => `Следить за ${category}`,
+    followingLabel: 'Вы следите',
+    watchingNow: (category) => `Сейчас в эфире: ${category}`,
+    liveStreamsAria: (category) => `Стримы ${category} в эфире`,
+    moreLiveAria: (category) => `Ещё стримы ${category} в эфире`,
+    showMoreLive: (n) =>
+      pluralForms('ru', n, {
+        one: `Показать ещё ${n} канал в эфире`,
+        few: `Показать ещё ${n} канала в эфире`,
+        many: `Показать ещё ${n} каналов в эфире`,
+        other: `Показать ещё ${n} канала в эфире`,
+      }),
+    moreLiveInRanking: (n, category) =>
+      `Ещё ${n} в эфире в полном рейтинге ${category} →`,
+    liveUpdatesNote:
+      'Статус эфира и число зрителей обновляются каждые несколько минут.',
+    mostFollowed: (category) =>
+      `Стримеры ${category} с наибольшим числом подписчиков`,
+    tableCaption: (category) =>
+      `Стримеры ${category} по числу подписчиков, с их ближайшим ожидаемым стримом`,
+    thRank: '#',
+    thStreamer: 'Стример',
+    thNextStream: 'Следующий стрим',
+    thFollowers: 'Подписчики',
+    thHours: 'Часы / 28 дней',
+    liveNowCell: 'Сейчас в эфире',
+    seeFullRanking: (category) =>
+      `Смотреть полный рейтинг ${category} (топ-50) →`,
+    whoStreams: (category) => `Стримеры, которые стримят ${category}`,
+    whenStreamed: (category) => `Когда стримят ${category}?`,
+    heatmapSummary: (category) =>
+      `Большинство стримов по ${category} идёт {peak}{tz} — по данным за последние 4 недели.`,
+    heatmapSummaryEmpty: 'По данным за последние 4 недели отслеженных стримов.',
+    tzLocalSuffix: ' (ваше время)',
+    tzUtcSuffix: ' (UTC)',
+    heatmapAria: (category) => `Недельная тепловая карта стримов ${category}.`,
+    heatmapAriaWithPeak: (category) =>
+      `Недельная тепловая карта стримов ${category}. Самое активное окно: {peak}.`,
+    heatmapTooltip: '{day} {from}–{to} · {amount} стримов за 4 недели',
+    legendLess: 'Меньше',
+    legendMore: 'Больше',
+    heatmapDayNames: [
+      'по понедельникам',
+      'по вторникам',
+      'по средам',
+      'по четвергам',
+      'по пятницам',
+      'по субботам',
+      'по воскресеньям',
+    ],
+    bestTimeToStream: (category) => `Лучшее время для стримов по ${category}`,
+    trendingBadge: '▲ В тренде',
+    bestTimeIntro: (category) =>
+      `Для стримеров: окна, когда в ${category} больше всего зрителей на один живой канал.`,
+    fullHeatmapLink: 'Полная карта возможностей и анализ →',
+    bestSlotsAria: 'Лучшие временные окна',
+    viewersPerChannel: '~{score} зрителей/канал',
+    timesLocalNote: 'Время в вашем часовом поясе.',
+    timesUtcNote: 'Время в UTC.',
+    quietTitle: (category) => `Сейчас нет стримов по ${category}`,
+    quietBody: (category) =>
+      `Никто из стримеров ${category}, за которыми мы следим, не в эфире и не ожидается в ближайшие 7 дней. Расписания и прогнозы ИИ обновляются несколько раз в день — загляните позже.`,
+    quietMeanwhile: 'А пока',
+    seeWhosLive: 'Посмотрите, кто сейчас в эфире →',
+    browseAllGames: 'Все игры',
+    gameStreamersChip: (category) => `Стримеры ${category}`,
+    scheduleAria: (category) => `Расписание стримов ${category}`,
+    upcomingStreams: (category) => `Ближайшие стримы по ${category}`,
+    scheduleNote:
+      'Время подстраивается под ваш часовой пояс, рядом — время стримера. Дни идут по календарю UTC, поэтому поздний ночной стрим может оказаться под следующим днём.',
+    filterAria: 'Фильтр расписания',
+    allPlatforms: 'Все платформы',
+    hideLowConfidence: 'Скрыть низкую вероятность',
+    moreLowConfidence: (n) =>
+      pluralForms('ru', n, {
+        one: `Ещё ${n} прогноз с низкой вероятностью`,
+        few: `Ещё ${n} прогноза с низкой вероятностью`,
+        many: `Ещё ${n} прогнозов с низкой вероятностью`,
+        other: `Ещё ${n} прогноза с низкой вероятностью`,
+      }),
+    lowConfAria: (label) => `Прогнозы с низкой вероятностью: ${label}`,
+    hiddenNotShown: (n) =>
+      pluralForms('ru', n, {
+        one: `Ещё ${n} прогноз на этот день не показан. Полное расписание — на странице стримера.`,
+        few: `Ещё ${n} прогноза на этот день не показаны. Полное расписание — на странице стримера.`,
+        many: `Ещё ${n} прогнозов на этот день не показаны. Полное расписание — на странице стримера.`,
+        other: `Ещё ${n} прогноза на этот день не показаны. Полное расписание — на странице стримера.`,
+      }),
+    relatedGames: 'Похожие игры',
+    relatedGamesAria: 'Похожие игры',
+    relatedNote:
+      'Игры, чьи составы стримеров пересекаются за последние 28 дней.',
+    allGamesFooter: '← Все игры и категории',
+  },
+  gameRanking: {
+    notFoundTitle: 'Не найдено — StreamerTimes',
+    metaTitle: (category, page) =>
+      page === 1
+        ? `Топ стримеров ${category} — по подписчикам`
+        : `Топ стримеров ${category} — по подписчикам — страница ${page}`,
+    metaLeadIn: (name, value) => `${name} лидирует с ${value} подписчиков. `,
+    metaDescription: (category, leadIn) => [
+      `${leadIn}Лучшие стримеры ${category} на Twitch и YouTube по числу подписчиков, со статусом эфира и ближайшими стримами. Обновляется ежедневно.`,
+      `${leadIn}Лучшие стримеры ${category} по подписчикам, со статусом эфира и ближайшими стримами.`,
+      `Лучшие стримеры ${category} на Twitch и YouTube по числу подписчиков, со статусом эфира и ближайшими стримами. Обновляется ежедневно.`,
+    ],
+    ogTitle: (category) => `Топ стримеров ${category} — по подписчикам`,
+    h1: (category) => `Топ стримеров ${category} по подписчикам`,
+    introPage1: (count, category) =>
+      pluralForms('ru', count, {
+        one: `Топ-${count} стример ${category}, за которым мы следим, по фолловерам и подписчикам канала.`,
+        few: `Топ-${count} стримера ${category}, за которыми мы следим, по фолловерам и подписчикам канала.`,
+        many: `Топ-${count} стримеров ${category}, за которыми мы следим, по фолловерам и подписчикам канала.`,
+        other: `Топ-${count} стримера ${category}, за которыми мы следим, по фолловерам и подписчикам канала.`,
+      }),
+    topsTheList: (name, value, isTwitch) =>
+      ` Список возглавляет ${name} с ${value} ${isTwitch ? 'фолловеров' : 'подписчиков'}.`,
+    introPageN: (from, to, total, category) =>
+      `Места ${from}–${to} из ${total} стримеров ${category}, за которыми мы следим, по фолловерам и подписчикам канала.`,
+    methodology: (category) =>
+      `Стримеры, активные в ${category} за последние 28 дней, по числу подписчиков. Цифры обновляются регулярно и могут отставать от платформ.`,
+    followersRefreshed: (label) => ` Подписчики обновлены: ${label}.`,
+    warmingUp:
+      'Этот рейтинг ещё разогревается — нам нужно чуть больше данных, чтобы он что-то значил. Загляните позже.',
+    missingDataNote:
+      '— значит, что по этому каналу пока мало данных, например замеры зрителей у недавно добавленных каналов.',
+    sortAria: 'Сортировка рейтинга',
+    sortFollowers: 'По подписчикам',
+    sortHours: 'По часам (28 дней)',
+    sortViewers: 'По зрителям',
+    filterLangAria: 'Фильтр по языку',
+    allChip: 'Все',
+    noMatch: 'Ни один стример не подходит под этот фильтр.',
+    tableCaption: (category) => `Стримеры ${category} по числу подписчиков`,
+    thRank: '#',
+    thStreamer: 'Стример',
+    thFollowers: 'Подписчики',
+    thAvgViewers: 'Ср. зрители',
+    thHours: 'Часы (28 дней)',
+    thShare: 'Доля игры',
+    thShareTitle: (category) =>
+      `Доля последних стримов стримера, посвящённых ${category}`,
+    thNextStream: 'Следующий стрим',
+    liveNowCell: 'Сейчас в эфире',
+    watchingTail: ' · {value} смотрят',
+    trendNewBadge: 'нов.',
+    trendNewTitle: 'Неделю назад не входил в этот рейтинг',
+    trendUpTemplate: 'На {n} выше, чем неделю назад',
+    trendDownTemplate: 'На {n} ниже, чем неделю назад',
+    mainGameTemplate: 'Основная игра: {share}% последних стримов',
+    aboutRanking: 'Об этом рейтинге',
+    faqMostFollowedQ: (category) =>
+      `У какого стримера ${category} больше всего подписчиков?`,
+    faqMostFollowedA: (category, top, second) => {
+      const runnerUp = second ? `, впереди ${second.name} с ${second.value}` : '';
+      return `${top.name} сейчас лидирует по числу ${top.isTwitch ? 'фолловеров' : 'подписчиков'} среди стримеров ${category}, за которыми мы следим, — ${top.value}${runnerUp}. Цифры обновляются ежедневно.`;
+    },
+    faqHowManyQ: (category) => `Сколько стримеров стримят ${category}?`,
+    faqHowManyA: (category, count, activity) => {
+      const tail = activity
+        ? ` Вместе они настримили около ${activity.hours} часов ${category} за ${activity.streams} стримов за последние 28 дней.`
+        : '';
+      const lead = pluralForms('ru', count, {
+        one: `Сейчас мы отслеживаем ${count} стримера, который недавно стримил ${category} или держит его в расписании.`,
+        few: `Сейчас мы отслеживаем ${count} стримеров, которые недавно стримили ${category} или держат его в расписании.`,
+        many: `Сейчас мы отслеживаем ${count} стримеров, которые недавно стримили ${category} или держат его в расписании.`,
+        other: `Сейчас мы отслеживаем ${count} стримеров, которые недавно стримили ${category} или держат его в расписании.`,
+      });
+      return `${lead}${tail}`;
+    },
+    faqMeasuredQ: 'Как считается этот рейтинг?',
+    faqMeasuredA: (category) =>
+      `Стримеры, активные в ${category} за последние 28 дней, по числу подписчиков основного канала — фолловеры на Twitch или подписчики на YouTube. Колонки часов и доли берутся из ночного агрегата завершённых стримов по ${category}.`,
+    faqShareQ: 'Что значит «Доля игры»?',
+    faqShareA: (category) =>
+      `Доля последних стримов стримера, посвящённых ${category}. 100 % значит, что сейчас это его единственная игра; низкая доля — признак случайного гостя категории.`,
+    relatedRankings: 'Похожие рейтинги',
+    relatedRankingsAria: 'Рейтинги похожих игр',
+    liveAndSchedule: (category) => `Сейчас в эфире и расписание ${category} →`,
+    allRankings: 'Все рейтинги',
+    paginationAria: (category) => `Страницы рейтинга ${category}`,
+    prev: '← Назад',
+    next: 'Вперёд →',
   },
 };

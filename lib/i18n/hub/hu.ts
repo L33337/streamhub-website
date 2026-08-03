@@ -1,4 +1,5 @@
 import { formatCompactNumber } from '@/lib/format/number';
+import { listConjunction } from '@/lib/i18n-core';
 import type { HubLex } from './types';
 
 export const hu: HubLex = {
@@ -319,5 +320,217 @@ export const hu: HubLex = {
       'most-reliable':
         'A Twitchen beharangozott streamek aránya, amelyek tényleg ±30 percen belül elindultak, az utolsó 20 beharangozott stream alapján 90 napon belül (legalább 10 kiértékelt). Naponta frissítve.',
     },
+  },
+  gameChips: {
+    aria: (category) => `${category} statisztikák`,
+    streamersLabel: () => 'streamer',
+    liveNowLabel: 'most élőben',
+    watchingLabel: 'néző',
+    streamedLabel: 'stream · 28 nap',
+    streamsLabel: () => 'stream · 28 nap',
+    peakLead: 'Csúcs: ',
+    peakTail: ' néző · 28 nap',
+    trendTail: ' ezen a héten',
+    trendTitle: 'Az aktív streamerek számának változása az előző héthez képest',
+  },
+  game: {
+    notFoundTitle: 'A játék nem található — StreamerTimes',
+    metaTitle: (category) => `${category}-streamerek — Élőben, ranglisták és menetrend`,
+    metaDescription: (category, names) => {
+      const tail = `Ki van most élőben, közelgő streamek és AI által jósolt menetrendek Twitchen és YouTube-on.`;
+      const namesLead =
+        names.length > 0
+          ? `A ${category}-ranglistát ${listConjunction(names, 'hu')} vezeti${names.length === 1 ? '' : 'k'}. `
+          : '';
+      const twoNamesLead =
+        names.length > 1
+          ? `A ${category}-ranglistát ${listConjunction(names.slice(0, 2), 'hu')} vezetik. `
+          : '';
+      return [
+        `${namesLead}${tail}`,
+        `${twoNamesLead}${tail}`,
+        `A legtöbb követővel rendelkező ${category}-streamerek. ${tail}`,
+        tail,
+      ];
+    },
+    ogTitle: (category) => `${category}-streamerek — élőben, ranglisták és menetrend`,
+    ogDescription: (category, names) => {
+      const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'hu')} —` : ':';
+      return `A legtöbb követővel rendelkező ${category}-streamerek${ogNames} élő státusz és stream-menetrend Twitchen és YouTube-on.`;
+    },
+    h1: (category) => `${category}-streamerek — élőben és menetrend`,
+    intro: (shown, category, liveCount, upcomingCount, superlative) =>
+      `${shown} streamernek van élő vagy betervezett ${category}-streamje ezen a héten Twitchen és YouTube-on. ` +
+      (liveCount > 0
+        ? `${liveCount} most is élőben van`
+        : 'Most senki sincs élőben') +
+      (upcomingCount > 0
+        ? `, és ${upcomingCount} stream jön a következő 7 napban.`
+        : '.') +
+      superlative,
+    superlative: (category, name, value, isTwitch) =>
+      ` A legtöbb ${isTwitch ? 'követője' : 'feliratkozója'} itt ${name} csatornájának van: ${value}.`,
+    onPageAria: 'Ezen az oldalon',
+    navLiveNow: 'Most élőben',
+    navTopStreamers: 'Top streamerek',
+    navBestTimes: 'Legjobb idők',
+    navSchedule: 'Menetrend',
+    navRelated: 'Hasonló játékok',
+    followGame: (category) => `${category} követése`,
+    followingLabel: 'Követed',
+    watchingNow: (category) => `Most élőben: ${category}`,
+    liveStreamsAria: (category) => `Élő ${category}-streamek`,
+    moreLiveAria: (category) => `További élő ${category}-streamek`,
+    showMoreLive: (n) => `Még ${n} élő csatorna megjelenítése`,
+    moreLiveInRanking: (n, category) =>
+      `Még ${n} élőben a teljes ${category}-ranglistán →`,
+    liveUpdatesNote:
+      'Az élő státusz és a nézőszámok néhány percenként frissülnek.',
+    mostFollowed: (category) =>
+      `A legtöbb követővel rendelkező ${category}-streamerek`,
+    tableCaption: (category) =>
+      `${category}-streamerek követők szerint rendezve, a következő várható streamjükkel`,
+    thRank: '#',
+    thStreamer: 'Streamer',
+    thNextStream: 'Következő stream',
+    thFollowers: 'Követők',
+    thHours: 'Óra / 28 nap',
+    liveNowCell: 'Most élőben',
+    seeFullRanking: (category) =>
+      `A teljes ${category}-ranglista (top 50) →`,
+    whoStreams: (category) => `Streamerek, akik ${category}-t streamelnek`,
+    whenStreamed: (category) => `Mikor streamelik a ${category}-t?`,
+    heatmapSummary: (category) =>
+      `A legtöbb ${category}-stream {peak}{tz} fut — az elmúlt 4 hét követett streamjei alapján.`,
+    heatmapSummaryEmpty: 'Az elmúlt 4 hét követett streamjei alapján.',
+    tzLocalSuffix: ' (a te idődben)',
+    tzUtcSuffix: ' (UTC)',
+    heatmapAria: (category) => `Heti streamelési hőtérkép: ${category}.`,
+    heatmapAriaWithPeak: (category) =>
+      `Heti streamelési hőtérkép: ${category}. Legaktívabb idősáv: {peak}.`,
+    heatmapTooltip: '{day} {from}–{to} · {amount} stream 4 hét alatt',
+    legendLess: 'Kevesebb',
+    legendMore: 'Több',
+    heatmapDayNames: [
+      'hétfőnként',
+      'keddenként',
+      'szerdánként',
+      'csütörtökönként',
+      'péntekenként',
+      'szombatonként',
+      'vasárnaponként',
+    ],
+    bestTimeToStream: (category) => `A legjobb idő ${category} streameléséhez`,
+    trendingBadge: '▲ Felkapott',
+    bestTimeIntro: (category) =>
+      `Streamereknek: azok az idősávok, amikor a ${category}-ban a legtöbb néző jut egy élő csatornára.`,
+    fullHeatmapLink: 'Teljes lehetőség-hőtérkép és elemzés →',
+    bestSlotsAria: 'Legjobb idősávok',
+    viewersPerChannel: '~{score} néző/csatorna',
+    timesLocalNote: 'Az idők a te időzónádban.',
+    timesUtcNote: 'Az idők UTC-ben.',
+    quietTitle: (category) => `Most nincs ${category}-stream`,
+    quietBody: (category) =>
+      `Az általunk követett ${category}-streamerek közül senki sincs élőben, és a következő 7 napban sem várható. A menetrendek és AI-előrejelzések naponta többször frissülnek — nézz vissza hamarosan.`,
+    quietMeanwhile: 'Addig is',
+    seeWhosLive: 'Nézd meg, ki van most élőben →',
+    browseAllGames: 'Böngéssz az összes játék között',
+    gameStreamersChip: (category) => `${category}-streamerek`,
+    scheduleAria: (category) => `${category} stream-menetrend`,
+    upcomingStreams: (category) => `Közelgő ${category}-streamek`,
+    scheduleNote:
+      'Az idők a te időzónádhoz igazodnak, mellettük a streamer saját ideje. A napok az UTC-naptárt követik, így egy késő esti stream a következő nap alatt jelenhet meg.',
+    filterAria: 'Menetrend szűrése',
+    allPlatforms: 'Minden platform',
+    hideLowConfidence: 'Alacsony valószínűség elrejtése',
+    moreLowConfidence: (n) =>
+      `Még ${n} előrejelzés alacsony valószínűséggel`,
+    lowConfAria: (label) => `Alacsony valószínűségű előrejelzések: ${label}`,
+    hiddenNotShown: (n) =>
+      `Még ${n} előrejelzés nem látható ezen a napon. A teljes menetrendet a streamer oldalán találod.`,
+    relatedGames: 'Hasonló játékok',
+    relatedGamesAria: 'Hasonló játékok',
+    relatedNote:
+      'Játékok, amelyek streamerei átfedésben voltak az elmúlt 28 napban.',
+    allGamesFooter: '← Minden játék és kategória',
+  },
+  gameRanking: {
+    notFoundTitle: 'Nem található — StreamerTimes',
+    metaTitle: (category, page) =>
+      page === 1
+        ? `Top ${category}-streamerek — követők szerint`
+        : `Top ${category}-streamerek — követők szerint — ${page}. oldal`,
+    metaLeadIn: (name, value) => `${name} vezet ${value} követővel. `,
+    metaDescription: (category, leadIn) => [
+      `${leadIn}A legjobb ${category}-streamerek Twitchen és YouTube-on követők szerint rendezve, élő státusszal és következő streamekkel. Naponta frissítve.`,
+      `${leadIn}A legjobb ${category}-streamerek követők szerint, élő státusszal és következő streamekkel.`,
+      `A legjobb ${category}-streamerek Twitchen és YouTube-on követők szerint rendezve, élő státusszal és következő streamekkel. Naponta frissítve.`,
+    ],
+    ogTitle: (category) => `Top ${category}-streamerek — követők szerint`,
+    h1: (category) => `Top ${category}-streamerek követők szerint`,
+    introPage1: (count, category) =>
+      `Az általunk követett top ${count} ${category}-streamer, a csatorna követői és feliratkozói szerint rendezve.`,
+    topsTheList: (name, value, isTwitch) =>
+      ` A listát ${name} vezeti ${value} ${isTwitch ? 'követővel' : 'feliratkozóval'}.`,
+    introPageN: (from, to, total, category) =>
+      `${from}–${to}. hely a ${total} általunk követett ${category}-streamer közül, a csatorna követői és feliratkozói szerint rendezve.`,
+    methodology: (category) =>
+      `Az elmúlt 28 napban a ${category}-ban aktív streamerek, követők szerint rendezve. A számok rendszeresen frissülnek, és lemaradhatnak a platformok élő értékeitől.`,
+    followersRefreshed: (label) => ` Követőszámok frissítve: ${label}.`,
+    warmingUp:
+      'Ez a ranglista még melegszik — kicsit több adat kell, mielőtt beszédes lenne. Nézz vissza hamarosan.',
+    missingDataNote:
+      '— azt jelenti, hogy még nem gyűlt össze elég adat arról a csatornáról, például nézőszám-mintavétel a frissen hozzáadott csatornáknál.',
+    sortAria: 'Ranglista rendezése',
+    sortFollowers: 'Legtöbb követő',
+    sortHours: 'Legtöbb óra (28 nap)',
+    sortViewers: 'Legnézettebb',
+    filterLangAria: 'Szűrés nyelv szerint',
+    allChip: 'Mind',
+    noMatch: 'Egy streamer sem felel meg ennek a szűrőnek.',
+    tableCaption: (category) => `${category}-streamerek követők szerint rendezve`,
+    thRank: '#',
+    thStreamer: 'Streamer',
+    thFollowers: 'Követők',
+    thAvgViewers: 'Átl. nézők',
+    thHours: 'Óra (28 nap)',
+    thShare: 'Játékarány',
+    thShareTitle: (category) =>
+      `A streamer legutóbbi streamjeinek ${category}-ra eső része`,
+    thNextStream: 'Következő stream',
+    liveNowCell: 'Most élőben',
+    watchingTail: ' · {value} néző',
+    trendNewBadge: 'új',
+    trendNewTitle: 'Egy hete még nem volt ebben a ranglistában',
+    trendUpTemplate: '{n} hellyel feljebb a múlt héthez képest',
+    trendDownTemplate: '{n} hellyel lejjebb a múlt héthez képest',
+    mainGameTemplate: 'Fő játék: a legutóbbi streamek {share}%-a',
+    aboutRanking: 'Erről a ranglistáról',
+    faqMostFollowedQ: (category) =>
+      `Melyik ${category}-streamernek van a legtöbb követője?`,
+    faqMostFollowedA: (category, top, second) => {
+      const runnerUp = second ? `, megelőzve ${second.name} csatornáját (${second.value})` : '';
+      return `Jelenleg ${top.name} a legtöbb ${top.isTwitch ? 'követővel' : 'feliratkozóval'} rendelkező ${category}-streamer az általunk követettek közül, ${top.value} követővel${runnerUp}. A számok naponta frissülnek.`;
+    },
+    faqHowManyQ: (category) => `Hány streamer streameli a ${category}-t?`,
+    faqHowManyA: (category, count, activity) => {
+      const tail = activity
+        ? ` Együtt körülbelül ${activity.hours} órányi ${category}-t streameltek ${activity.streams} streamben az elmúlt 28 napban.`
+        : '';
+      return `Jelenleg ${count} streamert követünk, akik nemrég ${category}-t streameltek, vagy a menetrendjükben szerepel.${tail}`;
+    },
+    faqMeasuredQ: 'Hogyan mérjük ezt a ranglistát?',
+    faqMeasuredA: (category) =>
+      `Az elmúlt 28 napban a ${category}-ban aktív streamerek, a fő csatornájuk követőszáma szerint rendezve — csatornakövetők a Twitchen vagy feliratkozók a YouTube-on. Az óra- és arányoszlopok a befejezett ${category}-streamek éjszakai összesítéséből származnak.`,
+    faqShareQ: 'Mit jelent a „Játékarány”?',
+    faqShareA: (category) =>
+      `A streamer legutóbbi streamjeinek ${category}-ra eső része. A 100% azt jelenti, hogy jelenleg ez az egyetlen játéka; az alacsony arány a kategória alkalmi látogatóját jelzi.`,
+    relatedRankings: 'Hasonló ranglisták',
+    relatedRankingsAria: 'Hasonló játékok ranglistái',
+    liveAndSchedule: (category) => `Élőben és menetrend: ${category} →`,
+    allRankings: 'Minden ranglista',
+    paginationAria: (category) => `${category}-ranglista oldalai`,
+    prev: '← Előző',
+    next: 'Következő →',
   },
 };

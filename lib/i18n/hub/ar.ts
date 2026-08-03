@@ -1,4 +1,4 @@
-import { pluralForms } from '@/lib/i18n-core';
+import { listConjunction, pluralForms } from '@/lib/i18n-core';
 import type { HubLex } from './types';
 
 /** "3 ستريمرز يبثون" — counted streamers, Arabic plural categories. */
@@ -382,5 +382,265 @@ export const ar: HubLex = {
       'most-reliable':
         'نسبة البثوث المعلنة على Twitch التي بدأت فعلًا في حدود ±30 دقيقة، على آخر 20 بثًا معلنًا خلال 90 يومًا (بحد أدنى 10 بثوث مقيَّمة). يُحدَّث يوميًا.',
     },
+  },
+  gameChips: {
+    aria: (category) => `إحصاءات ${category}`,
+    streamersLabel: (n) =>
+      pluralForms('ar', n, {
+        zero: 'ستريمر',
+        one: 'ستريمر',
+        two: 'ستريمر',
+        few: 'ستريمرز',
+        many: 'ستريمر',
+        other: 'ستريمر',
+      }),
+    liveNowLabel: 'يبثون الآن',
+    watchingLabel: 'يشاهدون',
+    streamedLabel: 'من البث · 28 يومًا',
+    streamsLabel: (n) =>
+      pluralForms('ar', n, {
+        zero: 'بثوث · 28 يومًا',
+        one: 'بث · 28 يومًا',
+        two: 'بثان · 28 يومًا',
+        few: 'بثوث · 28 يومًا',
+        many: 'بثًا · 28 يومًا',
+        other: 'بث · 28 يومًا',
+      }),
+    peakLead: 'ذروة ',
+    peakTail: ' مشاهدًا · 28 يومًا',
+    trendTail: ' هذا الأسبوع',
+    trendTitle: 'تغيّر عدد الستريمرز النشطين مقارنة بالأسبوع الماضي',
+  },
+  game: {
+    notFoundTitle: 'اللعبة غير موجودة — StreamerTimes',
+    metaTitle: (category) => `ستريمرز ${category} — البث المباشر والتصنيفات والمواعيد`,
+    metaDescription: (category, names) => {
+      const tail = `من يبث الآن، البثوث القادمة والمواعيد المتوقعة بالذكاء الاصطناعي على Twitch وYouTube.`;
+      const namesLead =
+        names.length > 0
+          ? `${listConjunction(names, 'ar')} في صدارة تصنيف ${category}. `
+          : '';
+      const twoNamesLead =
+        names.length > 1
+          ? `${listConjunction(names.slice(0, 2), 'ar')} في صدارة تصنيف ${category}. `
+          : '';
+      return [
+        `${namesLead}${tail}`,
+        `${twoNamesLead}${tail}`,
+        `ستريمرز ${category} الأكثر متابعة. ${tail}`,
+        tail,
+      ];
+    },
+    ogTitle: (category) => `ستريمرز ${category} — البث المباشر والتصنيفات والمواعيد`,
+    ogDescription: (category, names) => {
+      const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'ar')} —` : ':';
+      return `ستريمرز ${category} الأكثر متابعة${ogNames} حالة البث ومواعيد البثوث على Twitch وYouTube.`;
+    },
+    h1: (category) => `ستريمرز ${category} — البث المباشر والمواعيد`,
+    intro: (shown, category, liveCount, upcomingCount, superlative) => {
+      const lead = pluralForms('ar', shown, {
+        zero: `لا يوجد ستريمرز لديهم بثوث ${category} هذا الأسبوع على Twitch وYouTube. `,
+        one: `ستريمر واحد لديه بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
+        two: `ستريمران لديهما بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
+        few: `${shown} ستريمرز لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
+        many: `${shown} ستريمر لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
+        other: `${shown} ستريمر لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
+      });
+      const live = liveCount > 0 ? `${liveCount} يبثون الآن` : 'لا أحد يبث الآن';
+      const upcoming =
+        upcomingCount > 0
+          ? pluralForms('ar', upcomingCount, {
+              zero: '.',
+              one: `، مع بث قادم واحد خلال الأيام السبعة المقبلة.`,
+              two: `، مع بثين قادمين خلال الأيام السبعة المقبلة.`,
+              few: `، مع ${upcomingCount} بثوث قادمة خلال الأيام السبعة المقبلة.`,
+              many: `، مع ${upcomingCount} بثًا قادمًا خلال الأيام السبعة المقبلة.`,
+              other: `، مع ${upcomingCount} بث قادم خلال الأيام السبعة المقبلة.`,
+            })
+          : '.';
+      return lead + live + upcoming + superlative;
+    },
+    superlative: (category, name, value, isTwitch) =>
+      ` صاحب أكبر عدد من ${isTwitch ? 'المتابعين' : 'المشتركين'} هنا هو ${name} بـ${value}.`,
+    onPageAria: 'في هذه الصفحة',
+    navLiveNow: 'مباشر الآن',
+    navTopStreamers: 'أفضل الستريمرز',
+    navBestTimes: 'أفضل الأوقات',
+    navSchedule: 'المواعيد',
+    navRelated: 'ألعاب مشابهة',
+    followGame: (category) => `متابعة ${category}`,
+    followingLabel: 'تتابعها',
+    watchingNow: (category) => `يُبث الآن: ${category}`,
+    liveStreamsAria: (category) => `بثوث ${category} المباشرة`,
+    moreLiveAria: (category) => `مزيد من بثوث ${category} المباشرة`,
+    showMoreLive: (n) =>
+      pluralForms('ar', n, {
+        zero: 'عرض قنوات مباشرة إضافية',
+        one: 'عرض قناة مباشرة إضافية واحدة',
+        two: 'عرض قناتين مباشرتين إضافيتين',
+        few: `عرض ${n} قنوات مباشرة إضافية`,
+        many: `عرض ${n} قناة مباشرة إضافية`,
+        other: `عرض ${n} قناة مباشرة إضافية`,
+      }),
+    moreLiveInRanking: (n, category) =>
+      `${n} آخرون يبثون الآن في تصنيف ${category} الكامل ←`,
+    liveUpdatesNote: 'تُحدَّث حالة البث وأعداد المشاهدين كل بضع دقائق.',
+    mostFollowed: (category) => `ستريمرز ${category} الأكثر متابعة`,
+    tableCaption: (category) =>
+      `ستريمرز ${category} مرتَّبون حسب عدد المتابعين، مع بثهم المتوقع التالي`,
+    thRank: '#',
+    thStreamer: 'الستريمر',
+    thNextStream: 'البث التالي',
+    thFollowers: 'المتابعون',
+    thHours: 'الساعات / 28 يومًا',
+    liveNowCell: 'مباشر الآن',
+    seeFullRanking: (category) => `عرض تصنيف ${category} الكامل (أفضل 50) ←`,
+    whoStreams: (category) => `ستريمرز يبثون ${category}`,
+    whenStreamed: (category) => `متى يُبث ${category}؟`,
+    heatmapSummary: (category) =>
+      `معظم بثوث ${category} تجري {peak}{tz} — استنادًا إلى آخر 4 أسابيع من البثوث المتتبَّعة.`,
+    heatmapSummaryEmpty: 'استنادًا إلى آخر 4 أسابيع من البثوث المتتبَّعة.',
+    tzLocalSuffix: ' (بتوقيتك)',
+    tzUtcSuffix: ' (UTC)',
+    heatmapAria: (category) => `خريطة حرارية أسبوعية لبثوث ${category}.`,
+    heatmapAriaWithPeak: (category) =>
+      `خريطة حرارية أسبوعية لبثوث ${category}. النافذة الأكثر نشاطًا: {peak}.`,
+    heatmapTooltip: '{day} {from}–{to} · {amount} من البث خلال 4 أسابيع',
+    legendLess: 'أقل',
+    legendMore: 'أكثر',
+    heatmapDayNames: [
+      'أيام الاثنين',
+      'أيام الثلاثاء',
+      'أيام الأربعاء',
+      'أيام الخميس',
+      'أيام الجمعة',
+      'أيام السبت',
+      'أيام الأحد',
+    ],
+    bestTimeToStream: (category) => `أفضل وقت لبث ${category}`,
+    trendingBadge: '▲ رائج',
+    bestTimeIntro: (category) =>
+      `للستريمرز: النوافذ التي يكون فيها عدد مشاهدي ${category} الأعلى لكل قناة مباشرة.`,
+    fullHeatmapLink: 'الخريطة الحرارية الكاملة للفرص والتحليل ←',
+    bestSlotsAria: 'أفضل النوافذ الزمنية',
+    viewersPerChannel: '~{score} مشاهد/قناة',
+    timesLocalNote: 'الأوقات بتوقيتك المحلي.',
+    timesUtcNote: 'الأوقات بتوقيت UTC.',
+    quietTitle: (category) => `لا بثوث ${category} حاليًا`,
+    quietBody: (category) =>
+      `لا أحد من ستريمرز ${category} الذين نتتبعهم يبث الآن أو متوقع خلال الأيام السبعة المقبلة. تُحدَّث المواعيد وتوقعات الذكاء الاصطناعي عدة مرات يوميًا — عُد قريبًا.`,
+    quietMeanwhile: 'في هذه الأثناء',
+    seeWhosLive: 'شاهد من يبث الآن ←',
+    browseAllGames: 'تصفح كل الألعاب',
+    gameStreamersChip: (category) => `ستريمرز ${category}`,
+    scheduleAria: (category) => `مواعيد بثوث ${category}`,
+    upcomingStreams: (category) => `بثوث ${category} القادمة`,
+    scheduleNote:
+      'تتكيف الأوقات مع منطقتك الزمنية، مع عرض توقيت الستريمر بجانبها. تتبع الأيام تقويم UTC، لذا قد يظهر بث متأخر ليلًا تحت اليوم التالي.',
+    filterAria: 'تصفية المواعيد',
+    allPlatforms: 'كل المنصات',
+    hideLowConfidence: 'إخفاء الاحتمالية المنخفضة',
+    moreLowConfidence: (n) =>
+      pluralForms('ar', n, {
+        zero: 'لا توقعات إضافية منخفضة الاحتمالية',
+        one: 'توقع إضافي واحد منخفض الاحتمالية',
+        two: 'توقعان إضافيان منخفضا الاحتمالية',
+        few: `${n} توقعات إضافية منخفضة الاحتمالية`,
+        many: `${n} توقعًا إضافيًا منخفض الاحتمالية`,
+        other: `${n} توقع إضافي منخفض الاحتمالية`,
+      }),
+    lowConfAria: (label) => `توقعات منخفضة الاحتمالية: ${label}`,
+    hiddenNotShown: (n) =>
+      pluralForms('ar', n, {
+        zero: 'كل توقعات هذا اليوم معروضة.',
+        one: 'توقع إضافي واحد لهذا اليوم غير معروض. افتح صفحة الستريمر لمواعيده الكاملة.',
+        two: 'توقعان إضافيان لهذا اليوم غير معروضين. افتح صفحة الستريمر لمواعيده الكاملة.',
+        few: `${n} توقعات إضافية لهذا اليوم غير معروضة. افتح صفحة الستريمر لمواعيده الكاملة.`,
+        many: `${n} توقعًا إضافيًا لهذا اليوم غير معروض. افتح صفحة الستريمر لمواعيده الكاملة.`,
+        other: `${n} توقع إضافي لهذا اليوم غير معروض. افتح صفحة الستريمر لمواعيده الكاملة.`,
+      }),
+    relatedGames: 'ألعاب مشابهة',
+    relatedGamesAria: 'ألعاب مشابهة',
+    relatedNote: 'ألعاب تتقاطع قوائم ستريمرزها خلال آخر 28 يومًا.',
+    allGamesFooter: '→ كل الألعاب والفئات',
+  },
+  gameRanking: {
+    notFoundTitle: 'غير موجود — StreamerTimes',
+    metaTitle: (category, page) =>
+      page === 1
+        ? `أفضل ستريمرز ${category} — حسب المتابعين`
+        : `أفضل ستريمرز ${category} — حسب المتابعين — الصفحة ${page}`,
+    metaLeadIn: (name, value) => `${name} في الصدارة بـ${value} متابع. `,
+    metaDescription: (category, leadIn) => [
+      `${leadIn}أفضل ستريمرز ${category} على Twitch وYouTube مرتَّبون حسب المتابعين، مع حالة البث والبثوث التالية. يُحدَّث يوميًا.`,
+      `${leadIn}أفضل ستريمرز ${category} حسب المتابعين، مع حالة البث والبثوث التالية.`,
+      `أفضل ستريمرز ${category} على Twitch وYouTube مرتَّبون حسب المتابعين، مع حالة البث والبثوث التالية. يُحدَّث يوميًا.`,
+    ],
+    ogTitle: (category) => `أفضل ستريمرز ${category} — حسب المتابعين`,
+    h1: (category) => `أفضل ستريمرز ${category} حسب المتابعين`,
+    introPage1: (count, category) =>
+      `أفضل ${count} من ستريمرز ${category} الذين نتتبعهم، مرتَّبون حسب متابعي القناة ومشتركيها.`,
+    topsTheList: (name, value, isTwitch) =>
+      ` يتصدر القائمة ${name} بـ${value} ${isTwitch ? 'متابع' : 'مشترك'}.`,
+    introPageN: (from, to, total, category) =>
+      `المراكز ${from}–${to} من ${total} من ستريمرز ${category} الذين نتتبعهم، مرتَّبون حسب متابعي القناة ومشتركيها.`,
+    methodology: (category) =>
+      `ستريمرز نشطون في ${category} خلال آخر 28 يومًا، مرتَّبون حسب المتابعين. تُحدَّث الأرقام بانتظام وقد تتأخر عن أرقام المنصات.`,
+    followersRefreshed: (label) => ` تحديث أعداد المتابعين: ${label}.`,
+    warmingUp:
+      'هذا التصنيف لا يزال قيد الإحماء — نحتاج مزيدًا من البيانات قبل أن يصبح ذا دلالة. عُد قريبًا.',
+    missingDataNote:
+      '— تعني أننا لم نجمع بعد بيانات كافية عن تلك القناة، مثل عيّنات المشاهدين للقنوات المضافة حديثًا.',
+    sortAria: 'ترتيب التصنيف',
+    sortFollowers: 'الأكثر متابعة',
+    sortHours: 'الأكثر ساعات (28 يومًا)',
+    sortViewers: 'الأكثر مشاهدة',
+    filterLangAria: 'تصفية حسب اللغة',
+    allChip: 'الكل',
+    noMatch: 'لا يوجد ستريمرز يطابقون هذا الفلتر.',
+    tableCaption: (category) => `ستريمرز ${category} مرتَّبون حسب عدد المتابعين`,
+    thRank: '#',
+    thStreamer: 'الستريمر',
+    thFollowers: 'المتابعون',
+    thAvgViewers: 'متوسط المشاهدين',
+    thHours: 'الساعات (28 يومًا)',
+    thShare: 'حصة اللعبة',
+    thShareTitle: (category) =>
+      `حصة ${category} من بثوث الستريمر الأخيرة`,
+    thNextStream: 'البث التالي',
+    liveNowCell: 'مباشر الآن',
+    watchingTail: ' · {value} يشاهدون',
+    trendNewBadge: 'جديد',
+    trendNewTitle: 'لم يكن في هذا التصنيف قبل أسبوع',
+    trendUpTemplate: 'صعد {n} منذ الأسبوع الماضي',
+    trendDownTemplate: 'هبط {n} منذ الأسبوع الماضي',
+    mainGameTemplate: 'اللعبة الأساسية: {share}% من البثوث الأخيرة',
+    aboutRanking: 'عن هذا التصنيف',
+    faqMostFollowedQ: (category) =>
+      `من هو ستريمر ${category} الأكثر متابعة؟`,
+    faqMostFollowedA: (category, top, second) => {
+      const runnerUp = second ? `، متقدمًا على ${second.name} بـ${second.value}` : '';
+      return `${top.name} هو حاليًا ستريمر ${category} الأكثر ${top.isTwitch ? 'متابعة' : 'اشتراكًا'} ممن نتتبعهم، بـ${top.value}${runnerUp}. تُحدَّث الأرقام يوميًا.`;
+    },
+    faqHowManyQ: (category) => `كم عدد الستريمرز الذين يبثون ${category}؟`,
+    faqHowManyA: (category, count, activity) => {
+      const tail = activity
+        ? ` بثوا معًا نحو ${activity.hours} ساعة من ${category} في ${activity.streams} بثًا خلال آخر 28 يومًا.`
+        : '';
+      return `نتتبع حاليًا ${count} ستريمر بثوا ${category} مؤخرًا أو أدرجوه في مواعيدهم.${tail}`;
+    },
+    faqMeasuredQ: 'كيف يُقاس هذا التصنيف؟',
+    faqMeasuredA: (category) =>
+      `ستريمرز نشطون في ${category} خلال آخر 28 يومًا، مرتَّبون حسب عدد متابعي قناتهم الأساسية — متابعو القناة على Twitch أو المشتركون على YouTube. يأتي عمودا الساعات والحصة من تجميع ليلي لبثوث ${category} المنتهية.`,
+    faqShareQ: 'ماذا تعني «حصة اللعبة»؟',
+    faqShareA: (category) =>
+      `حصة ${category} من بثوث الستريمر الأخيرة. 100% تعني أنها لعبته الوحيدة حاليًا؛ الحصة المنخفضة تدل على زائر عابر للفئة.`,
+    relatedRankings: 'تصنيفات مشابهة',
+    relatedRankingsAria: 'تصنيفات ألعاب مشابهة',
+    liveAndSchedule: (category) => `البث المباشر ومواعيد ${category} ←`,
+    allRankings: 'كل التصنيفات',
+    paginationAria: (category) => `صفحات تصنيف ${category}`,
+    prev: '→ السابق',
+    next: 'التالي ←',
   },
 };

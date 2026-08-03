@@ -48,6 +48,15 @@ export function streamerCanonicalUrl(slug: string): string {
 export const INDEXABLE_HUB_LOCALES: readonly UiLang[] = ['en', 'de'];
 
 /**
+ * M22 P4: the programmatic game pages (/game/[slug], /rankings/game/[slug])
+ * localized their bodies and opened de alongside en — de-first like the hubs,
+ * separately widenable (S4.1 flips hubs and game pages independently after
+ * the next GSC review). Their own thin-content gates always win over this
+ * list inside applyLocaleSeo.
+ */
+export const INDEXABLE_GAME_LOCALES: readonly UiLang[] = ['en', 'de'];
+
+/**
  * Absolute URL of a locale variant. The English root collapses to the bare
  * origin WITHOUT a trailing slash — byte-identical to the pre-M22 home
  * canonical, so hreflang/canonical/x-default all agree on one English form.

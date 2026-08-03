@@ -85,7 +85,10 @@ export function heatmapIntensity(minutes: number, max: number): number {
  * from the peak cell across its day while neighbours hold ≥ 50% of the peak,
  * so the label names the prime-time band rather than a single hour.
  */
-export function peakBandLabel(view: HeatmapView): string | null {
+export function peakBandLabel(
+  view: HeatmapView,
+  dayNames: readonly string[] = DAY_NAMES,
+): string | null {
   const { peak, grid } = view;
   if (!peak) return null;
   const row = grid[peak.day];
@@ -95,7 +98,7 @@ export function peakBandLabel(view: HeatmapView): string | null {
   while (start > 0 && row[start - 1] >= threshold) start--;
   while (end < 23 && row[end + 1] >= threshold) end++;
   const fmt = (h: number) => `${String(h).padStart(2, '0')}:00`;
-  return `${DAY_NAMES[peak.day]} ${fmt(start)}–${fmt((end + 1) % 24)}`;
+  return `${dayNames[peak.day]} ${fmt(start)}–${fmt((end + 1) % 24)}`;
 }
 
 /** Rounded whole-hour UTC offset of the runtime's timezone (browser only). */

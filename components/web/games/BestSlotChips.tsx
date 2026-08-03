@@ -4,18 +4,47 @@
 // recommendation row). SSR renders the UTC frame; after hydration the slots
 // shift into the viewer's timezone — same useSyncExternalStore pattern as
 // StreamTimesHeatmap.
+//
+// M22 P4: strings arrive as server-resolved labels (placeholder template for
+// the score, localized day names); English defaults keep the /best-time page
+// and any label-less caller byte-identical.
 
 import { useSyncExternalStore } from 'react';
 import type { TimingBestSlot } from '@/lib/server/partner-api';
 import { localUtcOffsetHours } from '@/lib/game-heatmap';
-import { formatSlotLabel, shiftSlot } from '@/lib/game-timing';
+import { formatSlotLabel, shiftSlot, TIMING_DAY_NAMES } from '@/lib/game-timing';
 import { formatStatValue } from '@/lib/format/number';
+
+export interface BestSlotChipsLabels {
+  aria: string;
+  /** Template: "~{score} viewers/channel". */
+  perChannel: string;
+  localNote: string;
+  utcNote: string;
+  /** Full day names for the slot label, ISO order Mon..Sun. */
+  dayNames: readonly string[];
+}
+
+const EN_LABELS: BestSlotChipsLabels = {
+  aria: 'Best time slots',
+  perChannel: '~{score} viewers/channel',
+  localNote: 'Times shown in your local timezone.',
+  utcNote: 'Times shown in UTC.',
+  dayNames: TIMING_DAY_NAMES,
+};
 
 function subscribe(): () => void {
   return () => {};
 }
 
-export function BestSlotChips({ slots }: { slots: TimingBestSlot[] }) {
+export function BestSlotChips({
+  slots,
+  labels: labelsProp,
+}: {
+  slots: TimingBestSlot[];
+  labels?: BestSlotChipsLabels;
+}) {
+  const labels = labelsProp ?? EN_LABELS;
   const shift = useSyncExternalStore(
     subscribe,
     () => localUtcOffsetHours(),
@@ -29,7 +58,7 @@ export function BestSlotChips({ slots }: { slots: TimingBestSlot[] }) {
   if (slots.length === 0) return null;
   return (
     <div suppressHydrationWarning>
-      <ol className="flex flex-wrap gap-2" aria-label="Best time slots">
+      <ol className="flex flex-wrap gap-2" aria-label={labels.aria}>
         {slots.slice(0, 3).map((slot, i) => {
           const local = shiftSlot(slot, shift);
           return (
@@ -39,17 +68,17 @@ export function BestSlotChips({ slots }: { slots: TimingBestSlot[] }) {
             >
               <span className="text-xs font-bold text-accent-cyan">#{i + 1}</span>
               <span className="font-semibold text-text-primary">
-                {formatSlotLabel(local.dow, local.hour)}
+                {formatSlotLabel(local.dow, local.hour, labels.dayNames)}
               </span>
               <span className="whitespace-nowrap text-xs text-text-muted">
-                {`~${formatStatValue(slot.score)} viewers/channel`}
+                {labels.perChannel.replace('{score}', formatStatValue(slot.score))}
               </span>
             </li>
           );
         })}
       </ol>
       <p className="mt-1.5 text-xs text-text-muted">
-        {isLocal ? 'Times shown in your local timezone.' : 'Times shown in UTC.'}
+        {isLocal ? labels.localNote : labels.utcNote}
       </p>
     </div>
   );

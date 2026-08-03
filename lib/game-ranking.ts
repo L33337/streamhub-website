@@ -1,4 +1,7 @@
 import type { Platform, PublicStreamer } from '@/lib/server/partner-api';
+// Type-only import — erased at compile time, so this file stays safe to import
+// from client components (the hub lexicon VALUES are server-only).
+import type { HubLex } from '@/lib/i18n/hub/types';
 import { formatCompactNumber } from '@/lib/format/number';
 
 export interface RankedGameStreamer {
@@ -297,6 +300,68 @@ export function buildGameRankingFaq(params: {
       q: 'What does "Game share" mean?',
       a: `The share of a streamer's recent broadcasts that were ${category}. 100% means it is currently their only game; a low share marks an occasional visitor to the category.`,
     });
+  }
+
+  return faq;
+}
+
+/**
+ * Localized counterpart of buildGameRankingFaq (M22 P4) — emission conditions
+ * mirrored 1:1, copy from the hub lexicon, numbers formatted for the viewer
+ * locale. With the 'en' lexicon and locale this is byte-identical to
+ * buildGameRankingFaq (guarded by a unit test).
+ */
+export function buildGameRankingFaqLocalized(
+  lex: HubLex['gameRanking'],
+  locale: string,
+  params: {
+    category: string;
+    rows: GameRankingRow[];
+    streamerCount: number | null;
+    hours28d: number | null;
+    streams28d: number | null;
+  },
+): { q: string; a: string }[] {
+  const { category, rows } = params;
+  const faq: { q: string; a: string }[] = [];
+  const top = rows[0];
+
+  if (top) {
+    const second = rows[1];
+    faq.push({
+      q: lex.faqMostFollowedQ(category),
+      a: lex.faqMostFollowedA(
+        category,
+        {
+          name: top.name,
+          value: formatCompactNumber(top.followerCount, locale),
+          isTwitch: top.platforms.includes('twitch'),
+        },
+        second != null
+          ? { name: second.name, value: formatCompactNumber(second.followerCount, locale) }
+          : null,
+      ),
+    });
+  }
+
+  if (params.streamerCount != null && params.streamerCount > 0) {
+    const activity =
+      params.hours28d != null && params.hours28d >= 10 && params.streams28d
+        ? {
+            hours: formatCompactNumber(Math.round(params.hours28d), locale),
+            streams: formatCompactNumber(params.streams28d, locale),
+          }
+        : null;
+    faq.push({
+      q: lex.faqHowManyQ(category),
+      a: lex.faqHowManyA(category, params.streamerCount, activity),
+    });
+  }
+
+  faq.push({ q: lex.faqMeasuredQ, a: lex.faqMeasuredA(category) });
+
+  if (rows.some((r) => r.sharePercent != null)) {
+    faq.push({ q: lex.faqShareQ, a: lex.faqShareA(category) });
   }
 
   return faq;

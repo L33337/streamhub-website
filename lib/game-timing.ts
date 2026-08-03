@@ -283,8 +283,12 @@ export function timingBarColor(goodness: number): string {
 }
 
 /** "Tuesday 20:00" (already-shifted dow/hour). */
-export function formatSlotLabel(dow: number, hour: number): string {
-  return `${TIMING_DAY_NAMES[((dow % 7) + 7) % 7]} ${String(hour).padStart(2, '0')}:00`;
+export function formatSlotLabel(
+  dow: number,
+  hour: number,
+  dayNames: readonly string[] = TIMING_DAY_NAMES,
+): string {
+  return `${dayNames[((dow % 7) + 7) % 7]} ${String(hour).padStart(2, '0')}:00`;
 }
 
 // ============================================

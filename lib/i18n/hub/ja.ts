@@ -1,4 +1,5 @@
 import { formatCompactNumber } from '@/lib/format/number';
+import { listConjunction } from '@/lib/i18n-core';
 import type { HubLex } from './types';
 
 export const ja: HubLex = {
@@ -317,5 +318,210 @@ export const ja: HubLex = {
       'most-reliable':
         '過去90日間の直近20件の告知済み配信のうち、Twitch で告知された配信が実際に±30分以内に始まった割合です（最低10件を評価）。毎日更新。',
     },
+  },
+  gameChips: {
+    aria: (category) => `${category} の統計`,
+    streamersLabel: () => 'ストリーマー',
+    liveNowLabel: '配信中',
+    watchingLabel: '人が視聴中',
+    streamedLabel: '配信 · 28日間',
+    streamsLabel: () => '件の配信 · 28日間',
+    peakLead: 'ピーク ',
+    peakTail: ' 人 · 28日間',
+    trendTail: ' 今週',
+    trendTitle: '前週比のアクティブなストリーマー数の変化',
+  },
+  game: {
+    notFoundTitle: 'ゲームが見つかりません — StreamerTimes',
+    metaTitle: (category) => `${category} のストリーマー — 配信中・ランキング・スケジュール`,
+    metaDescription: (category, names) => {
+      const tail = `今誰が配信中か、今後の配信、AI が予測した Twitch・YouTube の配信スケジュール。`;
+      const namesLead =
+        names.length > 0
+          ? `${listConjunction(names, 'ja')}が ${category} ランキングをリードしています。`
+          : '';
+      const twoNamesLead =
+        names.length > 1
+          ? `${listConjunction(names.slice(0, 2), 'ja')}が ${category} ランキングをリードしています。`
+          : '';
+      return [
+        `${namesLead}${tail}`,
+        `${twoNamesLead}${tail}`,
+        `フォロワー数トップの ${category} ストリーマー。${tail}`,
+        tail,
+      ];
+    },
+    ogTitle: (category) => `${category} のストリーマー — 配信中・ランキング・スケジュール`,
+    ogDescription: (category, names) => {
+      const ogNames = names.length > 0 ? `（${listConjunction(names, 'ja')}）` : '';
+      return `フォロワー数トップの ${category} ストリーマー${ogNames}の配信状況と Twitch・YouTube の配信スケジュール。`;
+    },
+    h1: (category) => `${category} のストリーマー — 配信中 & スケジュール`,
+    intro: (shown, category, liveCount, upcomingCount, superlative) =>
+      `今週 Twitch・YouTube で ${category} を配信中または配信予定のストリーマーは${shown}人。` +
+      (liveCount > 0 ? `${liveCount}人が今まさに配信中` : '今は誰も配信していません') +
+      (upcomingCount > 0
+        ? `、今後7日間に${upcomingCount}件の配信が控えています。`
+        : '。') +
+      superlative,
+    superlative: (category, name, value, isTwitch) =>
+      `ここで最も${isTwitch ? 'フォロワー' : '登録者'}が多い ${category} ストリーマーは ${name}（${value}）です。`,
+    onPageAria: 'このページの内容',
+    navLiveNow: '配信中',
+    navTopStreamers: 'トップストリーマー',
+    navBestTimes: 'ベストな時間',
+    navSchedule: 'スケジュール',
+    navRelated: '関連ゲーム',
+    followGame: (category) => `${category} をフォロー`,
+    followingLabel: 'フォロー中',
+    watchingNow: (category) => `${category} を配信中`,
+    liveStreamsAria: (category) => `配信中の ${category} ストリーム`,
+    moreLiveAria: (category) => `その他の配信中の ${category} ストリーム`,
+    showMoreLive: (n) => `配信中のチャンネルをあと${n}件表示`,
+    moreLiveInRanking: (n, category) =>
+      `${category} ランキング全体ではさらに${n}人が配信中 →`,
+    liveUpdatesNote: '配信状況と視聴者数は数分ごとに更新されます。',
+    mostFollowed: (category) => `フォロワー数トップの ${category} ストリーマー`,
+    tableCaption: (category) =>
+      `フォロワー数順の ${category} ストリーマーと次の配信予定`,
+    thRank: '#',
+    thStreamer: 'ストリーマー',
+    thNextStream: '次の配信',
+    thFollowers: 'フォロワー',
+    thHours: '時間 / 28日',
+    liveNowCell: '配信中',
+    seeFullRanking: (category) => `${category} ランキング全体を見る（トップ50）→`,
+    whoStreams: (category) => `${category} を配信するストリーマー`,
+    whenStreamed: (category) => `${category} はいつ配信されている?`,
+    heatmapSummary: (category) =>
+      `${category} の配信は{peak}{tz}に集中しています — 直近4週間の記録に基づきます。`,
+    heatmapSummaryEmpty: '直近4週間の記録に基づきます。',
+    tzLocalSuffix: '（あなたの時間）',
+    tzUtcSuffix: '（UTC）',
+    heatmapAria: (category) => `${category} の週間配信ヒートマップ。`,
+    heatmapAriaWithPeak: (category) =>
+      `${category} の週間配信ヒートマップ。最も活発な時間帯: {peak}。`,
+    heatmapTooltip: '{day} {from}–{to} · 4週間で{amount}配信',
+    legendLess: '少',
+    legendMore: '多',
+    heatmapDayNames: [
+      '月曜日',
+      '火曜日',
+      '水曜日',
+      '木曜日',
+      '金曜日',
+      '土曜日',
+      '日曜日',
+    ],
+    bestTimeToStream: (category) => `${category} を配信するベストな時間`,
+    trendingBadge: '▲ トレンド',
+    bestTimeIntro: (category) =>
+      `ストリーマー向け: ${category} で配信1チャンネルあたりの視聴者が最も多くなる時間帯です。`,
+    fullHeatmapLink: 'チャンスヒートマップと分析の全体を見る →',
+    bestSlotsAria: 'ベストな時間帯',
+    viewersPerChannel: '~{score} 視聴者/チャンネル',
+    timesLocalNote: '時刻はあなたのタイムゾーンで表示。',
+    timesUtcNote: '時刻は UTC で表示。',
+    quietTitle: (category) => `現在 ${category} の配信はありません`,
+    quietBody: (category) =>
+      `追跡中の ${category} ストリーマーは誰も配信しておらず、今後7日間の予定もありません。スケジュールと AI 予測は1日に何度も更新されます — また見に来てください。`,
+    quietMeanwhile: 'それまでの間に',
+    seeWhosLive: '今配信中のストリーマーを見る →',
+    browseAllGames: 'すべてのゲームを見る',
+    gameStreamersChip: (category) => `${category} のストリーマー`,
+    scheduleAria: (category) => `${category} の配信スケジュール`,
+    upcomingStreams: (category) => `今後の ${category} 配信`,
+    scheduleNote:
+      '時刻はあなたのタイムゾーンに合わせて表示され、ストリーマー側の時刻も併記されます。日付は UTC カレンダーに従うため、深夜の配信は翌日の欄に表示されることがあります。',
+    filterAria: 'スケジュールを絞り込む',
+    allPlatforms: 'すべてのプラットフォーム',
+    hideLowConfidence: '確度「低」を隠す',
+    moreLowConfidence: (n) => `確度の低い予測があと${n}件`,
+    lowConfAria: (label) => `${label}の確度の低い予測`,
+    hiddenNotShown: (n) =>
+      `この日はあと${n}件の予測が非表示です。全スケジュールはストリーマーのページでご覧ください。`,
+    relatedGames: '関連ゲーム',
+    relatedGamesAria: '関連ゲーム',
+    relatedNote: '直近28日間でストリーマーの顔ぶれが重なるゲームです。',
+    allGamesFooter: '← すべてのゲームとカテゴリー',
+  },
+  gameRanking: {
+    notFoundTitle: 'ページが見つかりません — StreamerTimes',
+    metaTitle: (category, page) =>
+      page === 1
+        ? `${category} ストリーマーランキング — フォロワー数順`
+        : `${category} ストリーマーランキング — フォロワー数順 — ページ${page}`,
+    metaLeadIn: (name, value) => `${name} が ${value} フォロワーでトップ。`,
+    metaDescription: (category, leadIn) => [
+      `${leadIn}Twitch・YouTube の ${category} ストリーマーをフォロワー数順にランキング。配信状況と次の配信付き。毎日更新。`,
+      `${leadIn}${category} ストリーマーのフォロワー数ランキング。配信状況と次の配信付き。`,
+      `Twitch・YouTube の ${category} ストリーマーをフォロワー数順にランキング。配信状況と次の配信付き。毎日更新。`,
+    ],
+    ogTitle: (category) => `${category} ストリーマーランキング — フォロワー数順`,
+    h1: (category) => `${category} ストリーマーランキング（フォロワー数順）`,
+    introPage1: (count, category) =>
+      `追跡中の ${category} ストリーマー トップ${count}を、チャンネルのフォロワー数・登録者数でランキング。`,
+    topsTheList: (name, value, isTwitch) =>
+      `トップは ${name}（${value} ${isTwitch ? 'フォロワー' : '登録者'}）。`,
+    introPageN: (from, to, total, category) =>
+      `追跡中の ${category} ストリーマー${total}人のうち${from}〜${to}位。チャンネルのフォロワー数・登録者数でランキング。`,
+    methodology: (category) =>
+      `直近28日間に ${category} で活動したストリーマーをフォロワー数でランキング。数値は定期的に更新され、プラットフォームの最新値より遅れることがあります。`,
+    followersRefreshed: (label) => ` フォロワー数の更新: ${label}。`,
+    warmingUp:
+      'このランキングはまだ準備中です — 意味のある結果にはもう少しデータが必要です。また見に来てください。',
+    missingDataNote:
+      '— は、そのチャンネルのデータがまだ十分に集まっていないことを意味します（例: 追加されたばかりのチャンネルの視聴者サンプリング）。',
+    sortAria: 'ランキングの並び替え',
+    sortFollowers: 'フォロワー数',
+    sortHours: '配信時間（28日）',
+    sortViewers: '視聴者数',
+    filterLangAria: '言語で絞り込む',
+    allChip: 'すべて',
+    noMatch: 'このフィルターに合うストリーマーはいません。',
+    tableCaption: (category) => `フォロワー数順の ${category} ストリーマー`,
+    thRank: '#',
+    thStreamer: 'ストリーマー',
+    thFollowers: 'フォロワー',
+    thAvgViewers: '平均視聴者',
+    thHours: '時間（28日）',
+    thShare: 'ゲーム比率',
+    thShareTitle: (category) =>
+      `直近の配信のうち ${category} が占める割合`,
+    thNextStream: '次の配信',
+    liveNowCell: '配信中',
+    watchingTail: ' · {value} 人視聴中',
+    trendNewBadge: 'new',
+    trendNewTitle: '1週間前はこのランキング圏外',
+    trendUpTemplate: '先週から{n}アップ',
+    trendDownTemplate: '先週から{n}ダウン',
+    mainGameTemplate: 'メインゲーム: 直近配信の{share}%',
+    aboutRanking: 'このランキングについて',
+    faqMostFollowedQ: (category) =>
+      `${category} で最もフォロワーが多いストリーマーは?`,
+    faqMostFollowedA: (category, top, second) => {
+      const runnerUp = second ? `（2位は ${second.name} の ${second.value}）` : '';
+      return `現在、追跡中の ${category} ストリーマーで最も${top.isTwitch ? 'フォロワー' : '登録者'}が多いのは ${top.name}（${top.value}）です${runnerUp}。数値は毎日更新されます。`;
+    },
+    faqHowManyQ: (category) => `${category} を配信しているストリーマーは何人?`,
+    faqHowManyA: (category, count, activity) => {
+      const tail = activity
+        ? `直近28日間で合計約${activity.hours}時間・${activity.streams}件の ${category} 配信がありました。`
+        : '';
+      return `最近 ${category} を配信した、またはスケジュールに入れているストリーマーを現在${count}人追跡しています。${tail}`;
+    },
+    faqMeasuredQ: 'このランキングはどう測っている?',
+    faqMeasuredA: (category) =>
+      `直近28日間に ${category} で活動したストリーマーを、メインチャンネルのフォロワー数 — Twitch のフォロワーまたは YouTube の登録者 — でランキングしています。時間と比率の列は、終了した ${category} 配信の毎晩の集計によるものです。`,
+    faqShareQ: '「ゲーム比率」とは?',
+    faqShareA: (category) =>
+      `ストリーマーの直近の配信のうち ${category} が占める割合です。100% なら今はこのゲームだけを配信中。低い比率はこのカテゴリーへのたまの訪問者を示します。`,
+    relatedRankings: '関連ランキング',
+    relatedRankingsAria: '関連ゲームのランキング',
+    liveAndSchedule: (category) => `${category} の配信中 & スケジュール →`,
+    allRankings: 'すべてのランキング',
+    paginationAria: (category) => `${category} ランキングのページ`,
+    prev: '← 前へ',
+    next: '次へ →',
   },
 };

@@ -14,15 +14,46 @@ import { sizedAvatarUrl } from '@/lib/format/image-size';
 import { formatCompactNumber } from '@/lib/format/number';
 import { languageDisplayName } from '@/lib/format/language';
 import { formatHours } from '@/lib/rankings';
+import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 
-const SORT_OPTIONS: { mode: GameRankingSortMode; label: string }[] = [
-  { mode: 'followers', label: 'Most followed' },
-  { mode: 'hours', label: 'Most hours (28d)' },
-  { mode: 'viewers', label: 'Most watched' },
-];
+/**
+ * Server-resolved strings (M22 P4). The hub lexicon is server-only, so the
+ * page resolves these and passes them down — never import i18n-hub here.
+ * Entries marked "template" carry {n}/{value}/{share} placeholders replaced
+ * client-side (values only exist per row).
+ */
+export interface GameRankingExplorerLabels {
+  sortAria: string;
+  sortFollowers: string;
+  sortHours: string;
+  sortViewers: string;
+  filterLangAria: string;
+  allChip: string;
+  noMatch: string;
+  /** Full caption sentence incl. the category name (pre-interpolated). */
+  tableCaption: string;
+  thRank: string;
+  thStreamer: string;
+  thFollowers: string;
+  thAvgViewers: string;
+  thHours: string;
+  thShare: string;
+  thShareTitle: string;
+  thNextStream: string;
+  liveNowCell: string;
+  /** " · {value} watching" */
+  watchingTail: string;
+  trendNewBadge: string;
+  trendNewTitle: string;
+  /** "Up {n} since last week" */
+  trendUpTemplate: string;
+  trendDownTemplate: string;
+  /** "Main game: {share}% of their recent broadcasts" */
+  mainGameTemplate: string;
+}
 
 // Medal accents for ranks 1-3 — same palette as RankingTable.
 const MEDAL_CLASSES: Record<number, string> = {
@@ -32,23 +63,30 @@ const MEDAL_CLASSES: Record<number, string> = {
 };
 
 /** ▲2 / ▼1 / NEW — only meaningful next to the canonical follower rank. */
-function TrendIndicator({ row }: { row: GameRankingRow }) {
+function TrendIndicator({
+  row,
+  labels,
+}: {
+  row: GameRankingRow;
+  labels: GameRankingExplorerLabels;
+}) {
   if (row.isNew) {
     return (
       <span
         className="text-[9px] font-bold uppercase tracking-wider text-accent-cyan"
-        title="Not in this ranking a week ago"
+        title={labels.trendNewTitle}
       >
-        new
+        {labels.trendNewBadge}
       </span>
     );
   }
   if (row.rankDelta == null || row.rankDelta === 0) return null;
   const up = row.rankDelta > 0;
+  const template = up ? labels.trendUpTemplate : labels.trendDownTemplate;
   return (
     <span
       className={`text-[10px] font-semibold tabular-nums ${up ? 'text-live' : 'text-accent-pink'}`}
-      title={`${up ? 'Up' : 'Down'} ${Math.abs(row.rankDelta)} since last week`}
+      title={template.replace('{n}', String(Math.abs(row.rankDelta)))}
     >
       {up ? '▲' : '▼'}
       {Math.abs(row.rankDelta)}
@@ -64,19 +102,29 @@ function TrendIndicator({ row }: { row: GameRankingRow }) {
  */
 export function GameRankingExplorer({
   rows,
-  category,
+  locale,
+  labels,
 }: {
   rows: GameRankingRow[];
-  category: string;
+  /** Viewer locale (M22 P4): number formatting + streamer-link prefixes. */
+  locale: string;
+  labels: GameRankingExplorerLabels;
 }) {
   const [mode, setMode] = useState<GameRankingSortMode>('followers');
   const [language, setLanguage] = useState<string | null>(null);
+  const uiLang = resolveUiLang(locale);
 
   const languages = useMemo(() => gameRankingLanguages(rows), [rows]);
   const visible = useMemo(
     () => sortGameRankingRows(filterGameRankingRows(rows, language), mode),
     [rows, language, mode],
   );
+
+  const SORT_OPTIONS: { mode: GameRankingSortMode; label: string }[] = [
+    { mode: 'followers', label: labels.sortFollowers },
+    { mode: 'hours', label: labels.sortHours },
+    { mode: 'viewers', label: labels.sortViewers },
+  ];
 
   // Row anchors + trend arrows only in the canonical (SSR-identical) view:
   // positions are stable there, and the 7d delta refers to the follower rank.
@@ -91,7 +139,7 @@ export function GameRankingExplorer({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div
           role="group"
-          aria-label="Sort ranking"
+          aria-label={labels.sortAria}
           className="flex overflow-hidden rounded-lg border border-border-default"
         >
           {SORT_OPTIONS.map((opt) => (
@@ -114,7 +162,7 @@ export function GameRankingExplorer({
         {languages.length > 0 && (
           <div
             role="group"
-            aria-label="Filter by language"
+            aria-label={labels.filterLangAria}
             className="flex flex-wrap gap-1.5"
           >
             <button
@@ -127,7 +175,7 @@ export function GameRankingExplorer({
                   : 'border-border-default text-text-secondary hover:text-text-primary'
               }`}
             >
-              All
+              {labels.allChip}
             </button>
             {languages.map(({ code, count }) => (
               <button
@@ -141,7 +189,7 @@ export function GameRankingExplorer({
                     : 'border-border-default text-text-secondary hover:text-text-primary'
                 }`}
               >
-                {languageDisplayName(code) ?? code}{' '}
+                {languageDisplayName(code, uiLang) ?? code}{' '}
                 <span className="text-text-muted">({count})</span>
               </button>
             ))}
@@ -150,46 +198,42 @@ export function GameRankingExplorer({
       </div>
 
       {visible.length === 0 ? (
-        <p className="mt-6 text-sm text-text-muted">
-          No streamers match this filter.
-        </p>
+        <p className="mt-6 text-sm text-text-muted">{labels.noMatch}</p>
       ) : (
         <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
           <table className="w-full text-sm">
-            <caption className="sr-only">
-              {category} streamers ranked by follower count
-            </caption>
+            <caption className="sr-only">{labels.tableCaption}</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  #
+                  {labels.thRank}
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  Streamer
+                  {labels.thStreamer}
                 </th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">
-                  Followers
+                  {labels.thFollowers}
                 </th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">
-                  Avg viewers
+                  {labels.thAvgViewers}
                 </th>
                 {hasHours && (
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    Hours (28d)
+                    {labels.thHours}
                   </th>
                 )}
                 {hasShare && (
                   <th
                     scope="col"
                     className="px-3 py-2 text-right font-semibold"
-                    title={`Share of the streamer's recent broadcasts that were ${category}`}
+                    title={labels.thShareTitle}
                   >
-                    Game share
+                    {labels.thShare}
                   </th>
                 )}
                 {hasNext && (
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    Next stream
+                    {labels.thNextStream}
                   </th>
                 )}
               </tr>
@@ -210,12 +254,12 @@ export function GameRankingExplorer({
                         >
                           {row.rank}
                         </span>
-                        {canonical && <TrendIndicator row={row} />}
+                        {canonical && <TrendIndicator row={row} labels={labels} />}
                       </span>
                     </td>
                     <th scope="row" className="px-3 py-2 text-left font-medium">
                       <Link
-                        href={`/streamer/${encodeURIComponent(row.id)}`}
+                        href={localeHref(uiLang, `/streamer/${encodeURIComponent(row.id)}`)}
                         className="group flex items-center gap-3"
                       >
                         {row.avatarUrl ? (
@@ -243,7 +287,7 @@ export function GameRankingExplorer({
                             ))}
                             {row.language && (
                               <span className="text-[10px] tracking-wider text-text-muted">
-                                {languageDisplayName(row.language)}
+                                {languageDisplayName(row.language, uiLang)}
                               </span>
                             )}
                           </span>
@@ -251,17 +295,17 @@ export function GameRankingExplorer({
                       </Link>
                     </th>
                     <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
-                      {formatCompactNumber(row.followerCount, 'en')}
+                      {formatCompactNumber(row.followerCount, uiLang)}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
                       {row.avgViewCount != null && row.avgViewCount > 0
-                        ? formatCompactNumber(row.avgViewCount, 'en')
+                        ? formatCompactNumber(row.avgViewCount, uiLang)
                         : '—'}
                     </td>
                     {hasHours && (
                       <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
                         {row.hours28d != null && row.hours28d > 0
-                          ? formatHours(row.hours28d)
+                          ? formatHours(row.hours28d, uiLang)
                           : '—'}
                       </td>
                     )}
@@ -276,7 +320,10 @@ export function GameRankingExplorer({
                             }
                             title={
                               row.sharePercent >= 75
-                                ? `Main game: ${row.sharePercent}% of their recent broadcasts`
+                                ? labels.mainGameTemplate.replace(
+                                    '{share}',
+                                    String(row.sharePercent),
+                                  )
                                 : undefined
                             }
                           >
@@ -291,19 +338,19 @@ export function GameRankingExplorer({
                       <td className="whitespace-nowrap px-3 py-2 text-right text-xs text-text-secondary">
                         {row.isLive ? (
                           <span className="font-semibold text-live">
-                            Live now
-                            {row.liveViewerCount != null && (
-                              <>
-                                {' '}
-                                · {formatCompactNumber(row.liveViewerCount, 'en')} watching
-                              </>
-                            )}
+                            {labels.liveNowCell}
+                            {row.liveViewerCount != null &&
+                              labels.watchingTail.replace(
+                                '{value}',
+                                formatCompactNumber(row.liveViewerCount, uiLang),
+                              )}
                           </span>
                         ) : row.nextStreamAt ? (
                           <span className="flex flex-col items-end leading-tight">
                             <NextStreamTime
                               startTime={row.nextStreamAt}
                               isPredicted={row.nextIsPredicted}
+                              language={uiLang}
                             />
                             {row.nextCategory && (
                               <span
