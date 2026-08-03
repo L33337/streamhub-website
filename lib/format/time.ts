@@ -27,9 +27,22 @@ export function safeTimeZone(tz: string | null | undefined): string | null {
  * `localizedNextLabel` (future). Built on `Intl.RelativeTimeFormat` so we don't
  * hand-maintain word lists. `now` is injectable for deterministic rendering /
  * tests; callers in server components render it once at request time.
+ *
+ * The reference time is floored to the FULL HOUR so ISR regenerations inside
+ * the same hour render byte-identical labels — Vercel only bills an ISR write
+ * when the output changed, and a raw `now` made every streamer-page
+ * regeneration a billed full-page write (this route was the site's top ISR
+ * write consumer, 2026-08-03). Cost: a label can lag up to one rounding step
+ * behind the exact value. Timestamps INSIDE the current hour keep the exact
+ * `now` reference — flooring would put them in the future ("in 20 minutes"
+ * for a stream that just ended); those pages regenerate with fresh data
+ * anyway (offline transition → revalidate ping + new history row).
  */
 export function formatTimeAgo(iso: string, lang = 'en', now = new Date()): string {
-  const sec = Math.round((new Date(iso).getTime() - now.getTime()) / 1000);
+  const t = new Date(iso).getTime();
+  const flooredHour = Math.floor(now.getTime() / 3_600_000) * 3_600_000;
+  const refMs = t <= flooredHour ? flooredHour : now.getTime();
+  const sec = Math.round((t - refMs) / 1000);
   const abs = Math.abs(sec);
   const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
   const MIN = 60;

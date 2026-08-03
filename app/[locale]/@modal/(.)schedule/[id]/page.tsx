@@ -12,7 +12,9 @@ interface Props {
 export default async function InterceptedSlotPage({ params }: Props) {
   const { locale: rawLocale, id } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const slot = await getPartnerApi().getSchedule(id, { revalidate: 60 });
+  // revalidate MUST match the full page's loadSlot call (same URL + same
+  // revalidate → one shared data-cache entry instead of two).
+  const slot = await getPartnerApi().getSchedule(id, { revalidate: 300 });
   if (!slot) {
     // Same expired-prediction redirect as the full page — a modal for a
     // just-expired slot navigates to the streamer page instead of a 404.

@@ -311,7 +311,8 @@ describe('buildLiveVideoObjectJsonLd', () => {
       's',
       NOW,
     ) as Ld;
-    expect((stale.publication as Ld).endDate).toBe('2026-07-12T19:30:00.000Z');
+    // now+1h = 19:30, ceiled to the full hour → 20:00
+    expect((stale.publication as Ld).endDate).toBe('2026-07-12T20:00:00.000Z');
   });
 
   it('treats a non-positive duration as 60 minutes', () => {
@@ -321,8 +322,38 @@ describe('buildLiveVideoObjectJsonLd', () => {
       's',
       new Date('2026-07-12T18:05:00Z'),
     ) as Ld;
-    // start+60min = 19:00 < now+1h = 19:05 → now+1h wins
-    expect((ld.publication as Ld).endDate).toBe('2026-07-12T19:05:00.000Z');
+    // start+60min = 19:00 < now+1h = 19:05 → now+1h wins, ceiled → 20:00
+    expect((ld.publication as Ld).endDate).toBe('2026-07-12T20:00:00.000Z');
+  });
+
+  it('renders a byte-identical endDate for every `now` inside the same hour', () => {
+    // The billing property behind the hour-ceiling: Vercel only charges an ISR
+    // write when the regenerated output changed, so two regenerations within
+    // the same hour must produce the same endDate (a raw now+1h made every
+    // regeneration of every live streamer page a billed full-page write).
+    const slot = makeSlot({ start_time: '2026-07-11T22:00:00Z', duration_minutes: 60 });
+    const early = buildLiveVideoObjectJsonLd(
+      makeStreamer(),
+      slot,
+      's',
+      new Date('2026-07-12T18:00:30Z'),
+    ) as Ld;
+    const late = buildLiveVideoObjectJsonLd(
+      makeStreamer(),
+      slot,
+      's',
+      new Date('2026-07-12T18:59:59Z'),
+    ) as Ld;
+    expect((early.publication as Ld).endDate).toBe('2026-07-12T20:00:00.000Z');
+    expect((late.publication as Ld).endDate).toBe((early.publication as Ld).endDate);
+    // Exactly on the hour boundary the ceiling is a no-op (still ≥ now+1h).
+    const onBoundary = buildLiveVideoObjectJsonLd(
+      makeStreamer(),
+      slot,
+      's',
+      new Date('2026-07-12T18:00:00Z'),
+    ) as Ld;
+    expect((onBoundary.publication as Ld).endDate).toBe('2026-07-12T19:00:00.000Z');
   });
 
   it('omits null description parts and inLanguage without a language', () => {

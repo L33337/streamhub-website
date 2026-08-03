@@ -48,6 +48,7 @@ import { GameBoxArt } from '@/components/web/games/GameCard';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { SlotCard } from '@/components/web/SlotCard';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import { floorToBucket } from '@/lib/home/logic';
 
 export const revalidate = 300;
 
@@ -137,9 +138,13 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     .filter((r) => r.slug.length > 0)
     .slice(0, 6);
 
-  const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
-  const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
-  const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
+  // Fetch-URL timestamps use the 5-min bucket (lib/home/logic.ts convention):
+  // raw ms-precision `now` gave every regeneration of every locale variant its
+  // own data-cache keys — guaranteed MISS + billed ISR write per render.
+  const bucketedNow = floorToBucket(now);
+  const oneYearAgo = new Date(bucketedNow.getTime() - 365 * 86_400_000);
+  const sixHoursFromNow = new Date(bucketedNow.getTime() + 6 * 60 * 60 * 1000);
+  const sevenDaysFromNow = new Date(bucketedNow.getTime() + 7 * 86_400_000);
 
   const [liveCall, upcomingCall, rankedCall, histogramCall] = await Promise.allSettled([
     api.listSchedules({
@@ -154,7 +159,7 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
       category: game.category,
       status: ['upcoming'],
       includePredictions: true,
-      from: now.toISOString(),
+      from: bucketedNow.toISOString(),
       to: sevenDaysFromNow.toISOString(),
       limit: 200,
     }),

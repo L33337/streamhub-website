@@ -46,6 +46,7 @@ import { InsightsTeaserCard } from '@/components/web/streamer/InsightsTeaserCard
 import { buildInsightsTeaser } from '@/lib/streamer-insights';
 import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
+import { floorToBucket } from '@/lib/home/logic';
 
 export const revalidate = 300;
 
@@ -86,9 +87,18 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   const api = getPartnerApi();
   const now = new Date();
 
-  const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
-  const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
-  const sevenDaysFromNow = new Date(now.getTime() + 7 * 86_400_000);
+  // Fetch-URL timestamps use the 5-min bucket (lib/home/logic.ts convention):
+  // a raw `now.toISOString()` embeds millisecond precision in the URL, so every
+  // ISR regeneration of every locale variant fired its own uncached live +
+  // upcoming sweep — 12 locales × every regen = guaranteed data-cache MISS +
+  // billed ISR write each time. Bucketed, all locale variants and every regen
+  // inside the window share one data-cache entry per call. Display/derivation
+  // logic keeps the real `now`; the window edges are day/week-scale, so a ≤5-min
+  // shift is invisible in the rendered output.
+  const bucketedNow = floorToBucket(now);
+  const oneYearAgo = new Date(bucketedNow.getTime() - 365 * 86_400_000);
+  const sixHoursFromNow = new Date(bucketedNow.getTime() + 6 * 60 * 60 * 1000);
+  const sevenDaysFromNow = new Date(bucketedNow.getTime() + 7 * 86_400_000);
 
   // De-serialized cold render (M20 S1.3): the streamer lookup and the four
   // section calls are all fired concurrently. The section calls only need the
@@ -129,7 +139,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       status: ['upcoming'],
       includePredictions: true,
       includeAlwaysOn: true,
-      from: now.toISOString(),
+      from: bucketedNow.toISOString(),
       to: sevenDaysFromNow.toISOString(),
       limit: 100,
     })

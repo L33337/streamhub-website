@@ -8,7 +8,13 @@ import { StreamSlotDetail } from '@/components/web/StreamSlotDetail';
 import { BackLink } from '@/components/web/BackLink';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 
-export const revalidate = 60;
+// 300 (was 60 until 2026-08-03): slot ids churn every prediction cycle, so most
+// traffic here is a cold first render — but re-crawls of live slots at a 60 s
+// TTL made every hit a billed ISR write (this route was the site's top ISR
+// write consumer together with /streamer/[slug]). 300 matches the site-wide
+// convention; the only freshness cost is a live-status flip appearing up to
+// 5 min late on a slot DETAIL page (homepage + /live keep their 60 s TTL).
+export const revalidate = 300;
 
 // Required for ISR: without generateStaticParams, Next renders this dynamic
 // route per-request (ƒ in the build output) and never caches the HTML — every
@@ -25,7 +31,7 @@ export function generateStaticParams(): Array<{ id: string }> {
 // a single fetch per request. Load-bearing: the partner-api client always
 // passes an AbortSignal, which opts the fetch out of Next's built-in request
 // dedupe — without cache() this page fired two identical getSchedule calls.
-const loadSlot = cache((id: string) => getPartnerApi().getSchedule(id, { revalidate: 60 }));
+const loadSlot = cache((id: string) => getPartnerApi().getSchedule(id, { revalidate: 300 }));
 
 interface Props {
   params: Promise<{ locale: string; id: string }>;
@@ -33,12 +39,12 @@ interface Props {
 
 // Slot pages are ephemeral (ai_slot_pred_* ids churn with every prediction
 // cycle, real slots expire after the stream) and near-duplicates of the
-// streamer page — keep all of them out of the index. Since 2026-07-15
-// robots.txt disallows /schedule/ for Googlebot only (the churned ids burned
-// ~500 crawls/day as GSC "Page with redirect" entries); the * group stays
-// open so Discord/Twitter embed crawlers still fetch the OG tags of shared
-// slot URLs. This noindex stays as defense-in-depth for every crawler that
-// does reach the page (Bing, robots.txt-ignoring bots).
+// streamer page — keep all of them out of the index. robots.txt disallows
+// /schedule/ for all named search/AI crawlers (Googlebot since 2026-07-15,
+// the extended list since 2026-08-03 when the churned ids surfaced as the top
+// ISR-write cost); the * group stays open so Discord/Twitter embed crawlers
+// still fetch the OG tags of shared slot URLs. This noindex stays as
+// defense-in-depth for every crawler that does reach the page.
 const SLOT_ROBOTS = { index: false, follow: true } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

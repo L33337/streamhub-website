@@ -1210,9 +1210,13 @@ export function buildBroadcastEventsJsonLd(
  *
  * endDate must never be in the past at crawl time while the stream is live
  * (Google won't show the badge otherwise), so it is computed as
- * max(start + duration, now + 1h): every ISR regeneration (revalidate=300)
- * pushes it ≥55 minutes into the future — long streams and always-on
- * channels stay badge-eligible without knowing the real end.
+ * max(start + duration, now + 1h) and then CEILED to the full hour: every ISR
+ * regeneration keeps it 60-120 minutes in the future — long streams and
+ * always-on channels stay badge-eligible without knowing the real end. The
+ * hour-ceiling matters for billing, not SEO: Vercel only charges an ISR write
+ * when the regenerated output differs from the stored version, and a raw
+ * `now + 1h` made every regeneration of every live streamer page a full
+ * billed page write. Hour-stable, regenerations inside the hour are free.
  */
 export function buildLiveVideoObjectJsonLd(
   streamer: PublicStreamer,
@@ -1228,8 +1232,10 @@ export function buildLiveVideoObjectJsonLd(
 
   const start = new Date(slot.start_time);
   const durationMin = slot.duration_minutes > 0 ? slot.duration_minutes : 60;
+  const HOUR_MS = 60 * 60_000;
   const approxEnd = new Date(
-    Math.max(start.getTime() + durationMin * 60_000, now.getTime() + 60 * 60_000),
+    Math.ceil(Math.max(start.getTime() + durationMin * 60_000, now.getTime() + HOUR_MS) / HOUR_MS) *
+      HOUR_MS,
   );
 
   // Language-neutral composition (the page body renders in the streamer's

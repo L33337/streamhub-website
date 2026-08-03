@@ -33,6 +33,7 @@ import {
   isRankingIndexable,
 } from '@/lib/rankings';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import { floorToBucket } from '@/lib/home/logic';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 import { GameRankingExplorer } from '@/components/web/games/GameRankingExplorer';
 import { RankingPagination } from '@/components/web/RankingPagination';
@@ -99,7 +100,10 @@ const loadGameRanking = cache(async (slug: string): Promise<GameRankingData> => 
   }
   if (!game) return empty;
 
-  const now = new Date();
+  // 5-min bucket for fetch-URL timestamps (lib/home/logic.ts convention):
+  // raw ms-precision `now` gave every regeneration of every locale variant its
+  // own data-cache keys — guaranteed MISS + billed ISR write per render.
+  const now = floorToBucket(new Date());
   const oneYearAgo = new Date(now.getTime() - 365 * 86_400_000);
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 

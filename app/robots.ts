@@ -52,11 +52,37 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: SEARCH_CRAWLER_DISALLOWS,
       },
-      // NO /schedule/ here: Discordbot/Twitterbot respect robots.txt — a
-      // wildcard block would kill link embeds of user-shared slot URLs.
-      // Residual: other search bots (Yandex, …) may still crawl /schedule/ —
-      // accepted to keep unfurls working; add a named group if one of them
-      // shows up as measurable crawl waste.
+      // Known search/AI/SEO crawlers that never render link embeds: same
+      // /schedule/ treatment as Googlebot. Added 2026-08-03 when the churned
+      // slot ids surfaced as the site's top ISR-write cost (every cold crawl
+      // of a fresh id × 12 locales is a billed render) — the "measurable crawl
+      // waste" threshold the note below always reserved. Embed crawlers
+      // (Discordbot, Twitterbot, facebookexternalhit, Slackbot, WhatsApp, …)
+      // deliberately stay on the * group so shared slot URLs keep unfurling.
+      {
+        userAgent: [
+          'YandexBot',
+          'Applebot',
+          'PetalBot',
+          'Bytespider',
+          'Amazonbot',
+          'CCBot',
+          'GPTBot',
+          'ClaudeBot',
+          'PerplexityBot',
+          'meta-externalagent',
+          'AhrefsBot',
+          'SemrushBot',
+          'MJ12bot',
+          'DotBot',
+        ],
+        allow: '/',
+        disallow: SEARCH_CRAWLER_DISALLOWS,
+      },
+      // NO /schedule/ in the * group: Discordbot/Twitterbot respect robots.txt
+      // — a wildcard block would kill link embeds of user-shared slot URLs.
+      // Residual: unlisted search bots may still crawl /schedule/ — accepted
+      // to keep unfurls working; extend the group above if one shows up.
       // /feed IS here: like /settings and /favorites it is auth-gated and
       // always 307s anonymous crawlers (to /app while auth is dormant, to
       // the login page once enabled) — there is never content to fetch.

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   absoluteStartLabel,
   formatDuration,
+  formatTimeAgo,
   formatUtcDateShort,
   localDateKey,
   localizedNextLabel,
@@ -14,6 +15,38 @@ import {
 } from '../time';
 
 const TODAY = '2026-07-11';
+
+describe('formatTimeAgo — hour-floored reference (ISR byte-stability)', () => {
+  it('renders identical labels for every `now` inside the same hour', () => {
+    // The billing property: two ISR regenerations within one hour must produce
+    // the same bytes, or every regeneration is a billed full-page write.
+    const iso = '2026-07-11T09:20:00Z';
+    const early = formatTimeAgo(iso, 'en', new Date('2026-07-11T14:00:30Z'));
+    const late = formatTimeAgo(iso, 'en', new Date('2026-07-11T14:59:59Z'));
+    expect(early).toBe(late);
+    // Reference is 14:00 → 4h40m → rounds to 5.
+    expect(early).toBe('5 hours ago');
+  });
+
+  it('keeps the exact `now` for timestamps inside the current hour (never a future label)', () => {
+    // Flooring would put a 20-min-old stream at "in 20 minutes" — those pages
+    // regenerate with fresh data anyway, so they keep the exact reference.
+    const label = formatTimeAgo('2026-07-11T14:20:00Z', 'en', new Date('2026-07-11T14:40:00Z'));
+    expect(label).toBe('20 minutes ago');
+  });
+
+  it('steps day-scale labels only at hour boundaries', () => {
+    const iso = '2026-07-08T15:00:00Z';
+    expect(formatTimeAgo(iso, 'en', new Date('2026-07-11T14:15:00Z'))).toBe('3 days ago');
+    expect(formatTimeAgo(iso, 'en', new Date('2026-07-11T14:45:00Z'))).toBe('3 days ago');
+  });
+
+  it('localizes via Intl.RelativeTimeFormat', () => {
+    expect(formatTimeAgo('2026-07-11T09:20:00Z', 'de', new Date('2026-07-11T14:30:00Z'))).toBe(
+      'vor 5 Stunden',
+    );
+  });
+});
 
 describe('utcDateLabel / utcDateShortLabel — English default (bleed guard)', () => {
   it('keeps the legacy literals', () => {
