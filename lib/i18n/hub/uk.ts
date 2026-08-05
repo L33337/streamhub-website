@@ -373,7 +373,7 @@ export const uk: HubLex = {
         many: 'рейтингів',
         other: 'рейтинги',
       })} по всіх стримерах, яких ми відстежуємо, — оновлюються щодня на основі реальних даних трансляцій.`,
-    dataRefreshed: (label) => ` Дані оновлено ${label}.`,
+    dataRefreshed: (label) => ` Дані оновлено ${label}`,
     statStreamersTracked: 'стримерів відстежуємо',
     statLiveNow: 'зараз в ефірі',
     statGamesCategories: 'ігор і категорій',
@@ -633,7 +633,7 @@ export const uk: HubLex = {
       `Місця ${from}–${to} із ${total} стримерів ${category}, за якими ми стежимо, за фоловерами та підписниками каналу.`,
     methodology: (category) =>
       `Стримери, активні в ${category} за останні 28 днів, за кількістю підписників. Цифри оновлюються регулярно й можуть відставати від платформ.`,
-    followersRefreshed: (label) => ` Підписники оновлені: ${label}.`,
+    followersRefreshed: (label) => ` Підписники оновлені: ${label}`,
     warmingUp:
       'Цей рейтинг ще розігрівається — нам потрібно трохи більше даних, щоб він щось означав. Зазирніть згодом.',
     missingDataNote:

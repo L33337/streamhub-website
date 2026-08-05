@@ -3,7 +3,7 @@ import { UI_LANGS } from '../i18n-core';
 import { buildRootGamesFaq, HUB_STRINGS, hubLexFor } from '../i18n-hub';
 import type { HubLex } from '../i18n/hub/types';
 import { GAMES_HUB_VIEWS } from '../games-hub';
-import { RANKING_PAGES } from '../rankings';
+import { formatRefreshedAt, RANKING_PAGES } from '../rankings';
 
 const GAME = 'Minecraft';
 const STAMP = '04:15 UTC';
@@ -1015,5 +1015,17 @@ describe('S4.1 hub-drift lexicon (games explorer, ranking table, home QR)', () =
 
   it.each([...UI_LANGS])('%s keeps the {q} placeholder in noMatch', (lang) => {
     expect(HUB_STRINGS[lang].gamesExplorer.noMatch, lang).toContain('{q}');
+  });
+
+  // The P4 "Mio.." rule, date edition: ru/uk/hu date formats end with an
+  // abbreviation period ("2026 г." / "2026 р." / "aug. 5."), so a template
+  // period after the date label prints "..". Render each locale's freshness
+  // lines with its REAL date label and reject any double period.
+  it.each([...UI_LANGS])('%s freshness lines never double the period', (lang) => {
+    const label = formatRefreshedAt('2026-08-05T12:00:00Z', lang);
+    expect(label).toBeTypeOf('string');
+    const L = HUB_STRINGS[lang];
+    expect(L.rankings.dataRefreshed(label as string), lang).not.toMatch(/\.\./);
+    expect(L.gameRanking.followersRefreshed(label as string), lang).not.toMatch(/\.\./);
   });
 });

@@ -292,7 +292,7 @@ export const hu: HubLex = {
     h1: 'Streamer-ranglisták',
     intro: (n) =>
       `Kik a legnagyobb, leggyorsabban növekvő, legszorgalmasabb és legmegbízhatóbb streamerek a Twitchen és a YouTube-on? ${n} ranglista az összes követett streamerről — naponta frissítve valódi adásadatokból.`,
-    dataRefreshed: (label) => ` Adatok frissítve: ${label}.`,
+    dataRefreshed: (label) => ` Adatok frissítve: ${label}`,
     statStreamersTracked: 'követett streamer',
     statLiveNow: 'most élőben',
     statGamesCategories: 'játék és kategória',
@@ -513,7 +513,7 @@ export const hu: HubLex = {
       `${from}–${to}. hely a ${total} általunk követett ${category}-streamer közül, a csatorna követői és feliratkozói szerint rendezve.`,
     methodology: (category) =>
       `Az elmúlt 28 napban a ${category}-ban aktív streamerek, követők szerint rendezve. A számok rendszeresen frissülnek, és lemaradhatnak a platformok élő értékeitől.`,
-    followersRefreshed: (label) => ` Követőszámok frissítve: ${label}.`,
+    followersRefreshed: (label) => ` Követőszámok frissítve: ${label}`,
     warmingUp:
       'Ez a ranglista még melegszik — kicsit több adat kell, mielőtt beszédes lenne. Nézz vissza hamarosan.',
     missingDataNote:
