@@ -52,6 +52,13 @@ interface Props {
   /** aria-labels for the collapsed button and the panel's close button. */
   openLabel?: string;
   closeLabel?: string;
+  /** M22 S4.1: remaining chrome strings, pre-localized by the server layout.
+   *  Defaults keep every other caller byte-identical to the old inline text. */
+  inputLabel?: string;
+  searchingLabel?: string;
+  errorLabel?: string;
+  /** {q} is replaced with the query. */
+  viewAllTemplate?: string;
 }
 
 export function SearchBar({
@@ -62,6 +69,10 @@ export function SearchBar({
   collapsible = false,
   openLabel = 'Open search',
   closeLabel = 'Close search',
+  inputLabel = 'Search streamers',
+  searchingLabel = 'Searching…',
+  errorLabel = 'Search is unavailable right now.',
+  viewAllTemplate = 'View all results for “{q}” →',
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -144,14 +155,14 @@ export function SearchBar({
         })
         .catch((err: unknown) => {
           if (err instanceof DOMException && err.name === 'AbortError') return;
-          setError('Search is unavailable right now.');
+          setError(errorLabel);
           setResults([]);
           setLoading(false);
         });
     }, DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [query, errorLabel]);
 
   const navigateToSearch = useCallback(
     (q: string) => {
@@ -299,7 +310,7 @@ export function SearchBar({
         className="flex items-center"
       >
         <label htmlFor={inputId} className="sr-only">
-          Search streamers
+          {inputLabel}
         </label>
         <div className="relative flex-1">
           <span
@@ -379,7 +390,7 @@ export function SearchBar({
         <div className="absolute left-0 right-0 top-full z-50 mt-2 gradient-border max-h-96 overflow-y-auto">
           <div className="p-1">
             {loading && (
-              <div className="px-3 py-2 text-xs text-text-muted">Searching…</div>
+              <div className="px-3 py-2 text-xs text-text-muted">{searchingLabel}</div>
             )}
             {error && (
               <div className="px-3 py-2 text-xs text-accent-pink">{error}</div>
@@ -408,7 +419,10 @@ export function SearchBar({
               ))}
             </ul>
             {!loading && !error && results.length > 0 && (
-              <ViewAllRow query={trimmed} onClick={() => navigateToSearch(query)} />
+              <ViewAllRow
+                label={viewAllTemplate.replace('{q}', trimmed)}
+                onClick={() => navigateToSearch(query)}
+              />
             )}
           </div>
         </div>
@@ -460,14 +474,14 @@ function DropdownResult({
   );
 }
 
-function ViewAllRow({ query, onClick }: { query: string; onClick: () => void }) {
+function ViewAllRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="mt-1 w-full rounded-md border-t border-divider px-3 py-2 text-left text-xs text-accent-cyan hover:bg-background-highlight"
     >
-      View all results for &ldquo;{query}&rdquo; →
+      {label}
     </button>
   );
 }

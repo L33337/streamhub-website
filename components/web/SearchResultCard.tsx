@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { PublicStreamer } from '@/lib/server/partner-api';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { LiveBadge, PlatformBadge } from './Badges';
 import { FavoriteButton } from './FavoriteButton';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -13,13 +14,16 @@ export interface SearchResultStreamer extends PublicStreamer {
 interface Props {
   streamer: SearchResultStreamer;
   compact?: boolean;
+  /** M22 S4.1: keeps the streamer link in the viewer's locale tree and
+   *  localizes the heart's labels; default 'en' keeps other callers byte-identical. */
+  locale?: UiLang;
 }
 
-export function SearchResultCard({ streamer, compact = false }: Props) {
+export function SearchResultCard({ streamer, compact = false, locale = 'en' }: Props) {
   const avatarSize = compact ? 40 : 64;
   return (
     <Link
-      href={`/streamer/${encodeURIComponent(streamer.id)}`}
+      href={localeHref(locale, `/streamer/${encodeURIComponent(streamer.id)}`)}
       className={`group flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
         compact ? 'px-3 py-2' : 'p-4'
       }`}
@@ -69,6 +73,7 @@ export function SearchResultCard({ streamer, compact = false }: Props) {
         streamerName={streamer.name}
         size="sm"
         className="shrink-0"
+        language={locale}
       />
     </Link>
   );

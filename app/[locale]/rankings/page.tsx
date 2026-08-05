@@ -109,6 +109,7 @@ export default async function RankingsHubPage({ params }: Props) {
       .filter((v): v is string => v !== null)
       .sort()
       .at(-1) ?? null,
+    locale,
   );
 
   const gamesResp = await gamesPromise;
@@ -216,6 +217,7 @@ export default async function RankingsHubPage({ params }: Props) {
               entries={entries}
               liveIds={liveIds}
               nextSlots={nextSlots}
+              locale={locale}
             />
           </div>
         </section>

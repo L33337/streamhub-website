@@ -70,6 +70,9 @@ export const ar: HubLex = {
   home: {
     browseAllGames: 'تصفّح كل الألعاب والفئات ←',
     seeLiveNow: 'شاهد كل من يبث مباشرة الآن ←',
+    qrTitle: 'امسح الرمز لتنزيل Streamer Times',
+    qrHeading: 'امسح للتنزيل',
+    qrHint: 'وجّه كاميرا هاتفك هنا',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -382,6 +385,40 @@ export const ar: HubLex = {
       'most-reliable':
         'نسبة البثوث المعلنة على Twitch التي بدأت فعلًا في حدود ±30 دقيقة، على آخر 20 بثًا معلنًا خلال 90 يومًا (بحد أدنى 10 بثوث مقيَّمة). يُحدَّث يوميًا.',
     },
+    tableColStreamer: 'الستريمر',
+    tableColMainGame: 'اللعبة الرئيسية',
+    tableColNextStream: 'البث القادم',
+    tableHeaders: {
+      'Followers': 'المتابعون',
+      'Avg viewers': 'متوسط المشاهدين',
+      'Gained (7d)': 'زيادة (7 أيام)',
+      'Growth': 'النمو',
+      'Followers now': 'المتابعون الآن',
+      'Hours (28d)': 'الساعات (28 يومًا)',
+      'Streams / week': 'بثوث / أسبوع',
+      'Avg duration': 'متوسط المدة',
+      'On-time rate': 'الالتزام بالموعد',
+      'Typical deviation': 'الانحراف المعتاد',
+      'Streams evaluated': 'بثوث مُقيَّمة',
+    },
+    trendNewLabel: 'جديد',
+    trendNewTitle: 'لم يكن في هذا التصنيف قبل أسبوع',
+    trendMoveTitle: (up, delta) => `${up ? 'صعد' : 'هبط'} ${delta} منذ الأسبوع الماضي`,
+    mainGameShareTitle: (pct) => `${pct}% من بثوثه المصنّفة`,
+    alwaysOnTitle: 'قناة تبث على مدار الساعة',
+  },
+  gamesExplorer: {
+    sectionAria: 'كل الألعاب والفئات',
+    sortAria: 'ترتيب الألعاب',
+    sortLabels: { streamers: 'الأكثر ستريمرز', hours: 'الأكثر بثًا', trending: 'رائجة' },
+    viewTitles: {
+      streamers: 'أكثر الألعاب شعبية على Twitch وYouTube',
+      hours: 'أكثر الألعاب بثًا على Twitch وYouTube',
+      trending: 'الألعاب الرائجة على Twitch وYouTube',
+    },
+    searchPlaceholder: 'ابحث عن ألعاب…',
+    searchAria: 'ابحث عن ألعاب',
+    noMatch: 'لا توجد ألعاب تطابق "{q}".',
   },
   gameChips: {
     aria: (category) => `إحصاءات ${category}`,

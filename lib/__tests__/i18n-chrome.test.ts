@@ -50,6 +50,11 @@ describe('CHROME_STRINGS', () => {
     expect(L.nav.closeMenu).toBe('Close menu');
     expect(L.nav.searchPlaceholder).toBe('Search streamers…');
     expect(L.nav.searchResults).toBe('Search results');
+    // M22 S4.1 — must stay byte-identical to the SearchBar prop defaults.
+    expect(L.nav.searchLabel).toBe('Search streamers');
+    expect(L.nav.searching).toBe('Searching…');
+    expect(L.nav.searchError).toBe('Search is unavailable right now.');
+    expect(L.nav.searchViewAll).toBe('View all results for “{q}” →');
     expect(L.nav.home).toBe('Streamer Times home');
     expect(L.footer.tagline).toBe('Your Livestream Guide for Twitch & YouTube.');
     expect(L.footer.copyrightTail).toBe('Streamer Times — Your Livestream Guide.');
@@ -65,6 +70,12 @@ describe('CHROME_STRINGS', () => {
   it('keeps the … ellipsis character in every search placeholder', () => {
     for (const lang of UI_LANGS) {
       expect(CHROME_STRINGS[lang].nav.searchPlaceholder, lang).toContain('…');
+    }
+  });
+
+  it('keeps the {q} placeholder in every searchViewAll template (M22 S4.1)', () => {
+    for (const lang of UI_LANGS) {
+      expect(CHROME_STRINGS[lang].nav.searchViewAll, lang).toContain('{q}');
     }
   });
 

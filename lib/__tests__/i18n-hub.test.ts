@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { UI_LANGS } from '../i18n-core';
 import { buildRootGamesFaq, HUB_STRINGS, hubLexFor } from '../i18n-hub';
 import type { HubLex } from '../i18n/hub/types';
+import { GAMES_HUB_VIEWS } from '../games-hub';
+import { formatRefreshedAt, RANKING_PAGES } from '../rankings';
 
 const GAME = 'Minecraft';
 const STAMP = '04:15 UTC';
@@ -26,6 +28,9 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['common.allGamesCategories', L.common.allGamesCategories],
     ['home.browseAllGames', L.home.browseAllGames],
     ['home.seeLiveNow', L.home.seeLiveNow],
+    ['home.qrTitle', L.home.qrTitle],
+    ['home.qrHeading', L.home.qrHeading],
+    ['home.qrHint', L.home.qrHint],
     ['homeFeed.ticker.both', L.homeFeed.ticker(214, 38, 6)],
     ['homeFeed.ticker.liveOnly', L.homeFeed.ticker(3, 0, 6)],
     ['homeFeed.ticker.soonOnly', L.homeFeed.ticker(0, 5, 6)],
@@ -264,6 +269,32 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['rankings.metricNote.most-watched', L.rankings.metricNote['most-watched']],
     ['rankings.metricNote.most-active', L.rankings.metricNote['most-active']],
     ['rankings.metricNote.most-reliable', L.rankings.metricNote['most-reliable']],
+    // --- M22 S4.1: RankingTable chrome ---
+    ['rankings.tableColStreamer', L.rankings.tableColStreamer],
+    ['rankings.tableColMainGame', L.rankings.tableColMainGame],
+    ['rankings.tableColNextStream', L.rankings.tableColNextStream],
+    ...Object.entries(L.rankings.tableHeaders).map(
+      ([k, v]): [string, string] => [`rankings.tableHeaders.${k}`, v],
+    ),
+    ['rankings.trendNewLabel', L.rankings.trendNewLabel],
+    ['rankings.trendNewTitle', L.rankings.trendNewTitle],
+    ['rankings.trendMoveTitle.up', L.rankings.trendMoveTitle(true, 2)],
+    ['rankings.trendMoveTitle.up1', L.rankings.trendMoveTitle(true, 1)],
+    ['rankings.trendMoveTitle.down', L.rankings.trendMoveTitle(false, 5)],
+    ['rankings.mainGameShareTitle', L.rankings.mainGameShareTitle(62)],
+    ['rankings.alwaysOnTitle', L.rankings.alwaysOnTitle],
+    // --- M22 S4.1: /games explorer ---
+    ['gamesExplorer.sectionAria', L.gamesExplorer.sectionAria],
+    ['gamesExplorer.sortAria', L.gamesExplorer.sortAria],
+    ['gamesExplorer.sortLabels.streamers', L.gamesExplorer.sortLabels.streamers],
+    ['gamesExplorer.sortLabels.hours', L.gamesExplorer.sortLabels.hours],
+    ['gamesExplorer.sortLabels.trending', L.gamesExplorer.sortLabels.trending],
+    ['gamesExplorer.viewTitles.streamers', L.gamesExplorer.viewTitles.streamers],
+    ['gamesExplorer.viewTitles.hours', L.gamesExplorer.viewTitles.hours],
+    ['gamesExplorer.viewTitles.trending', L.gamesExplorer.viewTitles.trending],
+    ['gamesExplorer.searchPlaceholder', L.gamesExplorer.searchPlaceholder],
+    ['gamesExplorer.searchAria', L.gamesExplorer.searchAria],
+    ['gamesExplorer.noMatch', L.gamesExplorer.noMatch],
     // --- M22 P4: game pages ---
     ['gameChips.aria', L.gameChips.aria(GAME)],
     ['gameChips.streamersLabel', L.gameChips.streamersLabel(5)],
@@ -922,5 +953,79 @@ describe('English game-page lexicon regression guard (M22 P4)', () => {
         buildGameRankingFaq(params),
       );
     }
+  });
+});
+
+// --- M22 S4.1: hub-drift fixes + hub-locale widening ---------------------------
+
+describe('S4.1 hub-drift lexicon (games explorer, ranking table, home QR)', () => {
+  it('en entries are byte-identical to the former inline strings', () => {
+    const L = HUB_STRINGS.en;
+    // GamesExplorer (components/web/games/GamesExplorer.tsx EN_LABELS)
+    expect(L.gamesExplorer.sectionAria).toBe('All games and categories');
+    expect(L.gamesExplorer.sortAria).toBe('Sort games');
+    expect(L.gamesExplorer.searchPlaceholder).toBe('Search games…');
+    expect(L.gamesExplorer.searchAria).toBe('Search games');
+    expect(L.gamesExplorer.noMatch).toBe('No games match “{q}”.');
+    // RankingTable chrome
+    expect(L.rankings.tableColStreamer).toBe('Streamer');
+    expect(L.rankings.tableColMainGame).toBe('Main game');
+    expect(L.rankings.tableColNextStream).toBe('Next stream');
+    expect(L.rankings.trendNewLabel).toBe('new');
+    expect(L.rankings.trendNewTitle).toBe('Not in this ranking a week ago');
+    expect(L.rankings.trendMoveTitle(true, 2)).toBe('Up 2 since last week');
+    expect(L.rankings.trendMoveTitle(false, 1)).toBe('Down 1 since last week');
+    expect(L.rankings.mainGameShareTitle(62)).toBe('62% of their categorized streams');
+    expect(L.rankings.alwaysOnTitle).toBe('Always-on channel — live around the clock');
+    // Home QR (components/web/AppQrCode.tsx defaults)
+    expect(L.home.qrTitle).toBe('Scan to download Streamer Times');
+    expect(L.home.qrHeading).toBe('Scan to download');
+    expect(L.home.qrHint).toBe('Point your phone camera here');
+  });
+
+  it('en sortLabels/viewTitles mirror the GAMES_HUB_VIEWS registry byte-for-byte', () => {
+    const L = HUB_STRINGS.en;
+    for (const v of GAMES_HUB_VIEWS) {
+      expect(L.gamesExplorer.sortLabels[v.mode]).toBe(v.navLabel);
+      expect(L.gamesExplorer.viewTitles[v.mode]).toBe(v.h1);
+    }
+  });
+
+  it('en tableHeaders is the identity map over every registry column header', () => {
+    const L = HUB_STRINGS.en;
+    for (const spec of RANKING_PAGES) {
+      for (const col of spec.columns) {
+        expect(L.rankings.tableHeaders[col.header], col.header).toBe(col.header);
+      }
+    }
+  });
+
+  it.each([...UI_LANGS])(
+    '%s tableHeaders covers every registry column header (fallback never fires)',
+    (lang) => {
+      const headers = HUB_STRINGS[lang].rankings.tableHeaders;
+      for (const spec of RANKING_PAGES) {
+        for (const col of spec.columns) {
+          expect(headers[col.header], `${lang}: ${col.header}`).toBeTypeOf('string');
+          expect(headers[col.header]?.trim(), `${lang}: ${col.header}`).not.toBe('');
+        }
+      }
+    },
+  );
+
+  it.each([...UI_LANGS])('%s keeps the {q} placeholder in noMatch', (lang) => {
+    expect(HUB_STRINGS[lang].gamesExplorer.noMatch, lang).toContain('{q}');
+  });
+
+  // The P4 "Mio.." rule, date edition: ru/uk/hu date formats end with an
+  // abbreviation period ("2026 г." / "2026 р." / "aug. 5."), so a template
+  // period after the date label prints "..". Render each locale's freshness
+  // lines with its REAL date label and reject any double period.
+  it.each([...UI_LANGS])('%s freshness lines never double the period', (lang) => {
+    const label = formatRefreshedAt('2026-08-05T12:00:00Z', lang);
+    expect(label).toBeTypeOf('string');
+    const L = HUB_STRINGS[lang];
+    expect(L.rankings.dataRefreshed(label as string), lang).not.toMatch(/\.\./);
+    expect(L.gameRanking.followersRefreshed(label as string), lang).not.toMatch(/\.\./);
   });
 });

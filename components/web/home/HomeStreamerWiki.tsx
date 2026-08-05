@@ -185,14 +185,13 @@ export function HomeStreamerWiki({
                     />
                     <span className="truncate text-[11px] font-semibold text-accent-cyan">
                       {`${L.streamerWiki.nextPrefix}: `}
-                      {/* The time itself stays English in every locale — the
-                          client snapshot (nextStreamLabel) is hardcoded en-US.
-                          Pre-existing and site-wide (same on the Discover grid
-                          above and on /rankings); localizing only the server
-                          snapshot would flip the language on hydration. */}
+                      {/* M22 S4.1: NextStreamTime localizes BOTH snapshots
+                          (server UTC + client local) since P4, so passing the
+                          locale no longer flips language on hydration. */}
                       <NextStreamTime
                         startTime={nextSlot.start_time}
                         isPredicted={nextSlot.is_predicted}
+                        language={locale}
                       />
                     </span>
                   </span>

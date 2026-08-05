@@ -13,6 +13,7 @@ vi.mock('@/lib/server/partner-api', () => ({
 }));
 
 import sitemap from '../sitemap';
+import { INDEXABLE_HUB_LOCALES } from '@/lib/seo';
 
 const streamer = (id: string, language: string | null) => ({
   id,
@@ -89,16 +90,32 @@ describe('sitemap — M22 locale variants', () => {
     const entries = await sitemap();
     const home = entries.find((e) => e.url === 'https://streamertimes.tv');
     const liveDe = entries.find((e) => e.url === 'https://streamertimes.tv/de/live');
-    const expected = {
-      en: 'https://streamertimes.tv/live',
-      de: 'https://streamertimes.tv/de/live',
-      'x-default': 'https://streamertimes.tv/live',
-    };
+    // S4.1: one entry + full reciprocal cluster per indexable hub locale.
+    const expected = Object.fromEntries([
+      ...INDEXABLE_HUB_LOCALES.map((l) => [
+        l,
+        l === 'en' ? 'https://streamertimes.tv/live' : `https://streamertimes.tv/${l}/live`,
+      ]),
+      ['x-default', 'https://streamertimes.tv/live'],
+    ]);
     expect(liveDe?.alternates?.languages).toEqual(expected);
-    expect(home?.alternates?.languages).toEqual({
-      en: 'https://streamertimes.tv',
-      de: 'https://streamertimes.tv/de',
-      'x-default': 'https://streamertimes.tv',
-    });
+    expect(home?.alternates?.languages).toEqual(
+      Object.fromEntries([
+        ...INDEXABLE_HUB_LOCALES.map((l) => [
+          l,
+          l === 'en' ? 'https://streamertimes.tv' : `https://streamertimes.tv/${l}`,
+        ]),
+        ['x-default', 'https://streamertimes.tv'],
+      ]),
+    );
+  });
+
+  it('S4.1: lists every widened hub locale but never an /ar/ hub URL', async () => {
+    const entries = await sitemap();
+    const urls = entries.map((e) => e.url);
+    for (const l of INDEXABLE_HUB_LOCALES.filter((x) => x !== 'en')) {
+      expect(urls).toContain(`https://streamertimes.tv/${l}/live`);
+    }
+    expect(urls.some((u) => u.includes('/ar/'))).toBe(false);
   });
 });

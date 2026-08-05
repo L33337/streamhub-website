@@ -65,6 +65,9 @@ export const uk: HubLex = {
   home: {
     browseAllGames: 'Переглянути всі ігри та категорії →',
     seeLiveNow: 'Подивитися, хто зараз в ефірі →',
+    qrTitle: 'Відскануйте, щоб завантажити Streamer Times',
+    qrHeading: 'Завантажити за QR-кодом',
+    qrHint: 'Наведіть камеру телефона сюди',
   },
   homeFeed: {
     // Іменний стиль (двокрапка) замість відмінювання числівників.
@@ -370,7 +373,7 @@ export const uk: HubLex = {
         many: 'рейтингів',
         other: 'рейтинги',
       })} по всіх стримерах, яких ми відстежуємо, — оновлюються щодня на основі реальних даних трансляцій.`,
-    dataRefreshed: (label) => ` Дані оновлено ${label}.`,
+    dataRefreshed: (label) => ` Дані оновлено ${label}`,
     statStreamersTracked: 'стримерів відстежуємо',
     statLiveNow: 'зараз в ефірі',
     statGamesCategories: 'ігор і категорій',
@@ -401,6 +404,40 @@ export const uk: HubLex = {
       'most-reliable':
         'Частка анонсованих на Twitch стрімів, які справді почалися в межах ±30 хвилин, за останніми 20 анонсованими стрімами за 90 днів (мінімум 10 оцінених). Оновлюється щодня.',
     },
+    tableColStreamer: 'Стример',
+    tableColMainGame: 'Основна гра',
+    tableColNextStream: 'Наступний стрім',
+    tableHeaders: {
+      'Followers': 'Фоловери',
+      'Avg viewers': 'Сер. глядачів',
+      'Gained (7d)': 'Приріст (7 дн)',
+      'Growth': 'Зростання',
+      'Followers now': 'Фоловерів зараз',
+      'Hours (28d)': 'Години (28 дн)',
+      'Streams / week': 'Стримів / тижд.',
+      'Avg duration': 'Сер. тривалість',
+      'On-time rate': 'Пунктуальність',
+      'Typical deviation': 'Типове відхилення',
+      'Streams evaluated': 'Оцінено стримів',
+    },
+    trendNewLabel: 'нов.',
+    trendNewTitle: 'Тиждень тому не було в цьому рейтингу',
+    trendMoveTitle: (up, delta) => `${up ? 'Плюс' : 'Мінус'} ${delta} за тиждень`,
+    mainGameShareTitle: (pct) => `${pct}% категоризованих стримів`,
+    alwaysOnTitle: 'Цілодобовий канал — в ефірі 24/7',
+  },
+  gamesExplorer: {
+    sectionAria: 'Усі ігри та категорії',
+    sortAria: 'Сортування ігор',
+    sortLabels: { streamers: 'За числом стримерів', hours: 'За годинами ефіру', trending: 'У тренді' },
+    viewTitles: {
+      streamers: 'Найпопулярніші ігри на Twitch і YouTube',
+      hours: 'Найбільш трансльовані ігри на Twitch і YouTube',
+      trending: 'Ігри в тренді на Twitch і YouTube',
+    },
+    searchPlaceholder: 'Пошук ігор…',
+    searchAria: 'Пошук ігор',
+    noMatch: 'Немає ігор за запитом «{q}».',
   },
   gameChips: {
     aria: (category) => `Статистика ${category}`,
@@ -596,7 +633,7 @@ export const uk: HubLex = {
       `Місця ${from}–${to} із ${total} стримерів ${category}, за якими ми стежимо, за фоловерами та підписниками каналу.`,
     methodology: (category) =>
       `Стримери, активні в ${category} за останні 28 днів, за кількістю підписників. Цифри оновлюються регулярно й можуть відставати від платформ.`,
-    followersRefreshed: (label) => ` Підписники оновлені: ${label}.`,
+    followersRefreshed: (label) => ` Підписники оновлені: ${label}`,
     warmingUp:
       'Цей рейтинг ще розігрівається — нам потрібно трохи більше даних, щоб він щось означав. Зазирніть згодом.',
     missingDataNote:

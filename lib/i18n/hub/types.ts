@@ -51,6 +51,10 @@ export interface HubLex {
     browseAllGames: string;
     /** In-body link to /live. */
     seeLiveNow: string;
+    /** M22 S4.1: app QR code on the homepage end cap (AppQrCode props). */
+    qrTitle: string;
+    qrHeading: string;
+    qrHint: string;
   };
   /**
    * Feed-style homepage sections (homepage rebuild 2026-07-27). Server
@@ -533,6 +537,52 @@ export interface HubLex {
     metricH1: Record<HubRankingMetric, string>;
     /** Per-metric methodology notes — 'en' byte-identical to RANKING_PAGES. */
     metricNote: Record<HubRankingMetric, string>;
+    /**
+     * M22 S4.1: RankingTable chrome (server component — reads the lexicon
+     * directly via its `locale` prop). The value columns keep their English
+     * number formatting (compact "21.4M" etc., registry-owned) — headers and
+     * titles localize, values are numbers.
+     */
+    tableColStreamer: string;
+    tableColMainGame: string;
+    tableColNextStream: string;
+    /**
+     * Metric-column headers keyed by the REGISTRY's English header string
+     * (lib/rankings.ts) — a key the map misses falls back to the English
+     * header, so a future registry column degrades instead of crashing.
+     */
+    tableHeaders: Record<string, string>;
+    /** "new" badge next to the rank for first-time entries. */
+    trendNewLabel: string;
+    trendNewTitle: string;
+    /** title of the ▲/▼ movement badge, e.g. "Up 2 since last week". */
+    trendMoveTitle(up: boolean, delta: number): string;
+    /** title of the "Main game" cell, e.g. "62% of their categorized streams". */
+    mainGameShareTitle(pct: number): string;
+    /** title of the "24/7" next-stream cell. */
+    alwaysOnTitle: string;
+  };
+  /**
+   * M22 S4.1: /games catalog explorer (client component — the server page
+   * resolves these and passes them as props; {q} templates are interpolated
+   * client-side). sortLabels keys match GamesSortMode.
+   */
+  gamesExplorer: {
+    /** aria-label of the catalog section. */
+    sectionAria: string;
+    /** aria-label of the sort-view switcher nav. */
+    sortAria: string;
+    sortLabels: { streamers: string; hours: string; trending: string };
+    /**
+     * Full view titles for the sibling-hub links under the catalog — 'en'
+     * byte-identical to GAMES_HUB_VIEWS h1 (vitest-pinned).
+     */
+    viewTitles: { streamers: string; hours: string; trending: string };
+    /** Keep the … ellipsis character in every language. */
+    searchPlaceholder: string;
+    searchAria: string;
+    /** Empty state; {q} is replaced client-side with the query. */
+    noMatch: string;
   };
   /**
    * Stats chips shared VERBATIM by /game/[slug] and /rankings/game/[slug]

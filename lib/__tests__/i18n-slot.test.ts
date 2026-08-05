@@ -41,6 +41,22 @@ function renderAll(L: SlotLex): Array<[string, string]> {
     ['watchOnTwitch', L.watchOnTwitch],
     ['watchOnYouTube', L.watchOnYouTube],
     ['opensInNewTab', L.opensInNewTab],
+    ['whyThisPrediction', L.whyThisPrediction],
+    ['autoSummary', L.autoSummary],
+    ['nextStreamPrefix', L.nextStreamPrefix],
+    ['showMoreStreams', L.showMoreStreams(6)],
+    ['showFewerStreams', L.showFewerStreams],
+    ['nextTimePredictedTitle', L.nextTimePredictedTitle],
+    ['nextTimeAnnouncedTitle', L.nextTimeAnnouncedTitle],
+    // M22 S4.1: GameCard stat lines
+    ['gameLiveBadge', L.gameLiveBadge(3)],
+    ['gameStreamerCount.1', L.gameStreamerCount(1)],
+    ['gameStreamerCount.2', L.gameStreamerCount(2)],
+    ['gameStreamerCount.5', L.gameStreamerCount(5)],
+    ['gameStreamerCount.21', L.gameStreamerCount(21)],
+    ['gameHoursShort', L.gameHoursShort('1.2K')],
+    ['gameWatchingNow', L.gameWatchingNow('16.3K')],
+    ['gameTrendTitle', L.gameTrendTitle],
   ];
 }
 
@@ -90,6 +106,13 @@ describe('SLOT_STRINGS lexica', () => {
     expect(L.watchOnTwitch).toBe('Watch on Twitch');
     expect(L.watchOnYouTube).toBe('Watch on YouTube');
     expect(L.opensInNewTab).toBe(' (opens in new tab)');
+    // M22 S4.1 — byte-identical to GameCard's former inline strings.
+    expect(L.gameLiveBadge(3)).toBe('3 live');
+    expect(L.gameStreamerCount(1)).toBe('1 streamer');
+    expect(L.gameStreamerCount(12)).toBe('12 streamers');
+    expect(L.gameHoursShort('1.2K')).toBe('1.2Kh / 28d');
+    expect(L.gameWatchingNow('16.3K')).toBe('16.3K watching now');
+    expect(L.gameTrendTitle).toBe('Week-over-week change in active streamers');
   });
 
   it('applies Slavic plural rules to stream counts', () => {

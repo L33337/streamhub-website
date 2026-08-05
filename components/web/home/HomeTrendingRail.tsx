@@ -107,6 +107,7 @@ export function HomeTrendingRail({
             viewers: L.trending.sortViewers,
             streamers: L.trending.sortStreamers,
           },
+          trendTitle: L.gameChips.trendTitle,
         }}
         locale={locale}
       />

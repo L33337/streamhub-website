@@ -12,7 +12,19 @@ export const QR_TARGET = 'https://streamertimes.tv/get';
  * Layout/visibility is left to the caller via `className` (the card + label are
  * laid out by whatever display the caller sets, e.g. `flex items-center gap-4`).
  */
-export function AppQrCode({ className = '' }: { className?: string }) {
+export function AppQrCode({
+  className = '',
+  // M22 S4.1: pre-localized by the caller (HubLex.home.qr*); the English
+  // defaults keep the en-only /app page byte-identical.
+  title = 'Scan to download Streamer Times',
+  heading = 'Scan to download',
+  hint = 'Point your phone camera here',
+}: {
+  className?: string;
+  title?: string;
+  heading?: string;
+  hint?: string;
+}) {
   return (
     <div className={className}>
       <div className="w-fit rounded-xl border border-border-default bg-background-elevated p-3 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
@@ -23,18 +35,14 @@ export function AppQrCode({ className = '' }: { className?: string }) {
             level="M"
             bgColor="#FFFFFF"
             fgColor="#0A0A0F"
-            title="Scan to download Streamer Times"
+            title={title}
             style={{ height: '104px', width: '104px' }}
           />
         </div>
       </div>
       <div className="flex flex-col">
-        <span className="text-sm font-semibold text-text-primary">
-          Scan to download
-        </span>
-        <span className="text-xs text-text-secondary">
-          Point your phone camera here
-        </span>
+        <span className="text-sm font-semibold text-text-primary">{heading}</span>
+        <span className="text-xs text-text-secondary">{hint}</span>
       </div>
     </div>
   );

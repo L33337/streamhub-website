@@ -19,6 +19,9 @@ export const hu: HubLex = {
   home: {
     browseAllGames: 'Böngészd az összes játékot és kategóriát →',
     seeLiveNow: 'Nézd meg, ki van most élőben →',
+    qrTitle: 'Szkenneld be a Streamer Times letöltéséhez',
+    qrHeading: 'Szkenneld be a letöltéshez',
+    qrHint: 'Irányítsd ide a telefonod kameráját',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -289,7 +292,7 @@ export const hu: HubLex = {
     h1: 'Streamer-ranglisták',
     intro: (n) =>
       `Kik a legnagyobb, leggyorsabban növekvő, legszorgalmasabb és legmegbízhatóbb streamerek a Twitchen és a YouTube-on? ${n} ranglista az összes követett streamerről — naponta frissítve valódi adásadatokból.`,
-    dataRefreshed: (label) => ` Adatok frissítve: ${label}.`,
+    dataRefreshed: (label) => ` Adatok frissítve: ${label}`,
     statStreamersTracked: 'követett streamer',
     statLiveNow: 'most élőben',
     statGamesCategories: 'játék és kategória',
@@ -320,6 +323,40 @@ export const hu: HubLex = {
       'most-reliable':
         'A Twitchen beharangozott streamek aránya, amelyek tényleg ±30 percen belül elindultak, az utolsó 20 beharangozott stream alapján 90 napon belül (legalább 10 kiértékelt). Naponta frissítve.',
     },
+    tableColStreamer: 'Streamer',
+    tableColMainGame: 'Fő játék',
+    tableColNextStream: 'Következő stream',
+    tableHeaders: {
+      'Followers': 'Követők',
+      'Avg viewers': 'Átl. nézők',
+      'Gained (7d)': 'Új követők (7 nap)',
+      'Growth': 'Növekedés',
+      'Followers now': 'Követők most',
+      'Hours (28d)': 'Órák (28 nap)',
+      'Streams / week': 'Stream / hét',
+      'Avg duration': 'Átl. hossz',
+      'On-time rate': 'Pontosság',
+      'Typical deviation': 'Jellemző eltérés',
+      'Streams evaluated': 'Értékelt streamek',
+    },
+    trendNewLabel: 'új',
+    trendNewTitle: 'Egy hete még nem volt ebben a rangsorban',
+    trendMoveTitle: (up, delta) => `${delta} hellyel ${up ? 'feljebb' : 'lejjebb'} a múlt hét óta`,
+    mainGameShareTitle: (pct) => `A kategorizált streamek ${pct}%-a`,
+    alwaysOnTitle: 'Always-on csatorna — éjjel-nappal élőben',
+  },
+  gamesExplorer: {
+    sectionAria: 'Minden játék és kategória',
+    sortAria: 'Játékok rendezése',
+    sortLabels: { streamers: 'Legtöbb streamer', hours: 'Legtöbbet streamelt', trending: 'Felkapott' },
+    viewTitles: {
+      streamers: 'A legnépszerűbb játékok a Twitchen és a YouTube-on',
+      hours: 'A legtöbbet streamelt játékok a Twitchen és a YouTube-on',
+      trending: 'Felkapott játékok a Twitchen és a YouTube-on',
+    },
+    searchPlaceholder: 'Játék keresése…',
+    searchAria: 'Játék keresése',
+    noMatch: 'Nincs találat erre: „{q}”.',
   },
   gameChips: {
     aria: (category) => `${category} statisztikák`,
@@ -476,7 +513,7 @@ export const hu: HubLex = {
       `${from}–${to}. hely a ${total} általunk követett ${category}-streamer közül, a csatorna követői és feliratkozói szerint rendezve.`,
     methodology: (category) =>
       `Az elmúlt 28 napban a ${category}-ban aktív streamerek, követők szerint rendezve. A számok rendszeresen frissülnek, és lemaradhatnak a platformok élő értékeitől.`,
-    followersRefreshed: (label) => ` Követőszámok frissítve: ${label}.`,
+    followersRefreshed: (label) => ` Követőszámok frissítve: ${label}`,
     warmingUp:
       'Ez a ranglista még melegszik — kicsit több adat kell, mielőtt beszédes lenne. Nézz vissza hamarosan.',
     missingDataNote:

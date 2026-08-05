@@ -19,6 +19,9 @@ export const ja: HubLex = {
   home: {
     browseAllGames: 'すべてのゲームとカテゴリーを見る →',
     seeLiveNow: '今配信中のストリーマーを見る →',
+    qrTitle: 'スキャンして Streamer Times をダウンロード',
+    qrHeading: 'スキャンしてダウンロード',
+    qrHint: 'スマホのカメラをここにかざしてください',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -318,6 +321,40 @@ export const ja: HubLex = {
       'most-reliable':
         '過去90日間の直近20件の告知済み配信のうち、Twitch で告知された配信が実際に±30分以内に始まった割合です（最低10件を評価）。毎日更新。',
     },
+    tableColStreamer: 'ストリーマー',
+    tableColMainGame: 'メインゲーム',
+    tableColNextStream: '次の配信',
+    tableHeaders: {
+      'Followers': 'フォロワー',
+      'Avg viewers': '平均視聴者数',
+      'Gained (7d)': '増加 (7日)',
+      'Growth': '成長率',
+      'Followers now': '現在のフォロワー',
+      'Hours (28d)': '時間 (28日)',
+      'Streams / week': '週あたり配信数',
+      'Avg duration': '平均配信時間',
+      'On-time rate': '定刻率',
+      'Typical deviation': '標準的なずれ',
+      'Streams evaluated': '評価した配信数',
+    },
+    trendNewLabel: 'NEW',
+    trendNewTitle: '1週間前はこのランキングにいませんでした',
+    trendMoveTitle: (up, delta) => `先週から${delta}${up ? 'ランクアップ' : 'ランクダウン'}`,
+    mainGameShareTitle: (pct) => `カテゴリー付き配信の${pct}%`,
+    alwaysOnTitle: '常時配信チャンネル — 24時間ライブ',
+  },
+  gamesExplorer: {
+    sectionAria: 'すべてのゲームとカテゴリー',
+    sortAria: 'ゲームの並び替え',
+    sortLabels: { streamers: 'ストリーマー数順', hours: '配信時間順', trending: '急上昇' },
+    viewTitles: {
+      streamers: 'Twitch・YouTube で人気のゲーム',
+      hours: 'Twitch・YouTube で最も配信されたゲーム',
+      trending: 'Twitch・YouTube の急上昇ゲーム',
+    },
+    searchPlaceholder: 'ゲームを検索…',
+    searchAria: 'ゲームを検索',
+    noMatch: '「{q}」に一致するゲームはありません。',
   },
   gameChips: {
     aria: (category) => `${category} の統計`,
