@@ -44,6 +44,7 @@ export const ja: HubLex = {
       `現在の視聴者数トップ${top} — フィルターは全${total}件の配信から検索`,
     upNextTitle: '今日のラインナップ',
     upNextLink: '配信中・まもなく開始 →',
+    upNextTonightLink: '今夜の番組表 →',
     lineupFilterTime: '時間',
     lineupFilterAllTimes: 'すべての時間',
     lineupFilterFrom: (time) => `${time}以降`,

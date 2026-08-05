@@ -91,6 +91,7 @@ export const ru: HubLex = {
       `Топ-${top} по числу зрителей — фильтры ищут среди всех трансляций (${total})`,
     upNextTitle: 'Программа на сегодня',
     upNextLink: 'В эфире и скоро →',
+    upNextTonightLink: 'Весь вечер →',
     lineupFilterTime: 'Время',
     lineupFilterAllTimes: 'Любое время',
     lineupFilterFrom: (time) => `С ${time}`,

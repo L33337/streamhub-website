@@ -126,8 +126,23 @@ export interface HubLex {
     liveFilterNote(top: number, total: number): string;
     /** "Today's lineup" prediction list heading. */
     upNextTitle: string;
-    /** Section link to /live. */
+    /**
+     * Section link to /live.
+     *
+     * UNRENDERED since 2026-08-05: the section's action link points at
+     * /tonight now (`upNextTonightLink`). The evening guide is the natural
+     * continuation of a 24-hour line-up, where /live answers a different
+     * question — and the label said "Live & starting soon", so the href could
+     * not move without it. Kept translated for re-use.
+     */
     upNextLink: string;
+    /**
+     * Section link to /tonight — the same line-up, organised by time of
+     * evening. Carries its own arrow like the sibling above, because RTL
+     * locales need '←': it belongs in the string and is never appended by the
+     * component.
+     */
+    upNextTonightLink: string;
     /**
      * Lineup filter bar (2026-07-30) — reuses the live rail's generic
      * category/language/option/reset strings and adds the start-time dimension

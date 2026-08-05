@@ -49,6 +49,7 @@ export const fr: HubLex = {
       `Top ${top} par spectateurs actuels — les filtres couvrent les ${total} lives`,
     upNextTitle: 'Le programme du jour',
     upNextLink: 'En direct et bientôt →',
+    upNextTonightLink: 'Toute la soirée →',
     lineupFilterTime: 'Heure',
     lineupFilterAllTimes: 'À toute heure',
     lineupFilterFrom: (time) => `À partir de ${time}`,

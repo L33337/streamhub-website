@@ -44,6 +44,7 @@ export const hu: HubLex = {
       `Top ${top} a jelenlegi nézőszám alapján — a szűrők mind a(z) ${total} élő adásban keresnek`,
     upNextTitle: 'A mai műsor',
     upNextLink: 'Élő és hamarosan induló →',
+    upNextTonightLink: 'A teljes esti műsor →',
     lineupFilterTime: 'Időpont',
     lineupFilterAllTimes: 'Bármikor',
     lineupFilterFrom: (time) => `${time}-tól`,

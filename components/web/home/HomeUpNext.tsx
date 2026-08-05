@@ -111,8 +111,12 @@ export function HomeUpNext({
       <FeedSectionHeader
         title={L.homeFeed.upNextTitle}
         count={slots.length > 0 ? slots.length : undefined}
-        actionLabel={L.homeFeed.upNextLink}
-        actionHref={localeHref(locale, '/live')}
+        // Points at /tonight, not /live: this section IS a line-up, and the
+        // evening guide is the same content organised by time of evening —
+        // /live answers "who is on right now", a different question that the
+        // rail above already covers.
+        actionLabel={L.homeFeed.upNextTonightLink}
+        actionHref={localeHref(locale, '/tonight')}
       />
       {slots.length === 0 ? (
         <div className="rounded-xl border border-border-default bg-background-elevated p-8 text-center text-sm text-text-secondary">

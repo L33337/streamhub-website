@@ -44,6 +44,7 @@ export const it: HubLex = {
       `Top ${top} per spettatori attuali — i filtri cercano tra tutte le ${total} live`,
     upNextTitle: 'Il palinsesto di oggi',
     upNextLink: 'In diretta e in arrivo →',
+    upNextTonightLink: 'Tutta la serata →',
     lineupFilterTime: 'Ora',
     lineupFilterAllTimes: 'Qualsiasi ora',
     lineupFilterFrom: (time) => `Dalle ${time}`,

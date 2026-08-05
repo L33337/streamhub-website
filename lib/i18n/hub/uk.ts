@@ -91,6 +91,7 @@ export const uk: HubLex = {
       `Топ-${top} за кількістю глядачів — фільтри шукають серед усіх трансляцій (${total})`,
     upNextTitle: 'Програма на сьогодні',
     upNextLink: 'В ефірі та незабаром →',
+    upNextTonightLink: 'Весь вечір →',
     lineupFilterTime: 'Час',
     lineupFilterAllTimes: 'Будь-який час',
     lineupFilterFrom: (time) => `З ${time}`,

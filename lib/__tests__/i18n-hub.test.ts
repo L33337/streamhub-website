@@ -48,6 +48,7 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['homeFeed.liveFilterNote', L.homeFeed.liveFilterNote(30, 133)],
     ['homeFeed.upNextTitle', L.homeFeed.upNextTitle],
     ['homeFeed.upNextLink', L.homeFeed.upNextLink],
+    ['homeFeed.upNextTonightLink', L.homeFeed.upNextTonightLink],
     ['homeFeed.lineupFilterTime', L.homeFeed.lineupFilterTime],
     ['homeFeed.lineupFilterAllTimes', L.homeFeed.lineupFilterAllTimes],
     ['homeFeed.lineupFilterFrom', L.homeFeed.lineupFilterFrom('20:00')],

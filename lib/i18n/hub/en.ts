@@ -52,6 +52,7 @@ export const en: HubLex = {
       `Top ${top} by current viewers — filters search all ${total} live streams`,
     upNextTitle: "Today's lineup",
     upNextLink: 'Live & starting soon →',
+    upNextTonightLink: 'The full evening →',
     lineupFilterTime: 'Time',
     lineupFilterAllTimes: 'Any time',
     lineupFilterFrom: (time) => `From ${time}`,

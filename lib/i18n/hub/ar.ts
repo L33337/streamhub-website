@@ -95,6 +95,7 @@ export const ar: HubLex = {
       `أفضل ${top} حسب عدد المشاهدين — تبحث الفلاتر في كل البث المباشر (${total})`,
     upNextTitle: 'برنامج اليوم',
     upNextLink: 'مباشر وسيبدأ قريبًا ←',
+    upNextTonightLink: 'برنامج الليلة ←',
     lineupFilterTime: 'الوقت',
     lineupFilterAllTimes: 'أي وقت',
     lineupFilterFrom: (time) => `من ${time}`,

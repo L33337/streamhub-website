@@ -47,6 +47,7 @@ export const pt: HubLex = {
       `Top ${top} por espectadores agora — os filtros buscam entre as ${total} lives`,
     upNextTitle: 'A programação de hoje',
     upNextLink: 'Ao vivo e começando em breve →',
+    upNextTonightLink: 'A noite completa →',
     lineupFilterTime: 'Horário',
     lineupFilterAllTimes: 'Qualquer horário',
     lineupFilterFrom: (time) => `A partir de ${time}`,
