@@ -1,6 +1,11 @@
 // Feed constants (M16) — values mirror the mobile app's M13 Home Feed
 // (StreamHub: src/hooks/useHomeFeed.ts, src/services/feedService.ts,
 // src/services/feedEventsService.ts). Keep in sync with the app.
+//
+// DELIBERATE DEVIATION (2026-08-03): the website's Discover section was
+// replaced by the Streamer Wiki (the homepage module), so the DISCOVER_*
+// constants are gone from this file while the app keeps them. Everything else
+// still mirrors the app — do not "restore" them without restoring the section.
 
 /** "New for you" lookback when no last-seen watermark exists. */
 export const RECENT_FALLBACK_HOURS = 24;
@@ -16,10 +21,11 @@ export const CLIPS_PER_STREAMER = 2;
  * guarantees at least 8 visible slots for non-favorites.
  */
 export const MORE_FAV_CLIPS_MAX = 12;
-/** Discover: candidates fetched from the RPC vs. shown after diversity pass. */
+/**
+ * Onboarding still fetches Discover recommendations for its pick step (the
+ * Partner API is its primary source, this the fallback) — the feed does not.
+ */
 export const DISCOVER_CANDIDATES = 12;
-export const DISCOVER_SHOWN = 5;
-export const DISCOVER_MAX_PER_CATEGORY = 2;
 /** RPCs cap p_streamer_ids server-side at 100 — mirror it client-side. */
 export const MAX_STREAMER_IDS = 100;
 

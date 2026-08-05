@@ -7,10 +7,7 @@ import {
   rankClips,
   rankClipsSplit,
   orderClipsByPopularity,
-  diversityPass,
   deriveChipCategories,
-  buildDiscoverReasonLabel,
-  reorderDiscover,
   pickBestFunFact,
   resolveSince,
   formatViews,
@@ -18,11 +15,8 @@ import {
   formatDuration,
   endedAgoLabel,
   buildReliabilityLabel,
-  buildDiscoverStatsLine,
-  applyDismissSuppression,
   typicalStartHourUtc,
   circularHourDiff,
-  computeWeeklyRecap,
   findPeakRecord,
   formatPeak,
   relativeStartLabel,
@@ -34,7 +28,6 @@ import { sanitizeThumbnailUrl, toPublicStreamSlot } from '../transforms';
 import type {
   StreamSlot,
   FeedClip,
-  DiscoverRecommendation,
   UserInterestProfile,
 } from '../types';
 
@@ -69,20 +62,6 @@ function clip(overrides: Partial<FeedClip>): FeedClip {
     url: 'https://clips.twitch.tv/x',
     viewCount: 100,
     clipCreatedAt: NOW.toISOString(),
-    ...overrides,
-  };
-}
-
-function rec(overrides: Partial<DiscoverRecommendation>): DiscoverRecommendation {
-  return {
-    streamerId: 'rec-1',
-    name: 'Rec One',
-    platforms: ['twitch'],
-    isAlwaysOn: false,
-    pool: 'featured',
-    score: 1,
-    reason: 'popular',
-    reasonCategoryFavorites: 0,
     ...overrides,
   };
 }
@@ -337,43 +316,6 @@ describe('orderClipsByPopularity (More-highlights discovery pool)', () => {
   });
 });
 
-describe('diversityPass', () => {
-  it('allows at most 2 per topCategory in the first pass', () => {
-    const candidates = [
-      rec({ streamerId: 'a1', topCategory: 'A', score: 9 }),
-      rec({ streamerId: 'a2', topCategory: 'A', score: 8 }),
-      rec({ streamerId: 'a3', topCategory: 'A', score: 7 }),
-      rec({ streamerId: 'b1', topCategory: 'B', score: 6 }),
-      rec({ streamerId: 'b2', topCategory: 'B', score: 5 }),
-      rec({ streamerId: 'c1', topCategory: 'C', score: 4 }),
-    ];
-    const picked = diversityPass(candidates);
-    expect(picked.map((r) => r.streamerId)).toEqual(['a1', 'a2', 'b1', 'b2', 'c1']);
-  });
-
-  it('treats null topCategory as unique keys (never collide)', () => {
-    const candidates = [
-      rec({ streamerId: 'n1', score: 9 }),
-      rec({ streamerId: 'n2', score: 8 }),
-      rec({ streamerId: 'n3', score: 7 }),
-    ];
-    expect(diversityPass(candidates)).toHaveLength(3);
-  });
-
-  it('backfills to 5 by score when the diversity cap leaves gaps', () => {
-    const candidates = Array.from({ length: 6 }, (_, i) =>
-      rec({ streamerId: `a-${i}`, topCategory: 'A', score: 10 - i }),
-    );
-    const picked = diversityPass(candidates);
-    expect(picked.map((r) => r.streamerId)).toEqual(['a-0', 'a-1', 'a-2', 'a-3', 'a-4']);
-  });
-
-  it('returns everything when fewer than 5 candidates', () => {
-    const candidates = [rec({ streamerId: 'x' }), rec({ streamerId: 'y', topCategory: 'B' })];
-    expect(diversityPass(candidates)).toHaveLength(2);
-  });
-});
-
 describe('deriveChipCategories', () => {
   it('orders top-6 profile categories by weight, then section categories, max 8', () => {
     const p = profile({
@@ -420,48 +362,6 @@ describe('deriveChipCategories', () => {
       },
     ];
     expect(deriveChipCategories(null, live, up, recent, [])).toEqual(['FPS']);
-  });
-});
-
-describe('buildDiscoverReasonLabel', () => {
-  it('covers all reason variants', () => {
-    expect(
-      buildDiscoverReasonLabel(
-        rec({ reason: 'category', reasonCategory: 'Chess', reasonCategoryFavorites: 3 }),
-      ),
-    ).toBe('Streams Chess, like 3 of your favorites');
-    expect(
-      buildDiscoverReasonLabel(
-        rec({ reason: 'category', reasonCategory: 'Chess', reasonCategoryFavorites: 1 }),
-      ),
-    ).toBe('Streams Chess');
-    expect(buildDiscoverReasonLabel(rec({ reason: 'category' }))).toBe('Matches your interests');
-    expect(buildDiscoverReasonLabel(rec({ reason: 'language' }))).toBe('Streams in your language');
-    expect(buildDiscoverReasonLabel(rec({ reason: 'schedule' }))).toBe(
-      'Live when you usually watch',
-    );
-    expect(buildDiscoverReasonLabel(rec({ reason: 'active' }))).toBe('Very active recently');
-    expect(buildDiscoverReasonLabel(rec({ reason: 'popular' }))).toBe(
-      'Popular on Streamer Times',
-    );
-  });
-});
-
-describe('reorderDiscover', () => {
-  it('floats topCategory/reasonCategory matches to the top, keeps relative order', () => {
-    const list = [
-      rec({ streamerId: 'a', topCategory: 'X' }),
-      rec({ streamerId: 'b', topCategory: 'Y' }),
-      rec({ streamerId: 'c', reasonCategory: 'Y' }),
-      rec({ streamerId: 'd', topCategory: 'Z' }),
-    ];
-    expect(reorderDiscover(list, 'Y').map((r) => r.streamerId)).toEqual(['b', 'c', 'a', 'd']);
-  });
-
-  it('returns the same list when no chip is active (never filters)', () => {
-    const list = [rec({ streamerId: 'a' }), rec({ streamerId: 'b' })];
-    expect(reorderDiscover(list, null)).toBe(list);
-    expect(reorderDiscover(list, 'Nope')).toHaveLength(2);
   });
 });
 
@@ -672,24 +572,6 @@ describe('buildReliabilityLabel (M18 P2)', () => {
   });
 });
 
-describe('buildDiscoverStatsLine (M18 P2B)', () => {
-  it('joins both parts when available', () => {
-    expect(buildDiscoverStatsLine({ followerCount: 120_000, streams28d: 12 })).toBe(
-      '≈120K followers · 12 streams in 28d',
-    );
-  });
-
-  it('renders single parts alone', () => {
-    expect(buildDiscoverStatsLine({ followerCount: 950, streams28d: null })).toBe('≈950 followers');
-    expect(buildDiscoverStatsLine({ followerCount: null, streams28d: 1 })).toBe('1 stream in 28d');
-  });
-
-  it('returns null when nothing is available (incl. zero counts)', () => {
-    expect(buildDiscoverStatsLine({ followerCount: null, streams28d: null })).toBeNull();
-    expect(buildDiscoverStatsLine({ followerCount: 0, streams28d: 0 })).toBeNull();
-  });
-});
-
 describe('M18 P2C card helpers', () => {
   it('typicalStartHourUtc picks the strongest bin, null on flat/invalid', () => {
     const histogram = new Array(24).fill(0);
@@ -706,23 +588,6 @@ describe('M18 P2C card helpers', () => {
     expect(circularHourDiff(1, 23)).toBe(2);
     expect(circularHourDiff(12, 0)).toBe(12);
     expect(circularHourDiff(5, 5)).toBe(0);
-  });
-
-  it('computeWeeklyRecap aggregates hours + top category, null on thin weeks', () => {
-    expect(
-      computeWeeklyRecap([
-        { durationMinutes: 120, category: 'LoL' },
-        { durationMinutes: 180, category: 'LoL' },
-        { durationMinutes: 60, category: 'Just Chatting' },
-      ]),
-    ).toEqual({ totalHours: 6, streams: 3, topCategory: 'LoL' });
-    expect(computeWeeklyRecap([{ durationMinutes: 600, category: 'LoL' }])).toBeNull();
-    expect(
-      computeWeeklyRecap([
-        { durationMinutes: 20, category: null },
-        { durationMinutes: 20, category: null },
-      ]),
-    ).toBeNull();
   });
 
   it('findPeakRecord needs freshness, history and the noise floor', () => {
@@ -813,21 +678,6 @@ describe('M18 P4 engagement ranking', () => {
     expect(rankClips(clips).map((c) => c.id)).toEqual(['big', 'small']);
   });
 
-  it('applyDismissSuppression sinks dismissed candidates below others', () => {
-    const candidates = [
-      rec({ streamerId: 'streamer-bad', score: 0.9 }),
-      rec({ streamerId: 'ok', score: 0.6 }),
-      rec({ streamerId: 'slots-fan', score: 0.7, topCategory: 'Slots' }),
-    ];
-    const ordered = applyDismissSuppression(candidates, engagement);
-    expect(ordered.map((c) => c.streamerId)).toEqual(['ok', 'streamer-bad', 'slots-fan']);
-    expect(ordered).toHaveLength(3);
-  });
-
-  it('applyDismissSuppression is a no-op without engagement data', () => {
-    const candidates = [rec({ streamerId: 'a', score: 0.9 }), rec({ streamerId: 'b', score: 0.8 })];
-    expect(applyDismissSuppression(candidates, null).map((c) => c.streamerId)).toEqual(['a', 'b']);
-  });
 });
 
 describe('feed UX round 2026-07-22 — Up Next grouping + relative time', () => {

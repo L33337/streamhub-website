@@ -21,9 +21,22 @@ export interface HomeSectionNavItem {
 export function HomeSectionNav({
   items,
   ariaLabel,
+  bleedClass = '-mx-6 px-6',
 }: {
   items: HomeSectionNavItem[];
   ariaLabel: string;
+  /**
+   * Negative margin + matching padding that let the bar span the full width of
+   * its container. It MUST match the container's own horizontal padding: the
+   * homepage's `px-6` main is the default, /feed passes `-mx-4 px-4`. Get it
+   * wrong on the wide side and a narrow viewport gains a horizontal scrollbar.
+   *
+   * A prop rather than a wrapper element on purpose — a `position: sticky`
+   * element sticks only within its PARENT, so wrapping this nav in a div sized
+   * exactly to it makes it scroll away immediately instead of sticking
+   * (observed on /feed, 2026-08-03).
+   */
+  bleedClass?: string;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -67,7 +80,7 @@ export function HomeSectionNav({
       // drops to /80 wherever the blur actually renders. Without that override
       // the bar reads as a slightly darker block glued below the header —
       // measured 0.95 vs 0.80 alpha over the same colour.
-      className="sticky top-[var(--header-height)] z-20 -mx-6 border-b border-divider bg-background/95 px-6 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className={`sticky top-[var(--header-height)] z-20 border-b border-divider bg-background/95 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 ${bleedClass}`}
     >
       {/* The only horizontal rail on the site that still showed its native
           scrollbar — a grey bar under the chips on Windows and some Androids.
