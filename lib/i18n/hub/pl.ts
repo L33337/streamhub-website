@@ -46,6 +46,7 @@ export const pl: HubLex = {
     aria: 'Ścieżka nawigacji',
     home: 'Strona główna',
     liveNow: 'Teraz na żywo',
+    tonight: 'Dziś wieczorem',
     games: 'Gry',
     streamers: 'Streamerzy',
     rankings: 'Rankingi',
@@ -300,6 +301,47 @@ export const pl: HubLex = {
     emptyAll:
       'W tej chwili nic nie jest na żywo i nic zaraz się nie zaczyna. Przejrzyj pełny katalog streamerów albo odkrywaj gry, by znaleźć swój następny stream.',
     itemListName: 'Streamerzy nadający teraz na żywo na Twitchu i YouTube',
+  },
+  tonight: {
+    h1: 'Kto streamuje dziś wieczorem?',
+    h1Night: 'Kto streamuje tej nocy',
+    intro: (total, names) =>
+      `Na dziś wieczór na Twitchu i YouTube ${pluralForms('pl', total, {
+        one: 'czeka',
+        few: 'czekają',
+        many: 'czeka',
+        other: 'czeka',
+      })} ${nStreams(total)}` +
+      (names ? `, w tym ${names}` : '') +
+      '.',
+    introEmpty:
+      'Na dziś wieczór nie ma jeszcze nic zaplanowanego. Prognozy uzupełniają się w ciągu dnia, gdy streamerzy kończą swoje bieżące transmisje.',
+    timesInZone: (zone) => `Wszystkie godziny w ${zone}`,
+    timesLocal: 'Wszystkie godziny w Twojej strefie czasowej',
+    error: 'Program na dziś wieczór jest chwilowo niedostępny. Spróbuj ponownie za chwilę.',
+    jumpAria: 'Przejdź do pory wieczoru',
+    liveNowHeading: 'Już na żywo',
+    liveNowLink: 'Zobacz wszystkich, którzy są teraz na żywo',
+    primetimeHeading: 'Najważniejsze dziś wieczorem',
+    primetimeSub: (time) => `Najwięksi, którzy wchodzą na żywo około ${time}.`,
+    blockFrom: (time) => `Od ${time}`,
+    blockNight: 'Późna noc',
+    blockCount: (n) => nStreams(n),
+    quietBody:
+      'Zajrzyj później albo zobacz, kto jest teraz na żywo — wieczór zwykle zapełnia się po 18:00.',
+    aboutHeading: 'O przewodniku na dziś wieczór',
+    aboutBody:
+      'Ta strona to wieczorny widok Streamer Times: każda transmisja na Twitchu i YouTube, której spodziewamy się między 18:00 a 6:00, pogrupowana według godziny startu, żebyś mógł zaplanować wieczór jak z programem telewizyjnym.',
+    faqWhatQ: 'Co jest dziś wieczorem?',
+    faqWhatA:
+      'Bloki powyżej wymieniają każdą transmisję zapowiedzianą lub przewidzianą na ten wieczór, od najwcześniejszej. Zapowiedziane transmisje pochodzą wprost z harmonogramu samego streamera; resztę przewidujemy na podstawie historii nadawania, a na każdej karcie widnieje odznaka pewności.',
+    faqHowQ: 'Skąd wiecie, kiedy ktoś zacznie streamować?',
+    faqHowA:
+      'Śledzimy historię transmisji każdego kanału i jego zapowiedzi, a następnie przewidujemy kolejny start. Wysoka pewność oznacza silny, regularny schemat albo zapowiedzianą datę; niska oznacza, że harmonogram był ostatnio nieregularny.',
+    faqTimesQ: 'W jakiej strefie czasowej podane są godziny?',
+    faqTimesA: (zone) =>
+      `Godziny są podane w ${zone} i przełączają się na Twoją własną strefę czasową po załadowaniu strony. Wieczór trwa od 18:00 do 6:00, więc transmisja zaczynająca się po północy wciąż należy do dzisiejszego wieczoru.`,
+    itemListName: 'Transmisje dziś wieczorem na Twitchu i YouTube',
   },
   streamers: {
     h1: 'Wszyscy streamerzy Twitcha i YouTube od A do Z',

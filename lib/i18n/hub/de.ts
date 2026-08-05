@@ -7,6 +7,7 @@ export const de: HubLex = {
     aria: 'Seitenpfad',
     home: 'Startseite',
     liveNow: 'Jetzt live',
+    tonight: 'Heute Abend',
     games: 'Spiele',
     streamers: 'Streamer',
     rankings: 'Rankings',
@@ -247,6 +248,42 @@ export const de: HubLex = {
     emptyAll:
       'Gerade ist nichts live und nichts startet in Kürze. Stöbere durch das komplette Streamer-Verzeichnis oder entdecke Spiele für deinen nächsten Stream.',
     itemListName: 'Streamer, die gerade auf Twitch & YouTube live sind',
+  },
+  tonight: {
+    h1: 'Wer streamt heute Abend?',
+    h1Night: 'Wer heute Nacht noch streamt',
+    intro: (total, names) =>
+      `Für heute Abend ${total === 1 ? `ist ${total} Stream` : `sind ${total} Streams`} auf Twitch und YouTube geplant` +
+      (names ? `, unter anderem mit ${names}` : '') +
+      '.',
+    introEmpty:
+      'Für heute Abend ist noch nichts geplant. Die Prognosen füllen sich im Lauf des Tages, sobald Streamer ihre laufenden Sendungen beenden.',
+    timesInZone: (zone) => `Alle Zeiten ${zone}`,
+    timesLocal: 'Alle Zeiten in deiner Zeitzone',
+    error: 'Das Programm für heute Abend ist gerade nicht verfügbar. Versuch es gleich noch einmal.',
+    jumpAria: 'Zu einer Uhrzeit des Abends springen',
+    liveNowHeading: 'Schon live',
+    liveNowLink: 'Alle sehen, die jetzt live sind',
+    primetimeHeading: 'Highlights des Abends',
+    primetimeSub: (time) => `Die größten Namen, die gegen ${time} live gehen.`,
+    blockFrom: (time) => `Ab ${time}`,
+    blockNight: 'Nachtprogramm',
+    blockCount: (n) => `${n} Stream${n === 1 ? '' : 's'}`,
+    quietBody:
+      'Schau später noch mal vorbei oder sieh, wer gerade live ist — ab 18 Uhr füllt sich der Abend meistens.',
+    aboutHeading: 'Über den Abend-Guide',
+    aboutBody:
+      'Diese Seite ist die Abendansicht von Streamer Times: jeder Twitch- und YouTube-Stream, den wir zwischen 18 und 6 Uhr erwarten, nach Startzeit gruppiert — damit du deinen Abend so planen kannst wie mit einer Fernsehzeitschrift.',
+    faqWhatQ: 'Was läuft heute Abend?',
+    faqWhatA:
+      'Die Blöcke oben listen jeden Stream, der für diesen Abend angekündigt oder prognostiziert ist, der früheste zuerst. Angekündigte Streams kommen direkt aus dem Sendeplan des Streamers; der Rest wird aus der Stream-Historie vorhergesagt, mit einem Konfidenz-Badge auf jeder Karte.',
+    faqHowQ: 'Woher wisst ihr, wann jemand streamt?',
+    faqHowA:
+      'Wir verfolgen die Sendehistorie jedes Kanals und seine Ankündigungen und sagen daraus den nächsten Start voraus. Hohe Konfidenz heißt: ein starkes, regelmäßiges Muster oder ein angekündigter Termin; niedrige Konfidenz heißt, dass der Plan zuletzt unregelmäßig war.',
+    faqTimesQ: 'In welcher Zeitzone sind die Zeiten?',
+    faqTimesA: (zone) =>
+      `Die Zeiten stehen in ${zone} und wechseln in deine eigene Zeitzone, sobald die Seite geladen ist. Der Abend läuft von 18 bis 6 Uhr — ein Stream, der nach Mitternacht startet, gehört also noch zu heute Abend.`,
+    itemListName: 'Streams heute Abend auf Twitch & YouTube',
   },
   streamers: {
     h1: 'Alle Twitch- & YouTube-Streamer von A–Z',

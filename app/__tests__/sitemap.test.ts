@@ -110,6 +110,27 @@ describe('sitemap — M22 locale variants', () => {
     );
   });
 
+  it('lists /tonight as a full hub, one entry + cluster per indexable locale', async () => {
+    const entries = await sitemap();
+    const urls = urlsOf(entries);
+    expect(urls).toContain('https://streamertimes.tv/tonight');
+    for (const l of INDEXABLE_HUB_LOCALES.filter((x) => x !== 'en')) {
+      expect(urls).toContain(`https://streamertimes.tv/${l}/tonight`);
+    }
+    const tonightDe = entries.find((e) => e.url === 'https://streamertimes.tv/de/tonight');
+    expect(tonightDe?.alternates?.languages).toEqual(
+      Object.fromEntries([
+        ...INDEXABLE_HUB_LOCALES.map((l) => [
+          l,
+          l === 'en'
+            ? 'https://streamertimes.tv/tonight'
+            : `https://streamertimes.tv/${l}/tonight`,
+        ]),
+        ['x-default', 'https://streamertimes.tv/tonight'],
+      ]),
+    );
+  });
+
   it('S4.1: lists every widened hub locale but never an /ar/ hub URL', async () => {
     const entries = await sitemap();
     const urls = entries.map((e) => e.url);

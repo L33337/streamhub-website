@@ -83,6 +83,13 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     changeFrequency: 'hourly',
     priority: 0.8,
   }),
+  ...hubEntries('/tonight', {
+    // Honest per-render "now": the evening line-up genuinely changes with every
+    // prediction run (same treatment as /live above).
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.8,
+  }),
   ...hubEntries('/streamers', {
     lastModified: BUILD_TIME,
     changeFrequency: 'daily',

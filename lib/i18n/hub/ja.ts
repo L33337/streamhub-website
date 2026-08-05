@@ -7,6 +7,7 @@ export const ja: HubLex = {
     aria: 'パンくずリスト',
     home: 'ホーム',
     liveNow: '現在配信中',
+    tonight: '今夜',
     games: 'ゲーム',
     streamers: 'ストリーマー',
     rankings: 'ランキング',
@@ -243,6 +244,42 @@ export const ja: HubLex = {
     emptyAll:
       '今は配信中のチャンネルも、まもなく始まる配信もありません。ストリーマー一覧やゲームページから次に観る配信を探してみてください。',
     itemListName: 'Twitch & YouTube で現在配信中のストリーマー',
+  },
+  tonight: {
+    h1: '今夜は誰が配信しますか？',
+    h1Night: '今夜配信するストリーマー',
+    intro: (total, names) =>
+      `今夜はTwitchとYouTubeで${total}件の配信が予定されています` +
+      (names ? `（${names}など）` : '') +
+      '。',
+    introEmpty:
+      '今夜の配信予定はまだありません。ストリーマーが現在の配信を終えるにつれて、予測が一日を通して埋まっていきます。',
+    timesInZone: (zone) => `時刻はすべて${zone}表記です`,
+    timesLocal: '時刻はすべてお使いのタイムゾーンで表示しています',
+    error: '今夜のラインナップを一時的に取得できません。しばらくしてからもう一度お試しください。',
+    jumpAria: '夜の時間帯へ移動',
+    liveNowHeading: 'すでに配信中',
+    liveNowLink: '現在配信中のストリーマーをすべて見る',
+    primetimeHeading: '今夜の注目配信',
+    primetimeSub: (time) => `${time}ごろに配信を始める注目のストリーマーです。`,
+    blockFrom: (time) => `${time}から`,
+    blockNight: '深夜',
+    blockCount: (n) => `${n}件の配信`,
+    quietBody:
+      'また後で確認するか、現在配信中のストリーマーをご覧ください。夜の予定はたいてい18時以降に埋まっていきます。',
+    aboutHeading: '今夜のガイドについて',
+    aboutBody:
+      'このページはStreamer Timesの夜版です。18時から翌6時までに予想されるTwitchとYouTubeの配信を開始時刻ごとにまとめているので、テレビ番組表のように夜の予定を立てられます。',
+    faqWhatQ: '今夜は何がありますか？',
+    faqWhatA:
+      '上のブロックには、今夜予定されている配信と予測された配信が早い順に並んでいます。告知済みの配信はストリーマー自身のスケジュールから取得し、それ以外は配信履歴から予測したもので、各カードに信頼度バッジが付いています。',
+    faqHowQ: '配信の時間はどうやってわかるのですか？',
+    faqHowA:
+      '各チャンネルの配信履歴と告知を追跡し、そこから次の配信開始時刻を予測しています。信頼度が高い場合は規則的で強いパターンか告知された日時があることを意味し、低い場合は最近のスケジュールが不規則だったことを意味します。',
+    faqTimesQ: '時刻はどのタイムゾーンですか？',
+    faqTimesA: (zone) =>
+      `時刻は${zone}で表示され、ページの読み込み後にお使いのタイムゾーンに切り替わります。夜は18時から翌6時までなので、深夜0時を過ぎて始まる配信も今夜に含まれます。`,
+    itemListName: 'Twitch & YouTube の今夜の配信',
   },
   streamers: {
     h1: 'Twitch & YouTube のストリーマー一覧',

@@ -10,6 +10,7 @@ export const en: HubLex = {
     aria: 'Breadcrumb',
     home: 'Home',
     liveNow: 'Live now',
+    tonight: 'Tonight',
     games: 'Games',
     streamers: 'Streamers',
     rankings: 'Rankings',
@@ -253,6 +254,42 @@ export const en: HubLex = {
     emptyAll:
       'Nothing is live or about to start right now. Browse the full streamer directory or explore games to find your next stream.',
     itemListName: 'Streamers live right now on Twitch & YouTube',
+  },
+  tonight: {
+    h1: "Who's streaming tonight?",
+    h1Night: "Who's streaming tonight",
+    intro: (total, names) =>
+      `${total} stream${total === 1 ? ' is' : 's are'} lined up for tonight on Twitch and YouTube` +
+      (names ? `, including ${names}` : '') +
+      '.',
+    introEmpty:
+      'Nothing is scheduled for tonight yet. Predictions fill in through the day as streamers finish their current broadcasts.',
+    timesInZone: (zone) => `All times ${zone}`,
+    timesLocal: 'All times in your timezone',
+    error: "Tonight's line-up is temporarily unavailable. Please try again in a moment.",
+    jumpAria: 'Jump to a time of the evening',
+    liveNowHeading: 'Already live',
+    liveNowLink: 'See everyone live now',
+    primetimeHeading: 'Tonight’s highlights',
+    primetimeSub: (time) => `The biggest names going live around ${time}.`,
+    blockFrom: (time) => `From ${time}`,
+    blockNight: 'Late night',
+    blockCount: (n) => `${n} stream${n === 1 ? '' : 's'}`,
+    quietBody:
+      'Check back later, or see who is live right now — the evening usually fills up after 6 PM.',
+    aboutHeading: 'About tonight’s guide',
+    aboutBody:
+      'This page is the evening view of Streamer Times: every Twitch and YouTube stream we expect between 6 PM and 6 AM, grouped by the time it starts, so you can plan an evening the way you would with a TV guide.',
+    faqWhatQ: 'What is on tonight?',
+    faqWhatA:
+      'The blocks above list every stream scheduled or predicted for this evening, earliest first. Announced streams come straight from the streamer’s own schedule; the rest are predicted from their streaming history, with a confidence badge on every card.',
+    faqHowQ: 'How do you know when someone will stream?',
+    faqHowA:
+      'We track each channel’s broadcast history and their announcements, then predict the next start. High confidence means a strong, regular pattern or an announced date; low confidence means the schedule has been irregular lately.',
+    faqTimesQ: 'Which timezone are the times in?',
+    faqTimesA: (zone) =>
+      `Times are listed in ${zone} and switch to your own timezone once the page loads. The evening runs from 6 PM to 6 AM, so a stream starting after midnight is still part of tonight.`,
+    itemListName: 'Streams tonight on Twitch & YouTube',
   },
   streamers: {
     h1: 'All Twitch & YouTube streamers A–Z',
