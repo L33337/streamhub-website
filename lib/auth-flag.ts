@@ -15,7 +15,7 @@
 //   - /auth/sign-up, /auth/forgot-password, /auth/reset-password render their
 //     forms instead of redirecting (dormant: to /auth/login when base auth is
 //     on, to /app when everything is off)
-// Prerequisites before flipping it in production: hCaptcha sitekey hostname,
+// Prerequisites before flipping it in production: Turnstile sitekey hostname,
 // custom SMTP, and the conditional email templates — see the activation
 // checklist in AGENTS.md ("Email auth sub-flag").
 //

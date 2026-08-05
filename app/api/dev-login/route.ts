@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // be exercised end-to-end while website auth is dormant (no login UI).
 //
 // Sign-in works via admin.generateLink + verifyOtp instead of
-// signInWithPassword because the local auth config has hCaptcha enabled
+// signInWithPassword because the local auth config has captcha enabled
 // (StreamHub supabase/config.toml) — OTP verification is captcha-free.
 //
 // Triple-guarded — unreachable in production:

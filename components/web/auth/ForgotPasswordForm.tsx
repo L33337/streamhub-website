@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { recoveryRedirectTo, resolveSiteUrl } from '@/lib/auth-email';
 import { friendlyAuthError } from '@/lib/auth-errors';
-import { HCaptchaField, type HCaptchaFieldHandle } from './HCaptchaField';
+import { TurnstileField, type TurnstileFieldHandle } from './TurnstileField';
 import {
   AUTH_ERROR_CLASS,
   AUTH_INPUT_CLASS,
@@ -16,7 +16,7 @@ import {
 } from './formStyles';
 
 export function ForgotPasswordForm() {
-  const captchaRef = useRef<HCaptchaFieldHandle>(null);
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export function ForgotPasswordForm() {
         </Link>
       </p>
 
-      <HCaptchaField ref={captchaRef} />
+      <TurnstileField ref={captchaRef} />
     </form>
   );
 }

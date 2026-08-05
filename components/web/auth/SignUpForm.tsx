@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { resolveSiteUrl, signupEmailRedirectTo } from '@/lib/auth-email';
 import { friendlyAuthError } from '@/lib/auth-errors';
-import { HCaptchaField, type HCaptchaFieldHandle } from './HCaptchaField';
+import { TurnstileField, type TurnstileFieldHandle } from './TurnstileField';
 import {
   AUTH_ERROR_CLASS,
   AUTH_INPUT_CLASS,
@@ -27,7 +27,7 @@ interface Props {
 type Panel = 'form' | 'sent' | 'exists';
 
 export function SignUpForm({ next }: Props) {
-  const captchaRef = useRef<HCaptchaFieldHandle>(null);
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -160,7 +160,7 @@ export function SignUpForm({ next }: Props) {
           </button>
           .
         </p>
-        <HCaptchaField ref={captchaRef} />
+        <TurnstileField ref={captchaRef} />
       </div>
     );
   }
@@ -216,7 +216,7 @@ export function SignUpForm({ next }: Props) {
         </Link>
       </p>
 
-      <HCaptchaField ref={captchaRef} />
+      <TurnstileField ref={captchaRef} />
     </form>
   );
 }
