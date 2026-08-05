@@ -7,6 +7,7 @@ export const es: HubLex = {
     aria: 'Ruta de navegación',
     home: 'Inicio',
     liveNow: 'En directo ahora',
+    tonight: 'Esta noche',
     games: 'Juegos',
     streamers: 'Streamers',
     rankings: 'Rankings',
@@ -249,6 +250,42 @@ export const es: HubLex = {
     emptyAll:
       'Ahora mismo no hay nada en directo ni a punto de empezar. Explora el directorio completo de streamers o descubre juegos para encontrar tu próximo stream.',
     itemListName: 'Streamers en directo ahora mismo en Twitch y YouTube',
+  },
+  tonight: {
+    h1: '¿Quién transmite esta noche?',
+    h1Night: 'Quién transmite esta madrugada',
+    intro: (total, names) =>
+      `${total} stream${total === 1 ? ' está programado' : 's están programados'} para esta noche en Twitch y YouTube` +
+      (names ? `, incluyendo a ${names}` : '') +
+      '.',
+    introEmpty:
+      'Todavía no hay nada programado para esta noche. Las predicciones se van completando a lo largo del día, a medida que los streamers terminan sus directos.',
+    timesInZone: (zone) => `Todas las horas en ${zone}`,
+    timesLocal: 'Todas las horas en tu zona horaria',
+    error: 'La programación de esta noche no está disponible temporalmente. Inténtalo de nuevo en un momento.',
+    jumpAria: 'Ir a una hora de la noche',
+    liveNowHeading: 'Ya en directo',
+    liveNowLink: 'Ver a todos los que están en directo',
+    primetimeHeading: 'Lo mejor de esta noche',
+    primetimeSub: (time) => `Los nombres más grandes que empiezan alrededor de las ${time}.`,
+    blockFrom: (time) => `Desde las ${time}`,
+    blockNight: 'Madrugada',
+    blockCount: (n) => `${n} stream${n === 1 ? '' : 's'}`,
+    quietBody:
+      'Vuelve más tarde o mira quién está en directo ahora mismo — la noche suele llenarse a partir de las 18:00.',
+    aboutHeading: 'Sobre la guía de esta noche',
+    aboutBody:
+      'Esta página es la vista nocturna de Streamer Times: todos los streams de Twitch y YouTube que esperamos entre las 18:00 y las 6:00, agrupados por hora de inicio, para que planifiques la noche como lo harías con una guía de televisión.',
+    faqWhatQ: '¿Qué hay esta noche?',
+    faqWhatA:
+      'Los bloques de arriba listan todos los streams programados o predichos para esta noche, del más temprano al más tarde. Los streams anunciados vienen directamente del horario del propio streamer; el resto se predice a partir de su historial, con una insignia de confianza en cada tarjeta.',
+    faqHowQ: '¿Cómo sabemos cuándo va a transmitir alguien?',
+    faqHowA:
+      'Seguimos el historial de emisiones de cada canal y sus anuncios, y a partir de ahí predecimos el próximo inicio. Confianza alta significa un patrón fuerte y regular o una fecha anunciada; confianza baja significa que el horario ha sido irregular últimamente.',
+    faqTimesQ: '¿En qué zona horaria están las horas?',
+    faqTimesA: (zone) =>
+      `Las horas se muestran en ${zone} y cambian a tu propia zona horaria en cuanto carga la página. La noche va de las 18:00 a las 6:00, así que un stream que empieza después de medianoche sigue siendo parte de esta noche.`,
+    itemListName: 'Streams de esta noche en Twitch y YouTube',
   },
   streamers: {
     h1: 'Todos los streamers de Twitch y YouTube de la A a la Z',

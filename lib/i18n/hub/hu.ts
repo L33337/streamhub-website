@@ -7,6 +7,7 @@ export const hu: HubLex = {
     aria: 'Morzsamenü',
     home: 'Főoldal',
     liveNow: 'Most élőben',
+    tonight: 'Ma este',
     games: 'Játékok',
     streamers: 'Streamerek',
     rankings: 'Ranglisták',
@@ -243,6 +244,42 @@ export const hu: HubLex = {
     emptyAll:
       'Most semmi sincs élőben, és semmi sem indul mindjárt. Böngészd a teljes streamer-katalógust, vagy fedezz fel játékokat a következő streamedhez.',
     itemListName: 'Éppen élőben lévő streamerek a Twitchen és a YouTube-on',
+  },
+  tonight: {
+    h1: 'Ki streamel ma este?',
+    h1Night: 'Ki streamel az éjjel',
+    intro: (total, names) =>
+      `Ma estére ${total} stream van betervezve a Twitchen és a YouTube-on` +
+      (names ? `, köztük ${names}` : '') +
+      '.',
+    introEmpty:
+      'Ma estére még nincs semmi betervezve. Az előrejelzések a nap folyamán töltődnek fel, ahogy a streamerek befejezik az aktuális adásaikat.',
+    timesInZone: (zone) => `Minden időpont ${zone} szerint`,
+    timesLocal: 'Minden időpont a te időzónádban',
+    error: 'A ma esti műsor átmenetileg nem érhető el. Próbáld újra egy pillanat múlva.',
+    jumpAria: 'Ugrás az este egy időpontjához',
+    liveNowHeading: 'Már élőben',
+    liveNowLink: 'Nézd meg, ki van most élőben',
+    primetimeHeading: 'A ma este fénypontjai',
+    primetimeSub: (time) => `A legnagyobb nevek, akik ${time} körül kezdenek élőben.`,
+    blockFrom: (time) => `${time}-tól`,
+    blockNight: 'Késő éjjel',
+    blockCount: (n) => `${n} stream`,
+    quietBody:
+      'Nézz vissza később, vagy nézd meg, ki van most élőben — az este általában 18 óra után telik meg.',
+    aboutHeading: 'A ma esti műsorkalauzról',
+    aboutBody:
+      'Ez az oldal a Streamer Times esti nézete: minden Twitch- és YouTube-stream, amelyre 18 és 6 óra között számítunk, kezdési idő szerint csoportosítva, hogy úgy tervezhesd meg az estédet, mint egy tévéújsággal.',
+    faqWhatQ: 'Mi megy ma este?',
+    faqWhatA:
+      'A fenti blokkok minden streamet felsorolnak, amelyet erre az estére bejelentettek vagy előre jeleztünk, a legkorábbival kezdve. A bejelentett streamek közvetlenül a streamer saját menetrendjéből származnak; a többit a streamelési előzményekből jelezzük előre, és minden kártyán ott a megbízhatósági jelzés.',
+    faqHowQ: 'Honnan tudjátok, mikor streamel valaki?',
+    faqHowA:
+      'Követjük minden csatorna adásainak előzményeit és a bejelentéseit, majd ebből jelezzük előre a következő kezdést. A magas megbízhatóság erős, rendszeres mintát vagy bejelentett időpontot jelent; az alacsony azt, hogy a menetrend mostanában rendszertelen volt.',
+    faqTimesQ: 'Melyik időzónában vannak az időpontok?',
+    faqTimesA: (zone) =>
+      `Az időpontok ${zone} szerint szerepelnek, és az oldal betöltése után átváltanak a saját időzónádra. Az este 18 órától 6 óráig tart, így az éjfél után kezdődő stream is a ma estéhez tartozik.`,
+    itemListName: 'Ma esti streamek a Twitchen és a YouTube-on',
   },
   streamers: {
     h1: 'Az összes Twitch- és YouTube-streamer A–Z',

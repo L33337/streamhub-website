@@ -19,6 +19,12 @@ import type { UiLang } from './i18n-core';
 export interface SiteMetaLex {
   home: { title: string; description: string };
   live: { title: string; description: string };
+  /**
+   * /tonight — the evening-intention hub. The title must carry the recurring
+   * daily query ("who is streaming tonight" / "wer streamt heute Abend") AND
+   * the platform names, the same split the homepage uses.
+   */
+  tonight: { title: string; description: string };
   streamers: { title: string; description: string };
   games: { title: string; description: string };
   rankings: { title: string; description: string };
@@ -35,6 +41,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       title: "Who's Live Now on Twitch & YouTube | StreamerTimes",
       description:
         'See every streamer live right now on Twitch and YouTube, grouped by game and category — plus who is starting in the next few hours. Updated every minute.',
+    },
+    tonight: {
+      title: "Who's Streaming Tonight on Twitch & YouTube? | StreamerTimes",
+      description:
+        'Tonight on Twitch and YouTube, hour by hour from 6 PM to 6 AM: announced streams plus AI-predicted starts, with the evening highlights up front.',
     },
     streamers: {
       title: 'All Streamers A–Z — Twitch & YouTube Live Schedules | StreamerTimes',
@@ -66,6 +77,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       description:
         'Alle Streamer, die gerade auf Twitch und YouTube live sind, nach Spiel gruppiert — plus wer in den nächsten Stunden startet. Minütlich aktualisiert.',
     },
+    tonight: {
+      title: 'Wer streamt heute Abend auf Twitch & YouTube? | StreamerTimes',
+      description:
+        'Heute Abend auf Twitch und YouTube, Stunde für Stunde von 18 bis 6 Uhr: angekündigte Streams plus KI-Prognosen, mit den Highlights vorneweg.',
+    },
     streamers: {
       title: 'Alle Streamer A–Z — Twitch & YouTube Sendepläne | StreamerTimes',
       description:
@@ -92,6 +108,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       title: '¿Quién está en directo en Twitch y YouTube? | StreamerTimes',
       description:
         'Todos los streamers en directo ahora en Twitch y YouTube, por juego — y quién empieza en las próximas horas. Se actualiza cada minuto.',
+    },
+    tonight: {
+      title: '¿Quién transmite esta noche en Twitch y YouTube? | StreamerTimes',
+      description:
+        'Esta noche en Twitch y YouTube, hora a hora de 18:00 a 6:00: directos anunciados y predicciones con IA, con lo mejor de la noche por delante.',
     },
     streamers: {
       title: 'Todos los streamers A–Z — Horarios de Twitch y YouTube | StreamerTimes',
@@ -120,6 +141,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       description:
         'Tous les streamers en live sur Twitch et YouTube, groupés par jeu — et qui démarre dans les prochaines heures. Mis à jour chaque minute.',
     },
+    tonight: {
+      title: 'Qui streame ce soir sur Twitch & YouTube ? | StreamerTimes',
+      description:
+        'Ce soir sur Twitch et YouTube, heure par heure de 18 h à 6 h : streams annoncés et prédictions IA, avec les temps forts de la soirée en tête.',
+    },
     streamers: {
       title: 'Tous les streamers A–Z — Horaires Twitch & YouTube | StreamerTimes',
       description:
@@ -146,6 +172,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       title: 'Quem está ao vivo na Twitch e no YouTube? | StreamerTimes',
       description:
         'Veja todos os streamers ao vivo agora na Twitch e no YouTube, agrupados por jogo e categoria — e quem começa nas próximas horas. Atualizado a cada minuto.',
+    },
+    tonight: {
+      title: 'Quem transmite hoje à noite na Twitch e YouTube? | StreamerTimes',
+      description:
+        'Hoje à noite na Twitch e no YouTube, hora a hora das 18h às 6h: transmissões anunciadas e previsões por IA, com os destaques logo no início.',
     },
     streamers: {
       title: 'Todos os streamers A–Z — Horários de Twitch e YouTube | StreamerTimes',
@@ -174,6 +205,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       description:
         'Tutti gli streamer in diretta ora su Twitch e YouTube, raggruppati per gioco e categoria — e chi inizia nelle prossime ore. Aggiornato ogni minuto.',
     },
+    tonight: {
+      title: 'Chi streama stasera su Twitch e YouTube? | StreamerTimes',
+      description:
+        'Stasera su Twitch e YouTube, ora per ora dalle 18 alle 6: dirette annunciate e previsioni IA, con il meglio della serata in cima alla pagina.',
+    },
     streamers: {
       title: 'Tutti gli streamer A–Z — Orari Twitch & YouTube | StreamerTimes',
       description: `Sfoglia tutti gli streamer Twitch e YouTube su Streamer Times, dalla A alla Z. Chi è in diretta, prossimi orari e stream previsti dall'IA.`,
@@ -199,6 +235,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       title: 'Кто сейчас в эфире на Twitch и YouTube | StreamerTimes',
       description:
         'Все стримеры, которые сейчас в эфире на Twitch и YouTube, по играм и категориям — и кто начнёт в ближайшие часы. Обновляется каждую минуту.',
+    },
+    tonight: {
+      title: 'Кто стримит сегодня вечером на Twitch и YouTube | StreamerTimes',
+      description:
+        'Сегодня вечером на Twitch и YouTube, час за часом с 18:00 до 6:00: анонсированные стримы и ИИ-прогнозы, а главные имена вечера — в начале.',
     },
     streamers: {
       title: 'Все стримеры A–Z — расписания Twitch и YouTube | StreamerTimes',
@@ -227,6 +268,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       description:
         '今まさにTwitchとYouTubeで配信中のストリーマーをゲーム・カテゴリー別に一覧表示。数時間以内に始まる配信もわかります。毎分更新。',
     },
+    tonight: {
+      title: '今夜は誰が配信する？Twitch & YouTube | StreamerTimes',
+      description:
+        '今夜TwitchとYouTubeで誰が配信するかを、18時から翌6時まで時間帯ごとに一覧表示。告知済みの配信とAIが予測する開始時刻、注目の配信はトップに。',
+    },
     streamers: {
       title: '全ストリーマー A–Z — Twitch & YouTube配信予定 | StreamerTimes',
       description:
@@ -253,6 +299,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       title: 'Хто зараз в ефірі на Twitch і YouTube | StreamerTimes',
       description:
         'Усі стримери, які зараз в ефірі на Twitch і YouTube, за іграми та категоріями — і хто почне найближчими годинами. Оновлюється щохвилини.',
+    },
+    tonight: {
+      title: 'Хто стрімить сьогодні ввечері на Twitch і YouTube | StreamerTimes',
+      description:
+        'Сьогодні ввечері на Twitch і YouTube, година за годиною з 18:00 до 6:00: анонсовані стріми та ШІ-прогнози, а головні імена вечора — на початку.',
     },
     streamers: {
       title: 'Усі стримери A–Z — розклади Twitch і YouTube | StreamerTimes',
@@ -281,6 +332,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       description:
         'شاهد كل الستريمرز الذين يبثون الآن على Twitch وYouTube، مصنّفين حسب اللعبة والفئة — ومن سيبدأ خلال الساعات القادمة. يُحدَّث كل دقيقة.',
     },
+    tonight: {
+      title: 'من يبث الليلة على Twitch وYouTube؟ | StreamerTimes',
+      description:
+        'الليلة على Twitch وYouTube، ساعة بساعة من السادسة مساءً حتى السادسة صباحًا: بثوث معلنة وتوقعات بالذكاء الاصطناعي، وأبرز بثوث المساء أولًا.',
+    },
     streamers: {
       title: 'كل الستريمرز من A إلى Z — مواعيد Twitch وYouTube | StreamerTimes',
       description:
@@ -308,6 +364,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       description:
         'Az összes streamer, aki most élőben van Twitchen és YouTube-on, játék és kategória szerint — plusz akik a következő órákban kezdenek. Percenként frissül.',
     },
+    tonight: {
+      title: 'Ki streamel ma este Twitchen és YouTube-on? | StreamerTimes',
+      description:
+        'Ma este a Twitchen és a YouTube-on, óráról órára 18 és 6 óra között: bejelentett adások és MI-előrejelzések, elöl az est fénypontjaival.',
+    },
     streamers: {
       title: 'Összes streamer A–Z — Twitch & YouTube műsorok | StreamerTimes',
       description:
@@ -334,6 +395,11 @@ export const SITE_META_STRINGS: Record<UiLang, SiteMetaLex> = {
       title: 'Kto jest teraz na żywo na Twitchu i YouTube? | StreamerTimes',
       description:
         'Wszyscy streamerzy na żywo na Twitchu i YouTube, pogrupowani według gier i kategorii — plus kto zaczyna w najbliższych godzinach. Aktualizacja co minutę.',
+    },
+    tonight: {
+      title: 'Kto streamuje dziś wieczorem? Twitch i YouTube | StreamerTimes',
+      description:
+        'Dziś wieczorem na Twitchu i YouTube, godzina po godzinie od 18:00 do 6:00: zapowiedziane transmisje i prognozy AI, z najlepszymi na czele.',
     },
     streamers: {
       title: 'Wszyscy streamerzy A–Z — harmonogramy Twitch i YouTube | StreamerTimes',

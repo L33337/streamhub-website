@@ -36,6 +36,7 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
       heading: f.discover,
       links: [
         { href: localeHref(locale, '/live'), label: f.liveNow },
+        { href: localeHref(locale, '/tonight'), label: f.tonight },
         { href: localeHref(locale, '/streamers'), label: f.allStreamers },
         { href: localeHref(locale, '/games'), label: f.allGames },
         { href: localeHref(locale, '/rankings'), label: f.rankings },

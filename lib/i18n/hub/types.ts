@@ -33,6 +33,8 @@ export interface HubLex {
     aria: string;
     home: string;
     liveNow: string;
+    /** Crumb of the /tonight evening guide. */
+    tonight: string;
     games: string;
     streamers: string;
     rankings: string;
@@ -463,6 +465,71 @@ export interface HubLex {
     nextNHours(n: number): string;
     /** Empty state when nothing is live and nothing starts soon. */
     emptyAll: string;
+    /** JSON-LD ItemList name. */
+    itemListName: string;
+  };
+  /**
+   * /tonight — the evening-intention hub ("who is streaming tonight"), the
+   * streaming answer to a TV magazine's "TV-Programm heute 20:15". Sibling of
+   * `live`, which answers "right now".
+   *
+   * TIME WORDING RULE: every string here describes an evening in the LOCALE's
+   * reference zone (lib/tonight/logic.ts `TONIGHT_REFERENCE_ZONES`), and the
+   * client relabels the clock readings into the viewer's own zone after
+   * hydration. So never hard-code a clock time into a sentence — always take
+   * it as a parameter, or the German 20:15 would survive into a translation
+   * whose readers see a different number.
+   */
+  tonight: {
+    /** H1 while the page previews the coming or current evening. */
+    h1: string;
+    /** H1 after midnight, when the evening's night is still running. */
+    h1Night: string;
+    /**
+     * Full intro sentence. `names` is a ready-made prose list of the evening's
+     * biggest streamers ("A, B and C") or '' when none are known — the naming
+     * clause must drop entirely in that case. `total` counts every listed
+     * stream. Only called with total > 0.
+     */
+    intro(total: number, names: string): string;
+    /** Intro when nothing is listed for the evening. */
+    introEmpty: string;
+    /**
+     * Note under the dateline, e.g. "All times CEST". `zone` is a short zone
+     * name from Intl ("CEST", "GMT+9") — never translate or inflect it.
+     */
+    timesInZone(zone: string): string;
+    /** Its post-hydration counterpart, once the viewer's own zone is known. */
+    timesLocal: string;
+    error: string;
+    /** aria-label of the section jump nav. */
+    jumpAria: string;
+    /** Heading + jump chip of the "already running" opener. */
+    liveNowHeading: string;
+    /** Link from that section to the full /live hub. */
+    liveNowLink: string;
+    /** Heading of the prime-time highlight box. */
+    primetimeHeading: string;
+    /** Line under it; `time` is a clock reading ("8:15 PM" / "20:15"). */
+    primetimeSub(time: string): string;
+    /** Block heading built from a clock reading, e.g. "From 8:00 PM". */
+    blockFrom(time: string): string;
+    /** Heading of the 00:00–06:00 block — a word, not a clock reading. */
+    blockNight: string;
+    /** Count chip next to a block heading, e.g. "12 streams". */
+    blockCount(n: number): string;
+    /** Shown instead of the listing when the evening is empty. */
+    quietBody: string;
+    /** Evergreen explainer, so a quiet evening still has substance. */
+    aboutHeading: string;
+    aboutBody: string;
+    faqWhatQ: string;
+    faqWhatA: string;
+    faqHowQ: string;
+    faqHowA: string;
+    faqTimesQ: string;
+    /** `zone` is the same short zone name as `timesInZone`. */
+    faqTimesA(zone: string): string;
     /** JSON-LD ItemList name. */
     itemListName: string;
   };

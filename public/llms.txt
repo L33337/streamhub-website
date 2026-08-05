@@ -11,6 +11,7 @@ transcript analysis. Canonical domain: https://streamertimes.tv
 ## Core pages
 - [Home / live schedule](https://streamertimes.tv/): Real-time live status and AI-powered schedule predictions.
 - [Who's live now](https://streamertimes.tv/live): Every streamer live right now, grouped by game and category.
+- [Streaming tonight](https://streamertimes.tv/tonight): This evening's line-up hour by hour, from 6 PM to 6 AM — announced streams plus AI-predicted starts.
 - [Games & categories](https://streamertimes.tv/games): Find streamers by the game or category they play.
 - [All streamers A–Z](https://streamertimes.tv/streamers): Full A–Z index of tracked Twitch and YouTube streamers.
 - [Streamer rankings](https://streamertimes.tv/rankings): Leaderboards — most followed, most watched, most active and most punctual streamers, updated daily.

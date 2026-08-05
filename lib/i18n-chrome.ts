@@ -73,6 +73,8 @@ export interface ChromeLex {
     /** Column heading for the language switcher. */
     languages: string;
     liveNow: string;
+    /** Footer link to the /tonight evening guide. */
+    tonight: string;
     allStreamers: string;
     allGames: string;
     rankings: string;
@@ -136,6 +138,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Legal',
       languages: 'Languages',
       liveNow: 'Live now',
+      tonight: 'Streaming tonight',
       allStreamers: 'All streamers',
       allGames: 'All games',
       rankings: 'Streamer rankings',
@@ -194,6 +197,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Rechtliches',
       languages: 'Sprachen',
       liveNow: 'Jetzt live',
+      tonight: 'Streams heute Abend',
       allStreamers: 'Alle Streamer',
       allGames: 'Alle Spiele',
       rankings: 'Streamer-Rankings',
@@ -252,6 +256,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Legal',
       languages: 'Idiomas',
       liveNow: 'En directo ahora',
+      tonight: 'Directos esta noche',
       allStreamers: 'Todos los streamers',
       allGames: 'Todos los juegos',
       rankings: 'Rankings de streamers',
@@ -310,6 +315,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Légal',
       languages: 'Langues',
       liveNow: 'En direct maintenant',
+      tonight: 'Streams ce soir',
       allStreamers: 'Tous les streamers',
       allGames: 'Tous les jeux',
       rankings: 'Classements des streamers',
@@ -368,6 +374,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Legal',
       languages: 'Idiomas',
       liveNow: 'Ao vivo agora',
+      tonight: 'Streams hoje à noite',
       allStreamers: 'Todos os streamers',
       allGames: 'Todos os jogos',
       rankings: 'Rankings de streamers',
@@ -426,6 +433,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Note legali',
       languages: 'Lingue',
       liveNow: 'In diretta ora',
+      tonight: 'Stream di stasera',
       allStreamers: 'Tutti gli streamer',
       allGames: 'Tutti i giochi',
       rankings: 'Classifiche degli streamer',
@@ -484,6 +492,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Правовая информация',
       languages: 'Языки',
       liveNow: 'Сейчас в эфире',
+      tonight: 'Сегодня вечером',
       allStreamers: 'Все стримеры',
       allGames: 'Все игры',
       rankings: 'Рейтинги стримеров',
@@ -542,6 +551,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: '法的情報',
       languages: '言語',
       liveNow: '現在配信中',
+      tonight: '今夜の配信',
       allStreamers: 'すべてのストリーマー',
       allGames: 'すべてのゲーム',
       rankings: 'ストリーマーランキング',
@@ -600,6 +610,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Правова інформація',
       languages: 'Мови',
       liveNow: 'Зараз в ефірі',
+      tonight: 'Сьогодні ввечері',
       allStreamers: 'Усі стримери',
       allGames: 'Усі ігри',
       rankings: 'Рейтинги стримерів',
@@ -658,6 +669,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'قانوني',
       languages: 'اللغات',
       liveNow: 'مباشر الآن',
+      tonight: 'بث الليلة',
       allStreamers: 'كل الستريمرز',
       allGames: 'كل الألعاب',
       rankings: 'تصنيفات الستريمرز',
@@ -716,6 +728,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Jogi információk',
       languages: 'Nyelvek',
       liveNow: 'Most élőben',
+      tonight: 'Ma esti streamek',
       allStreamers: 'Összes streamer',
       allGames: 'Összes játék',
       rankings: 'Streamer-ranglisták',
@@ -774,6 +787,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       legal: 'Informacje prawne',
       languages: 'Języki',
       liveNow: 'Teraz na żywo',
+      tonight: 'Dziś wieczorem',
       allStreamers: 'Wszyscy streamerzy',
       allGames: 'Wszystkie gry',
       rankings: 'Rankingi streamerów',
