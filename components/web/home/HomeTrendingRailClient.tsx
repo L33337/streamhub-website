@@ -37,6 +37,8 @@ export interface TrendingTile {
 export interface TrendingSortStrings {
   aria: string;
   modes: Record<TrendingSortMode, string>;
+  /** M22 S4.1: title of the ▲/▼ badge (shared with gameChips.trendTitle). */
+  trendTitle: string;
 }
 
 /**
@@ -178,7 +180,9 @@ export function HomeTrendingRailClient({
                     {(metric !== null || tile.trendDelta !== null) && (
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-text-muted">
                         {metric !== null && <span>{metric}</span>}
-                        {tile.trendDelta !== null && <TrendBadge delta={tile.trendDelta} />}
+                        {tile.trendDelta !== null && (
+                          <TrendBadge delta={tile.trendDelta} title={strings.trendTitle} />
+                        )}
                       </p>
                     )}
                     <p className="mt-0.5 text-[10px] text-text-muted">{tile.rankLabel}</p>

@@ -5,7 +5,29 @@ import Link from 'next/link';
 import type { PublicGame } from '@/lib/server/partner-api';
 import { filterGames, type GamesSortMode } from '@/lib/games-sort';
 import { GAMES_HUB_VIEWS, gamesHubPath } from '@/lib/games-hub';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { GameCard } from './GameCard';
+
+/** M22 S4.1: server-resolved labels (HubLex.gamesExplorer). Defaults keep any
+ *  label-less caller byte-identical to the old inline English. */
+export interface GamesExplorerLabels {
+  sectionAria: string;
+  sortAria: string;
+  sortLabels: Record<GamesSortMode, string>;
+  searchPlaceholder: string;
+  searchAria: string;
+  /** {q} is replaced client-side with the query. */
+  noMatch: string;
+}
+
+const EN_LABELS: GamesExplorerLabels = {
+  sectionAria: 'All games and categories',
+  sortAria: 'Sort games',
+  sortLabels: { streamers: 'Most streamers', hours: 'Most streamed', trending: 'Trending' },
+  searchPlaceholder: 'Search games…',
+  searchAria: 'Search games',
+  noMatch: 'No games match “{q}”.',
+};
 
 /**
  * Catalog grid for the /games hub views.
@@ -25,6 +47,8 @@ export function GamesExplorer({
   slugs,
   activeMode,
   priorityCount = 0,
+  locale = 'en',
+  labels = EN_LABELS,
 }: {
   /** Already sorted by the server for `activeMode`. */
   games: PublicGame[];
@@ -36,6 +60,9 @@ export function GamesExplorer({
   // the filtered render order — so typing in the search box never reassigns
   // priority to new cards and fires useless late preloads.
   priorityCount?: number;
+  /** M22 S4.1: keeps the switcher/card links in the viewer's locale tree. */
+  locale?: UiLang;
+  labels?: GamesExplorerLabels;
 }) {
   const [query, setQuery] = useState('');
 
@@ -47,15 +74,15 @@ export function GamesExplorer({
   );
 
   return (
-    <section aria-label="All games and categories" className="mt-3">
+    <section aria-label={labels.sectionAria} className="mt-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Sort games" className="flex overflow-hidden rounded-lg border border-border-default">
+        <nav aria-label={labels.sortAria} className="flex overflow-hidden rounded-lg border border-border-default">
           {GAMES_HUB_VIEWS.map((v) => {
             const active = v.mode === activeMode;
             return (
               <Link
                 key={v.mode}
-                href={gamesHubPath(v)}
+                href={localeHref(locale, gamesHubPath(v))}
                 // The active view links to itself; mark it as current rather
                 // than emitting a self-referential navigation link.
                 aria-current={active ? 'page' : undefined}
@@ -65,7 +92,7 @@ export function GamesExplorer({
                     : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
-                {v.navLabel}
+                {labels.sortLabels[v.mode]}
               </Link>
             );
           })}
@@ -74,16 +101,14 @@ export function GamesExplorer({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search games…"
-          aria-label="Search games"
+          placeholder={labels.searchPlaceholder}
+          aria-label={labels.searchAria}
           className="w-full max-w-xs rounded-lg border border-border-default bg-background-elevated px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-cyan/60 focus:outline-none"
         />
       </div>
 
       {visible.length === 0 ? (
-        <p className="mt-6 text-sm text-text-muted">
-          No games match &ldquo;{query}&rdquo;.
-        </p>
+        <p className="mt-6 text-sm text-text-muted">{labels.noMatch.replace('{q}', query)}</p>
       ) : (
         <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {visible.map((g) => (
@@ -92,6 +117,7 @@ export function GamesExplorer({
                 game={g}
                 slug={slugs[g.category] ?? ''}
                 priority={prioritized.has(g.category)}
+                locale={locale}
               />
             </li>
           ))}

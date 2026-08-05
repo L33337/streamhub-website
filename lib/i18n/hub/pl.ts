@@ -58,6 +58,9 @@ export const pl: HubLex = {
   home: {
     browseAllGames: 'Przeglądaj wszystkie gry i kategorie →',
     seeLiveNow: 'Zobacz, kto jest teraz na żywo →',
+    qrTitle: 'Zeskanuj, aby pobrać Streamer Times',
+    qrHeading: 'Zeskanuj, aby pobrać',
+    qrHint: 'Skieruj tutaj aparat telefonu',
   },
   homeFeed: {
     // Styl z dwukropkiem zamiast odmiany liczebników.
@@ -404,6 +407,40 @@ export const pl: HubLex = {
       'most-reliable':
         'Odsetek zapowiedzianych streamów na Twitchu, które faktycznie zaczęły się w granicach ±30 minut, z ostatnich 20 zapowiedzianych streamów w ciągu 90 dni (minimum 10 ocenionych). Aktualizowane codziennie.',
     },
+    tableColStreamer: 'Streamer',
+    tableColMainGame: 'Główna gra',
+    tableColNextStream: 'Następny stream',
+    tableHeaders: {
+      'Followers': 'Obserwujący',
+      'Avg viewers': 'Śr. widzów',
+      'Gained (7d)': 'Przyrost (7 dni)',
+      'Growth': 'Wzrost',
+      'Followers now': 'Obserwujący teraz',
+      'Hours (28d)': 'Godziny (28 dni)',
+      'Streams / week': 'Streamy / tydzień',
+      'Avg duration': 'Śr. długość',
+      'On-time rate': 'Punktualność',
+      'Typical deviation': 'Typowe odchylenie',
+      'Streams evaluated': 'Ocenione streamy',
+    },
+    trendNewLabel: 'nowy',
+    trendNewTitle: 'Tydzień temu nie było go w tym rankingu',
+    trendMoveTitle: (up, delta) => `${up ? 'W górę' : 'W dół'} o ${delta} od zeszłego tygodnia`,
+    mainGameShareTitle: (pct) => `${pct}% skategoryzowanych streamów`,
+    alwaysOnTitle: 'Kanał always-on — na żywo całą dobę',
+  },
+  gamesExplorer: {
+    sectionAria: 'Wszystkie gry i kategorie',
+    sortAria: 'Sortowanie gier',
+    sortLabels: { streamers: 'Najwięcej streamerów', hours: 'Najczęściej streamowane', trending: 'Na czasie' },
+    viewTitles: {
+      streamers: 'Najpopularniejsze gry na Twitchu i YouTube',
+      hours: 'Najczęściej streamowane gry na Twitchu i YouTube',
+      trending: 'Gry na czasie na Twitchu i YouTube',
+    },
+    searchPlaceholder: 'Szukaj gier…',
+    searchAria: 'Szukaj gier',
+    noMatch: 'Żadna gra nie pasuje do „{q}”.',
   },
   gameChips: {
     aria: (category) => `Statystyki ${category}`,

@@ -218,6 +218,10 @@ export default async function RootLayout({
                 resultsLabel={chrome.nav.searchResults}
                 openLabel={chrome.nav.openSearch}
                 closeLabel={chrome.nav.closeSearch}
+                inputLabel={chrome.nav.searchLabel}
+                searchingLabel={chrome.nav.searching}
+                errorLabel={chrome.nav.searchError}
+                viewAllTemplate={chrome.nav.searchViewAll}
               />
               <Link href={localeHref(locale, "/live")} className={navLinkClass}>
                 {chrome.nav.live}

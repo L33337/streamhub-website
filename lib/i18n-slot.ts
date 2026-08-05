@@ -71,6 +71,13 @@ export interface SlotLex {
   /** M22 P4: title attributes of the NextStreamTime timestamps. */
   nextTimePredictedTitle: string;
   nextTimeAnnouncedTitle: string;
+  /** M22 S4.1: GameCard stat lines on the /games catalog (client component). */
+  gameLiveBadge(n: number): string;
+  gameStreamerCount(n: number): string;
+  /** h / v arrive already compact-formatted (formatCompactNumber). */
+  gameHoursShort(h: string): string;
+  gameWatchingNow(v: string): string;
+  gameTrendTitle: string;
 }
 
 const SLOT_STRINGS: Record<UiLang, SlotLex> = {
@@ -107,6 +114,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Show fewer',
     nextTimePredictedTitle: 'AI-predicted start time',
     nextTimeAnnouncedTitle: 'Announced schedule start',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} streamer${n === 1 ? '' : 's'}`,
+    gameHoursShort: (h) => `${h}h / 28d`,
+    gameWatchingNow: (v) => `${v} watching now`,
+    gameTrendTitle: 'Week-over-week change in active streamers',
   },
   de: {
     statusLiveSince: (d) => `Live seit ${d}`,
@@ -146,6 +158,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Weniger anzeigen',
     nextTimePredictedTitle: 'KI-prognostizierte Startzeit',
     nextTimeAnnouncedTitle: 'Angekündigter Start laut Sendeplan',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} Streamer`,
+    gameHoursShort: (h) => `${h} Std. · 28 Tage`,
+    gameWatchingNow: (v) => `${v} schauen gerade zu`,
+    gameTrendTitle: 'Veränderung aktiver Streamer zur Vorwoche',
   },
   es: {
     statusLiveSince: (d) => `En directo desde hace ${d}`,
@@ -183,6 +200,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Ver menos',
     nextTimePredictedTitle: 'Hora de inicio predicha por IA',
     nextTimeAnnouncedTitle: 'Inicio anunciado en el horario',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} streamer${n === 1 ? '' : 's'}`,
+    gameHoursShort: (h) => `${h} h · 28 días`,
+    gameWatchingNow: (v) => `${v} viendo ahora`,
+    gameTrendTitle: 'Cambio de streamers activos respecto a la semana pasada',
   },
   fr: {
     statusLiveSince: (d) => `En live depuis ${d}`,
@@ -221,6 +243,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Voir moins',
     nextTimePredictedTitle: "Heure de début prédite par l'IA",
     nextTimeAnnouncedTitle: 'Début annoncé au programme',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} streamer${n === 1 ? '' : 's'}`,
+    gameHoursShort: (h) => `${h} h · 28 jours`,
+    gameWatchingNow: (v) => `${v} spectateurs en ce moment`,
+    gameTrendTitle: 'Évolution des streamers actifs par rapport à la semaine dernière',
   },
   pt: {
     statusLiveSince: (d) => `Ao vivo há ${d}`,
@@ -257,6 +284,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Ver menos',
     nextTimePredictedTitle: 'Horário de início previsto por IA',
     nextTimeAnnouncedTitle: 'Início anunciado na agenda',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} streamer${n === 1 ? '' : 's'}`,
+    gameHoursShort: (h) => `${h} h · 28 dias`,
+    gameWatchingNow: (v) => `${v} assistindo agora`,
+    gameTrendTitle: 'Variação de streamers ativos em relação à semana passada',
   },
   it: {
     statusLiveSince: (d) => `In diretta da ${d}`,
@@ -296,6 +328,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Mostra meno',
     nextTimePredictedTitle: "Orario di inizio previsto dall'IA",
     nextTimeAnnouncedTitle: 'Inizio annunciato in programma',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} streamer`,
+    gameHoursShort: (h) => `${h} h · 28 giorni`,
+    gameWatchingNow: (v) => `${v} spettatori ora`,
+    gameTrendTitle: 'Variazione degli streamer attivi rispetto alla settimana scorsa',
   },
   ru: {
     statusLiveSince: (d) => `В эфире уже ${d}`,
@@ -345,6 +382,17 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Показать меньше',
     nextTimePredictedTitle: 'Время начала, предсказанное ИИ',
     nextTimeAnnouncedTitle: 'Анонсированное время начала',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) =>
+      `${n} ${pluralForms('ru', n, {
+        one: 'стример',
+        few: 'стримера',
+        many: 'стримеров',
+        other: 'стримера',
+      })}`,
+    gameHoursShort: (h) => `${h} ч · 28 дней`,
+    gameWatchingNow: (v) => `${v} смотрят сейчас`,
+    gameTrendTitle: 'Изменение числа активных стримеров к прошлой неделе',
   },
   ja: {
     statusLiveSince: (d) => `配信開始から${d}`,
@@ -381,6 +429,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: '表示を減らす',
     nextTimePredictedTitle: 'AIが予測した開始時刻',
     nextTimeAnnouncedTitle: '告知済みの開始時刻',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n}人のストリーマー`,
+    gameHoursShort: (h) => `${h}時間 · 28日間`,
+    gameWatchingNow: (v) => `${v}人が視聴中`,
+    gameTrendTitle: '前週比のアクティブなストリーマー数の変化',
   },
   uk: {
     statusLiveSince: (d) => `В ефірі вже ${d}`,
@@ -430,6 +483,17 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Показати менше',
     nextTimePredictedTitle: 'Час початку, передбачений ШІ',
     nextTimeAnnouncedTitle: 'Анонсований час початку',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) =>
+      `${n} ${pluralForms('uk', n, {
+        one: 'стример',
+        few: 'стримери',
+        many: 'стримерів',
+        other: 'стримера',
+      })}`,
+    gameHoursShort: (h) => `${h} год · 28 днів`,
+    gameWatchingNow: (v) => `${v} дивляться зараз`,
+    gameTrendTitle: 'Зміна кількості активних стримерів проти минулого тижня',
   },
   ar: {
     // "مدة البث:" (broadcast duration) sidesteps the case governance that
@@ -484,6 +548,19 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'عرض أقل',
     nextTimePredictedTitle: 'وقت بدء متوقع بالذكاء الاصطناعي',
     nextTimeAnnouncedTitle: 'وقت بدء معلن في الجدول',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) =>
+      `${n} ${pluralForms('ar', n, {
+        zero: 'ستريمر',
+        one: 'ستريمر',
+        two: 'ستريمر',
+        few: 'ستريمرز',
+        many: 'ستريمر',
+        other: 'ستريمر',
+      })}`,
+    gameHoursShort: (h) => `${h} ساعة · 28 يومًا`,
+    gameWatchingNow: (v) => `${v} يشاهدون الآن`,
+    gameTrendTitle: 'تغيّر عدد الستريمرز النشطين مقارنة بالأسبوع الماضي',
   },
   hu: {
     // "Élőben: 2 óra" (elapsed live time) — Hungarian would need the -ja
@@ -523,6 +600,11 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Kevesebb megjelenítése',
     nextTimePredictedTitle: 'AI által jósolt kezdés',
     nextTimeAnnouncedTitle: 'Bejelentett kezdési idő',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) => `${n} streamer`,
+    gameHoursShort: (h) => `${h} óra · 28 nap`,
+    gameWatchingNow: (v) => `${v} néző most`,
+    gameTrendTitle: 'Az aktív streamerek számának változása az előző héthez képest',
   },
   pl: {
     // "już 2 godziny" keeps Intl's nominative form grammatical ("od" would
@@ -574,6 +656,17 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     showFewerStreams: 'Pokaż mniej',
     nextTimePredictedTitle: 'Czas startu przewidziany przez AI',
     nextTimeAnnouncedTitle: 'Zapowiedziany czas startu',
+    gameLiveBadge: (n) => `${n} live`,
+    gameStreamerCount: (n) =>
+      `${n} ${pluralForms('pl', n, {
+        one: 'streamer',
+        few: 'streamerów',
+        many: 'streamerów',
+        other: 'streamera',
+      })}`,
+    gameHoursShort: (h) => `${h} godz. · 28 dni`,
+    gameWatchingNow: (v) => `${v} ogląda teraz`,
+    gameTrendTitle: 'Zmiana liczby aktywnych streamerów względem zeszłego tygodnia',
   },
 };
 

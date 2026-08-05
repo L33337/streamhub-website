@@ -87,7 +87,12 @@ export function HomeEndCap({ locale = 'en' }: { locale?: UiLang }) {
         </div>
 
         <div className="hidden lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:flex lg:items-center">
-          <AppQrCode className="flex max-w-44 flex-col items-center gap-2 text-center" />
+          <AppQrCode
+            className="flex max-w-44 flex-col items-center gap-2 text-center"
+            title={L.home.qrTitle}
+            heading={L.home.qrHeading}
+            hint={L.home.qrHint}
+          />
         </div>
       </div>
     </section>

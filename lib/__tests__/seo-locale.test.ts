@@ -66,36 +66,64 @@ describe('applyLocaleSeo — indexability matrix', () => {
     openGraph: { title: 'T', locale: 'en_US' },
   };
 
-  it('en indexable: canonical unchanged, cluster + og alternate added', () => {
+  // S4.1 (2026-08-05): the hub list is every UI locale except `ar` (LTR-only
+  // chrome — see the INDEXABLE_HUB_LOCALES comment). These pins fail loudly if
+  // someone adds `ar` without the logical-properties migration, or drops a
+  // locale by accident.
+  it('S4.1: hubs index in all locales except ar', () => {
+    expect(INDEXABLE_HUB_LOCALES).toEqual([
+      'en',
+      'de',
+      'es',
+      'fr',
+      'pt',
+      'it',
+      'ru',
+      'ja',
+      'uk',
+      'hu',
+      'pl',
+    ]);
+    expect(INDEXABLE_HUB_LOCALES).not.toContain('ar');
+  });
+
+  const expectedCluster = Object.fromEntries([
+    ...INDEXABLE_HUB_LOCALES.map((l) => [l, absoluteLocaleUrl(l, '/live')]),
+    ['x-default', `${SITE}/live`],
+  ]);
+
+  it('en indexable: canonical unchanged, full 11-locale cluster + og alternates', () => {
     const out = applyLocaleSeo(base, 'en', '/live', INDEXABLE_HUB_LOCALES);
     expect(out.alternates?.canonical).toBe(`${SITE}/live`);
-    expect(out.alternates?.languages).toEqual({
-      en: `${SITE}/live`,
-      de: `${SITE}/de/live`,
-      'x-default': `${SITE}/live`,
-    });
+    expect(out.alternates?.languages).toEqual(expectedCluster);
     expect(out.robots).toBeUndefined();
-    expect((out.openGraph as { alternateLocale?: string[] }).alternateLocale).toEqual([
-      'de_DE',
-    ]);
+    const alt = (out.openGraph as { alternateLocale?: string[] }).alternateLocale;
+    expect(alt).toHaveLength(INDEXABLE_HUB_LOCALES.length - 1);
+    expect(alt).toContain('de_DE');
+    expect(alt).not.toContain('en_US');
   });
 
   it('de hub variant: indexable, self-canonical, same cluster', () => {
     const out = applyLocaleSeo(base, 'de', '/live', INDEXABLE_HUB_LOCALES);
     expect(out.alternates?.canonical).toBe(`${SITE}/de/live`);
-    expect(out.alternates?.languages).toEqual(
-      applyLocaleSeo(base, 'en', '/live', INDEXABLE_HUB_LOCALES).alternates?.languages,
-    );
+    expect(out.alternates?.languages).toEqual(expectedCluster);
     expect(out.robots).toBeUndefined();
-    expect((out.openGraph as { alternateLocale?: string[] }).alternateLocale).toEqual([
-      'en_US',
-    ]);
+    const alt = (out.openGraph as { alternateLocale?: string[] }).alternateLocale;
+    expect(alt).toContain('en_US');
+    expect(alt).not.toContain('de_DE');
   });
 
-  it('third locale: noindex,follow + self-canonical, no cluster', () => {
+  it('fr hub variant (widened in S4.1): indexable with reciprocal cluster', () => {
     const out = applyLocaleSeo(base, 'fr', '/live', INDEXABLE_HUB_LOCALES);
-    expect(out.robots).toEqual({ index: false, follow: true });
+    expect(out.robots).toBeUndefined();
     expect(out.alternates?.canonical).toBe(`${SITE}/fr/live`);
+    expect(out.alternates?.languages).toEqual(expectedCluster);
+  });
+
+  it('ar hub variant: noindex,follow + self-canonical, no cluster (LTR gate)', () => {
+    const out = applyLocaleSeo(base, 'ar', '/live', INDEXABLE_HUB_LOCALES);
+    expect(out.robots).toEqual({ index: false, follow: true });
+    expect(out.alternates?.canonical).toBe(`${SITE}/ar/live`);
     expect(out.alternates?.languages).toBeUndefined();
   });
 

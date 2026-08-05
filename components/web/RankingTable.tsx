@@ -7,6 +7,8 @@ import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
 import { languageDisplayName } from '@/lib/format/language';
 import { sizedAvatarUrl } from '@/lib/format/image-size';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
+import { hubLexFor, type HubLex } from '@/lib/i18n-hub';
 
 interface Props {
   /** sr-only table caption, e.g. "Streamers ranked by follower count". */
@@ -41,6 +43,14 @@ interface Props {
    * game-ranking route 404s for categories outside the games list).
    */
   mainGameSlugs?: Map<string, string>;
+  /**
+   * M22 S4.1: localizes the table chrome (headers, badge titles) and keeps
+   * streamer/game links in the viewer's locale tree. Server component, so the
+   * hub lexicon is read directly. Column VALUES keep their registry-owned
+   * English number formatting. Default 'en' keeps the en-only /rankings/*
+   * metric pages byte-identical.
+   */
+  locale?: UiLang;
 }
 
 // Medal accents for ranks 1-3 (gold/silver/bronze, tuned for the dark theme).
@@ -65,16 +75,22 @@ const PRIMARY_STICKY =
  * `values.previous_rank`. Renders nothing while the backend's snapshot
  * history warms up or when the rank is unchanged.
  */
-function TrendIndicator({ entry }: { entry: PublicRankingEntry }) {
+function TrendIndicator({
+  entry,
+  lex,
+}: {
+  entry: PublicRankingEntry;
+  lex: HubLex['rankings'];
+}) {
   const trend = rankTrend(entry);
   if (trend.kind === 'none') return null;
   if (trend.kind === 'new') {
     return (
       <span
         className="text-[9px] font-bold uppercase tracking-wider text-accent-cyan"
-        title="Not in this ranking a week ago"
+        title={lex.trendNewTitle}
       >
-        new
+        {lex.trendNewLabel}
       </span>
     );
   }
@@ -82,7 +98,7 @@ function TrendIndicator({ entry }: { entry: PublicRankingEntry }) {
   return (
     <span
       className={`text-[10px] font-semibold tabular-nums ${up ? 'text-live' : 'text-accent-pink'}`}
-      title={`${up ? 'Up' : 'Down'} ${trend.delta} since last week`}
+      title={lex.trendMoveTitle(up, trend.delta)}
     >
       {up ? '▲' : '▼'}
       {trend.delta}
@@ -94,19 +110,23 @@ function TrendIndicator({ entry }: { entry: PublicRankingEntry }) {
 function MainGameCell({
   topCategory,
   slugs,
+  lex,
+  locale,
 }: {
   topCategory: PublicRankingEntry['top_category'];
   slugs: Map<string, string>;
+  lex: HubLex['rankings'];
+  locale: UiLang;
 }) {
   if (!topCategory) return <>—</>;
-  const title = `${topCategory.share_percent}% of their categorized streams`;
+  const title = lex.mainGameShareTitle(topCategory.share_percent);
   const slug = slugs.get(topCategory.category);
   if (!slug) {
     return <span title={title}>{topCategory.category}</span>;
   }
   return (
     <Link
-      href={`/rankings/game/${slug}`}
+      href={localeHref(locale, `/rankings/game/${slug}`)}
       title={title}
       className="text-text-secondary underline decoration-border-default underline-offset-4 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan/60"
     >
@@ -119,12 +139,16 @@ function MainGameCell({
 function NextStreamCell({
   streamer,
   slot,
+  lex,
+  locale,
 }: {
   streamer: PublicRankingEntry['streamer'];
   slot: PublicStreamSlot | undefined;
+  lex: HubLex['rankings'];
+  locale: UiLang;
 }) {
   if (streamer.is_always_on) {
-    return <span title="Always-on channel — live around the clock">24/7</span>;
+    return <span title={lex.alwaysOnTitle}>24/7</span>;
   }
   if (!slot) return <>—</>;
   // The predicted/announced category of THIS upcoming stream — often differs
@@ -133,7 +157,11 @@ function NextStreamCell({
   const category = slot.slot_kind === 'cancelled' ? null : slot.category;
   return (
     <span className="flex flex-col items-end leading-tight">
-      <NextStreamTime startTime={slot.start_time} isPredicted={slot.is_predicted} />
+      <NextStreamTime
+        startTime={slot.start_time}
+        isPredicted={slot.is_predicted}
+        language={locale}
+      />
       {category && (
         <span
           className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
@@ -161,7 +189,9 @@ export function RankingTable({
   liveIds,
   nextSlots,
   mainGameSlugs,
+  locale = 'en',
 }: Props) {
+  const lex = hubLexFor(locale).rankings;
   // Six columns cannot fit a 390px phone at any width, and the ranking metric —
   // the whole point of the page — was the column that fell off the right edge,
   // so "39.7K" read as "39.7": a wrong number, not just a truncated one. The
@@ -180,7 +210,7 @@ export function RankingTable({
               #
             </th>
             <th scope="col" className="px-3 py-2 font-semibold">
-              Streamer
+              {lex.tableColStreamer}
             </th>
             {columns.map((col) => (
               <th
@@ -190,17 +220,19 @@ export function RankingTable({
                   col.primary ? PRIMARY_STICKY : ''
                 }`}
               >
-                {col.header}
+                {/* Keyed by the registry's English header; unknown headers
+                    fall back to English instead of crashing. */}
+                {lex.tableHeaders[col.header] ?? col.header}
               </th>
             ))}
             {mainGameSlugs && (
               <th scope="col" className="px-3 py-2 text-right font-semibold">
-                Main game
+                {lex.tableColMainGame}
               </th>
             )}
             {nextSlots && (
               <th scope="col" className="px-3 py-2 text-right font-semibold">
-                Next stream
+                {lex.tableColNextStream}
               </th>
             )}
           </tr>
@@ -223,12 +255,12 @@ export function RankingTable({
                     >
                       {entry.rank}
                     </span>
-                    <TrendIndicator entry={entry} />
+                    <TrendIndicator entry={entry} lex={lex} />
                   </span>
                 </td>
                 <th scope="row" className="px-3 py-2 text-left font-medium">
                   <Link
-                    href={`/streamer/${encodeURIComponent(streamer.id)}`}
+                    href={localeHref(locale, `/streamer/${encodeURIComponent(streamer.id)}`)}
                     className="group flex items-center gap-3"
                   >
                     {streamer.avatar_url ? (
@@ -254,7 +286,7 @@ export function RankingTable({
                         ))}
                         {streamer.language && (
                           <span className="text-[10px] tracking-wider text-text-muted">
-                            {languageDisplayName(streamer.language)}
+                            {languageDisplayName(streamer.language, locale)}
                           </span>
                         )}
                       </span>
@@ -275,12 +307,22 @@ export function RankingTable({
                 ))}
                 {mainGameSlugs && (
                   <td className="max-w-40 truncate px-3 py-2 text-right text-text-secondary">
-                    <MainGameCell topCategory={entry.top_category} slugs={mainGameSlugs} />
+                    <MainGameCell
+                      topCategory={entry.top_category}
+                      slugs={mainGameSlugs}
+                      lex={lex}
+                      locale={locale}
+                    />
                   </td>
                 )}
                 {nextSlots && (
                   <td className="whitespace-nowrap px-3 py-2 text-right text-text-secondary">
-                    <NextStreamCell streamer={streamer} slot={nextSlots.get(streamer.id)} />
+                    <NextStreamCell
+                      streamer={streamer}
+                      slot={nextSlots.get(streamer.id)}
+                      lex={lex}
+                      locale={locale}
+                    />
                   </td>
                 )}
               </tr>

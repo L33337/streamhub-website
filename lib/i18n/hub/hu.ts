@@ -19,6 +19,9 @@ export const hu: HubLex = {
   home: {
     browseAllGames: 'Böngészd az összes játékot és kategóriát →',
     seeLiveNow: 'Nézd meg, ki van most élőben →',
+    qrTitle: 'Szkenneld be a Streamer Times letöltéséhez',
+    qrHeading: 'Szkenneld be a letöltéshez',
+    qrHint: 'Irányítsd ide a telefonod kameráját',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -320,6 +323,40 @@ export const hu: HubLex = {
       'most-reliable':
         'A Twitchen beharangozott streamek aránya, amelyek tényleg ±30 percen belül elindultak, az utolsó 20 beharangozott stream alapján 90 napon belül (legalább 10 kiértékelt). Naponta frissítve.',
     },
+    tableColStreamer: 'Streamer',
+    tableColMainGame: 'Fő játék',
+    tableColNextStream: 'Következő stream',
+    tableHeaders: {
+      'Followers': 'Követők',
+      'Avg viewers': 'Átl. nézők',
+      'Gained (7d)': 'Új követők (7 nap)',
+      'Growth': 'Növekedés',
+      'Followers now': 'Követők most',
+      'Hours (28d)': 'Órák (28 nap)',
+      'Streams / week': 'Stream / hét',
+      'Avg duration': 'Átl. hossz',
+      'On-time rate': 'Pontosság',
+      'Typical deviation': 'Jellemző eltérés',
+      'Streams evaluated': 'Értékelt streamek',
+    },
+    trendNewLabel: 'új',
+    trendNewTitle: 'Egy hete még nem volt ebben a rangsorban',
+    trendMoveTitle: (up, delta) => `${delta} hellyel ${up ? 'feljebb' : 'lejjebb'} a múlt hét óta`,
+    mainGameShareTitle: (pct) => `A kategorizált streamek ${pct}%-a`,
+    alwaysOnTitle: 'Always-on csatorna — éjjel-nappal élőben',
+  },
+  gamesExplorer: {
+    sectionAria: 'Minden játék és kategória',
+    sortAria: 'Játékok rendezése',
+    sortLabels: { streamers: 'Legtöbb streamer', hours: 'Legtöbbet streamelt', trending: 'Felkapott' },
+    viewTitles: {
+      streamers: 'A legnépszerűbb játékok a Twitchen és a YouTube-on',
+      hours: 'A legtöbbet streamelt játékok a Twitchen és a YouTube-on',
+      trending: 'Felkapott játékok a Twitchen és a YouTube-on',
+    },
+    searchPlaceholder: 'Játék keresése…',
+    searchAria: 'Játék keresése',
+    noMatch: 'Nincs találat erre: „{q}”.',
   },
   gameChips: {
     aria: (category) => `${category} statisztikák`,

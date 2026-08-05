@@ -188,7 +188,7 @@ export async function StreamersIndexView({
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                 {items.map((s) => (
                   <li key={s.id} className="min-w-0">
-                    <SearchResultCard streamer={s} compact />
+                    <SearchResultCard streamer={s} compact locale={locale} />
                   </li>
                 ))}
               </ul>

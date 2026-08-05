@@ -111,6 +111,7 @@ export function HomeDiscoverGrid({
                       <NextStreamTime
                         startTime={nextSlot.start_time}
                         isPredicted={nextSlot.is_predicted}
+                        language={locale}
                       />
                       {nextSlot.category && (
                         <span className="truncate text-text-muted">

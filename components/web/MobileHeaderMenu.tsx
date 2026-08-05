@@ -26,6 +26,10 @@ const EN_NAV: ChromeLex['nav'] = {
   searchResults: 'Search results',
   openSearch: 'Open search',
   closeSearch: 'Close search',
+  searchLabel: 'Search streamers',
+  searching: 'Searching…',
+  searchError: 'Search is unavailable right now.',
+  searchViewAll: 'View all results for “{q}” →',
   home: 'Streamer Times home',
 };
 

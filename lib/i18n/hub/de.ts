@@ -19,6 +19,9 @@ export const de: HubLex = {
   home: {
     browseAllGames: 'Alle Spiele & Kategorien entdecken →',
     seeLiveNow: 'Sieh, wer gerade live ist →',
+    qrTitle: 'Zum Download scannen — Streamer Times',
+    qrHeading: 'Zum Download scannen',
+    qrHint: 'Handykamera hierhin halten',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -327,6 +330,41 @@ export const de: HubLex = {
       'most-reliable':
         'Anteil der angekündigten Twitch-Streams, die tatsächlich innerhalb von ±30 Minuten gestartet sind, über die letzten 20 angekündigten Streams innerhalb von 90 Tagen (mindestens 10 ausgewertet). Täglich aktualisiert.',
     },
+    tableColStreamer: 'Streamer',
+    tableColMainGame: 'Hauptspiel',
+    tableColNextStream: 'Nächster Stream',
+    tableHeaders: {
+      'Followers': 'Follower',
+      'Avg viewers': 'Ø Zuschauer',
+      'Gained (7d)': 'Zuwachs (7 T.)',
+      'Growth': 'Wachstum',
+      'Followers now': 'Follower jetzt',
+      'Hours (28d)': 'Stunden (28 T.)',
+      'Streams / week': 'Streams / Woche',
+      'Avg duration': 'Ø Dauer',
+      'On-time rate': 'Pünktlichkeit',
+      'Typical deviation': 'Typische Abweichung',
+      'Streams evaluated': 'Bewertete Streams',
+    },
+    trendNewLabel: 'neu',
+    trendNewTitle: 'Vor einer Woche noch nicht in diesem Ranking',
+    trendMoveTitle: (up, delta) =>
+      `Seit letzter Woche ${delta} ${delta === 1 ? 'Platz' : 'Plätze'} ${up ? 'nach oben' : 'nach unten'}`,
+    mainGameShareTitle: (pct) => `${pct} % ihrer kategorisierten Streams`,
+    alwaysOnTitle: 'Always-on-Kanal — rund um die Uhr live',
+  },
+  gamesExplorer: {
+    sectionAria: 'Alle Spiele und Kategorien',
+    sortAria: 'Spiele sortieren',
+    sortLabels: { streamers: 'Meiste Streamer', hours: 'Meistgestreamt', trending: 'Im Trend' },
+    viewTitles: {
+      streamers: 'Die beliebtesten Spiele auf Twitch & YouTube',
+      hours: 'Die meistgestreamten Spiele auf Twitch & YouTube',
+      trending: 'Spiele im Trend auf Twitch & YouTube',
+    },
+    searchPlaceholder: 'Spiele suchen…',
+    searchAria: 'Spiele suchen',
+    noMatch: 'Keine Spiele passen zu „{q}“.',
   },
   gameChips: {
     aria: (category) => `${category}-Statistiken`,

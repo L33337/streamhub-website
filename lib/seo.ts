@@ -41,11 +41,28 @@ export function streamerCanonicalUrl(slug: string): string {
 /**
  * M22 P3 (D2): hub page classes indexable beyond English. Streamer pages have
  * their own per-streamer pair (see streamerIndexableLocales); everything else
- * defaults to English-only. Phase 4 widens this list to all 12 after GSC
- * confirms the en+de pair indexes cleanly — a one-line change here, sitemap
- * and metadata follow automatically.
+ * defaults to English-only.
+ *
+ * S4.1 (2026-08-05): widened from ['en','de'] to all locales EXCEPT `ar` after
+ * GSC review #1 confirmed the en+de pair indexes cleanly (Epic M22, Phase 4).
+ * `ar` stays out deliberately: its hub bodies are translated, but the document
+ * is LTR with per-text-block `dir` only — indexing an Arabic page in an LTR
+ * layout fails the "genuinely localized" bar. Gate for adding `ar` here: the
+ * logical-properties migration (~52 files use physical left/right utilities).
  */
-export const INDEXABLE_HUB_LOCALES: readonly UiLang[] = ['en', 'de'];
+export const INDEXABLE_HUB_LOCALES: readonly UiLang[] = [
+  'en',
+  'de',
+  'es',
+  'fr',
+  'pt',
+  'it',
+  'ru',
+  'ja',
+  'uk',
+  'hu',
+  'pl',
+];
 
 /**
  * M22 P4: the programmatic game pages (/game/[slug], /rankings/game/[slug])

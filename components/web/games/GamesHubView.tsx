@@ -28,7 +28,15 @@ function utcStamp(d: Date): string {
 
 /** Games with live streams, most-watched first. Independent of the view's own
  *  ordering — this rail is always "what is happening now". */
-function LiveNowSection({ games, lex }: { games: GameWithSlug[]; lex: HubLex }) {
+function LiveNowSection({
+  games,
+  lex,
+  locale,
+}: {
+  games: GameWithSlug[];
+  lex: HubLex;
+  locale: UiLang;
+}) {
   const live = games
     .filter((g) => (g.live_streamer_count ?? 0) > 0)
     .sort((a, b) => (b.live_viewer_total ?? 0) - (a.live_viewer_total ?? 0))
@@ -42,7 +50,7 @@ function LiveNowSection({ games, lex }: { games: GameWithSlug[]; lex: HubLex }) 
         {live.map((g, i) => (
           <li key={g.slug}>
             {/* First 6 cards are above the fold — LCP candidates. */}
-            <GameCard game={g} slug={g.slug} priority={i < 6} />
+            <GameCard game={g} slug={g.slug} priority={i < 6} locale={locale} />
           </li>
         ))}
       </ul>
@@ -167,7 +175,7 @@ export async function GamesHubView({
         </div>
       ) : (
         <>
-          <LiveNowSection games={games} lex={L} />
+          <LiveNowSection games={games} lex={L} locale={locale} />
           <TrendingRail
             trending={trending}
             catalogSlugByName={catalogSlugByName}
@@ -183,6 +191,8 @@ export async function GamesHubView({
               // Priority only when nothing is live above (else the live rail
               // owns the LCP and extra preloads would compete with it).
               priorityCount={live.liveStreamerCount > 0 ? 0 : 6}
+              locale={locale}
+              labels={L.gamesExplorer}
             />
             <p className="mt-3 text-xs text-text-muted">
               {methodologyNote} {L.games.updatedAt(utcStamp(generatedAt))}
@@ -218,7 +228,8 @@ export async function GamesHubView({
                 href={localeHref(locale, gamesHubPath(v))}
                 className="text-accent-cyan hover:text-text-primary"
               >
-                {v.h1} →
+                {/* 'en' entries are byte-identical to v.h1 (vitest-pinned). */}
+                {L.gamesExplorer.viewTitles[v.mode]} →
               </Link>
             </li>
           ))}

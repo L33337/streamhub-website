@@ -65,6 +65,9 @@ export const ru: HubLex = {
   home: {
     browseAllGames: 'Смотреть все игры и категории →',
     seeLiveNow: 'Посмотреть, кто сейчас в эфире →',
+    qrTitle: 'Отсканируйте, чтобы скачать Streamer Times',
+    qrHeading: 'Скачать по QR-коду',
+    qrHint: 'Наведите камеру телефона сюда',
   },
   homeFeed: {
     // Именной стиль (двоеточие) вместо склонения числительных.
@@ -398,6 +401,40 @@ export const ru: HubLex = {
       'most-reliable':
         'Доля анонсированных на Twitch стримов, которые действительно начались в пределах ±30 минут, по последним 20 анонсированным стримам за 90 дней (минимум 10 оценённых). Обновляется ежедневно.',
     },
+    tableColStreamer: 'Стример',
+    tableColMainGame: 'Основная игра',
+    tableColNextStream: 'Следующий стрим',
+    tableHeaders: {
+      'Followers': 'Фолловеры',
+      'Avg viewers': 'Ср. зрителей',
+      'Gained (7d)': 'Прирост (7 дн)',
+      'Growth': 'Рост',
+      'Followers now': 'Фолловеров сейчас',
+      'Hours (28d)': 'Часы (28 дн)',
+      'Streams / week': 'Стримов / нед.',
+      'Avg duration': 'Ср. длительность',
+      'On-time rate': 'Пунктуальность',
+      'Typical deviation': 'Типичное отклонение',
+      'Streams evaluated': 'Оценено стримов',
+    },
+    trendNewLabel: 'нов.',
+    trendNewTitle: 'Неделю назад не было в этом рейтинге',
+    trendMoveTitle: (up, delta) => `${up ? 'Плюс' : 'Минус'} ${delta} за неделю`,
+    mainGameShareTitle: (pct) => `${pct}% категоризированных стримов`,
+    alwaysOnTitle: 'Круглосуточный канал — в эфире 24/7',
+  },
+  gamesExplorer: {
+    sectionAria: 'Все игры и категории',
+    sortAria: 'Сортировка игр',
+    sortLabels: { streamers: 'По числу стримеров', hours: 'По часам эфира', trending: 'В тренде' },
+    viewTitles: {
+      streamers: 'Самые популярные игры на Twitch и YouTube',
+      hours: 'Самые транслируемые игры на Twitch и YouTube',
+      trending: 'Игры в тренде на Twitch и YouTube',
+    },
+    searchPlaceholder: 'Поиск игр…',
+    searchAria: 'Поиск игр',
+    noMatch: 'Нет игр по запросу «{q}».',
   },
   gameChips: {
     aria: (category) => `Статистика ${category}`,

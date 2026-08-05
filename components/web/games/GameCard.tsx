@@ -2,6 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { PublicGame } from '@/lib/server/partner-api';
 import { formatCompactNumber } from '@/lib/format/number';
+import { localeHref, type UiLang } from '@/lib/i18n-core';
+import { slotLexFor } from '@/lib/i18n-slot';
 
 /** Gradient placeholder when a category has no resolved box art (same visual
  *  language as SlotCard's PlaceholderThumbnail). */
@@ -56,12 +58,18 @@ export function GameBoxArt({
   );
 }
 
-export function TrendBadge({ delta }: { delta: number }) {
+export function TrendBadge({
+  delta,
+  title = 'Week-over-week change in active streamers',
+}: {
+  delta: number;
+  title?: string;
+}) {
   const up = delta >= 0;
   return (
     <span
       className={`text-[10px] font-semibold ${up ? 'text-live' : 'text-accent-pink'}`}
-      title="Week-over-week change in active streamers"
+      title={title}
     >
       {up ? '▲' : '▼'} {Math.abs(delta)}%
     </span>
@@ -83,11 +91,16 @@ export function GameCard({
   game,
   slug,
   priority = false,
+  locale = 'en',
 }: {
   game: PublicGame;
   slug: string;
   priority?: boolean;
+  /** M22 S4.1: localizes the stat lines (SlotLex, client-safe) and keeps the
+   *  card's links inside the viewer's locale tree. Default 'en' = byte-identical. */
+  locale?: UiLang;
 }) {
+  const L = slotLexFor(locale);
   const liveCount = game.live_streamer_count ?? 0;
   const hours = game.hours_28d;
   // Top-3 most-followed streamers (nightly aggregate) — people search
@@ -106,14 +119,14 @@ export function GameCard({
         />
         {liveCount > 0 && (
           <span className="absolute left-1 top-1 rounded bg-live px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
-            {liveCount} live
+            {L.gameLiveBadge(liveCount)}
           </span>
         )}
       </div>
       <div className="mt-2 min-w-0">
         <h3 className="text-sm font-semibold text-text-primary group-hover:text-accent-cyan">
           <Link
-            href={`/game/${slug}`}
+            href={localeHref(locale, `/game/${slug}`)}
             prefetch={false}
             title={game.category}
             // Stretched link: covers the whole card as the primary click
@@ -136,7 +149,7 @@ export function GameCard({
               <span key={t.id}>
                 {i > 0 && ', '}
                 <Link
-                  href={`/streamer/${encodeURIComponent(t.id)}`}
+                  href={localeHref(locale, `/streamer/${encodeURIComponent(t.id)}`)}
                   prefetch={false}
                   className="hover:text-accent-cyan hover:underline"
                 >
@@ -148,15 +161,17 @@ export function GameCard({
           </p>
         )}
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-text-muted">
-          <span>
-            {game.streamer_count} streamer{game.streamer_count === 1 ? '' : 's'}
-          </span>
-          {hours != null && <span>{formatCompactNumber(Math.round(hours))}h / 28d</span>}
-          {game.trend_delta_percent != null && <TrendBadge delta={game.trend_delta_percent} />}
+          <span>{L.gameStreamerCount(game.streamer_count)}</span>
+          {hours != null && (
+            <span>{L.gameHoursShort(formatCompactNumber(Math.round(hours), locale))}</span>
+          )}
+          {game.trend_delta_percent != null && (
+            <TrendBadge delta={game.trend_delta_percent} title={L.gameTrendTitle} />
+          )}
         </p>
         {game.live_viewer_total != null && liveCount > 0 && (
           <p className="mt-0.5 text-[11px] font-medium text-live">
-            {formatCompactNumber(game.live_viewer_total)} watching now
+            {L.gameWatchingNow(formatCompactNumber(game.live_viewer_total, locale))}
           </p>
         )}
       </div>

@@ -41,6 +41,13 @@ export interface ChromeLex {
     openSearch: string;
     /** aria-label on the close button of the expanded mobile search. */
     closeSearch: string;
+    /** M22 S4.1: sr-only label of the search input (no ellipsis). */
+    searchLabel: string;
+    /** Live-search dropdown states (client-side only, never in SSR HTML). */
+    searching: string;
+    searchError: string;
+    /** {q} is replaced client-side with the query. */
+    searchViewAll: string;
     /** aria-label on the footer wordmark link. */
     home: string;
   };
@@ -111,6 +118,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Search results',
       openSearch: 'Open search',
       closeSearch: 'Close search',
+      searchLabel: 'Search streamers',
+      searching: 'Searching…',
+      searchError: 'Search is unavailable right now.',
+      searchViewAll: 'View all results for “{q}” →',
       home: 'Streamer Times home',
     },
     feedNav: {
@@ -165,6 +176,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Suchergebnisse',
       openSearch: 'Suche öffnen',
       closeSearch: 'Suche schließen',
+      searchLabel: 'Streamer suchen',
+      searching: 'Suche läuft…',
+      searchError: 'Die Suche ist gerade nicht verfügbar.',
+      searchViewAll: 'Alle Ergebnisse für „{q}“ →',
       home: 'Streamer Times Startseite',
     },
     feedNav: {
@@ -219,6 +234,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Resultados de búsqueda',
       openSearch: 'Abrir búsqueda',
       closeSearch: 'Cerrar búsqueda',
+      searchLabel: 'Buscar streamers',
+      searching: 'Buscando…',
+      searchError: 'La búsqueda no está disponible ahora mismo.',
+      searchViewAll: 'Ver todos los resultados de “{q}” →',
       home: 'Inicio de Streamer Times',
     },
     feedNav: {
@@ -273,6 +292,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Résultats de recherche',
       openSearch: 'Ouvrir la recherche',
       closeSearch: 'Fermer la recherche',
+      searchLabel: 'Rechercher des streamers',
+      searching: 'Recherche…',
+      searchError: 'La recherche est indisponible pour le moment.',
+      searchViewAll: 'Voir tous les résultats pour « {q} » →',
       home: 'Accueil Streamer Times',
     },
     feedNav: {
@@ -327,6 +350,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Resultados da busca',
       openSearch: 'Abrir a busca',
       closeSearch: 'Fechar a busca',
+      searchLabel: 'Buscar streamers',
+      searching: 'Buscando…',
+      searchError: 'A busca está indisponível agora.',
+      searchViewAll: 'Ver todos os resultados de “{q}” →',
       home: 'Página inicial do Streamer Times',
     },
     feedNav: {
@@ -381,6 +408,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Risultati della ricerca',
       openSearch: 'Apri la ricerca',
       closeSearch: 'Chiudi la ricerca',
+      searchLabel: 'Cerca streamer',
+      searching: 'Ricerca in corso…',
+      searchError: 'La ricerca non è disponibile al momento.',
+      searchViewAll: 'Vedi tutti i risultati per “{q}” →',
       home: 'Home di Streamer Times',
     },
     feedNav: {
@@ -435,6 +466,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Результаты поиска',
       openSearch: 'Открыть поиск',
       closeSearch: 'Закрыть поиск',
+      searchLabel: 'Поиск стримеров',
+      searching: 'Ищем…',
+      searchError: 'Поиск сейчас недоступен.',
+      searchViewAll: 'Все результаты по запросу «{q}» →',
       home: 'Главная Streamer Times',
     },
     feedNav: {
@@ -489,6 +524,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: '検索結果',
       openSearch: '検索を開く',
       closeSearch: '検索を閉じる',
+      searchLabel: 'ストリーマーを検索',
+      searching: '検索中…',
+      searchError: '現在検索を利用できません。',
+      searchViewAll: '「{q}」の検索結果をすべて見る →',
       home: 'Streamer Times ホーム',
     },
     feedNav: {
@@ -543,6 +582,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Результати пошуку',
       openSearch: 'Відкрити пошук',
       closeSearch: 'Закрити пошук',
+      searchLabel: 'Пошук стримерів',
+      searching: 'Шукаємо…',
+      searchError: 'Пошук зараз недоступний.',
+      searchViewAll: 'Усі результати за запитом «{q}» →',
       home: 'Головна Streamer Times',
     },
     feedNav: {
@@ -597,6 +640,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'نتائج البحث',
       openSearch: 'فتح البحث',
       closeSearch: 'إغلاق البحث',
+      searchLabel: 'ابحث عن ستريمرز',
+      searching: 'جارٍ البحث…',
+      searchError: 'البحث غير متاح حاليًا.',
+      searchViewAll: 'عرض كل نتائج "{q}" →',
       home: 'الصفحة الرئيسية لـ Streamer Times',
     },
     feedNav: {
@@ -651,6 +698,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Keresési találatok',
       openSearch: 'Keresés megnyitása',
       closeSearch: 'Keresés bezárása',
+      searchLabel: 'Streamerek keresése',
+      searching: 'Keresés…',
+      searchError: 'A keresés jelenleg nem érhető el.',
+      searchViewAll: 'Összes találat erre: „{q}” →',
       home: 'Streamer Times főoldal',
     },
     feedNav: {
@@ -705,6 +756,10 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       searchResults: 'Wyniki wyszukiwania',
       openSearch: 'Otwórz wyszukiwarkę',
       closeSearch: 'Zamknij wyszukiwarkę',
+      searchLabel: 'Szukaj streamerów',
+      searching: 'Szukam…',
+      searchError: 'Wyszukiwarka jest teraz niedostępna.',
+      searchViewAll: 'Zobacz wszystkie wyniki dla „{q}” →',
       home: 'Strona główna Streamer Times',
     },
     feedNav: {

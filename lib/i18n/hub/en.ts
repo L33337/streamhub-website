@@ -22,6 +22,9 @@ export const en: HubLex = {
   home: {
     browseAllGames: 'Browse all games & categories →',
     seeLiveNow: "See everyone who's live right now →",
+    qrTitle: 'Scan to download Streamer Times',
+    qrHeading: 'Scan to download',
+    qrHint: 'Point your phone camera here',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -333,6 +336,40 @@ export const en: HubLex = {
       'most-reliable':
         'Share of announced Twitch streams that actually started within ±30 minutes, over the last 20 announced streams within 90 days (minimum 10 evaluated). Updated daily.',
     },
+    tableColStreamer: 'Streamer',
+    tableColMainGame: 'Main game',
+    tableColNextStream: 'Next stream',
+    tableHeaders: {
+      'Followers': 'Followers',
+      'Avg viewers': 'Avg viewers',
+      'Gained (7d)': 'Gained (7d)',
+      'Growth': 'Growth',
+      'Followers now': 'Followers now',
+      'Hours (28d)': 'Hours (28d)',
+      'Streams / week': 'Streams / week',
+      'Avg duration': 'Avg duration',
+      'On-time rate': 'On-time rate',
+      'Typical deviation': 'Typical deviation',
+      'Streams evaluated': 'Streams evaluated',
+    },
+    trendNewLabel: 'new',
+    trendNewTitle: 'Not in this ranking a week ago',
+    trendMoveTitle: (up, delta) => `${up ? 'Up' : 'Down'} ${delta} since last week`,
+    mainGameShareTitle: (pct) => `${pct}% of their categorized streams`,
+    alwaysOnTitle: 'Always-on channel — live around the clock',
+  },
+  gamesExplorer: {
+    sectionAria: 'All games and categories',
+    sortAria: 'Sort games',
+    sortLabels: { streamers: 'Most streamers', hours: 'Most streamed', trending: 'Trending' },
+    viewTitles: {
+      streamers: 'Most popular games on Twitch & YouTube',
+      hours: 'Most streamed games on Twitch & YouTube',
+      trending: 'Trending games on Twitch & YouTube',
+    },
+    searchPlaceholder: 'Search games…',
+    searchAria: 'Search games',
+    noMatch: 'No games match “{q}”.',
   },
   gameChips: {
     aria: (category) => `${category} statistics`,

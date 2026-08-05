@@ -19,6 +19,9 @@ export const es: HubLex = {
   home: {
     browseAllGames: 'Explora todos los juegos y categorías →',
     seeLiveNow: 'Mira quién está en directo ahora mismo →',
+    qrTitle: 'Escanea para descargar Streamer Times',
+    qrHeading: 'Escanea para descargar',
+    qrHint: 'Apunta aquí con la cámara del móvil',
   },
   homeFeed: {
     ticker: (liveCount, soonCount, soonHours) => {
@@ -329,6 +332,40 @@ export const es: HubLex = {
       'most-reliable':
         'Porcentaje de streams anunciados en Twitch que realmente empezaron dentro de ±30 minutos, sobre los últimos 20 streams anunciados en 90 días (mínimo 10 evaluados). Actualizado a diario.',
     },
+    tableColStreamer: 'Streamer',
+    tableColMainGame: 'Juego principal',
+    tableColNextStream: 'Próximo stream',
+    tableHeaders: {
+      'Followers': 'Seguidores',
+      'Avg viewers': 'Media de espectadores',
+      'Gained (7d)': 'Ganados (7 d)',
+      'Growth': 'Crecimiento',
+      'Followers now': 'Seguidores ahora',
+      'Hours (28d)': 'Horas (28 d)',
+      'Streams / week': 'Streams / semana',
+      'Avg duration': 'Duración media',
+      'On-time rate': 'Puntualidad',
+      'Typical deviation': 'Desviación típica',
+      'Streams evaluated': 'Streams evaluados',
+    },
+    trendNewLabel: 'nuevo',
+    trendNewTitle: 'Hace una semana no estaba en este ranking',
+    trendMoveTitle: (up, delta) => `${up ? 'Sube' : 'Baja'} ${delta} desde la semana pasada`,
+    mainGameShareTitle: (pct) => `${pct} % de sus streams categorizados`,
+    alwaysOnTitle: 'Canal siempre activo: en directo las 24 horas',
+  },
+  gamesExplorer: {
+    sectionAria: 'Todos los juegos y categorías',
+    sortAria: 'Ordenar juegos',
+    sortLabels: { streamers: 'Más streamers', hours: 'Más streameados', trending: 'En tendencia' },
+    viewTitles: {
+      streamers: 'Los juegos más populares en Twitch y YouTube',
+      hours: 'Los juegos más streameados en Twitch y YouTube',
+      trending: 'Juegos en tendencia en Twitch y YouTube',
+    },
+    searchPlaceholder: 'Buscar juegos…',
+    searchAria: 'Buscar juegos',
+    noMatch: 'Ningún juego coincide con “{q}”.',
   },
   gameChips: {
     aria: (category) => `Estadísticas de ${category}`,
