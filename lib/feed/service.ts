@@ -106,12 +106,18 @@ export async function fetchLiveFeaturedSlots(
   supabase: SupabaseClient,
   excludeStreamerIds: Set<string>,
 ): Promise<StreamSlot[]> {
+  // Ordered on purpose: `candidateIds` is cut down to MAX_STREAMER_IDS below,
+  // and `is_featured` has grown past 500 since the top-500 wave (M19 P6). Without
+  // an ORDER BY, which candidates survive that cut is whatever order Postgres
+  // happens to return — so live featured streamers would drop out of the rail at
+  // random. Most-followed first makes the cut deterministic and relevant.
   const { data: featured, error: streamersError } = await supabase
     .from('streamers')
     .select('id')
     .eq('is_featured', true)
     .eq('approved', true)
-    .eq('is_hidden', false);
+    .eq('is_hidden', false)
+    .order('follower_count', { ascending: false, nullsFirst: false });
 
   if (streamersError) {
     throw new Error(`Failed to fetch featured streamers: ${streamersError.message}`);
