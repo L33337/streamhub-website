@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   getPartnerApi,
@@ -8,8 +7,6 @@ import {
 } from '@/lib/server/partner-api';
 import { fetchFeaturedStreamers } from '@/lib/server/home-featured';
 import { floorToBucket } from '@/lib/home/logic';
-import { sizedAvatarUrl } from '@/lib/format/image-size';
-import { formatCompactNumber } from '@/lib/format/number';
 import { languageDisplayName } from '@/lib/format/language';
 import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
@@ -29,21 +26,25 @@ import {
   resolveTonightWindow,
   selectAlreadyLive,
   selectTonightSlots,
+  splitTonightLiveSlots,
   formatHeadlineNames,
+  toTonightLiveRowSlot,
   tonightZoneFor,
   PRIMETIME_START_MINUTES,
   TONIGHT_FETCH_HOURS,
+  TONIGHT_LIVE_CAP,
   TONIGHT_POOL_MAX,
   TONIGHT_REVEAL_STEP,
   TONIGHT_SSR_PER_BLOCK,
   TONIGHT_VISIBLE_PER_BLOCK,
   zonedWallTimeToMs,
 } from '@/lib/tonight/logic';
-import { AlwaysOnBadge, LiveBadge, PlatformBadge } from '@/components/web/Badges';
-import { InitialsAvatar } from '@/components/web/InitialsAvatar';
+import { buildLiveFilterItems } from '@/lib/home/live-rail';
 import { SlotCard } from '@/components/web/SlotCard';
 import { FAQItem } from '@/components/web/FAQItem';
 import { PrimetimeCard } from '@/components/web/tonight/PrimetimeCard';
+import { TonightLiveFilters } from '@/components/web/tonight/TonightLiveFilters';
+import { TonightLiveRow } from '@/components/web/tonight/TonightLiveRow';
 import { TonightTimesNote } from '@/components/web/tonight/TonightLocal';
 import {
   TonightBlocks,
@@ -63,7 +64,11 @@ const SITE_URL = 'https://streamertimes.tv';
 const PAGE_LIMIT = 500;
 /** Safety cap on the upcoming sweep; production runs ~440 slots per 24 h. */
 const MAX_UPCOMING_PAGES = 2;
-/** The live sweep only feeds a capped teaser section — one page is plenty. */
+/**
+ * The live sweep is the opener's FILTER SCOPE, not just its visible rows, so it
+ * has to cover the whole live population — production runs ~130 live streamers
+ * with evening peaks of 150-250 plausible (`TONIGHT_LIVE_POOL_MAX` caps it).
+ */
 const MAX_LIVE_PAGES = 2;
 const LIVE_SECTION_ID = 'tonight-live';
 const PRIMETIME_SECTION_ID = 'tonight-primetime';
@@ -159,50 +164,6 @@ async function fetchLive(
   return all;
 }
 
-function LiveRow({ slot, locale }: { slot: PublicStreamSlot; locale: UiLang }) {
-  return (
-    <Link
-      href={localeHref(locale, `/streamer/${encodeURIComponent(slot.streamer_id)}`)}
-      className="group flex items-center gap-3 rounded-xl border border-border-default bg-background-elevated p-3 transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight"
-    >
-      {slot.avatar_url ? (
-        <Image
-          src={sizedAvatarUrl(slot.avatar_url, 40)}
-          alt={slot.streamer_name}
-          width={40}
-          height={40}
-          unoptimized
-          className="shrink-0 rounded-full border border-border-default"
-        />
-      ) : (
-        <InitialsAvatar name={slot.streamer_name} size={40} className="shrink-0" />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-semibold text-text-primary group-hover:text-accent-cyan">
-            {slot.streamer_name}
-          </span>
-          <LiveBadge language={locale} />
-          {slot.is_always_on && <AlwaysOnBadge />}
-        </div>
-        <p className="mt-0.5 truncate text-xs text-text-secondary" title={slot.title}>
-          {slot.title}
-        </p>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          {slot.platforms.map((p) => (
-            <PlatformBadge key={p} platform={p} size="sm" />
-          ))}
-          {slot.viewer_count != null && (
-            <span className="text-[10px] font-semibold text-text-muted">
-              {formatCompactNumber(slot.viewer_count)}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 export default async function TonightPage({ params }: PageProps) {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
@@ -240,7 +201,17 @@ export default async function TonightPage({ params }: PageProps) {
   }
 
   const tonightSlots = selectTonightSlots(upcoming, window, nowMs, TONIGHT_POOL_MAX);
+
+  // The live opener: the whole ranked sweep is the FILTER SCOPE, only the first
+  // TONIGHT_LIVE_CAP rows are the resting cut. Everything past the SSR head
+  // travels as pruned data and is rendered by the island when a filter reaches
+  // it — so a German stream at rank 84 is findable without paying ~200 rows of
+  // DOM up front.
   const alreadyLive = selectAlreadyLive(liveSlots);
+  const { ssr: liveSsr, deferred: liveDeferred } = splitTonightLiveSlots(alreadyLive);
+  const liveFilterItems = buildLiveFilterItems(alreadyLive, (code) =>
+    languageDisplayName(code, locale) ?? code.toUpperCase(),
+  );
 
   // The highlight box takes its cards OUT of the listing below — the same card
   // twice within one screen reads as a bug, and a magazine's "tips of the
@@ -364,6 +335,9 @@ export default async function TonightPage({ params }: PageProps) {
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <h2 className="text-xl font-bold text-white">
                   {L.tonight.liveNowHeading}
+                  {/* The POOL count, not the visible cut: the dropdowns reach
+                      all of them, and the header is what communicates that
+                      scope (the homepage rail's contract). */}
                   <span className="ml-2 text-sm font-normal text-text-muted">
                     {L.live.nLive(alreadyLive.length)}
                   </span>
@@ -375,13 +349,40 @@ export default async function TonightPage({ params }: PageProps) {
                   {L.tonight.liveNowLink}
                 </Link>
               </div>
-              <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                {alreadyLive.map((slot) => (
-                  <li key={slot.id} className="min-w-0">
-                    <LiveRow slot={slot} locale={locale} />
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-3">
+                <TonightLiveFilters
+                  items={liveFilterItems}
+                  locale={locale}
+                  listClassName="grid gap-3 sm:grid-cols-2"
+                  ssrCards={liveSsr.map((slot, index) => (
+                    <TonightLiveRow
+                      key={slot.id}
+                      slot={slot}
+                      locale={locale}
+                      // Beyond the resting cut the server hides them outright —
+                      // the island computes the same set on mount, so the first
+                      // paint needs no correction and the section does not shift.
+                      hidden={index >= TONIGHT_LIVE_CAP}
+                    />
+                  ))}
+                  deferredSlots={liveDeferred.map(toTonightLiveRowSlot)}
+                  strings={{
+                    categoryLabel: L.homeFeed.liveFilterCategory,
+                    languageLabel: L.homeFeed.liveFilterLanguage,
+                    allCategories: L.homeFeed.liveFilterAllCategories,
+                    allLanguages: L.homeFeed.liveFilterAllLanguages,
+                    optionPattern: L.homeFeed.liveFilterOption('{label}', '{count}'),
+                    // 0..pool, so the island can index straight by its match
+                    // count and every language keeps its plural agreement.
+                    matchesByCount: Array.from(
+                      { length: alreadyLive.length + 1 },
+                      (_, count) => L.homeFeed.liveFilterMatches(count),
+                    ),
+                    reset: L.homeFeed.liveFilterReset,
+                    empty: L.homeFeed.liveFilterEmpty,
+                  }}
+                />
+              </div>
             </section>
           )}
 

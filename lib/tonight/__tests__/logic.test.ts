@@ -17,7 +17,10 @@ import {
   resolveTonightWindow,
   selectAlreadyLive,
   selectTonightSlots,
+  splitTonightLiveSlots,
+  toTonightLiveRowSlot,
   tonightRevealLimit,
+  TONIGHT_LIVE_CAP,
   TONIGHT_REFERENCE_ZONES,
   TONIGHT_VISIBLE_PER_BLOCK,
   TONIGHT_REVEAL_STEP,
@@ -27,6 +30,9 @@ import {
   zoneOffsetMinutes,
 } from '../logic';
 import { UI_LANGS } from '@/lib/i18n-core';
+// The live opener reuses the homepage rail's filter vocabulary verbatim, so the
+// two surfaces can only ever disagree on purpose.
+import { buildLiveFilterItems, computeVisibleLiveIds, countLiveFilterOptions } from '@/lib/home/live-rail';
 
 const BERLIN = 'Europe/Berlin';
 const TOKYO = 'Asia/Tokyo';
@@ -342,6 +348,18 @@ describe('selectAlreadyLive', () => {
     ]);
   });
 
+  it('returns the whole pool, not the visible cut', () => {
+    // The regression this guards: the homepage rail once returned only its
+    // rendered cards, so its dropdowns could not reach a stream ranked below
+    // the cut and whole languages had no option at all (fixed 2026-07-29).
+    const many = Array.from({ length: 40 }, (_, i) =>
+      slot({ streamer_id: `s${i}`, status: 'live', viewer_count: 1000 - i }),
+    );
+    const pool = selectAlreadyLive(many);
+    expect(pool.length).toBe(40);
+    expect(pool.length).toBeGreaterThan(TONIGHT_LIVE_CAP);
+  });
+
   it('ranks by current viewers and keeps one row per streamer', () => {
     const big = slot({ streamer_id: 'a', status: 'live', viewer_count: 900 });
     const small = slot({ streamer_id: 'b', status: 'live', viewer_count: 100 });
@@ -351,11 +369,80 @@ describe('selectAlreadyLive', () => {
     expect(picked[0].id).toBe(big.id);
   });
 
-  it('caps the section', () => {
+  it('caps the pool', () => {
     const many = Array.from({ length: 20 }, (_, i) =>
       slot({ streamer_id: `s${i}`, status: 'live', viewer_count: 100 - i }),
     );
     expect(selectAlreadyLive(many, 3)).toHaveLength(3);
+  });
+});
+
+describe('the live opener: pool vs visible cut', () => {
+  const pool = Array.from({ length: 40 }, (_, i) =>
+    slot({
+      streamer_id: `s${i}`,
+      status: 'live',
+      viewer_count: 1000 - i,
+      category: i % 2 === 0 ? 'Minecraft' : 'Just Chatting',
+      streamer_language: i < 35 ? 'en' : 'de',
+    }),
+  );
+  const ranked = selectAlreadyLive(pool);
+  const items = buildLiveFilterItems(ranked, (c) => c.toUpperCase());
+
+  it('ships exactly the resting cut as server HTML', () => {
+    const { ssr, deferred } = splitTonightLiveSlots(ranked);
+    expect(ssr).toHaveLength(TONIGHT_LIVE_CAP);
+    expect(deferred).toHaveLength(ranked.length - TONIGHT_LIVE_CAP);
+    // The head must be a strict PREFIX of the ranking, or a head match could
+    // outrank a tail match and the merged list would not read as ranked.
+    expect(ssr.map((s) => s.id)).toEqual(
+      ranked.slice(0, TONIGHT_LIVE_CAP).map((s) => s.id),
+    );
+  });
+
+  it('never ships a head smaller than the resting cut', () => {
+    // A smaller head would leave the DEFAULT state depending on client
+    // rendering — a blank gap for crawlers and JS-less browsers.
+    const { ssr } = splitTonightLiveSlots(ranked, 2);
+    expect(ssr.length).toBe(TONIGHT_LIVE_CAP);
+  });
+
+  it('shows the top N unfiltered', () => {
+    const visible = computeVisibleLiveIds(items, '', '', TONIGHT_LIVE_CAP);
+    expect(visible.size).toBe(TONIGHT_LIVE_CAP);
+    // Unfiltered the visible set is a prefix of the SSR head, so no deferred
+    // row can be revealed — the resting section is pure server HTML.
+    const { deferred } = splitTonightLiveSlots(ranked);
+    expect(deferred.filter((s) => visible.has(s.id))).toHaveLength(0);
+  });
+
+  it('reaches deep into the pool once a filter is active', () => {
+    // The five German streams all rank below the visible cut. Unfiltered they
+    // are invisible; picking German must surface every one of them.
+    const visible = computeVisibleLiveIds(items, '', 'de', TONIGHT_LIVE_CAP);
+    expect(visible.size).toBe(5);
+    const { deferred } = splitTonightLiveSlots(ranked);
+    expect(deferred.filter((s) => visible.has(s.id))).toHaveLength(5);
+  });
+
+  it('offers every language in the pool, not only in the visible cut', () => {
+    const languages = countLiveFilterOptions(items, 'language').map((o) => o.value);
+    expect(languages).toEqual(['en', 'de']);
+  });
+
+  it('prunes a row to what it renders', () => {
+    const pruned = toTonightLiveRowSlot(ranked[0]);
+    expect(Object.keys(pruned).sort()).toEqual([
+      'avatar_url',
+      'id',
+      'is_always_on',
+      'platforms',
+      'streamer_id',
+      'streamer_name',
+      'title',
+      'viewer_count',
+    ]);
   });
 });
 

@@ -119,8 +119,34 @@ export const TONIGHT_VISIBLE_PER_BLOCK = 6;
 /** How many more cards one "show more" click reveals, per block. */
 export const TONIGHT_REVEAL_STEP = 12;
 
-/** Rows in the "already live" section — a taster, /live owns the full list. */
+/**
+ * Rows in the "already live" section before anyone touches a dropdown — a
+ * taster, /live owns the full list.
+ *
+ * This is the VISIBLE cut, not the filter scope. Keeping the two apart is the
+ * whole point: the homepage rail once rendered only its visible cards and its
+ * dropdowns could therefore only search those, so German showed 3 of 17 live
+ * streams and several languages had no option at all (fixed 2026-07-29). The
+ * section renders the whole pool and hides the tail instead.
+ */
 export const TONIGHT_LIVE_CAP = 8;
+
+/**
+ * Filter scope of the "already live" section, i.e. how much of the live sweep
+ * the dropdowns can reach. Also the payload guard — cards beyond the visible
+ * cut travel as pruned DATA, not as HTML. Production runs ~130 live streamers
+ * with evening peaks of 150-250 plausible.
+ */
+export const TONIGHT_LIVE_POOL_MAX = 200;
+
+/**
+ * How many live rows ship as server HTML. Pinned to the visible cut and it must
+ * never be lower: the resting section IS the first TONIGHT_LIVE_CAP rows, so a
+ * smaller head would leave the default state depending on client rendering — a
+ * blank gap for crawlers and JS-less browsers. Larger would only pay for HTML
+ * nobody sees until a filter is picked. `splitTonightLiveSlots` enforces it.
+ */
+export const TONIGHT_LIVE_SSR_COUNT = TONIGHT_LIVE_CAP;
 
 // ============================================
 // Timezone primitives
@@ -379,19 +405,28 @@ export function bucketSlotsIntoBlocks(
 }
 
 /**
- * The live streams to show as tonight's opener. One row per streamer, biggest
- * current audience first — the same freshness requirement as the homepage rail
- * (`lib/home/live-rail.ts`), which doubles as the zombie-slot guard: a slot
- * whose streamer went offline without the backend noticing keeps
- * `status='live'` forever and is never sampled again.
+ * The live POOL for tonight's opener — one row per streamer, biggest current
+ * audience first. This is the filter scope, not the visible set: the section
+ * shows the first TONIGHT_LIVE_CAP of them and hides the rest until a filter
+ * reveals them (`computeVisibleLiveIds`, shared with the homepage rail).
+ *
+ * The freshness requirement is the same as the homepage rail
+ * (`lib/home/live-rail.ts`) and doubles as the zombie-slot guard: a slot whose
+ * streamer went offline without the backend noticing keeps `status='live'`
+ * forever and is never sampled again, so `viewer_count` stays null.
  *
  * Unlike the homepage rail there is no unsampled fallback: this section is a
  * teaser above a full listing, so showing nothing is better than showing a
  * stream that ended days ago.
+ *
+ * The returned order IS the rank order, and the section's default cut is a
+ * prefix of it — an invariant the server render depends on (it ships
+ * everything past that index `hidden`, so the island reproduces the served
+ * HTML on mount).
  */
 export function selectAlreadyLive(
   slots: readonly PublicStreamSlot[],
-  cap: number = TONIGHT_LIVE_CAP,
+  cap: number = TONIGHT_LIVE_POOL_MAX,
 ): PublicStreamSlot[] {
   const live = slots.filter(
     (slot) => slot.status === 'live' && typeof slot.viewer_count === 'number',
@@ -408,6 +443,55 @@ export function selectAlreadyLive(
     if (picked.length >= cap) break;
   }
   return picked;
+}
+
+/**
+ * Exactly what `TonightLiveRow` renders. A `Pick` of the DTO rather than a
+ * parallel shape, so a row that starts reading a new field fails to compile
+ * here instead of rendering `undefined` in production — the rule
+ * lib/home/slot-payload.ts established for the homepage's deferred pools.
+ *
+ * No `start_time`/`duration_minutes`: unlike the homepage rail these rows carry
+ * no runtime countdown, which is also why this section needs no clock at all.
+ */
+export type TonightLiveRowSlot = Pick<
+  PublicStreamSlot,
+  | 'id'
+  | 'streamer_id'
+  | 'streamer_name'
+  | 'title'
+  | 'platforms'
+  | 'avatar_url'
+  | 'is_always_on'
+  | 'viewer_count'
+>;
+
+/** Prunes a live slot to what the row renders. */
+export function toTonightLiveRowSlot(slot: PublicStreamSlot): TonightLiveRowSlot {
+  return {
+    id: slot.id,
+    streamer_id: slot.streamer_id,
+    streamer_name: slot.streamer_name,
+    title: slot.title,
+    platforms: slot.platforms,
+    avatar_url: slot.avatar_url,
+    is_always_on: slot.is_always_on,
+    viewer_count: slot.viewer_count,
+  };
+}
+
+/**
+ * Splits the ranked live pool into the server-rendered head and the deferred
+ * tail. Both keep the pool's viewer ranking, which is what lets the island
+ * append its matches after the server's and still read as one ranked list (the
+ * head is a strict PREFIX, so head matches always outrank tail matches).
+ */
+export function splitTonightLiveSlots<T>(
+  slots: T[],
+  ssrCount: number = TONIGHT_LIVE_SSR_COUNT,
+): { ssr: T[]; deferred: T[] } {
+  const head = Math.max(ssrCount, TONIGHT_LIVE_CAP);
+  return { ssr: slots.slice(0, head), deferred: slots.slice(head) };
 }
 
 const CONFIDENCE_WEIGHT: Record<string, number> = { high: 3, medium: 2, low: 1 };
