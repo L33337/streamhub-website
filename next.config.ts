@@ -38,6 +38,13 @@ const nextConfig: NextConfig = {
     // to "Content-Security-Policy" to enforce. connect-src lists Supabase
     // (auth/data + realtime websocket) and the public Partner API; img-src the
     // Twitch/YouTube avatar/thumbnail CDNs from images.remotePatterns above.
+    //
+    // challenges.cloudflare.com must stay in script-src, frame-src AND
+    // connect-src: Turnstile loads api.js, renders its widget in an iframe, and
+    // talks back to Cloudflare. Missing frame-src is the silent one — the script
+    // loads fine and the challenge simply never appears. Since the auth forms
+    // only mint a token on submit, enforcing a CSP without these would break
+    // sign-in/sign-up without a single visible error on any other page.
     const csp = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -46,11 +53,12 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
       // Google Analytics (gtag.js) is served from googletagmanager.com; its
       // beacons post to google-analytics.com / *.analytics.google.com.
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://static-cdn.jtvnw.net https://i.ytimg.com https://*.ytimg.com https://yt3.googleusercontent.com https://*.ggpht.com https://www.googletagmanager.com https://www.google-analytics.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://ypebfgtxythamjwgvoci.supabase.co wss://ypebfgtxythamjwgvoci.supabase.co https://api.streamertimes.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+      "connect-src 'self' https://ypebfgtxythamjwgvoci.supabase.co wss://ypebfgtxythamjwgvoci.supabase.co https://api.streamertimes.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://challenges.cloudflare.com",
+      "frame-src 'self' https://challenges.cloudflare.com",
       "upgrade-insecure-requests",
     ].join("; ");
 
