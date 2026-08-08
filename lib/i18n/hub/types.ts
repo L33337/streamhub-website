@@ -606,6 +606,20 @@ export interface HubLex {
     statGamesCategories: string;
     seeFullRanking: string;
     warmingUp: string;
+    /**
+     * States of the filterable Top-5 previews (2026-08-08). The dropdown
+     * chrome itself is shared verbatim with the homepage filters
+     * (`homeFeed.liveFilter*`) and the match counter reuses
+     * `gameChips.streamersLabel`, so only what is specific to a FETCHED
+     * preview lives here. The link out of a category selection reuses
+     * `game.seeFullRanking` — same destination, same wording.
+     */
+    /** Selection has no match in this ranking's pool (dropdowns prevent it). */
+    filterEmpty: string;
+    /** The filtered preview could not be loaded. */
+    filterError: string;
+    /** Retry button next to filterError. */
+    filterRetry: string;
     byGameHeading: string;
     byGameSubtitle: string;
     /** aria-label of the game-chip list. */

@@ -6,10 +6,19 @@ import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { gameSlug } from '@/lib/game-slug';
-import { formatRefreshedAt, RANKING_PAGES, sanitizeRankingEntries } from '@/lib/rankings';
+import { formatRefreshedAt, RANKING_PAGES } from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
+import { toRankingHeaders } from '@/lib/rankings-row';
+import {
+  buildRankingFacets,
+  rankingFacetItem,
+  reachableMatchCounts,
+} from '@/lib/rankings-facets';
+import { RankingSectionFilters } from '@/components/web/rankings/RankingSectionFilters';
+import { loadRankingPool } from '@/lib/server/rankings-pool';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import { languageDisplayName } from '@/lib/format/language';
 
 // 300 (not 3600): live badges + the "live right now" stat need a fresh live
 // set; the ranking fetches themselves stay data-cached for an hour (fetch-level
@@ -17,7 +26,12 @@ import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 export const revalidate = 300;
 
 const SITE_URL = 'https://streamertimes.tv';
-const PREVIEW_LIMIT = 10;
+/**
+ * Rows per preview. The hub is an index, not a leaderboard — five rows keep all
+ * five rankings (plus their filters) reachable on one phone screen, and each
+ * section links out to its full Top 100.
+ */
+const PREVIEW_LIMIT = 5;
 // Game-ranking chips: link every game whose ranking page is indexable
 // (streamer_count >= 10, the sitemap's proxy gate) up to the cap — the hub is
 // the main crawl path into /rankings/game/*. Falls back to the most popular
@@ -68,10 +82,9 @@ export default async function RankingsHubPage({ params }: Props) {
   const L = hubLexFor(locale);
   const api = getPartnerApi();
 
-  // One preview call per leaderboard + the game list — all failure-isolated:
-  // a failed call hides that section (never throw during prerender; ISR
-  // self-heals within the hour). The games call starts before the awaits so
-  // everything runs concurrently.
+  // The game list + the two stats calls — all failure-isolated: a failed call
+  // hides what it feeds (never throw during prerender; ISR self-heals within
+  // the hour). They start before the awaits so everything runs concurrently.
   const gamesPromise = api.listGames({ limit: 500, revalidate: 3600 }).catch(() => null);
   const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
   // Roster size for the stats strip: the offset mode returns an exact
@@ -80,22 +93,25 @@ export default async function RankingsHubPage({ params }: Props) {
     .listStreamers({ limit: 1, offset: 0, revalidate: 3600 })
     .then((r) => r.pagination.total ?? null)
     .catch(() => null);
-  const previewCalls = await Promise.allSettled(
-    RANKING_PAGES.map((spec) =>
-      api.getRankings(spec.metric, { limit: PREVIEW_LIMIT, revalidate: 3600 }),
-    ),
-  );
+  // The WHOLE pool per leaderboard, not just the five rows shown: the filter
+  // dropdowns count their options over it, and those counts must describe the
+  // same pool /api/rankings/filter then searches — otherwise an option would
+  // promise matches the rows can't deliver. Hour-cached, timestamp-free page
+  // URLs, so this is ~35 requests per hour shared across all 12 locales, the
+  // API route and the build workers (lib/server/rankings-pool.ts).
+  const pools = await Promise.all(RANKING_PAGES.map((spec) => loadRankingPool(spec)));
   const liveIds = await livePromise;
   const totalStreamers = await totalPromise;
 
-  const sections = RANKING_PAGES.map((spec, i) => {
-    const call = previewCalls[i];
-    const raw = call?.status === 'fulfilled' ? call.value.data : [];
-    return { spec, entries: sanitizeRankingEntries(spec, raw) };
-  }).filter((s) => s.entries.length > 0);
+  const sections = RANKING_PAGES.map((spec, i) => ({
+    spec,
+    pool: pools[i],
+    entries: pools[i].entries.slice(0, PREVIEW_LIMIT),
+  })).filter((s) => s.entries.length > 0);
 
   // "Next stream" (+ its category) for every previewed streamer across all
-  // sections — one deduped, chunked fetch. Degrades to an empty map on failure
+  // sections — one deduped, chunked fetch over the ≤25 visible rows (the
+  // filtered previews fetch their own). Degrades to an empty map on failure
   // (the column then renders "—"), never throws.
   const nextSlots = await getNextSlotByStreamer(
     sections.flatMap((s) => s.entries.map((e) => e.streamer.id)),
@@ -104,8 +120,8 @@ export default async function RankingsHubPage({ params }: Props) {
   // Latest aggregate refresh across the leaderboards — one visible freshness
   // line for the whole hub (refreshed_at is null for table-backed metrics).
   const refreshedLabel = formatRefreshedAt(
-    previewCalls
-      .map((c) => (c.status === 'fulfilled' ? c.value.refreshed_at : null))
+    pools
+      .map((pool) => pool.refreshedAt)
       .filter((v): v is string => v !== null)
       .sort()
       .at(-1) ?? null,
@@ -147,6 +163,58 @@ export default async function RankingsHubPage({ params }: Props) {
     indexableGameLinks.length > 0
       ? indexableGameLinks
       : allGameLinks.slice(0, GAME_LINK_FALLBACK_LIMIT);
+  // category → /rankings/game/ slug for every category that actually has a
+  // page: the route 404s for anything outside the catalog.
+  const gameSlugByCategory = new Map(allGameLinks.map((g) => [g.category, g.slug]));
+
+  // Everything the filter islands need, resolved server-side: the hub lexicon
+  // is server-only, and plural agreement (the "23 streamers" counter) lives in
+  // it — so the counter is pre-rendered per reachable count instead of shipping
+  // a template the browser would have to pluralize.
+  const sectionFilters = sections.map(({ spec, pool }) => {
+    const facets = buildRankingFacets(
+      pool.entries.map((entry) => rankingFacetItem(entry)),
+      (code) => languageDisplayName(code, locale) ?? code,
+    );
+    return {
+      facets,
+      strings: {
+        // The dropdown chrome is shared verbatim with the homepage filters —
+        // same control, same words, one set of translations.
+        categoryLabel: L.homeFeed.liveFilterCategory,
+        languageLabel: L.homeFeed.liveFilterLanguage,
+        allCategories: L.homeFeed.liveFilterAllCategories,
+        allLanguages: L.homeFeed.liveFilterAllLanguages,
+        optionPattern: L.homeFeed.liveFilterOption('{label}', '{count}'),
+        reset: L.homeFeed.liveFilterReset,
+        matchesByCount: Object.fromEntries(
+          reachableMatchCounts(facets).map((count) => [
+            String(count),
+            `${count} ${L.gameChips.streamersLabel(count)}`,
+          ]),
+        ),
+        empty: L.rankings.filterEmpty,
+        error: L.rankings.filterError,
+        retry: L.rankings.filterRetry,
+        seeFullRanking: L.rankings.seeFullRanking,
+        // Only the followers ranking has per-category full rankings, so only
+        // its link can carry a category selection outwards. The label is the
+        // one the game hub already uses for that exact destination.
+        categoryRankingLabels:
+          spec.metric === 'most-followed'
+            ? categoryPageStrings(facets.categories, gameSlugByCategory, (category) =>
+                L.game.seeFullRanking(category),
+              )
+            : undefined,
+      },
+      categoryRankingHrefs:
+        spec.metric === 'most-followed'
+          ? categoryPageStrings(facets.categories, gameSlugByCategory, (_, slug) =>
+              localeHref(locale, `/rankings/game/${slug}`),
+            )
+          : undefined,
+    };
+  });
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: L.crumbs.home, url: SITE_URL },
@@ -196,28 +264,41 @@ export default async function RankingsHubPage({ params }: Props) {
         </p>
       )}
 
-      {sections.map(({ spec, entries }) => (
+      {sections.map(({ spec, entries }, i) => (
         <section key={spec.slug} aria-labelledby={`${spec.slug}-heading`} className="mt-10">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id={`${spec.slug}-heading`} className="text-xl font-bold text-white">
-              {L.rankings.metricH1[spec.metric]}
-            </h2>
-            <Link
-              href={localeHref(locale, `/rankings/${spec.slug}`)}
-              className="text-sm text-accent-cyan hover:text-text-primary"
-            >
-              {L.rankings.seeFullRanking}
-            </Link>
-          </div>
+          <h2 id={`${spec.slug}-heading`} className="text-xl font-bold text-white">
+            {L.rankings.metricH1[spec.metric]}
+          </h2>
           <p className="mt-1 text-sm text-text-muted">{L.rankings.metricNote[spec.metric]}</p>
           <div className="mt-4">
-            <RankingTable
-              caption={L.rankings.metricH1[spec.metric]}
-              columns={spec.columns}
-              entries={entries}
-              liveIds={liveIds}
-              nextSlots={nextSlots}
+            {/* Filters + the "full ranking" link live in the island, because
+                both change with the selection: the counter needs the match
+                count, and the link points at the selected category's own
+                ranking where one exists. The unfiltered Top 5 below stays
+                server HTML — it is what crawlers and no-JS visitors get. */}
+            <RankingSectionFilters
+              metric={spec.slug}
               locale={locale}
+              facets={sectionFilters[i].facets}
+              strings={sectionFilters[i].strings}
+              categoryRankingHrefs={sectionFilters[i].categoryRankingHrefs}
+              fullRankingHref={localeHref(locale, `/rankings/${spec.slug}`)}
+              chrome={{
+                caption: L.rankings.metricH1[spec.metric],
+                headers: toRankingHeaders(spec.columns, L.rankings),
+                tableColStreamer: L.rankings.tableColStreamer,
+                nextStreamHeader: L.rankings.tableColNextStream,
+              }}
+              ssrTable={
+                <RankingTable
+                  caption={L.rankings.metricH1[spec.metric]}
+                  columns={spec.columns}
+                  entries={entries}
+                  liveIds={liveIds}
+                  nextSlots={nextSlots}
+                  locale={locale}
+                />
+              }
             />
           </div>
         </section>
@@ -280,4 +361,23 @@ export default async function RankingsHubPage({ params }: Props) {
       </p>
     </main>
   );
+}
+
+/**
+ * Per-category strings for the one metric whose categories have their own full
+ * ranking (/rankings/game/<slug>). Only categories present in the games
+ * catalog get an entry — the route 404s for the rest, and a missing key makes
+ * the island keep the plain metric link.
+ */
+function categoryPageStrings(
+  categories: readonly string[],
+  slugByCategory: ReadonlyMap<string, string>,
+  value: (category: string, slug: string) => string,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const category of categories) {
+    const slug = slugByCategory.get(category);
+    if (slug) out[category] = value(category, slug);
+  }
+  return out;
 }
