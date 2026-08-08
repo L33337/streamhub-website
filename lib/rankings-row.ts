@@ -58,7 +58,19 @@ export interface RankingRowDto {
   values: string[];
   trend: RankingRowTrend | null;
   /** Main game cell; `href` null when the category has no ranking page. */
-  mainGame: { label: string; href: string | null; title: string } | null;
+  mainGame: {
+    label: string;
+    href: string | null;
+    title: string;
+    /**
+     * Formatted share of the streamer's categorized streams that this game
+     * makes up ("62%"), rendered under the name — a "main game" means little
+     * without it: 62% is a habit, 21% is just the biggest of many. null when
+     * the backend has no usable share (0 or missing), where a "0%" line would
+     * claim the opposite of what it means.
+     */
+    share: string | null;
+  } | null;
   nextStream: RankingRowNextStream | null;
 }
 
@@ -147,12 +159,17 @@ function toMainGame(
   const top = entry.top_category;
   if (!top) return null;
   const slug = slugs.get(top.category);
+  const share = top.share_percent;
   return {
     label: top.category,
     // Categories outside the games list render as plain text — the
     // /rankings/game/[slug] route 404s for them.
     href: slug ? localeHref(locale, `/rankings/game/${slug}`) : null,
-    title: lex.mainGameShareTitle(top.share_percent),
+    title: lex.mainGameShareTitle(share),
+    // Plain percent, like every other value column: the registry owns number
+    // formatting and keeps it English (lib/i18n/hub/types.ts) — the explanatory
+    // wording lives in the localized `title`.
+    share: Number.isFinite(share) && share > 0 ? `${Math.round(share)}%` : null,
   };
 }
 

@@ -8,6 +8,8 @@ import {
 import { matchesRankingFilters, rankingFacetItem } from '@/lib/rankings-facets';
 import { normalizeLanguageCode } from '@/lib/home/filter-options';
 import { findTopRankingMatches } from '@/lib/server/rankings-pool';
+import { getPartnerApi } from '@/lib/server/partner-api';
+import { gameSlug } from '@/lib/game-slug';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
@@ -66,15 +68,26 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   try {
     // The pool walk is the long leg; the live set (60 s process cache + 60 s
-    // data cache) runs alongside it rather than after it.
-    const [entries, liveIds] = await Promise.all([
+    // data cache) and the games catalog run alongside it rather than after it.
+    // The catalog gates the "Main game" links exactly as it does on the page:
+    // /rankings/game/[slug] 404s for categories outside it, so a miss renders
+    // the game as plain text. Failure → no links, never a broken preview.
+    const [entries, liveIds, games] = await Promise.all([
       findTopRankingMatches(
         spec,
         (entry) => matchesRankingFilters(rankingFacetItem(entry), category, language),
         RANKING_FILTER_ROWS,
       ),
       getLiveStreamerIdSet().catch(() => new Set<string>()),
+      getPartnerApi()
+        .listGames({ limit: 500, revalidate: 3600 })
+        .catch(() => null),
     ]);
+    const mainGameSlugs = new Map<string, string>(
+      (games?.data ?? [])
+        .map((game) => [game.category, gameSlug(game.category)] as const)
+        .filter(([, slug]) => slug.length > 0),
+    );
 
     // Only for the handful of rows we return — never for the whole pool.
     const nextSlots = await getNextSlotByStreamer(entries.map((e) => e.streamer.id));
@@ -86,8 +99,7 @@ export async function GET(req: NextRequest): Promise<Response> {
         locale,
         liveIds,
         nextSlots,
-        // The hub's preview table has no "Main game" column — a sixth column
-        // does not fit a phone (see RankingRowsTable).
+        mainGameSlugs,
       }),
     );
 

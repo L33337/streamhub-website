@@ -106,6 +106,14 @@ export function RankingSpotlight({
               ) : (
                 topCategory.category
               )}
+              {/* Same reason as the table's Main game cell: the share is what
+                  makes the game mean something, and it was hover-only. */}
+              {topCategory.share_percent > 0 && (
+                <span className="text-text-muted">
+                  {' · '}
+                  {Math.round(topCategory.share_percent)}%
+                </span>
+              )}
             </span>
           )}
           {!streamer.is_always_on && nextSlot && (

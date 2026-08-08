@@ -76,20 +76,41 @@ function TrendIndicator({ trend }: { trend: RankingRowDto['trend'] }) {
   );
 }
 
-/** Value of the "Main game" column for one row. */
+/**
+ * Value of the "Main game" column: the game on top, the share of the
+ * streamer's categorized streams it accounts for underneath.
+ *
+ * The share used to live in the `title` only, where it was invisible to
+ * everyone not hovering a mouse — and it is what makes the column mean
+ * anything (62% is a habit, 21% is merely the largest of many). Two lines
+ * rather than "Game (62%)" so the game name keeps the full cell width before
+ * it truncates; same shape as the next-stream cell below.
+ */
 function MainGameCell({ mainGame }: { mainGame: RankingRowDto['mainGame'] }) {
   if (!mainGame) return <>—</>;
-  if (!mainGame.href) {
-    return <span title={mainGame.title}>{mainGame.label}</span>;
-  }
-  return (
+  // The truncation moved from the <td> into the name: with two lines in the
+  // cell, `truncate` on the cell itself would have clipped the block, not the
+  // one line that can actually be too long. The cap sits under the column's
+  // own max-width, so a long game name elides instead of widening the table.
+  const name = mainGame.href ? (
     <Link
       href={mainGame.href}
-      title={mainGame.title}
-      className="text-text-secondary underline decoration-border-default underline-offset-4 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan/60"
+      className="max-w-[9rem] truncate text-text-secondary underline decoration-border-default underline-offset-4 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan/60"
     >
       {mainGame.label}
     </Link>
+  ) : (
+    <span className="max-w-[9rem] truncate">{mainGame.label}</span>
+  );
+  return (
+    <span className="flex flex-col items-end leading-tight" title={mainGame.title}>
+      {name}
+      {mainGame.share && (
+        <span className="mt-0.5 text-[11px] tabular-nums text-text-muted">
+          {mainGame.share}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -252,7 +273,7 @@ export function RankingRowsTable({
                   </td>
                 ))}
                 {chrome.mainGameHeader && (
-                  <td className="max-w-40 truncate px-3 py-2 text-right text-text-secondary">
+                  <td className="max-w-40 px-3 py-2 text-right text-text-secondary">
                     <MainGameCell mainGame={row.mainGame} />
                   </td>
                 )}

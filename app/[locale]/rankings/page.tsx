@@ -287,6 +287,7 @@ export default async function RankingsHubPage({ params }: Props) {
                 caption: L.rankings.metricH1[spec.metric],
                 headers: toRankingHeaders(spec.columns, L.rankings),
                 tableColStreamer: L.rankings.tableColStreamer,
+                mainGameHeader: L.rankings.tableColMainGame,
                 nextStreamHeader: L.rankings.tableColNextStream,
               }}
               ssrTable={
@@ -296,6 +297,7 @@ export default async function RankingsHubPage({ params }: Props) {
                   entries={entries}
                   liveIds={liveIds}
                   nextSlots={nextSlots}
+                  mainGameSlugs={gameSlugByCategory}
                   locale={locale}
                 />
               }

@@ -171,6 +171,7 @@ describe('toRankingRow', () => {
       label: 'Just Chatting',
       href: '/rankings/game/just-chatting',
       title: lex.mainGameShareTitle(62),
+      share: '62%',
     });
     const unlinked = toRankingRow(withCategory, {
       columns: followed.columns,
@@ -179,6 +180,27 @@ describe('toRankingRow', () => {
       mainGameSlugs: new Map(),
     });
     expect(unlinked.mainGame?.href).toBeNull();
+  });
+
+  it('drops the share line when the backend reports no usable share', () => {
+    const ctx = {
+      columns: followed.columns,
+      lex,
+      locale: 'en' as const,
+      mainGameSlugs: new Map<string, string>(),
+    };
+    // 0% is "we could not attribute it", not "0% of their streams".
+    expect(
+      toRankingRow(entry({ top_category: { category: 'Fortnite', share_percent: 0 } }), ctx)
+        .mainGame?.share,
+    ).toBeNull();
+    // Rounded, never a long decimal in a dense table cell.
+    expect(
+      toRankingRow(
+        entry({ top_category: { category: 'Fortnite', share_percent: 61.6 } }),
+        ctx,
+      ).mainGame?.share,
+    ).toBe('62%');
   });
 
   it('omits the main game entirely when the column is not rendered', () => {
