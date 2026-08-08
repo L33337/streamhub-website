@@ -1,0 +1,44 @@
+// Contract of the filtered-preview endpoint on /rankings, shared by the route
+// handler (app/api/rankings/filter/route.ts) and the client island that calls
+// it (components/web/rankings/RankingSectionFilters.tsx). One module so the URL
+// shape and the response shape cannot drift apart.
+
+import type { RankingRowDto } from '@/lib/rankings-row';
+
+export const RANKING_FILTER_ENDPOINT = '/api/rankings/filter';
+
+/** Rows one filtered preview returns — the hub shows a Top 5 and links out. */
+export const RANKING_FILTER_ROWS = 5;
+
+export interface RankingFilterResponse {
+  /** Highest-ranked matches in rank order, at most RANKING_FILTER_ROWS. */
+  rows: RankingRowDto[];
+}
+
+export interface RankingFilterQuery {
+  /** Ranking slug, e.g. 'most-followed' (RANKING_PAGES). */
+  metric: string;
+  /** Exact category name; '' = no category constraint. */
+  category: string;
+  /** Normalized language code; '' = no language constraint. */
+  language: string;
+  /** Viewer locale — picks the lexicon the row strings are rendered in. */
+  locale: string;
+}
+
+/**
+ * Request URL of one selection. Empty dimensions are omitted rather than sent
+ * blank, so the same selection always produces the same URL — that is the CDN
+ * cache key the route's s-maxage relies on.
+ */
+export function buildRankingFilterUrl(query: RankingFilterQuery): string {
+  const params = new URLSearchParams({ metric: query.metric, locale: query.locale });
+  if (query.category) params.set('category', query.category);
+  if (query.language) params.set('language', query.language);
+  return `${RANKING_FILTER_ENDPOINT}?${params.toString()}`;
+}
+
+/** Cache key of a selection within one section (client-side response cache). */
+export function rankingFilterCacheKey(category: string, language: string): string {
+  return `${category}\u0000${language}`;
+}
