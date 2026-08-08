@@ -906,6 +906,18 @@ body {
   html { scroll-behavior: auto; }
 }
 
+/* No-JS: the game hub's "Watching {category} now" grid used to be a <details>
+   expander, which worked without scripting. Its replacement is a filter island
+   (a <details> cannot hold a filtered list — matches past the cut would sit
+   inside a collapsed element), so without JS the extra cards would be
+   unreachable and both controls inert. Reveal the cards instead and drop the
+   controls: strictly what the expander used to offer, minus the collapse. */
+@media (scripting: none) {
+  li[data-game-live-id][hidden] { display: block; }
+  [data-game-live-footer][hidden] { display: block; }
+  [data-game-live-controls] { display: none; }
+}
+
 /* Performance: promote animated elements to compositor layer */
 .animate-float,
 .animate-float-slow,

@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
 import {
   getPartnerApi,
   type GameTiming,
@@ -53,8 +52,19 @@ import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 import { NextStreamTime } from '@/components/web/NextStreamTime';
-import { SlotCard } from '@/components/web/SlotCard';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import {
+  GAME_LIVE_SSR_COUNT,
+  GAME_LIVE_VISIBLE_CAP,
+  hasLanguageChoice,
+  rankGameLiveSlots,
+  splitGameLiveSlots,
+  toGameLiveCardSlot,
+} from '@/lib/game-live';
+import { buildLiveFilterItems } from '@/lib/home/live-rail';
+import { languageDisplayName } from '@/lib/format/language';
+import { GameLiveCard } from '@/components/web/games/GameLiveCard';
+import { GameLiveFilters } from '@/components/web/games/GameLiveFilters';
 import { floorToBucket } from '@/lib/home/logic';
 
 export const revalidate = 300;
@@ -69,13 +79,9 @@ const RANK_FETCH_LIMIT = 16;
 const RANK_DISPLAY_LIMIT = 5;
 // "Watching {category} now": only the biggest live channels by viewer count —
 // popular categories can have dozens of live slots, which buried the sections
-// below.
-const LIVE_DISPLAY_LIMIT = 4;
-// UX round 2026-07-23: the live slots beyond the cap render inside a closed
-// <details> expander (progressive disclosure keeps the section budget), itself
-// capped so a mega-category can't inflate the HTML; the tail links to the full
-// ranking, which carries live badges for everyone.
-const LIVE_EXPAND_LIMIT = 20;
+// below. The cut, the show-more's reach and the language filter's scope now
+// live in lib/game-live.ts (GAME_LIVE_VISIBLE_CAP / _SSR_COUNT / _POOL_MAX);
+// the pre-2026-08-08 <details> expander was 4 + 20, which _SSR_COUNT preserves.
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
@@ -374,16 +380,28 @@ export default async function GamePage({ params }: Props) {
     ...nextStreamByStreamer.values(),
   ]);
 
-  // Live section: top slots by viewers stay visible, the rest collapses.
-  const sortedLive = [...liveSlots].sort(
-    (a, b) => (b.viewer_count ?? -1) - (a.viewer_count ?? -1),
+  // Live section: biggest current audience first. The POOL is the language
+  // filter's scope, the SSR head is what becomes HTML, and only the first
+  // GAME_LIVE_VISIBLE_CAP of it is visible at rest — three different numbers on
+  // purpose (lib/game-live.ts).
+  const livePool = rankGameLiveSlots(liveSlots);
+  const liveItems = buildLiveFilterItems(livePool, (code) =>
+    // Language names follow the VIEWER's locale (chrome, not content — D6), so
+    // a German visitor picks "Japanisch", not "Japanese".
+    languageDisplayName(code, locale) ?? code.toUpperCase(),
   );
-  const liveShown = sortedLive.slice(0, LIVE_DISPLAY_LIMIT);
-  const liveMore = sortedLive.slice(
-    LIVE_DISPLAY_LIMIT,
-    LIVE_DISPLAY_LIMIT + LIVE_EXPAND_LIMIT,
+  // Without a second language there is no dropdown, so the deferred tail is
+  // unreachable — don't pay for it in the flight payload.
+  const liveFilterable = hasLanguageChoice(liveItems);
+  const { ssr: liveSsr, deferred: liveDeferred } = splitGameLiveSlots(
+    liveFilterable ? livePool : livePool.slice(0, GAME_LIVE_SSR_COUNT),
   );
-  const liveOverflow = sortedLive.length - LIVE_DISPLAY_LIMIT - liveMore.length;
+  const liveScopeItems = liveFilterable
+    ? liveItems
+    : liveItems.slice(0, GAME_LIVE_SSR_COUNT);
+  // What the section does not render as HTML — unchanged from the <details>
+  // era (total − 24), so the ranking link keeps its meaning and its count.
+  const liveOverflow = Math.max(0, liveSlots.length - liveSsr.length);
 
   // Quiet category: nothing live and nothing scheduled — the page renders an
   // explanatory empty state with the related-games chips pulled into it.
@@ -607,34 +625,25 @@ export default async function GamePage({ params }: Props) {
           <h2 id="watching-now-heading" className="text-xl font-bold text-white">
             {G.watchingNow(category)}
           </h2>
-          <ul className="mt-4 grid gap-3 lg:grid-cols-2" aria-label={G.liveStreamsAria(category)}>
-            {liveShown.map((slot) => (
-              <li key={slot.id}>
-                <SlotCard slot={slot} language={locale} />
-              </li>
+          <GameLiveFilters
+            items={liveScopeItems}
+            locale={locale}
+            listClassName="grid gap-3 lg:grid-cols-2"
+            listAriaLabel={G.liveStreamsAria(category)}
+            ssrCards={liveSsr.map((slot, index) => (
+              <GameLiveCard
+                key={slot.id}
+                slot={slot}
+                locale={locale}
+                // Past the resting cut the server hides them outright — the
+                // island computes the same set on mount, so the first paint
+                // needs no correction and the section does not shift.
+                hidden={index >= GAME_LIVE_VISIBLE_CAP}
+              />
             ))}
-          </ul>
-          {liveMore.length > 0 && (
-            <details className="group mt-3">
-              <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-border-default/60 bg-background-elevated/40 px-3 py-2 text-sm text-text-muted transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan [&::-webkit-details-marker]:hidden">
-                <ChevronRight
-                  size={14}
-                  aria-hidden="true"
-                  className="shrink-0 transition-transform group-open:rotate-90"
-                />
-                {G.showMoreLive(liveMore.length)}
-              </summary>
-              <ul
-                className="mt-3 grid gap-3 lg:grid-cols-2"
-                aria-label={G.moreLiveAria(category)}
-              >
-                {liveMore.map((slot) => (
-                  <li key={slot.id}>
-                    <SlotCard slot={slot} language={locale} />
-                  </li>
-                ))}
-              </ul>
-              {liveOverflow > 0 && (
+            deferredSlots={liveDeferred.map(toGameLiveCardSlot)}
+            footer={
+              liveOverflow > 0 ? (
                 <p className="mt-2 text-xs">
                   <Link
                     href={localeHref(locale, `/rankings/game/${slug}`)}
@@ -643,9 +652,28 @@ export default async function GamePage({ params }: Props) {
                     {G.moreLiveInRanking(liveOverflow, category)}
                   </Link>
                 </p>
-              )}
-            </details>
-          )}
+              ) : null
+            }
+            strings={{
+              // The dropdown chrome is shared verbatim with the homepage rail —
+              // same control, same words, one set of translations.
+              languageLabel: Lex.homeFeed.liveFilterLanguage,
+              allLanguages: Lex.homeFeed.liveFilterAllLanguages,
+              optionPattern: Lex.homeFeed.liveFilterOption('{label}', '{count}'),
+              // 0..pool, so the island can index straight by its match count and
+              // every language keeps its plural agreement.
+              matchesByCount: Array.from(
+                { length: liveScopeItems.length + 1 },
+                (_, count) => Lex.homeFeed.liveFilterMatches(count),
+              ),
+              reset: Lex.homeFeed.liveFilterReset,
+              empty: Lex.homeFeed.liveFilterEmpty,
+              showMore: G.showMoreLive(
+                Math.max(0, liveSsr.length - GAME_LIVE_VISIBLE_CAP),
+              ),
+              showLess: Lex.homeFeed.lineupShowLess,
+            }}
+          />
           <p className="mt-2 text-xs text-text-muted">{G.liveUpdatesNote}</p>
         </section>
       )}
