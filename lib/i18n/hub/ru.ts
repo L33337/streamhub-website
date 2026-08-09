@@ -464,6 +464,20 @@ export const ru: HubLex = {
     mainGameShareTitle: (pct) => `${pct}% категоризированных стримов`,
     alwaysOnTitle: 'Круглосуточный канал — в эфире 24/7',
   },
+  recaps: {
+    weeklyKicker: 'Итоги недели',
+    monthlyKicker: 'Итоги месяца',
+    readMore: 'Читать полный обзор',
+    archiveTitle: 'Архив обзоров',
+    archiveIntro:
+      'Все еженедельные и ежемесячные обзоры рейтингов: кто поднялся, кто рос быстрее всех и какие клипы смотрели все.',
+    allRecaps: 'Все обзоры',
+    backToRankings: 'Все рейтинги',
+    previousEdition: 'Предыдущий выпуск',
+    nextEdition: 'Следующий выпуск',
+    translationPending:
+      'Этот выпуск ещё не переведён — показан английский оригинал.',
+  },
   gamesExplorer: {
     sectionAria: 'Все игры и категории',
     sortAria: 'Сортировка игр',

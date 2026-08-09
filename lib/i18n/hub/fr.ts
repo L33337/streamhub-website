@@ -397,6 +397,20 @@ export const fr: HubLex = {
     mainGameShareTitle: (pct) => `${pct} % de ses streams catégorisés`,
     alwaysOnTitle: 'Chaîne always-on — en live 24 h/24',
   },
+  recaps: {
+    weeklyKicker: 'Récap de la semaine',
+    monthlyKicker: 'Récap du mois',
+    readMore: 'Lire le récap complet',
+    archiveTitle: 'Archives des récaps',
+    archiveIntro:
+      'Tous les récaps hebdomadaires et mensuels des classements : qui a grimpé, qui a grandi le plus vite et les clips que tout le monde a regardés.',
+    allRecaps: 'Tous les récaps',
+    backToRankings: 'Tous les classements',
+    previousEdition: 'Édition précédente',
+    nextEdition: 'Édition suivante',
+    translationPending:
+      "Cette édition n'est pas encore traduite — voici l'original en anglais.",
+  },
   gamesExplorer: {
     sectionAria: 'Tous les jeux et catégories',
     sortAria: 'Trier les jeux',

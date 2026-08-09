@@ -659,6 +659,31 @@ export interface HubLex {
     alwaysOnTitle: string;
   };
   /**
+   * AI recap articles (2026-08-09): the two teaser cards atop /rankings, the
+   * /rankings/recap archive and the article pages. Card/page CHROME only —
+   * the article text itself is content served per-locale by the partner API.
+   */
+  recaps: {
+    /** Card kicker of the weekly edition, e.g. "Weekly recap". */
+    weeklyKicker: string;
+    monthlyKicker: string;
+    /** Card + archive link into an edition, e.g. "Read the full recap". */
+    readMore: string;
+    /** /rankings/recap archive page h1. */
+    archiveTitle: string;
+    archiveIntro: string;
+    /** Link label to the archive (hub + article footer). */
+    allRecaps: string;
+    /** Article-footer link back to /rankings. */
+    backToRankings: string;
+    /** Older / newer edition of the same cadence (article footer). */
+    previousEdition: string;
+    nextEdition: string;
+    /** Note shown when the viewer's locale has no translation yet (English
+     *  original is served; that variant is noindexed). */
+    translationPending: string;
+  };
+  /**
    * M22 S4.1: /games catalog explorer (client component — the server page
    * resolves these and passes them as props; {q} templates are interpolated
    * client-side). sortLabels keys match GamesSortMode.

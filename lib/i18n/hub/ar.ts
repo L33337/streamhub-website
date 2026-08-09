@@ -448,6 +448,20 @@ export const ar: HubLex = {
     mainGameShareTitle: (pct) => `${pct}% من بثوثه المصنّفة`,
     alwaysOnTitle: 'قناة تبث على مدار الساعة',
   },
+  recaps: {
+    weeklyKicker: 'ملخص الأسبوع',
+    monthlyKicker: 'ملخص الشهر',
+    readMore: 'قراءة الملخص كاملاً',
+    archiveTitle: 'أرشيف الملخصات',
+    archiveIntro:
+      'جميع الملخصات الأسبوعية والشهرية للتصنيفات: من صعد، ومن نما أسرع، والمقاطع التي شاهدها الجميع.',
+    allRecaps: 'كل الملخصات',
+    backToRankings: 'كل التصنيفات',
+    previousEdition: 'الإصدار السابق',
+    nextEdition: 'الإصدار التالي',
+    translationPending:
+      'لم تتم ترجمة هذا الإصدار بعد — يُعرض النص الإنجليزي الأصلي.',
+  },
   gamesExplorer: {
     sectionAria: 'كل الألعاب والفئات',
     sortAria: 'ترتيب الألعاب',

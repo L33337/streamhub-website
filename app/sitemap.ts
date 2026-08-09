@@ -198,6 +198,7 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const streamerUrls: MetadataRoute.Sitemap = [];
   const gameUrls: MetadataRoute.Sitemap = [];
+  const recapUrls: MetadataRoute.Sitemap = [];
 
   try {
     const api = getPartnerApi();
@@ -321,6 +322,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         err instanceof Error ? err.message : err,
       );
     }
+
+    // AI recap articles (/rankings/recap archive + editions, 2026-08-09).
+    // available_languages is an EXACT index gate: an article's locale variant
+    // is indexable iff its translation exists (the page noindexes EN
+    // fallbacks), so only those URLs are listed. NO hreflang here — the
+    // page-level cluster is exact and reciprocal even when a translation
+    // lands between sitemap build and page render (streamer-URL convention).
+    // Best-effort like /best-time: additive URLs, omit on failure.
+    try {
+      const recapsResp = await api.listRecaps({ limit: 50, revalidate: 3600 });
+      if (recapsResp.data.length > 0) {
+        // Archive hub only once it has content (it noindexes while empty).
+        recapUrls.push(
+          ...hubEntries('/rankings/recap', {
+            changeFrequency: 'weekly',
+            priority: 0.5,
+          }),
+        );
+      }
+      for (const r of recapsResp.data) {
+        for (const l of INDEXABLE_HUB_LOCALES) {
+          if (!r.available_languages.includes(l)) continue;
+          recapUrls.push({
+            url: absoluteLocaleUrl(l, `/rankings/recap/${r.slug}`),
+            // Honest <lastmod>: editions are immutable after publication.
+            ...(r.published_at ? { lastModified: new Date(r.published_at) } : {}),
+            changeFrequency: 'weekly',
+            priority: l === 'en' ? 0.6 : 0.5,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(
+        '[sitemap] recaps unavailable, omitting /rankings/recap URLs:',
+        err instanceof Error ? err.message : err,
+      );
+    }
   } catch (err) {
     // The sitemap is all-or-nothing: NEVER serve a truncated list. A degraded
     // 200 (static-only) tells Google "these streamer URLs no longer exist" and
@@ -336,5 +374,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     throw err;
   }
 
-  return [...STATIC_URLS, ...streamerUrls, ...gameUrls];
+  return [...STATIC_URLS, ...streamerUrls, ...gameUrls, ...recapUrls];
 }

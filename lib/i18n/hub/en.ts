@@ -399,6 +399,20 @@ export const en: HubLex = {
     mainGameShareTitle: (pct) => `${pct}% of their categorized streams`,
     alwaysOnTitle: 'Always-on channel — live around the clock',
   },
+  recaps: {
+    weeklyKicker: 'Weekly recap',
+    monthlyKicker: 'Monthly recap',
+    readMore: 'Read the full recap',
+    archiveTitle: 'Streamer recap archive',
+    archiveIntro:
+      'Every weekly and monthly recap of the rankings: who climbed, who grew fastest, and the clips everyone watched.',
+    allRecaps: 'All recaps',
+    backToRankings: 'All rankings',
+    previousEdition: 'Previous edition',
+    nextEdition: 'Next edition',
+    translationPending:
+      'This edition has not been translated yet — showing the English original.',
+  },
   gamesExplorer: {
     sectionAria: 'All games and categories',
     sortAria: 'Sort games',

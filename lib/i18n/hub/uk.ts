@@ -467,6 +467,20 @@ export const uk: HubLex = {
     mainGameShareTitle: (pct) => `${pct}% категоризованих стримів`,
     alwaysOnTitle: 'Цілодобовий канал — в ефірі 24/7',
   },
+  recaps: {
+    weeklyKicker: 'Підсумки тижня',
+    monthlyKicker: 'Підсумки місяця',
+    readMore: 'Читати повний огляд',
+    archiveTitle: 'Архів оглядів',
+    archiveIntro:
+      'Усі щотижневі та щомісячні огляди рейтингів: хто піднявся, хто зростав найшвидше і які кліпи дивилися всі.',
+    allRecaps: 'Усі огляди',
+    backToRankings: 'Усі рейтинги',
+    previousEdition: 'Попередній випуск',
+    nextEdition: 'Наступний випуск',
+    translationPending:
+      'Цей випуск ще не перекладено — показано англійський оригінал.',
+  },
   gamesExplorer: {
     sectionAria: 'Усі ігри та категорії',
     sortAria: 'Сортування ігор',

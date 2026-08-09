@@ -15,6 +15,9 @@ import {
   reachableMatchCounts,
 } from '@/lib/rankings-facets';
 import { RankingSectionFilters } from '@/components/web/rankings/RankingSectionFilters';
+import { RecapTeaserCard } from '@/components/web/rankings/RecapTeaserCard';
+import { latestByKind, recapHref, recapPeriodLabel } from '@/lib/recaps';
+import { loadRecapsList } from '@/lib/server/recaps';
 import { loadRankingPool } from '@/lib/server/rankings-pool';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { getNextSlotByStreamer } from '@/lib/server/next-streams';
@@ -86,6 +89,9 @@ export default async function RankingsHubPage({ params }: Props) {
   // hides what it feeds (never throw during prerender; ISR self-heals within
   // the hour). They start before the awaits so everything runs concurrently.
   const gamesPromise = api.listGames({ limit: 500, revalidate: 3600 }).catch(() => null);
+  // AI recap teaser cards (2026-08-09). Failure-isolated like everything else:
+  // an empty list falls back to the classic static intro paragraph below.
+  const recapsPromise = loadRecapsList(locale);
   const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
   // Roster size for the stats strip: the offset mode returns an exact
   // pagination.total, so limit 1 buys the count without paying for rows.
@@ -130,6 +136,17 @@ export default async function RankingsHubPage({ params }: Props) {
 
   const gamesResp = await gamesPromise;
   const games: PublicGame[] = gamesResp?.data ?? [];
+  const recaps = latestByKind(await recapsPromise);
+  const recapCards = [
+    recaps.weekly && {
+      item: recaps.weekly,
+      kicker: L.recaps.weeklyKicker,
+    },
+    recaps.monthly && {
+      item: recaps.monthly,
+      kicker: L.recaps.monthlyKicker,
+    },
+  ].filter((c): c is { item: NonNullable<typeof recaps.weekly>; kicker: string } => Boolean(c));
 
   // Aggregate stats strip — every stat is failure-isolated and simply omitted
   // when its source call failed or returned nothing (0 is never rendered:
@@ -244,12 +261,42 @@ export default async function RankingsHubPage({ params }: Props) {
       />
 
       <h1 className="text-3xl font-bold text-white md:text-4xl">{L.rankings.h1}</h1>
-      <p className="mt-3 max-w-2xl text-text-secondary">
-        {L.rankings.intro(sections.length)}
-        {refreshedLabel && (
-          <span className="text-text-muted">{L.rankings.dataRefreshed(refreshedLabel)}</span>
-        )}
-      </p>
+      {recapCards.length > 0 ? (
+        // The AI recap teasers replace the static intro paragraph. Compact on
+        // purpose (2-line clamps, ~7rem visuals): the first leaderboard must
+        // stay reachable on one phone screen.
+        <>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {recapCards.map(({ item, kicker }) => (
+              <RecapTeaserCard
+                key={item.slug}
+                item={item}
+                kicker={kicker}
+                periodLabel={recapPeriodLabel(
+                  item.kind,
+                  item.period_start,
+                  item.period_end,
+                  locale,
+                )}
+                readMore={L.recaps.readMore}
+                href={localeHref(locale, recapHref(item.slug))}
+              />
+            ))}
+          </div>
+          {refreshedLabel && (
+            <p className="mt-3 text-sm text-text-muted">
+              {L.rankings.dataRefreshed(refreshedLabel).trim()}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="mt-3 max-w-2xl text-text-secondary">
+          {L.rankings.intro(sections.length)}
+          {refreshedLabel && (
+            <span className="text-text-muted">{L.rankings.dataRefreshed(refreshedLabel)}</span>
+          )}
+        </p>
+      )}
 
       {stats.length > 0 && (
         <p className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-2 text-sm text-text-secondary">
@@ -345,6 +392,13 @@ export default async function RankingsHubPage({ params }: Props) {
           className="text-accent-cyan hover:text-text-primary"
         >
           {L.rankings.climbersThisWeek}
+        </Link>
+        {'  ·  '}
+        <Link
+          href={localeHref(locale, '/rankings/recap')}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          {L.recaps.allRecaps}
         </Link>
         {'  ·  '}
         <Link
