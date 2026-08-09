@@ -475,6 +475,20 @@ export const pl: HubLex = {
     mainGameShareTitle: (pct) => `${pct}% skategoryzowanych streamów`,
     alwaysOnTitle: 'Kanał always-on — na żywo całą dobę',
   },
+  recaps: {
+    weeklyKicker: 'Podsumowanie tygodnia',
+    monthlyKicker: 'Podsumowanie miesiąca',
+    readMore: 'Przeczytaj całe podsumowanie',
+    archiveTitle: 'Archiwum podsumowań',
+    archiveIntro:
+      'Wszystkie tygodniowe i miesięczne podsumowania rankingów: kto awansował, kto rósł najszybciej i które klipy oglądali wszyscy.',
+    allRecaps: 'Wszystkie podsumowania',
+    backToRankings: 'Wszystkie rankingi',
+    previousEdition: 'Poprzednie wydanie',
+    nextEdition: 'Następne wydanie',
+    translationPending:
+      'To wydanie nie zostało jeszcze przetłumaczone — wyświetlamy angielski oryginał.',
+  },
   gamesExplorer: {
     sectionAria: 'Wszystkie gry i kategorie',
     sortAria: 'Sortowanie gier',

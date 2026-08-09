@@ -384,6 +384,20 @@ export const ja: HubLex = {
     mainGameShareTitle: (pct) => `カテゴリー付き配信の${pct}%`,
     alwaysOnTitle: '常時配信チャンネル — 24時間ライブ',
   },
+  recaps: {
+    weeklyKicker: '週間まとめ',
+    monthlyKicker: '月間まとめ',
+    readMore: 'まとめ全文を読む',
+    archiveTitle: 'まとめアーカイブ',
+    archiveIntro:
+      'ランキングの週間・月間まとめ一覧。順位を上げた配信者、最も成長した配信者、話題のクリップをお届けします。',
+    allRecaps: 'すべてのまとめ',
+    backToRankings: 'ランキング一覧',
+    previousEdition: '前の号',
+    nextEdition: '次の号',
+    translationPending:
+      'この号はまだ翻訳されていません。英語の原文を表示しています。',
+  },
   gamesExplorer: {
     sectionAria: 'すべてのゲームとカテゴリー',
     sortAria: 'ゲームの並び替え',

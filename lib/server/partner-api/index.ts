@@ -5,6 +5,7 @@ export type {
   ListStreamersOptions,
   ListSchedulesOptions,
   ListGamesOptions,
+  ListRecapsOptions,
 } from './client';
 export {
   PartnerApiError,
@@ -48,4 +49,12 @@ export type {
   InsightsMonthlyTrendEntry,
   InsightsFollowerPoint,
   InsightsCategoryMarket,
+  RecapKind,
+  RecapHero,
+  RecapHeroClip,
+  RecapStreamerRef,
+  RecapSection,
+  PublicRecapListItem,
+  PublicRecapArticle,
+  RecapsListResponse,
 } from './types';

@@ -489,3 +489,71 @@ export interface PartnerApiErrorBody {
   error_description: string;
   request_id?: string;
 }
+
+// ============================================
+// Recap articles (GET /v1/recaps, 2026-08-09)
+// ============================================
+
+export type RecapKind = 'weekly' | 'monthly';
+
+export interface RecapHeroClip {
+  clip_id: string;
+  title: string | null;
+  /** twitch.tv clip URL. */
+  url: string;
+  /** Platform-CDN thumbnail; can expire for old clips — always render an
+   *  avatar fallback (`hero.streamers`). */
+  thumbnail_url: string | null;
+  view_count: number | null;
+  streamer_id: string;
+  streamer_name: string | null;
+  category: string | null;
+}
+
+export interface RecapHero {
+  clip: RecapHeroClip | null;
+  /** Up to 3 protagonists of the edition. */
+  streamers: RecapStreamerRef[];
+}
+
+export interface RecapStreamerRef {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+}
+
+export interface PublicRecapListItem {
+  /** Stable article identity, e.g. '2026-week-32' (weekly) or '2026-07' (monthly). */
+  slug: string;
+  kind: RecapKind;
+  /** Inclusive period bounds, 'YYYY-MM-DD'. */
+  period_start: string;
+  period_end: string;
+  published_at: string | null;
+  /** Language actually served — differs from requested_language when the
+   *  translation does not exist yet (EN fallback → noindex that variant). */
+  language: string;
+  requested_language: string;
+  available_languages: string[];
+  title: string;
+  /** 1-2 sentences; doubles as the meta description. */
+  teaser: string;
+  hero: RecapHero;
+}
+
+export interface RecapSection {
+  heading: string;
+  /** Paragraphs may contain [[streamer:<id>]] markers — render as links via
+   *  the article's `streamers` lookup. */
+  paragraphs: string[];
+}
+
+export interface PublicRecapArticle extends PublicRecapListItem {
+  sections: RecapSection[];
+  /** id→name/avatar lookup for every streamer the markers may reference. */
+  streamers: RecapStreamerRef[];
+}
+
+export interface RecapsListResponse {
+  data: PublicRecapListItem[];
+}

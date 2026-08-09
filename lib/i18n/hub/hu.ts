@@ -386,6 +386,20 @@ export const hu: HubLex = {
     mainGameShareTitle: (pct) => `A kategorizált streamek ${pct}%-a`,
     alwaysOnTitle: 'Always-on csatorna — éjjel-nappal élőben',
   },
+  recaps: {
+    weeklyKicker: 'Heti összefoglaló',
+    monthlyKicker: 'Havi összefoglaló',
+    readMore: 'A teljes összefoglaló',
+    archiveTitle: 'Összefoglaló-archívum',
+    archiveIntro:
+      'A ranglisták összes heti és havi összefoglalója: ki kapaszkodott feljebb, ki nőtt a leggyorsabban, és melyik klipeket nézte mindenki.',
+    allRecaps: 'Összes összefoglaló',
+    backToRankings: 'Összes ranglista',
+    previousEdition: 'Előző kiadás',
+    nextEdition: 'Következő kiadás',
+    translationPending:
+      'Ez a kiadás még nincs lefordítva — az angol eredetit mutatjuk.',
+  },
   gamesExplorer: {
     sectionAria: 'Minden játék és kategória',
     sortAria: 'Játékok rendezése',

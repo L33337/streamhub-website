@@ -14,6 +14,7 @@ import type {
   PartnerApiErrorBody,
   Platform,
   PublicGame,
+  PublicRecapArticle,
   PublicStreamer,
   PublicStreamerRankings,
   PublicStreamerStats,
@@ -21,6 +22,8 @@ import type {
   PublicStreamSlot,
   RankingMetric,
   RankingsResponse,
+  RecapKind,
+  RecapsListResponse,
   StreamerInsights,
 } from './types';
 
@@ -123,6 +126,14 @@ export interface ListGamesOptions extends FetchOptions {
 
 export interface ListHistoryOptions extends FetchOptions {
   cursor?: string;
+  limit?: number;
+}
+
+export interface ListRecapsOptions extends FetchOptions {
+  kind?: RecapKind;
+  /** Requested content language (ISO 639-1); the API falls back to English
+   *  per-article and reports what it served via `language`. */
+  lang?: string;
   limit?: number;
 }
 
@@ -330,6 +341,50 @@ class PartnerApiClient {
       );
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Published recap articles, newest first (list items: title/teaser/hero —
+   * no sections). Weekly editions publish Monday mornings, monthly on the
+   * 1st; translations trickle in via a daily drip, so the fetch defaults to a
+   * 15-min data-cache revalidate. NOT best-effort — callers on prerendered
+   * routes must catch and degrade (hub falls back to its static intro).
+   */
+  async listRecaps(opts: ListRecapsOptions = {}): Promise<RecapsListResponse> {
+    const params = new URLSearchParams();
+    if (opts.kind) params.set('kind', opts.kind);
+    if (opts.lang) params.set('lang', opts.lang);
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    const qs = params.toString();
+    return this.request<RecapsListResponse>('GET', `/v1/recaps${qs ? `?${qs}` : ''}`, {
+      revalidate: 900,
+      ...opts,
+    });
+  }
+
+  /**
+   * One full recap article incl. sections + the streamer lookup for its
+   * [[streamer:id]] markers. Null on 404 (unknown slug / not published) so
+   * the route can notFound() cleanly; other errors propagate for the caller's
+   * degrade path.
+   */
+  async getRecap(
+    slug: string,
+    opts: FetchOptions & { lang?: string } = {},
+  ): Promise<PublicRecapArticle | null> {
+    const params = new URLSearchParams();
+    if (opts.lang) params.set('lang', opts.lang);
+    const qs = params.toString();
+    try {
+      return await this.request<PublicRecapArticle>(
+        'GET',
+        `/v1/recaps/${encodeURIComponent(slug)}${qs ? `?${qs}` : ''}`,
+        { revalidate: 900, ...opts },
+      );
+    } catch (err) {
+      if (err instanceof PartnerApiNotFoundError) return null;
+      throw err;
     }
   }
 
