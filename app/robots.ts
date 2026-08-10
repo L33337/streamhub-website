@@ -59,6 +59,12 @@ export default function robots(): MetadataRoute.Robots {
       // waste" threshold the note below always reserved. Embed crawlers
       // (Discordbot, Twitterbot, facebookexternalhit, Slackbot, WhatsApp, …)
       // deliberately stay on the * group so shared slot URLs keep unfurling.
+      //
+      // Robots matching is per product TOKEN, not substring-of-a-family:
+      // ClaudeBot does NOT cover Claude-SearchBot, Amazonbot does NOT cover
+      // Amzn-SearchBot, Googlebot does NOT cover GoogleOther. 2026-08-10
+      // Vercel UA breakdown: meta-webindexer alone was ~57% of the /schedule
+      // route's crawl volume precisely because it was missing here.
       {
         userAgent: [
           'YandexBot',
@@ -66,11 +72,17 @@ export default function robots(): MetadataRoute.Robots {
           'PetalBot',
           'Bytespider',
           'Amazonbot',
+          'Amzn-SearchBot',
           'CCBot',
           'GPTBot',
+          'OAI-SearchBot',
           'ClaudeBot',
+          'Claude-SearchBot',
           'PerplexityBot',
           'meta-externalagent',
+          'meta-webindexer',
+          'GoogleOther',
+          'SleepBot',
           'AhrefsBot',
           'SemrushBot',
           'MJ12bot',

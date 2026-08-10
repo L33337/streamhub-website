@@ -55,6 +55,32 @@ describe('robots.txt rules', () => {
     expect(duckduckbot?.allow).toBe('/');
   });
 
+  it('blocks /schedule/ for the named crawler group, incl. sibling tokens', () => {
+    // Robots matching is per product token: ClaudeBot does not cover
+    // Claude-SearchBot, Amazonbot not Amzn-SearchBot, Googlebot not
+    // GoogleOther. meta-webindexer was ~57% of the /schedule route's crawl
+    // volume (Vercel UA breakdown, 2026-08-10) while it was missing here —
+    // these entries are load-bearing for the ISR-write bill.
+    const rules = robots().rules;
+    const list = Array.isArray(rules) ? rules : [rules];
+    const group = list.find((r) => Array.isArray(r.userAgent));
+    expect(group).toBeDefined();
+    for (const token of [
+      'meta-externalagent',
+      'meta-webindexer',
+      'Claude-SearchBot',
+      'Amzn-SearchBot',
+      'OAI-SearchBot',
+      'GoogleOther',
+      'YandexBot',
+      'Bytespider',
+    ]) {
+      expect(group?.userAgent).toContain(token);
+    }
+    expect(group?.disallow).toEqual([...SHARED_DISALLOWS, ...SCHEDULE_DISALLOWS]);
+    expect(group?.allow).toBe('/');
+  });
+
   it('keeps /schedule/ crawlable for every other bot (social embeds)', () => {
     const wildcard = ruleFor('*');
     expect(wildcard).toBeDefined();
