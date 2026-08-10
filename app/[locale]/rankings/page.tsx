@@ -85,9 +85,9 @@ export default async function RankingsHubPage({ params }: Props) {
   const L = hubLexFor(locale);
   const api = getPartnerApi();
 
-  // The game list + the two stats calls — all failure-isolated: a failed call
-  // hides what it feeds (never throw during prerender; ISR self-heals within
-  // the hour). They start before the awaits so everything runs concurrently.
+  // All side fetches are failure-isolated: a failed call hides what it feeds
+  // (never throw during prerender; ISR self-heals within the hour). They start
+  // before the awaits so everything runs concurrently.
   const gamesPromise = api.listGames({ limit: 500, revalidate: 3600 }).catch(() => null);
   // AI recap teaser cards (2026-08-09). Failure-isolated like everything else:
   // an empty list falls back to the classic static intro paragraph below.
@@ -116,8 +116,9 @@ export default async function RankingsHubPage({ params }: Props) {
     sections.flatMap((s) => s.entries.map((e) => e.streamer.id)),
   );
 
-  // Latest aggregate refresh across the leaderboards — one visible freshness
-  // line for the whole hub (refreshed_at is null for table-backed metrics).
+  // Latest aggregate refresh across the leaderboards (refreshed_at is null for
+  // table-backed metrics). Only rendered by the static-intro fallback below —
+  // the recap-card layout dropped its freshness line on 2026-08-10.
   const refreshedLabel = formatRefreshedAt(
     pools
       .map((pool) => pool.refreshedAt)
