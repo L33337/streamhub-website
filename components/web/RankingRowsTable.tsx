@@ -170,123 +170,138 @@ export function RankingRowsTable({
   // hidden here — unlike the decorative chip rails, a data table needs it.
   const hasWideColumns = Boolean(chrome.mainGameHeader || chrome.nextStreamHeader);
   return (
-    <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-      <table className={`w-full text-sm ${hasWideColumns ? 'min-w-[34rem]' : ''}`}>
-        <caption className="sr-only">{chrome.caption}</caption>
-        <thead>
-          <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
-            <th scope="col" className="px-3 py-2 font-semibold">
-              #
-            </th>
-            <th scope="col" className="px-3 py-2 font-semibold">
-              {chrome.tableColStreamer}
-            </th>
-            {chrome.headers.map((header) => (
-              <th
-                key={header.label}
-                scope="col"
-                className={`px-3 py-2 text-right font-semibold ${
-                  header.primary ? PRIMARY_STICKY : ''
-                }`}
-              >
-                {header.label}
+    // Two nested divs on purpose: gradient-border paints its frame via an
+    // absolutely-positioned ::before, and absolute descendants of a scroll
+    // container SCROLL WITH the content — on one combined div the frame's
+    // right edge cut through the middle of the table as soon as you scrolled.
+    // Frame outside, overflow inside (same split as BestGamesTable). Keep the
+    // padding on the OUTER div: on the scroll element itself it would make the
+    // sticky metric column stick 4px short of the edge.
+    <div className="rounded-xl bg-background-elevated p-1 gradient-border">
+      <div className="overflow-x-auto">
+        <table className={`w-full text-sm ${hasWideColumns ? 'min-w-[34rem]' : ''}`}>
+          <caption className="sr-only">{chrome.caption}</caption>
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
+              <th scope="col" className="px-3 py-2 font-semibold">
+                #
               </th>
-            ))}
-            {chrome.mainGameHeader && (
-              <th scope="col" className="px-3 py-2 text-right font-semibold">
-                {chrome.mainGameHeader}
+              {/* Floor for the whole column (auto layout takes the max over all
+                  cells). Without it, tables with few short-named rows — the hub's
+                  Top-5 previews — let the OTHER columns' content squeeze this one
+                  to ~140px, stacking the LIVE/platform badges one per line and
+                  tripling the row height. 15rem keeps avatar + name + badge row
+                  on one line; long names still truncate. */}
+              <th scope="col" className="min-w-[15rem] px-3 py-2 font-semibold">
+                {chrome.tableColStreamer}
               </th>
-            )}
-            {chrome.nextStreamHeader && (
-              <th scope="col" className="px-3 py-2 text-right font-semibold">
-                {chrome.nextStreamHeader}
-              </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const medal = MEDAL_CLASSES[row.rank];
-            return (
-              <tr
-                key={row.streamerId}
-                id={rowAnchorPrefix ? `${rowAnchorPrefix}-${row.rank}` : undefined}
-                // scroll-mt clears the sticky site header when jumping to a row anchor
-                className="scroll-mt-20 border-t border-divider"
-              >
-                <td className="px-3 py-2">
-                  <span className="flex items-baseline gap-1.5">
-                    <span
-                      className={`font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
-                    >
-                      {row.rank}
-                    </span>
-                    <TrendIndicator trend={row.trend} />
-                  </span>
-                </td>
-                <th scope="row" className="px-3 py-2 text-left font-medium">
-                  <Link href={row.href} className="group flex items-center gap-3">
-                    {row.avatarUrl ? (
-                      <Image
-                        src={row.avatarUrl}
-                        alt={row.name}
-                        width={RANKING_AVATAR_PX}
-                        height={RANKING_AVATAR_PX}
-                        unoptimized
-                        className="shrink-0 rounded-full border border-border-default"
-                      />
-                    ) : (
-                      <InitialsAvatar
-                        name={row.name}
-                        size={RANKING_AVATAR_PX}
-                        className="shrink-0"
-                      />
-                    )}
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
-                        {row.name}
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                        {row.isLive && <LiveBadge size="sm" />}
-                        {row.platforms.map((p) => (
-                          <PlatformBadge key={p} platform={p} size="sm" />
-                        ))}
-                        {row.languageLabel && (
-                          <span className="text-[10px] tracking-wider text-text-muted">
-                            {row.languageLabel}
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </Link>
+              {chrome.headers.map((header) => (
+                <th
+                  key={header.label}
+                  scope="col"
+                  className={`px-3 py-2 text-right font-semibold ${
+                    header.primary ? PRIMARY_STICKY : ''
+                  }`}
+                >
+                  {header.label}
                 </th>
-                {row.values.map((value, i) => (
-                  <td
-                    key={chrome.headers[i]?.label ?? i}
-                    className={
-                      chrome.headers[i]?.primary
-                        ? `whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan ${PRIMARY_STICKY}`
-                        : 'whitespace-nowrap px-3 py-2 text-right tabular-nums text-text-secondary'
-                    }
-                  >
-                    {value}
+              ))}
+              {chrome.mainGameHeader && (
+                <th scope="col" className="px-3 py-2 text-right font-semibold">
+                  {chrome.mainGameHeader}
+                </th>
+              )}
+              {chrome.nextStreamHeader && (
+                <th scope="col" className="px-3 py-2 text-right font-semibold">
+                  {chrome.nextStreamHeader}
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const medal = MEDAL_CLASSES[row.rank];
+              return (
+                <tr
+                  key={row.streamerId}
+                  id={rowAnchorPrefix ? `${rowAnchorPrefix}-${row.rank}` : undefined}
+                  // scroll-mt clears the sticky site header when jumping to a row anchor
+                  className="scroll-mt-20 border-t border-divider"
+                >
+                  <td className="px-3 py-2">
+                    <span className="flex items-baseline gap-1.5">
+                      <span
+                        className={`font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
+                      >
+                        {row.rank}
+                      </span>
+                      <TrendIndicator trend={row.trend} />
+                    </span>
                   </td>
-                ))}
-                {chrome.mainGameHeader && (
-                  <td className="max-w-40 px-3 py-2 text-right text-text-secondary">
-                    <MainGameCell mainGame={row.mainGame} />
-                  </td>
-                )}
-                {chrome.nextStreamHeader && (
-                  <td className="whitespace-nowrap px-3 py-2 text-right text-text-secondary">
-                    <NextStreamCell nextStream={row.nextStream} locale={locale} />
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  <th scope="row" className="px-3 py-2 text-left font-medium">
+                    <Link href={row.href} className="group flex items-center gap-3">
+                      {row.avatarUrl ? (
+                        <Image
+                          src={row.avatarUrl}
+                          alt={row.name}
+                          width={RANKING_AVATAR_PX}
+                          height={RANKING_AVATAR_PX}
+                          unoptimized
+                          className="shrink-0 rounded-full border border-border-default"
+                        />
+                      ) : (
+                        <InitialsAvatar
+                          name={row.name}
+                          size={RANKING_AVATAR_PX}
+                          className="shrink-0"
+                        />
+                      )}
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
+                          {row.name}
+                        </span>
+                        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                          {row.isLive && <LiveBadge size="sm" />}
+                          {row.platforms.map((p) => (
+                            <PlatformBadge key={p} platform={p} size="sm" />
+                          ))}
+                          {row.languageLabel && (
+                            <span className="text-[10px] tracking-wider text-text-muted">
+                              {row.languageLabel}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                    </Link>
+                  </th>
+                  {row.values.map((value, i) => (
+                    <td
+                      key={chrome.headers[i]?.label ?? i}
+                      className={
+                        chrome.headers[i]?.primary
+                          ? `whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan ${PRIMARY_STICKY}`
+                          : 'whitespace-nowrap px-3 py-2 text-right tabular-nums text-text-secondary'
+                      }
+                    >
+                      {value}
+                    </td>
+                  ))}
+                  {chrome.mainGameHeader && (
+                    <td className="max-w-40 px-3 py-2 text-right text-text-secondary">
+                      <MainGameCell mainGame={row.mainGame} />
+                    </td>
+                  )}
+                  {chrome.nextStreamHeader && (
+                    <td className="whitespace-nowrap px-3 py-2 text-right text-text-secondary">
+                      <NextStreamCell nextStream={row.nextStream} locale={locale} />
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

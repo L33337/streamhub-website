@@ -687,118 +687,124 @@ export default async function GamePage({ params }: Props) {
           <h2 id="most-followed-heading" className="text-xl font-bold text-white">
             {G.mostFollowed(category)}
           </h2>
-          <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-            <table className="w-full text-sm">
-              <caption className="sr-only">{G.tableCaption(category)}</caption>
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
-                  <th scope="col" className="px-3 py-2 font-semibold">
-                    {G.thRank}
-                  </th>
-                  <th scope="col" className="px-3 py-2 font-semibold">
-                    {G.thStreamer}
-                  </th>
-                  <th scope="col" className="px-3 py-2 font-semibold">
-                    {G.thNextStream}
-                  </th>
-                  <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    {G.thFollowers}
-                  </th>
-                  <th scope="col" className="hidden px-3 py-2 text-right font-semibold sm:table-cell">
-                    {G.thHours}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rankingRows.map((row) => {
-                  const nextDay = row.nextStreamAt?.slice(0, 10) ?? null;
-                  const nextLabel = row.nextStreamAt ? (
-                    <span className="flex flex-col leading-tight">
-                      <NextStreamTime
-                        startTime={row.nextStreamAt}
-                        isPredicted={row.nextIsPredicted}
-                        language={locale}
-                      />
-                      {row.nextCategory && (
-                        <span
-                          className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
-                          title={row.nextCategory}
-                        >
-                          {row.nextCategory}
-                        </span>
-                      )}
-                    </span>
-                  ) : null;
-                  return (
-                    <tr key={row.id} className="border-t border-divider">
-                      <td className="px-3 py-2 font-bold tabular-nums text-text-muted">
-                        {row.rank}
-                      </td>
-                      <th scope="row" className="px-3 py-2 text-left font-medium">
-                        <Link
-                          href={localeHref(locale, `/streamer/${encodeURIComponent(row.id)}`)}
-                          className="group flex items-center gap-3"
-                        >
-                          {row.avatarUrl ? (
-                            <Image
-                              src={sizedAvatarUrl(row.avatarUrl, 36)}
-                              alt={row.name}
-                              width={36}
-                              height={36}
-                              unoptimized
-                              className="shrink-0 rounded-full border border-border-default"
-                            />
-                          ) : (
-                            <InitialsAvatar
-                              name={row.name}
-                              size={36}
-                              className="shrink-0"
-                            />
-                          )}
-                          <span className="flex min-w-0 flex-col">
-                            <span className="flex min-w-0 items-center gap-2">
-                              <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
-                                {row.name}
-                              </span>
-                              {row.isLive && <LiveBadge />}
-                            </span>
-                            <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                              {row.platforms.map((p) => (
-                                <PlatformBadge key={p} platform={p} size="sm" />
-                              ))}
-                            </span>
-                          </span>
-                        </Link>
-                      </th>
-                      <td className="whitespace-nowrap px-3 py-2 text-xs text-text-secondary">
-                        {row.isLive ? (
-                          <a
-                            href="#watching-now"
-                            className="font-semibold text-live hover:underline"
+          {/* Frame and scroll container split on purpose: gradient-border's
+              absolute ::before scrolls with the content when it sits on the
+              overflow element, cutting its right edge through the table
+              mid-scroll (see RankingRowsTable). */}
+          <div className="mt-4 rounded-xl bg-background-elevated p-1 gradient-border">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <caption className="sr-only">{G.tableCaption(category)}</caption>
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
+                    <th scope="col" className="px-3 py-2 font-semibold">
+                      {G.thRank}
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold">
+                      {G.thStreamer}
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold">
+                      {G.thNextStream}
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">
+                      {G.thFollowers}
+                    </th>
+                    <th scope="col" className="hidden px-3 py-2 text-right font-semibold sm:table-cell">
+                      {G.thHours}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankingRows.map((row) => {
+                    const nextDay = row.nextStreamAt?.slice(0, 10) ?? null;
+                    const nextLabel = row.nextStreamAt ? (
+                      <span className="flex flex-col leading-tight">
+                        <NextStreamTime
+                          startTime={row.nextStreamAt}
+                          isPredicted={row.nextIsPredicted}
+                          language={locale}
+                        />
+                        {row.nextCategory && (
+                          <span
+                            className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
+                            title={row.nextCategory}
                           >
-                            {G.liveNowCell}
-                          </a>
-                        ) : nextDay && renderedDayKeys.has(nextDay) ? (
-                          <a href={`#day-${nextDay}`} className="hover:text-accent-cyan">
-                            {nextLabel}
-                          </a>
-                        ) : (
-                          nextLabel ?? '—'
+                            {row.nextCategory}
+                          </span>
                         )}
-                      </td>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
-                        {formatCompactNumber(row.followerCount, locale)}
-                      </td>
-                      <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
-                        {row.hours28d != null && row.hours28d > 0
-                          ? `${formatCompactNumber(Math.round(row.hours28d), locale)}h`
-                          : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                    ) : null;
+                    return (
+                      <tr key={row.id} className="border-t border-divider">
+                        <td className="px-3 py-2 font-bold tabular-nums text-text-muted">
+                          {row.rank}
+                        </td>
+                        <th scope="row" className="px-3 py-2 text-left font-medium">
+                          <Link
+                            href={localeHref(locale, `/streamer/${encodeURIComponent(row.id)}`)}
+                            className="group flex items-center gap-3"
+                          >
+                            {row.avatarUrl ? (
+                              <Image
+                                src={sizedAvatarUrl(row.avatarUrl, 36)}
+                                alt={row.name}
+                                width={36}
+                                height={36}
+                                unoptimized
+                                className="shrink-0 rounded-full border border-border-default"
+                              />
+                            ) : (
+                              <InitialsAvatar
+                                name={row.name}
+                                size={36}
+                                className="shrink-0"
+                              />
+                            )}
+                            <span className="flex min-w-0 flex-col">
+                              <span className="flex min-w-0 items-center gap-2">
+                                <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
+                                  {row.name}
+                                </span>
+                                {row.isLive && <LiveBadge />}
+                              </span>
+                              <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                                {row.platforms.map((p) => (
+                                  <PlatformBadge key={p} platform={p} size="sm" />
+                                ))}
+                              </span>
+                            </span>
+                          </Link>
+                        </th>
+                        <td className="whitespace-nowrap px-3 py-2 text-xs text-text-secondary">
+                          {row.isLive ? (
+                            <a
+                              href="#watching-now"
+                              className="font-semibold text-live hover:underline"
+                            >
+                              {G.liveNowCell}
+                            </a>
+                          ) : nextDay && renderedDayKeys.has(nextDay) ? (
+                            <a href={`#day-${nextDay}`} className="hover:text-accent-cyan">
+                              {nextLabel}
+                            </a>
+                          ) : (
+                            nextLabel ?? '—'
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
+                          {formatCompactNumber(row.followerCount, locale)}
+                        </td>
+                        <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
+                          {row.hours28d != null && row.hours28d > 0
+                            ? `${formatCompactNumber(Math.round(row.hours28d), locale)}h`
+                            : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
           <p className="mt-3 text-sm">
             <Link

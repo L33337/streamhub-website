@@ -200,177 +200,183 @@ export function GameRankingExplorer({
       {visible.length === 0 ? (
         <p className="mt-6 text-sm text-text-muted">{labels.noMatch}</p>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-          <table className="w-full text-sm">
-            <caption className="sr-only">{labels.tableCaption}</caption>
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
-                <th scope="col" className="px-3 py-2 font-semibold">
-                  {labels.thRank}
-                </th>
-                <th scope="col" className="px-3 py-2 font-semibold">
-                  {labels.thStreamer}
-                </th>
-                <th scope="col" className="px-3 py-2 text-right font-semibold">
-                  {labels.thFollowers}
-                </th>
-                <th scope="col" className="px-3 py-2 text-right font-semibold">
-                  {labels.thAvgViewers}
-                </th>
-                {hasHours && (
+        // Frame and scroll container split on purpose: gradient-border's
+        // absolute ::before scrolls with the content when it sits on the
+        // overflow element, cutting its right edge through the table
+        // mid-scroll (see RankingRowsTable).
+        <div className="mt-4 rounded-xl bg-background-elevated p-1 gradient-border">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <caption className="sr-only">{labels.tableCaption}</caption>
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
+                  <th scope="col" className="px-3 py-2 font-semibold">
+                    {labels.thRank}
+                  </th>
+                  <th scope="col" className="px-3 py-2 font-semibold">
+                    {labels.thStreamer}
+                  </th>
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    {labels.thHours}
+                    {labels.thFollowers}
                   </th>
-                )}
-                {hasShare && (
-                  <th
-                    scope="col"
-                    className="px-3 py-2 text-right font-semibold"
-                    title={labels.thShareTitle}
-                  >
-                    {labels.thShare}
-                  </th>
-                )}
-                {hasNext && (
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    {labels.thNextStream}
+                    {labels.thAvgViewers}
                   </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((row) => {
-                const medal = MEDAL_CLASSES[row.rank];
-                return (
-                  <tr
-                    key={row.id}
-                    id={canonical ? `rank-${row.rank}` : undefined}
-                    className="scroll-mt-20 border-t border-divider"
-                  >
-                    <td className="px-3 py-2">
-                      <span className="flex items-baseline gap-1.5">
-                        <span
-                          className={`font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
-                        >
-                          {row.rank}
-                        </span>
-                        {canonical && <TrendIndicator row={row} labels={labels} />}
-                      </span>
-                    </td>
-                    <th scope="row" className="px-3 py-2 text-left font-medium">
-                      <Link
-                        href={localeHref(uiLang, `/streamer/${encodeURIComponent(row.id)}`)}
-                        className="group flex items-center gap-3"
-                      >
-                        {row.avatarUrl ? (
-                          <Image
-                            src={sizedAvatarUrl(row.avatarUrl, 36)}
-                            alt={row.name}
-                            width={36}
-                            height={36}
-                            unoptimized
-                            className="shrink-0 rounded-full border border-border-default"
-                          />
-                        ) : (
-                          <InitialsAvatar name={row.name} size={36} className="shrink-0" />
-                        )}
-                        <span className="flex min-w-0 flex-col">
-                          <span className="flex items-center gap-2">
-                            <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
-                              {row.name}
-                            </span>
-                            {row.isLive && <LiveBadge />}
-                          </span>
-                          <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                            {row.platforms.map((p) => (
-                              <PlatformBadge key={p} platform={p} size="sm" />
-                            ))}
-                            {row.language && (
-                              <span className="text-[10px] tracking-wider text-text-muted">
-                                {languageDisplayName(row.language, uiLang)}
-                              </span>
-                            )}
-                          </span>
-                        </span>
-                      </Link>
+                  {hasHours && (
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">
+                      {labels.thHours}
                     </th>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
-                      {formatCompactNumber(row.followerCount, uiLang)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
-                      {row.avgViewCount != null && row.avgViewCount > 0
-                        ? formatCompactNumber(row.avgViewCount, uiLang)
-                        : '—'}
-                    </td>
-                    {hasHours && (
+                  )}
+                  {hasShare && (
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-right font-semibold"
+                      title={labels.thShareTitle}
+                    >
+                      {labels.thShare}
+                    </th>
+                  )}
+                  {hasNext && (
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">
+                      {labels.thNextStream}
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((row) => {
+                  const medal = MEDAL_CLASSES[row.rank];
+                  return (
+                    <tr
+                      key={row.id}
+                      id={canonical ? `rank-${row.rank}` : undefined}
+                      className="scroll-mt-20 border-t border-divider"
+                    >
+                      <td className="px-3 py-2">
+                        <span className="flex items-baseline gap-1.5">
+                          <span
+                            className={`font-bold tabular-nums ${medal ?? 'text-text-muted'}`}
+                          >
+                            {row.rank}
+                          </span>
+                          {canonical && <TrendIndicator row={row} labels={labels} />}
+                        </span>
+                      </td>
+                      <th scope="row" className="px-3 py-2 text-left font-medium">
+                        <Link
+                          href={localeHref(uiLang, `/streamer/${encodeURIComponent(row.id)}`)}
+                          className="group flex items-center gap-3"
+                        >
+                          {row.avatarUrl ? (
+                            <Image
+                              src={sizedAvatarUrl(row.avatarUrl, 36)}
+                              alt={row.name}
+                              width={36}
+                              height={36}
+                              unoptimized
+                              className="shrink-0 rounded-full border border-border-default"
+                            />
+                          ) : (
+                            <InitialsAvatar name={row.name} size={36} className="shrink-0" />
+                          )}
+                          <span className="flex min-w-0 flex-col">
+                            <span className="flex items-center gap-2">
+                              <span className="truncate font-semibold text-text-primary group-hover:text-accent-cyan">
+                                {row.name}
+                              </span>
+                              {row.isLive && <LiveBadge />}
+                            </span>
+                            <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                              {row.platforms.map((p) => (
+                                <PlatformBadge key={p} platform={p} size="sm" />
+                              ))}
+                              {row.language && (
+                                <span className="text-[10px] tracking-wider text-text-muted">
+                                  {languageDisplayName(row.language, uiLang)}
+                                </span>
+                              )}
+                            </span>
+                          </span>
+                        </Link>
+                      </th>
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
+                        {formatCompactNumber(row.followerCount, uiLang)}
+                      </td>
                       <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
-                        {row.hours28d != null && row.hours28d > 0
-                          ? formatHours(row.hours28d, uiLang)
+                        {row.avgViewCount != null && row.avgViewCount > 0
+                          ? formatCompactNumber(row.avgViewCount, uiLang)
                           : '—'}
                       </td>
-                    )}
-                    {hasShare && (
-                      <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
-                        {row.sharePercent != null ? (
-                          <span
-                            className={
-                              row.sharePercent >= 75
-                                ? 'font-semibold text-text-primary'
-                                : undefined
-                            }
-                            title={
-                              row.sharePercent >= 75
-                                ? labels.mainGameTemplate.replace(
-                                    '{share}',
-                                    String(row.sharePercent),
-                                  )
-                                : undefined
-                            }
-                          >
-                            {row.sharePercent}%
-                          </span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    )}
-                    {hasNext && (
-                      <td className="whitespace-nowrap px-3 py-2 text-right text-xs text-text-secondary">
-                        {row.isLive ? (
-                          <span className="font-semibold text-live">
-                            {labels.liveNowCell}
-                            {row.liveViewerCount != null &&
-                              labels.watchingTail.replace(
-                                '{value}',
-                                formatCompactNumber(row.liveViewerCount, uiLang),
+                      {hasHours && (
+                        <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
+                          {row.hours28d != null && row.hours28d > 0
+                            ? formatHours(row.hours28d, uiLang)
+                            : '—'}
+                        </td>
+                      )}
+                      {hasShare && (
+                        <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
+                          {row.sharePercent != null ? (
+                            <span
+                              className={
+                                row.sharePercent >= 75
+                                  ? 'font-semibold text-text-primary'
+                                  : undefined
+                              }
+                              title={
+                                row.sharePercent >= 75
+                                  ? labels.mainGameTemplate.replace(
+                                      '{share}',
+                                      String(row.sharePercent),
+                                    )
+                                  : undefined
+                              }
+                            >
+                              {row.sharePercent}%
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      )}
+                      {hasNext && (
+                        <td className="whitespace-nowrap px-3 py-2 text-right text-xs text-text-secondary">
+                          {row.isLive ? (
+                            <span className="font-semibold text-live">
+                              {labels.liveNowCell}
+                              {row.liveViewerCount != null &&
+                                labels.watchingTail.replace(
+                                  '{value}',
+                                  formatCompactNumber(row.liveViewerCount, uiLang),
+                                )}
+                            </span>
+                          ) : row.nextStreamAt ? (
+                            <span className="flex flex-col items-end leading-tight">
+                              <NextStreamTime
+                                startTime={row.nextStreamAt}
+                                isPredicted={row.nextIsPredicted}
+                                language={uiLang}
+                              />
+                              {row.nextCategory && (
+                                <span
+                                  className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
+                                  title={row.nextCategory}
+                                >
+                                  {row.nextCategory}
+                                </span>
                               )}
-                          </span>
-                        ) : row.nextStreamAt ? (
-                          <span className="flex flex-col items-end leading-tight">
-                            <NextStreamTime
-                              startTime={row.nextStreamAt}
-                              isPredicted={row.nextIsPredicted}
-                              language={uiLang}
-                            />
-                            {row.nextCategory && (
-                              <span
-                                className="mt-0.5 max-w-[9rem] truncate text-[11px] text-text-muted"
-                                title={row.nextCategory}
-                              >
-                                {row.nextCategory}
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

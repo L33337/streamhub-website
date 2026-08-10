@@ -77,8 +77,12 @@ function ClimberTable({ movers }: { movers: MetricMovers }) {
   // min-w on the table: five columns squeezed below the container width on
   // phones, which clipped the right-hand metric. Same reasoning as RankingTable.
   return (
-    <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-      <table className="w-full min-w-[34rem] text-sm">
+    // Frame and scroll container split on purpose: gradient-border's absolute
+    // ::before scrolls with the content when it sits on the overflow element,
+    // cutting its right edge through the table mid-scroll (see RankingRowsTable).
+    <div className="rounded-xl bg-background-elevated p-1 gradient-border">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[34rem] text-sm">
         <caption className="sr-only">{`Biggest climbers this week — ${spec.h1.toLowerCase()}`}</caption>
         <thead>
           <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
@@ -135,7 +139,8 @@ function ClimberTable({ movers }: { movers: MetricMovers }) {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

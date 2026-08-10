@@ -149,52 +149,58 @@ export function WeekdayTimesTable({
         <p className="mb-2 text-xs text-text-muted">{labels.allTimesIn}</p>
       )}
 
-      <div className="overflow-x-auto rounded-xl bg-background-elevated p-1 gradient-border">
-        <table className="w-full text-sm">
-          <caption className="sr-only">{labels.caption}</caption>
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
-              <th scope="col" className="px-3 py-2 font-semibold">
-                {labels.colDay}
-              </th>
-              <th scope="col" className="px-3 py-2 font-semibold">
-                {labels.colTime}
-              </th>
-              <th scope="col" className="px-3 py-2 font-semibold">
-                {labels.colDuration}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {WEEKDAY_KEYS.map((key, isoIndex) => {
-              const day = byWeekday.get(key);
-              return (
-                <tr key={key} className="border-t border-divider">
-                  <th
-                    scope="row"
-                    className="px-3 py-2 text-left font-medium text-text-primary"
-                  >
-                    {weekdayLong(isoIndex, lang)}
-                  </th>
-                  {day ? (
-                    <>
-                      <td className="px-3 py-2 text-accent-cyan" suppressHydrationWarning>
-                        {renderTime(day, isoIndex)}
+      {/* Frame and scroll container split on purpose: gradient-border's
+          absolute ::before scrolls with the content when it sits on the
+          overflow element, cutting its right edge through the table
+          mid-scroll (see RankingRowsTable). */}
+      <div className="rounded-xl bg-background-elevated p-1 gradient-border">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <caption className="sr-only">{labels.caption}</caption>
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
+                <th scope="col" className="px-3 py-2 font-semibold">
+                  {labels.colDay}
+                </th>
+                <th scope="col" className="px-3 py-2 font-semibold">
+                  {labels.colTime}
+                </th>
+                <th scope="col" className="px-3 py-2 font-semibold">
+                  {labels.colDuration}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {WEEKDAY_KEYS.map((key, isoIndex) => {
+                const day = byWeekday.get(key);
+                return (
+                  <tr key={key} className="border-t border-divider">
+                    <th
+                      scope="row"
+                      className="px-3 py-2 text-left font-medium text-text-primary"
+                    >
+                      {weekdayLong(isoIndex, lang)}
+                    </th>
+                    {day ? (
+                      <>
+                        <td className="px-3 py-2 text-accent-cyan" suppressHydrationWarning>
+                          {renderTime(day, isoIndex)}
+                        </td>
+                        <td className="px-3 py-2 text-text-secondary">
+                          ~{formatDuration(day.duration_minutes)}
+                        </td>
+                      </>
+                    ) : (
+                      <td colSpan={2} className="px-3 py-2 text-text-muted">
+                        {labels.usuallyNoStream}
                       </td>
-                      <td className="px-3 py-2 text-text-secondary">
-                        ~{formatDuration(day.duration_minutes)}
-                      </td>
-                    </>
-                  ) : (
-                    <td colSpan={2} className="px-3 py-2 text-text-muted">
-                      {labels.usuallyNoStream}
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
