@@ -601,9 +601,6 @@ export interface HubLex {
     intro(n: number): string;
     /** Freshness span INCLUDING its leading space, e.g. " Data refreshed Jul 18, 2026." */
     dataRefreshed(label: string): string;
-    statStreamersTracked: string;
-    statLiveNow: string;
-    statGamesCategories: string;
     seeFullRanking: string;
     warmingUp: string;
     /**

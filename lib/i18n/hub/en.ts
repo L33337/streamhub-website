@@ -344,9 +344,6 @@ export const en: HubLex = {
     intro: (n) =>
       `Who are the biggest, fastest growing, busiest and most dependable streamers on Twitch and YouTube? ${n} leaderboards over every streamer we track — updated daily from real broadcast data.`,
     dataRefreshed: (label) => ` Data refreshed ${label}.`,
-    statStreamersTracked: 'streamers tracked',
-    statLiveNow: 'live right now',
-    statGamesCategories: 'games & categories',
     seeFullRanking: 'See the full ranking →',
     warmingUp: 'The leaderboards are warming up — check back soon.',
     filterEmpty: 'No streamer in this ranking matches these filters.',

@@ -340,9 +340,6 @@ export const es: HubLex = {
     intro: (n) =>
       `¿Quiénes son los streamers más grandes, los que más crecen, los más activos y los más constantes de Twitch y YouTube? ${n} clasificaciones sobre todos los streamers que seguimos — actualizadas a diario con datos reales de emisiones.`,
     dataRefreshed: (label) => ` Datos actualizados el ${label}.`,
-    statStreamersTracked: 'streamers seguidos',
-    statLiveNow: 'en directo ahora',
-    statGamesCategories: 'juegos y categorías',
     seeFullRanking: 'Ver el ranking completo →',
     warmingUp: 'Las clasificaciones se están calentando — vuelve pronto.',
     filterEmpty: 'Ningún streamer de este ranking coincide con estos filtros.',

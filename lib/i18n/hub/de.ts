@@ -338,9 +338,6 @@ export const de: HubLex = {
     intro: (n) =>
       `Wer sind die größten, am schnellsten wachsenden, fleißigsten und verlässlichsten Streamer auf Twitch und YouTube? ${n} Ranglisten über alle Streamer, die wir erfassen — täglich aktualisiert aus echten Broadcast-Daten.`,
     dataRefreshed: (label) => ` Daten aktualisiert: ${label}.`,
-    statStreamersTracked: 'erfasste Streamer',
-    statLiveNow: 'gerade live',
-    statGamesCategories: 'Spiele & Kategorien',
     seeFullRanking: 'Zum kompletten Ranking →',
     warmingUp: 'Die Ranglisten laufen sich noch warm — schau bald wieder vorbei.',
     filterEmpty: 'Zu dieser Auswahl passt kein Streamer in diesem Ranking.',

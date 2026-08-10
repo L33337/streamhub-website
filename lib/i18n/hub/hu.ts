@@ -331,9 +331,6 @@ export const hu: HubLex = {
     intro: (n) =>
       `Kik a legnagyobb, leggyorsabban növekvő, legszorgalmasabb és legmegbízhatóbb streamerek a Twitchen és a YouTube-on? ${n} ranglista az összes követett streamerről — naponta frissítve valódi adásadatokból.`,
     dataRefreshed: (label) => ` Adatok frissítve: ${label}`,
-    statStreamersTracked: 'követett streamer',
-    statLiveNow: 'most élőben',
-    statGamesCategories: 'játék és kategória',
     seeFullRanking: 'A teljes ranglista →',
     warmingUp: 'A ranglisták még bemelegítenek — nézz vissza hamarosan.',
     filterEmpty: 'Ebben a ranglistában egyetlen streamer sem felel meg ezeknek a szűrőknek.',

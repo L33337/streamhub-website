@@ -93,12 +93,6 @@ export default async function RankingsHubPage({ params }: Props) {
   // an empty list falls back to the classic static intro paragraph below.
   const recapsPromise = loadRecapsList(locale);
   const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
-  // Roster size for the stats strip: the offset mode returns an exact
-  // pagination.total, so limit 1 buys the count without paying for rows.
-  const totalPromise = api
-    .listStreamers({ limit: 1, offset: 0, revalidate: 3600 })
-    .then((r) => r.pagination.total ?? null)
-    .catch(() => null);
   // The WHOLE pool per leaderboard, not just the five rows shown: the filter
   // dropdowns count their options over it, and those counts must describe the
   // same pool /api/rankings/filter then searches — otherwise an option would
@@ -107,7 +101,6 @@ export default async function RankingsHubPage({ params }: Props) {
   // API route and the build workers (lib/server/rankings-pool.ts).
   const pools = await Promise.all(RANKING_PAGES.map((spec) => loadRankingPool(spec)));
   const liveIds = await livePromise;
-  const totalStreamers = await totalPromise;
 
   const sections = RANKING_PAGES.map((spec, i) => ({
     spec,
@@ -148,28 +141,6 @@ export default async function RankingsHubPage({ params }: Props) {
     },
   ].filter((c): c is { item: NonNullable<typeof recaps.weekly>; kicker: string } => Boolean(c));
 
-  // Aggregate stats strip — every stat is failure-isolated and simply omitted
-  // when its source call failed or returned nothing (0 is never rendered:
-  // a zero here means "source down", not a real zero).
-  const stats: { value: string; label: string }[] = [];
-  if (totalStreamers != null && totalStreamers > 0) {
-    stats.push({
-      value: totalStreamers.toLocaleString('en-US'),
-      label: L.rankings.statStreamersTracked,
-    });
-  }
-  if (liveIds.size > 0) {
-    stats.push({
-      value: liveIds.size.toLocaleString('en-US'),
-      label: L.rankings.statLiveNow,
-    });
-  }
-  if (games.length > 0) {
-    stats.push({
-      value: gamesResp?.pagination.has_more ? `${games.length}+` : String(games.length),
-      label: L.rankings.statGamesCategories,
-    });
-  }
   const allGameLinks = games
     .map((g) => ({ category: g.category, slug: gameSlug(g.category), count: g.streamer_count }))
     .filter((g) => g.slug.length > 0);
@@ -262,52 +233,33 @@ export default async function RankingsHubPage({ params }: Props) {
 
       <h1 className="text-3xl font-bold text-white md:text-4xl">{L.rankings.h1}</h1>
       {recapCards.length > 0 ? (
-        // The AI recap teasers replace the static intro paragraph. Compact on
-        // purpose (2-line clamps, ~7rem visuals): the first leaderboard must
-        // stay reachable on one phone screen.
-        <>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {recapCards.map(({ item, kicker }) => (
-              <RecapTeaserCard
-                key={item.slug}
-                item={item}
-                kicker={kicker}
-                periodLabel={recapPeriodLabel(
-                  item.kind,
-                  item.period_start,
-                  item.period_end,
-                  locale,
-                )}
-                readMore={L.recaps.readMore}
-                href={localeHref(locale, recapHref(item.slug))}
-              />
-            ))}
-          </div>
-          {refreshedLabel && (
-            <p className="mt-3 text-sm text-text-muted">
-              {L.rankings.dataRefreshed(refreshedLabel).trim()}
-            </p>
-          )}
-        </>
+        // The AI recap teasers replace the static intro paragraph (and, since
+        // 2026-08-10, the stats strip + freshness line that used to sit below
+        // them). Still clamped: the first leaderboard must stay reachable on
+        // one phone screen.
+        <div className="mt-6 grid gap-4 md:grid-cols-2 md:gap-5">
+          {recapCards.map(({ item, kicker }) => (
+            <RecapTeaserCard
+              key={item.slug}
+              item={item}
+              kicker={kicker}
+              periodLabel={recapPeriodLabel(
+                item.kind,
+                item.period_start,
+                item.period_end,
+                locale,
+              )}
+              readMore={L.recaps.readMore}
+              href={localeHref(locale, recapHref(item.slug))}
+            />
+          ))}
+        </div>
       ) : (
         <p className="mt-3 max-w-2xl text-text-secondary">
           {L.rankings.intro(sections.length)}
           {refreshedLabel && (
             <span className="text-text-muted">{L.rankings.dataRefreshed(refreshedLabel)}</span>
           )}
-        </p>
-      )}
-
-      {stats.length > 0 && (
-        <p className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-2 text-sm text-text-secondary">
-          {stats.map((s) => (
-            <span key={s.label} className="whitespace-nowrap">
-              <span className="text-xl font-bold tabular-nums text-accent-cyan">
-                {s.value}
-              </span>{' '}
-              {s.label}
-            </span>
-          ))}
         </p>
       )}
 

@@ -3,9 +3,11 @@
 // lists them full-width. Server component — all strings arrive resolved; the
 // only client part is the visual's image-fallback island.
 //
-// Deliberately low: ~7rem visual, two-line clamps everywhere. The cards must
-// never push the first leaderboard below the fold (the whole point of the
-// hub), and on a 320px phone they stack with a narrower visual.
+// Sized up on 2026-08-10 (the stats strip below the cards was removed, which
+// reclaimed the vertical room): ~8rem visual on phones, ~12rem from `sm`, a
+// three-line teaser clamp. Still clamped — the cards must never push the first
+// leaderboard below the fold (the whole point of the hub), and on a 320px
+// phone they stack with a narrower visual.
 
 import Link from 'next/link';
 import type { PublicRecapListItem } from '@/lib/server/partner-api';
@@ -27,9 +29,9 @@ export function RecapTeaserCard({
   return (
     <Link
       href={href}
-      className="group flex gap-3 rounded-xl border border-border-default bg-background-elevated p-3 transition-colors hover:border-accent-cyan/60 sm:gap-4 sm:p-4"
+      className="group flex gap-3 rounded-xl border border-border-default bg-background-elevated p-3 transition-colors hover:border-accent-cyan/60 sm:gap-5 sm:p-5"
     >
-      <div className="w-28 shrink-0 self-center sm:w-40">
+      <div className="w-32 shrink-0 self-center sm:w-48">
         <RecapCardVisual
           thumbnailUrl={item.hero.clip?.thumbnail_url ?? null}
           thumbnailAlt={item.hero.clip?.title ?? ''}
@@ -48,11 +50,13 @@ export function RecapTeaserCard({
             · {periodLabel}
           </span>
         </p>
-        <h3 className="mt-1 line-clamp-2 text-sm font-bold text-text-primary group-hover:text-accent-cyan sm:text-base">
+        <h3 className="mt-1 line-clamp-2 text-base font-bold text-text-primary group-hover:text-accent-cyan sm:text-lg">
           {item.title}
         </h3>
-        <p className="mt-1 line-clamp-2 text-xs text-text-secondary sm:text-sm">{item.teaser}</p>
-        <p className="mt-1.5 text-xs font-medium text-accent-cyan">{readMore} →</p>
+        <p className="mt-1.5 line-clamp-3 text-xs text-text-secondary sm:text-sm">
+          {item.teaser}
+        </p>
+        <p className="mt-2 text-xs font-medium text-accent-cyan sm:text-sm">{readMore} →</p>
       </div>
     </Link>
   );

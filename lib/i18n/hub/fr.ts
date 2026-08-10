@@ -341,9 +341,6 @@ export const fr: HubLex = {
     intro: (n) =>
       `Qui sont les streamers les plus suivis, ceux qui grandissent le plus vite, les plus actifs et les plus fiables sur Twitch et YouTube ? ${n} classements couvrant tous les streamers que nous suivons — mis à jour chaque jour à partir de vraies données de diffusion.`,
     dataRefreshed: (label) => ` Données actualisées le ${label}.`,
-    statStreamersTracked: 'streamers suivis',
-    statLiveNow: 'en direct maintenant',
-    statGamesCategories: 'jeux et catégories',
     seeFullRanking: 'Voir le classement complet →',
     warmingUp: 'Les classements chauffent encore — reviens bientôt.',
     filterEmpty: 'Aucun streamer de ce classement ne correspond à ces filtres.',

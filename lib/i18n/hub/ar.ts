@@ -393,9 +393,6 @@ export const ar: HubLex = {
     intro: (n) =>
       `من هم الستريمرز الأكبر والأسرع نموًا والأكثر نشاطًا والأكثر انضباطًا على Twitch وYouTube؟ ${n} قوائم تصنيف تغطي كل ستريمر نتتبعه — تُحدَّث يوميًا من بيانات بث حقيقية.`,
     dataRefreshed: (label) => ` تم تحديث البيانات في ${label}.`,
-    statStreamersTracked: 'ستريمر نتتبعهم',
-    statLiveNow: 'مباشر الآن',
-    statGamesCategories: 'لعبة وفئة',
     seeFullRanking: 'عرض التصنيف الكامل ←',
     warmingUp: 'قوائم التصنيف ما زالت تُجهَّز — عد قريبًا.',
     filterEmpty: 'لا يوجد ستريمر في هذا التصنيف يطابق هذه الفلاتر.',

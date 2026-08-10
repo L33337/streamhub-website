@@ -329,9 +329,6 @@ export const ja: HubLex = {
     intro: (n) =>
       `Twitch と YouTube で最も大きく、最も急成長中で、最も活発で、最も頼れるストリーマーは誰でしょう? 追跡中の全ストリーマーを対象にした${n}つのランキングを、実際の配信データから毎日更新しています。`,
     dataRefreshed: (label) => ` データ更新日: ${label}。`,
-    statStreamersTracked: '人のストリーマーを追跡中',
-    statLiveNow: '人が現在配信中',
-    statGamesCategories: 'のゲームとカテゴリー',
     seeFullRanking: 'ランキング全体を見る →',
     warmingUp: 'ランキングは準備中です — またすぐにチェックしてください。',
     filterEmpty: 'このランキングにはこの条件に合うストリーマーがいません。',
