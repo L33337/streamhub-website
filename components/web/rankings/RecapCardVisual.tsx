@@ -40,7 +40,9 @@ function StackAvatar({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={avatarUrl}
-      alt=""
+      // The stack identifies the edition's protagonists, so the name is the
+      // honest alt — and Bing Webmaster flags alt="" as "missing" anyway.
+      alt={name}
       loading="lazy"
       className={`${sizeClass} rounded-full object-cover ring-2 ring-background-elevated`}
       onError={() => setFailed(true)}
