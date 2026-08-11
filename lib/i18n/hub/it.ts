@@ -400,6 +400,7 @@ export const it: HubLex = {
       'Twitch e YouTube. La maggior parte delle classifiche unisce le due piattaforme — i follower su Twitch corrispondono agli iscritti su YouTube. La classifica della puntualità è solo Twitch, perché misura i palinsesti annunciati su Twitch.',
   },
   recaps: {
+    metaTitleSuffix: 'Statistiche streamer Twitch e YouTube',
     weeklyKicker: 'Riepilogo settimanale',
     monthlyKicker: 'Riepilogo mensile',
     readMore: 'Leggi il riepilogo completo',

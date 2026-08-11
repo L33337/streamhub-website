@@ -30,10 +30,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const items = await loadRecapsList(locale);
   const url = `${SITE_URL}/rankings/recap`;
   const meta: Metadata = {
+    // Head-keyword suffix ("twitch", "streamer", "stats") on the <title>;
+    // bespoke EN string to avoid doubling "streamer" from the archive h1.
     title:
       locale === 'en'
-        ? 'Streamer Recap Archive — Weekly & Monthly Ranking Highlights'
-        : L.recaps.archiveTitle,
+        ? 'Streamer Recap Archive — Twitch & YouTube Stats & Highlights'
+        : `${L.recaps.archiveTitle} — ${L.recaps.metaTitleSuffix}`,
     description: L.recaps.archiveIntro,
     alternates: { canonical: url },
     openGraph: {

@@ -408,6 +408,7 @@ export const en: HubLex = {
       'Twitch and YouTube. Most rankings mix both platforms — follower counts on Twitch correspond to subscribers on YouTube. The most punctual ranking is Twitch-only, because it measures announced Twitch schedules.',
   },
   recaps: {
+    metaTitleSuffix: 'Twitch & YouTube Streamer Stats',
     weeklyKicker: 'Weekly recap',
     monthlyKicker: 'Monthly recap',
     readMore: 'Read the full recap',

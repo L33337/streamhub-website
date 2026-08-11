@@ -681,6 +681,11 @@ export interface HubLex {
    * the article text itself is content served per-locale by the partner API.
    */
   recaps: {
+    /** <title> suffix on recap pages carrying the head keywords people
+     *  actually search (Google Trends 2026-08: "twitch", "streamer",
+     *  "stats"), e.g. "Twitch & YouTube Streamer Stats". Metadata only —
+     *  never rendered on the page. */
+    metaTitleSuffix: string;
     /** Card kicker of the weekly edition, e.g. "Weekly recap". */
     weeklyKicker: string;
     monthlyKicker: string;

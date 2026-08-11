@@ -55,7 +55,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   const url = `${SITE_URL}/rankings/recap/${slug}`;
   const meta: Metadata = {
-    title: article.title,
+    // Head-keyword suffix (Google Trends: "twitch", "streamer", "stats") on
+    // the <title> only — the unique event title stays first, OG and H1 stay
+    // clean (social cards already show the site name separately).
+    title: `${article.title} — ${hubLexFor(locale).recaps.metaTitleSuffix}`,
     description: article.teaser,
     alternates: { canonical: url },
     openGraph: {
