@@ -327,9 +327,9 @@ export const hu: HubLex = {
       'Nem. A streamelt órák azt mérik, mennyi ideig voltak élőben a streamerek egy kategóriában. A nézők nézési idejét nem mérjük; a kártyákon látható élő nézőszám pillanatnyi minta, nem összeg.',
   },
   rankings: {
-    h1: 'Streamer-ranglisták',
+    h1: 'Twitch- és YouTube-streamer-ranglisták',
     intro: (n) =>
-      `Kik a legnagyobb, leggyorsabban növekvő, legszorgalmasabb és legmegbízhatóbb streamerek a Twitchen és a YouTube-on? ${n} ranglista az összes követett streamerről — naponta frissítve valódi adásadatokból.`,
+      `Kik a legnagyobb, leggyorsabban növekvő, legszorgalmasabb és legmegbízhatóbb streamerek a Twitchen és a YouTube-on? ${n} ranglista követő-, néző- és aktivitási statisztikákkal az összes követett streamerről — naponta frissítve valódi adásadatokból.`,
     dataRefreshed: (label) => ` Adatok frissítve: ${label}`,
     seeFullRanking: 'A teljes ranglista →',
     warmingUp: 'A ranglisták még bemelegítenek — nézz vissza hamarosan.',
@@ -340,6 +340,7 @@ export const hu: HubLex = {
     byGameSubtitle: 'A legtöbb követővel rendelkező streamerek játékonként és kategóriánként.',
     byGameAria: 'Népszerű játék-ranglisták',
     topGameStreamers: (category) => `A legjobb ${category}-streamerek`,
+    gameChipStats: (category) => `${category}-streamer-statisztikák`,
     whoIsLive: 'Ki van most élőben?',
     climbersThisWeek: 'A hét legnagyobb feltörekvői',
     metricH1: {
@@ -382,6 +383,16 @@ export const hu: HubLex = {
     trendMoveTitle: (up, delta) => `${delta} hellyel ${up ? 'feljebb' : 'lejjebb'} a múlt hét óta`,
     mainGameShareTitle: (pct) => `A kategorizált streamek ${pct}%-a`,
     alwaysOnTitle: 'Always-on csatorna — éjjel-nappal élőben',
+    faqHeading: 'Ezekről a ranglistákról',
+    faqCalculatedQ: 'Hogyan készülnek ezek a streamer-ranglisták?',
+    faqCalculatedA:
+      'Minden ranglista valódi adásadatokból készül, amelyeket magunk gyűjtünk: követő- és feliratkozószámok, óránkénti élő nézőszám-mintavétel és minden követett Twitch- és YouTube-csatorna adáselőzménye. Semmilyen önbevallott szám.',
+    faqUpdatedQ: 'Milyen gyakran frissülnek a statisztikák?',
+    faqUpdatedA:
+      'A ranglisták minden éjjel újraszámolódnak — a követő-, néző- és aktivitási statisztikák naponta frissülnek, az élő jelvények és a következő adások időpontjai pedig napközben is.',
+    faqPlatformsQ: 'Mely platformokat fedik le?',
+    faqPlatformsA:
+      'A Twitchet és a YouTube-ot. A legtöbb ranglista a két platformot együtt kezeli — a Twitch-követők a YouTube-feliratkozóknak felelnek meg. A pontossági ranglista csak Twitch, mert a Twitchen bejelentett műsorrendet méri.',
   },
   recaps: {
     weeklyKicker: 'Heti összefoglaló',
@@ -423,7 +434,7 @@ export const hu: HubLex = {
     trendTitle: 'Az aktív streamerek számának változása az előző héthez képest',
   },
   game: {
-    notFoundTitle: 'A játék nem található — StreamerTimes',
+    notFoundTitle: 'A játék nem található — Streamer Times',
     metaTitle: (category) => `${category}-streamerek — Élőben, ranglisták és menetrend`,
     metaDescription: (category, names) => {
       const tail = `Ki van most élőben, közelgő streamek és AI által jósolt menetrendek Twitchen és YouTube-on.`;
@@ -544,7 +555,7 @@ export const hu: HubLex = {
     allGamesFooter: '← Minden játék és kategória',
   },
   gameRanking: {
-    notFoundTitle: 'Nem található — StreamerTimes',
+    notFoundTitle: 'Nem található — Streamer Times',
     metaTitle: (category, page) =>
       page === 1
         ? `Top ${category}-streamerek — követők szerint`

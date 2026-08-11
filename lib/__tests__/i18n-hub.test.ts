@@ -286,6 +286,7 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['rankings.byGameSubtitle', L.rankings.byGameSubtitle],
     ['rankings.byGameAria', L.rankings.byGameAria],
     ['rankings.topGameStreamers', L.rankings.topGameStreamers(GAME)],
+    ['rankings.gameChipStats', L.rankings.gameChipStats(GAME)],
     ['rankings.whoIsLive', L.rankings.whoIsLive],
     ['rankings.metricH1.most-followed', L.rankings.metricH1['most-followed']],
     ['rankings.metricH1.fastest-growing', L.rankings.metricH1['fastest-growing']],
@@ -311,6 +312,13 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['rankings.trendMoveTitle.down', L.rankings.trendMoveTitle(false, 5)],
     ['rankings.mainGameShareTitle', L.rankings.mainGameShareTitle(62)],
     ['rankings.alwaysOnTitle', L.rankings.alwaysOnTitle],
+    ['rankings.faqHeading', L.rankings.faqHeading],
+    ['rankings.faqCalculatedQ', L.rankings.faqCalculatedQ],
+    ['rankings.faqCalculatedA', L.rankings.faqCalculatedA],
+    ['rankings.faqUpdatedQ', L.rankings.faqUpdatedQ],
+    ['rankings.faqUpdatedA', L.rankings.faqUpdatedA],
+    ['rankings.faqPlatformsQ', L.rankings.faqPlatformsQ],
+    ['rankings.faqPlatformsA', L.rankings.faqPlatformsA],
     // --- M22 S4.1: /games explorer ---
     ['gamesExplorer.sectionAria', L.gamesExplorer.sectionAria],
     ['gamesExplorer.sortAria', L.gamesExplorer.sortAria],
@@ -754,9 +762,9 @@ describe('English lexicon regression guard (legacy hardcoded strings)', () => {
       'Minecraft has the most streamers we track — 24 channels streamed it in the last 28 days, ahead of Fortnite with 18.',
     );
     // /rankings (metric copy mirrors the lib/rankings.ts registry)
-    expect(L.rankings.h1).toBe('Streamer rankings');
+    expect(L.rankings.h1).toBe('Twitch & YouTube streamer rankings');
     expect(L.rankings.intro(5)).toBe(
-      'Who are the biggest, fastest growing, busiest and most dependable streamers on Twitch and YouTube? 5 leaderboards over every streamer we track — updated daily from real broadcast data.',
+      'Who are the biggest, fastest growing, busiest and most dependable streamers on Twitch and YouTube? 5 leaderboards with follower, viewer and activity stats for every streamer we track — updated daily from real broadcast data.',
     );
     expect(L.rankings.dataRefreshed('Jul 18, 2026')).toBe(' Data refreshed Jul 18, 2026.');
     expect(L.rankings.seeFullRanking).toBe('See the full ranking →');

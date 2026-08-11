@@ -1,4 +1,6 @@
-// Deep pages of the leaderboards: /rankings/<metric>/<n> for n >= 2.
+// Deep pages of the leaderboards: /rankings/<metric>/<n> for n >= 2 — and,
+// since 2026-08-11, the per-platform variants /rankings/<metric>/twitch|youtube
+// (indexable single-page leaderboards, resolved before the numeric parse).
 //
 // Page 1 stays on the flat /rankings/<metric> route (the five fixed wrappers
 // next to this folder) so the canonical URL of a ranking never gains a "/1"
@@ -12,8 +14,13 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { buildLeaderboardMetadata, LeaderboardPage } from '../../leaderboard';
-import { getRankingPageSpec } from '@/lib/rankings';
+import {
+  buildLeaderboardMetadata,
+  buildPlatformLeaderboardMetadata,
+  LeaderboardPage,
+  PlatformLeaderboardPage,
+} from '../../leaderboard';
+import { getPlatformVariant, getRankingPageSpec, type RankingPlatform } from '@/lib/rankings';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
 import { applyLocaleSeo } from '@/lib/seo';
 
@@ -45,12 +52,29 @@ function parsePage(raw: string): number | null {
   return Number.isSafeInteger(n) ? n : null;
 }
 
+/**
+ * 'twitch' / 'youtube' in the page slot selects the platform variant of the
+ * metric (/rankings/most-followed/twitch) — single-page leaderboards that
+ * share this dynamic segment with the numeric deep pages. null for every
+ * other string, including variants that don't exist (most-reliable).
+ */
+function parsePlatform(metric: string, raw: string): RankingPlatform | null {
+  if (raw !== 'twitch' && raw !== 'youtube') return null;
+  return getPlatformVariant(metric, raw) ? raw : null;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, metric, page } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  const platform = parsePlatform(metric, page);
+  if (platform) {
+    // en-only indexability, like the mixed leaderboards (M22 P3 default).
+    const meta = await buildPlatformLeaderboardMetadata(metric, platform);
+    if (meta) return applyLocaleSeo(meta, locale, `/rankings/${metric}/${platform}`);
+  }
   const n = parsePage(page);
   if (!n || n < 2 || !getRankingPageSpec(metric)) {
-    return { title: 'Not found — StreamerTimes', robots: { index: false, follow: false } };
+    return { title: 'Not found — Streamer Times', robots: { index: false, follow: false } };
   }
   // M22 P3: en-only indexability matrix — pass-through for 'en' (pages >= 2
   // keep their own noindex,follow), noindex,follow + self-canonical elsewhere.
@@ -63,6 +87,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RankingDeepPage({ params }: Props) {
   const { metric, page } = await params;
+  const platform = parsePlatform(metric, page);
+  if (platform) return <PlatformLeaderboardPage slug={metric} platform={platform} />;
   const n = parsePage(page);
   // page 1 lives at /rankings/<metric> — refuse the duplicate URL.
   if (!n || n < 2) notFound();

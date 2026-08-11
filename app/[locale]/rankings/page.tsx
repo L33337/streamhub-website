@@ -6,7 +6,12 @@ import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { gameSlug } from '@/lib/game-slug';
-import { formatRefreshedAt, RANKING_PAGES } from '@/lib/rankings';
+import {
+  buildRankingItemListJsonLd,
+  formatRefreshedAt,
+  monthYearLabel,
+  RANKING_PAGES,
+} from '@/lib/rankings';
 import { RankingTable } from '@/components/web/RankingTable';
 import { toRankingHeaders } from '@/lib/rankings-row';
 import {
@@ -51,26 +56,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const localized = siteMetaFor(locale).rankings;
+  // The current month rides in the <title> (SEO round 2026-08-11): rankings
+  // queries carry a strong freshness intent, and declaring the date beats the
+  // one Google appends on its own. Localized via Intl, date-free base strings
+  // in lib/i18n-sitemeta.ts; the URL stays date-free — only the title rolls,
+  // 12× a year (ISR-write-cheap).
+  const title = `${localized.title} — ${monthYearLabel(locale)}`;
   const meta: Metadata = {
-    title:
-      locale === 'en'
-        ? 'Streamer Rankings — Most Followed, Most Watched & Most Active'
-        : localized.title,
-    // ≤155 chars (Bing flags >160; this listed all five metrics and ran 189).
-    description:
-      locale === 'en'
-        ? 'Leaderboards for Twitch and YouTube streamers: most followed, fastest growing, most watched, most active and most punctual, plus rankings by game.'
-        : localized.description,
+    title,
+    // ≤160 chars per locale (Bing flags >160) — enforced by the sitemeta table.
+    description: localized.description,
     alternates: { canonical: `${SITE_URL}/rankings` },
     openGraph: {
-      title:
-        locale === 'en'
-          ? 'Streamer Rankings — most followed, most watched & most active'
-          : localized.title,
-      description:
-        locale === 'en'
-          ? 'Leaderboards for Twitch and YouTube streamers, updated daily: followers, follower growth, viewers, hours streamed, schedule punctuality and per-game rankings.'
-          : localized.description,
+      title,
+      description: localized.description,
       url: `${SITE_URL}/rankings`,
       siteName: 'Streamer Times',
       type: 'website',
@@ -117,16 +116,16 @@ export default async function RankingsHubPage({ params }: Props) {
   );
 
   // Latest aggregate refresh across the leaderboards (refreshed_at is null for
-  // table-backed metrics). Only rendered by the static-intro fallback below —
-  // the recap-card layout dropped its freshness line on 2026-08-10.
-  const refreshedLabel = formatRefreshedAt(
+  // table-backed metrics). Feeds the always-rendered freshness line in the
+  // intro (restored 2026-08-11 — it had been dropped with the recap-card
+  // layout) and the CollectionPage dateModified below.
+  const refreshedAtIso =
     pools
       .map((pool) => pool.refreshedAt)
       .filter((v): v is string => v !== null)
       .sort()
-      .at(-1) ?? null,
-    locale,
-  );
+      .at(-1) ?? null;
+  const refreshedLabel = formatRefreshedAt(refreshedAtIso, locale);
 
   const gamesResp = await gamesPromise;
   const games: PublicGame[] = gamesResp?.data ?? [];
@@ -209,7 +208,7 @@ export default async function RankingsHubPage({ params }: Props) {
     { name: L.crumbs.home, url: SITE_URL },
     { name: L.crumbs.rankings },
   ]);
-  const collectionPage = {
+  const collectionPage: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: 'Streamer Rankings',
@@ -220,6 +219,15 @@ export default async function RankingsHubPage({ params }: Props) {
       url: `${SITE_URL}/rankings/${spec.slug}`,
     })),
   };
+  // Machine-readable freshness: the visible "Data refreshed" line's timestamp.
+  if (refreshedAtIso) collectionPage.dateModified = refreshedAtIso;
+  // One compact ItemList per previewed leaderboard (top 5, Person-typed with
+  // the same #person @ids the streamer pages emit) — richer than the bare
+  // hasPart above, and the piece that makes the hub eligible for list
+  // treatment in search.
+  const sectionItemLists = sections.map(({ spec, entries }) =>
+    buildRankingItemListJsonLd(L.rankings.metricH1[spec.metric], entries),
+  );
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
@@ -231,14 +239,28 @@ export default async function RankingsHubPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(collectionPage) }}
       />
+      {sectionItemLists.map((itemList, i) => (
+        <script
+          key={sections[i].spec.slug}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(itemList) }}
+        />
+      ))}
 
       <h1 className="text-3xl font-bold text-white md:text-4xl">{L.rankings.h1}</h1>
-      {recapCards.length > 0 ? (
-        // The AI recap teasers replace the static intro paragraph (and, since
-        // 2026-08-10, the stats strip + freshness line that used to sit below
-        // them). Still clamped: the first leaderboard must stay reachable on
-        // one phone screen.
-        <div className="mt-6 grid gap-4 md:grid-cols-2 md:gap-5">
+      {/* The intro paragraph renders ALWAYS (SEO round 2026-08-11): with the
+          recap cards mounted, the page's only crawlable explanatory text had
+          disappeared. It carries the keyword context ("Twitch", "YouTube",
+          "stats") plus the visible freshness line, and stays a 2-line clamp so
+          the first leaderboard remains reachable on one phone screen. */}
+      <p className="mt-3 max-w-2xl text-text-secondary">
+        {L.rankings.intro(sections.length)}
+        {refreshedLabel && (
+          <span className="text-text-muted">{L.rankings.dataRefreshed(refreshedLabel)}</span>
+        )}
+      </p>
+      {recapCards.length > 0 && (
+        <div className="mt-5 grid gap-4 md:grid-cols-2 md:gap-5">
           {recapCards.map(({ item, kicker }) => (
             <RecapTeaserCard
               key={item.slug}
@@ -255,13 +277,6 @@ export default async function RankingsHubPage({ params }: Props) {
             />
           ))}
         </div>
-      ) : (
-        <p className="mt-3 max-w-2xl text-text-secondary">
-          {L.rankings.intro(sections.length)}
-          {refreshedLabel && (
-            <span className="text-text-muted">{L.rankings.dataRefreshed(refreshedLabel)}</span>
-          )}
-        </p>
       )}
 
       {sections.map(({ spec, entries }, i) => (
@@ -317,13 +332,19 @@ export default async function RankingsHubPage({ params }: Props) {
         <p className="mt-1 text-sm text-text-muted">{L.rankings.byGameSubtitle}</p>
         {gameLinks.length > 0 && (
           <ul className="mt-4 flex flex-wrap gap-2" aria-label={L.rankings.byGameAria}>
-            {gameLinks.map((g) => (
+            {gameLinks.map((g, i) => (
               <li key={g.slug}>
                 <Link
                   href={localeHref(locale, `/rankings/game/${g.slug}`)}
                   className="inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
                 >
-                  {L.rankings.topGameStreamers(g.category)}
+                  {/* Every third chip wears the stats-flavored anchor: 24
+                      identically patterned link texts read as boilerplate to
+                      crawlers, and the variation carries the "stats" keyword.
+                      Index-based, so the split is deterministic per render. */}
+                  {i % 3 === 2
+                    ? L.rankings.gameChipStats(g.category)
+                    : L.rankings.topGameStreamers(g.category)}
                 </Link>
               </li>
             ))}
@@ -337,6 +358,31 @@ export default async function RankingsHubPage({ params }: Props) {
             {L.common.allGamesCategories} →
           </Link>
         </p>
+      </section>
+
+      {/* Visible Q&A block (SEO round 2026-08-11) — informational long-tail
+          coverage for "how are streamer rankings calculated" / "twitch stats".
+          Localized like the rest of the hub; deliberately NO FAQPage JSON-LD
+          (same decision as the metric pages — Google restricted FAQ rich
+          results to gov/health sites in 2023, the copy itself is the value). */}
+      <section aria-labelledby="rankings-faq-heading" className="mt-12 max-w-2xl">
+        <h2 id="rankings-faq-heading" className="text-xl font-bold text-white">
+          {L.rankings.faqHeading}
+        </h2>
+        <dl className="mt-4 space-y-5">
+          {(
+            [
+              [L.rankings.faqCalculatedQ, L.rankings.faqCalculatedA],
+              [L.rankings.faqUpdatedQ, L.rankings.faqUpdatedA],
+              [L.rankings.faqPlatformsQ, L.rankings.faqPlatformsA],
+            ] as const
+          ).map(([q, a]) => (
+            <div key={q}>
+              <dt className="font-semibold text-text-primary">{q}</dt>
+              <dd className="mt-1 text-sm text-text-secondary">{a}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">

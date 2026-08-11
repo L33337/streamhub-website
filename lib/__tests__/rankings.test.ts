@@ -2,18 +2,23 @@ import { describe, expect, it } from 'vitest';
 import type { PublicRankingEntry, PublicStreamer } from '@/lib/server/partner-api';
 import {
   buildRankingItemListJsonLd,
+  filterPlatformEntries,
   formatDeviation,
   formatDurationMinutes,
   formatHitRate,
   formatHours,
   formatRefreshedAt,
+  getPlatformVariant,
   getRankingPageSpec,
   hasMissingValues,
   isGameHubIndexable,
   isRankingIndexable,
   MIN_INDEXABLE_GAME_STREAMERS,
   MIN_INDEXABLE_RANKING_ENTRIES,
+  monthYearLabel,
+  PLATFORM_VARIANT_SLUGS,
   RANKING_PAGES,
+  RANKING_PLATFORMS,
   rankTrend,
   sanitizeRankingEntries,
   formatGrowthPercent,
@@ -421,5 +426,121 @@ describe('fastest-growing spec', () => {
   it('description embeds the leader gain when available', () => {
     expect(spec.buildDescription(growthEntry('kai', 250000))).toContain('gained 250K');
     expect(spec.buildDescription(undefined)).toContain('fastest growing livestreamers');
+  });
+});
+
+describe('monthYearLabel', () => {
+  const AUG = new Date('2026-08-11T12:00:00Z');
+
+  it('renders localized month + year in UTC', () => {
+    expect(monthYearLabel('en', AUG)).toBe('August 2026');
+    expect(monthYearLabel('de', AUG)).toBe('August 2026');
+    expect(monthYearLabel('es', AUG)).toBe('agosto de 2026');
+    expect(monthYearLabel('ja', AUG)).toBe('2026年8月');
+  });
+
+  it('stays on the UTC month at the boundary regardless of server TZ', () => {
+    expect(monthYearLabel('en', new Date('2026-08-31T23:30:00Z'))).toBe('August 2026');
+    expect(monthYearLabel('en', new Date('2026-09-01T00:30:00Z'))).toBe('September 2026');
+  });
+
+  it('falls back to en-US for a broken locale tag', () => {
+    expect(monthYearLabel('no-such-locale-!!', AUG)).toBe('August 2026');
+  });
+});
+
+describe('platform variants', () => {
+  it('exist for exactly the four mixed-platform metrics', () => {
+    expect(PLATFORM_VARIANT_SLUGS).toEqual([
+      'most-followed',
+      'fastest-growing',
+      'most-watched',
+      'most-active',
+    ]);
+    for (const slug of PLATFORM_VARIANT_SLUGS) {
+      for (const platform of RANKING_PLATFORMS) {
+        expect(getPlatformVariant(slug, platform), `${slug}/${platform}`).not.toBeNull();
+      }
+    }
+  });
+
+  it('rejects most-reliable, unknown metrics and unknown platforms', () => {
+    expect(getPlatformVariant('most-reliable', 'twitch')).toBeNull();
+    expect(getPlatformVariant('most-reliable', 'youtube')).toBeNull();
+    expect(getPlatformVariant('bogus', 'twitch')).toBeNull();
+    expect(getPlatformVariant('most-followed', 'kick')).toBeNull();
+    expect(getPlatformVariant('most-followed', '2')).toBeNull();
+  });
+
+  it('twitch membership includes simulcasters, youtube is YouTube-first only', () => {
+    const twitch = getPlatformVariant('most-followed', 'twitch')!;
+    const youtube = getPlatformVariant('most-followed', 'youtube')!;
+    const dual = entry(1, { follower_count: 10 }, { platforms: ['twitch', 'youtube'] });
+    const twitchOnly = entry(2, { follower_count: 9 }, { platforms: ['twitch'] });
+    const youtubeOnly = entry(3, { follower_count: 8 }, { platforms: ['youtube'] });
+    expect(twitch.matches(dual)).toBe(true);
+    expect(twitch.matches(twitchOnly)).toBe(true);
+    expect(twitch.matches(youtubeOnly)).toBe(false);
+    // follower_count is the Twitch count for dual-platform streamers — they
+    // must NOT appear under a "Subscribers" header.
+    expect(youtube.matches(dual)).toBe(false);
+    expect(youtube.matches(youtubeOnly)).toBe(true);
+  });
+
+  it('relabels follower headers to subscribers on the YouTube variants', () => {
+    expect(
+      getPlatformVariant('most-followed', 'youtube')!.columns.map((c) => c.header),
+    ).toEqual(['Subscribers', 'Avg viewers']);
+    expect(
+      getPlatformVariant('fastest-growing', 'youtube')!.columns.map((c) => c.header),
+    ).toEqual(['Gained (7d)', 'Growth', 'Subscribers now']);
+    // Twitch variants keep the registry columns untouched.
+    expect(getPlatformVariant('most-followed', 'twitch')!.columns).toBe(
+      getRankingPageSpec('most-followed')!.columns,
+    );
+  });
+
+  it('titles carry the platform and degrade honestly with entry count', () => {
+    const v = getPlatformVariant('most-followed', 'twitch')!;
+    expect(v.buildTitle(100)).toBe('Top 100 Most Followed Twitch Streamers');
+    expect(v.buildTitle(37)).toBe('Top 37 Most Followed Twitch Streamers');
+    expect(v.buildTitle(5)).toBe('Most Followed Twitch Streamers — Follower Stats');
+  });
+
+  it('descriptions use the platform noun for the leader clause', () => {
+    const yt = getPlatformVariant('most-followed', 'youtube')!;
+    expect(
+      yt.buildDescription(entry(1, { follower_count: 24_400_000 }, { name: 'Stray Kids' })),
+    ).toContain('Stray Kids leads with 24.4M subscribers');
+    expect(yt.buildDescription(undefined)).toContain('most subscribed live streamers');
+  });
+
+  it('every variant ships intro, methodology and a platform-inclusion FAQ', () => {
+    for (const slug of PLATFORM_VARIANT_SLUGS) {
+      for (const platform of RANKING_PLATFORMS) {
+        const v = getPlatformVariant(slug, platform)!;
+        expect(v.h1.toLowerCase()).toContain(platform === 'twitch' ? 'twitch' : 'youtube');
+        expect(v.buildIntro(42).length).toBeGreaterThan(0);
+        expect(v.methodologyNote.length).toBeGreaterThan(0);
+        expect(v.faq.length).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it('filterPlatformEntries re-ranks densely from 1 and caps at the limit', () => {
+    const v = getPlatformVariant('most-followed', 'twitch')!;
+    const pool = [
+      entry(1, { follower_count: 100 }, { platforms: ['youtube'] }), // filtered out
+      entry(2, { follower_count: 90 }, { platforms: ['twitch'] }),
+      entry(3, { follower_count: 80 }, { platforms: ['twitch', 'youtube'] }),
+      entry(4, { follower_count: 70 }, { platforms: ['twitch'] }),
+    ];
+    const out = filterPlatformEntries(v, pool);
+    expect(out.map((e) => [e.rank, e.streamer.id])).toEqual([
+      [1, 's2'],
+      [2, 's3'],
+      [3, 's4'],
+    ]);
+    expect(filterPlatformEntries(v, pool, 2)).toHaveLength(2);
   });
 });

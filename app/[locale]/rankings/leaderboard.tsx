@@ -14,15 +14,23 @@ import {
 import { buildBreadcrumbJsonLd, jsonLdHtml } from '@/lib/seo';
 import {
   buildRankingItemListJsonLd,
+  filterPlatformEntries,
   formatRefreshedAt,
+  getPlatformVariant,
   getRankingPageSpec,
   hasMissingValues,
   isRankingIndexable,
+  monthYearLabel,
   rankingCanonicalUrl,
   sanitizeRankingEntries,
+  PLATFORM_VARIANT_SLUGS,
   RANKING_PAGES,
+  RANKING_PLATFORMS,
+  type PlatformRankingVariant,
+  type RankingPlatform,
   type RankingPageSpec,
 } from '@/lib/rankings';
+import { loadRankingPool } from '@/lib/server/rankings-pool';
 import { RankingTable } from '@/components/web/RankingTable';
 import { RankingSpotlight } from '@/components/web/RankingSpotlight';
 import { RankingPagination } from '@/components/web/RankingPagination';
@@ -78,13 +86,18 @@ async function loadEntries(spec: RankingPageSpec, page: number): Promise<LoadedR
 
 export async function buildLeaderboardMetadata(slug: string, page = 1): Promise<Metadata> {
   const spec = getRankingPageSpec(slug);
-  if (!spec) return { title: 'Streamer Rankings — StreamerTimes' };
+  if (!spec) return { title: 'Streamer Rankings — Streamer Times' };
   const { entries, total } = await loadEntries(spec, page);
   const url = leaderboardUrl(spec.slug, page);
   const baseTitle = spec.buildTitle(total || entries.length);
   // Page 2+ must not duplicate page 1's title/description verbatim — near-identical
   // <title>s across a paginated set is a classic duplicate-content signal.
-  const title = page === 1 ? baseTitle : `${baseTitle} — Page ${page}`;
+  //
+  // Page 1 carries the current month ("(August 2026)"): rankings queries have a
+  // strong freshness intent, and a self-declared date beats the one Google
+  // otherwise appends on its own. URLs stay date-free — only the title rolls.
+  const title =
+    page === 1 ? `${baseTitle} (${monthYearLabel('en')})` : `${baseTitle} — Page ${page}`;
   const description =
     page === 1
       ? spec.buildDescription(entries[0])
@@ -210,6 +223,12 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
         </Link>
       </nav>
 
+      {/* Per-platform variants ("most followed TWITCH streamers" is its own
+          search intent) — page 1 only: the variants are single-page. */}
+      {page === 1 && PLATFORM_VARIANT_SLUGS.includes(spec.slug) && (
+        <PlatformChips slug={spec.slug} active={null} />
+      )}
+
       {entries.length > 0 ? (
         <>
           <p className="mt-4 max-w-2xl text-text-secondary">
@@ -305,6 +324,279 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
         {'  ·  '}
         <Link href="/rankings/climbers" className="text-accent-cyan hover:text-text-primary">
           Climbers this week
+        </Link>
+        {'  ·  '}
+        <Link href="/streamers" className="text-accent-cyan hover:text-text-primary">
+          Browse all streamers A–Z
+        </Link>
+      </p>
+    </main>
+  );
+}
+
+// ============================================
+// Platform variants: /rankings/<metric>/twitch|youtube (2026-08-11)
+// ============================================
+
+/**
+ * "Platform: All · Twitch only · YouTube only" chip row shared by the metric
+ * page (active=null) and its platform variants. Wraps on narrow screens like
+ * the metric nav above it.
+ */
+function PlatformChips({ slug, active }: { slug: string; active: RankingPlatform | null }) {
+  const chipBase =
+    'inline-block rounded-full border px-4 py-1.5 text-sm transition-colors';
+  const idle =
+    `${chipBase} border-border-default bg-background-elevated text-text-primary hover:border-accent-cyan/60 hover:text-accent-cyan`;
+  const current = `${chipBase} border-accent-cyan/60 bg-background-elevated font-semibold text-accent-cyan`;
+  return (
+    <nav aria-label="Platform" className="mt-3 flex flex-wrap items-center gap-2">
+      <span className="text-sm text-text-muted">Platform:</span>
+      {active === null ? (
+        <span aria-current="page" className={current}>
+          All
+        </span>
+      ) : (
+        <Link href={`/rankings/${slug}`} className={idle}>
+          All
+        </Link>
+      )}
+      {RANKING_PLATFORMS.map((p) =>
+        active === p ? (
+          <span key={p} aria-current="page" className={current}>
+            {p === 'twitch' ? 'Twitch only' : 'YouTube only'}
+          </span>
+        ) : (
+          <Link key={p} href={`/rankings/${slug}/${p}`} className={idle}>
+            {p === 'twitch' ? 'Twitch only' : 'YouTube only'}
+          </Link>
+        ),
+      )}
+    </nav>
+  );
+}
+
+interface LoadedPlatformRanking {
+  entries: ReturnType<typeof filterPlatformEntries>;
+  refreshedAt: string | null;
+  /** Total platform matches across the whole pool (may exceed the 100 shown). */
+  total: number;
+}
+
+/**
+ * Platform slice of a whole ranking pool. Reuses the hub's pool walker, so the
+ * pages it touches are the same hour-cached ones the hub already warmed —
+ * failure degrades to an empty page that renders the warming-up state and
+ * noindexes (never throws during prerender, build-abort rule).
+ */
+async function loadPlatformEntries(
+  variant: PlatformRankingVariant,
+): Promise<LoadedPlatformRanking> {
+  try {
+    const pool = await loadRankingPool(variant.spec);
+    const all = pool.entries.filter((e) => variant.matches(e));
+    return {
+      entries: filterPlatformEntries(variant, pool.entries),
+      refreshedAt: pool.refreshedAt,
+      total: all.length,
+    };
+  } catch {
+    return { entries: [], refreshedAt: null, total: 0 };
+  }
+}
+
+export async function buildPlatformLeaderboardMetadata(
+  metricSlug: string,
+  platform: string,
+): Promise<Metadata | null> {
+  const variant = getPlatformVariant(metricSlug, platform);
+  if (!variant) return null;
+  const { entries } = await loadPlatformEntries(variant);
+  const url = `${rankingCanonicalUrl(metricSlug)}/${variant.platform}`;
+  const title = `${variant.buildTitle(entries.length)} (${monthYearLabel('en')})`;
+  const description = variant.buildDescription(entries[0]);
+  const meta: Metadata = {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, siteName: 'Streamer Times', type: 'website' },
+  };
+  // Same thin-content gate as the mixed leaderboards: render, but stay out of
+  // the index until the platform slice has enough real entries.
+  if (!isRankingIndexable(entries.length)) {
+    meta.robots = { index: false, follow: true };
+  }
+  return meta;
+}
+
+export async function PlatformLeaderboardPage({
+  slug,
+  platform,
+}: {
+  slug: string;
+  platform: RankingPlatform;
+}) {
+  const variant = getPlatformVariant(slug, platform);
+  if (!variant) return null; // route 404s before this — defensive only
+  const { spec } = variant;
+  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  const gamesPromise = getPartnerApi()
+    .listGames({ limit: 500, revalidate: 3600 })
+    .catch(() => null);
+  const { entries, refreshedAt, total } = await loadPlatformEntries(variant);
+  const nextSlots = await getNextSlotByStreamer(entries.map((e) => e.streamer.id));
+  const liveIds = await livePromise;
+  const mainGameSlugs = new Map<string, string>(
+    ((await gamesPromise)?.data ?? [])
+      .map((g) => [g.category, gameSlug(g.category)] as const)
+      .filter(([, s]) => s.length > 0),
+  );
+  const refreshedLabel = formatRefreshedAt(refreshedAt);
+  const top = entries[0];
+  const primaryColumn = variant.columns.find((c) => c.primary) ?? variant.columns[0];
+
+  const breadcrumb = buildBreadcrumbJsonLd([
+    { name: 'Home', url: SITE_URL },
+    { name: 'Rankings', url: `${SITE_URL}/rankings` },
+    { name: spec.navLabel, url: `${SITE_URL}/rankings/${spec.slug}` },
+    { name: variant.platformLabel },
+  ]);
+  const itemList = buildRankingItemListJsonLd(variant.h1, entries);
+
+  return (
+    <main className="container mx-auto max-w-5xl px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
+      />
+      {entries.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(itemList) }}
+        />
+      )}
+
+      <p className="text-sm text-text-muted">
+        <Link href="/rankings" className="hover:text-accent-cyan">
+          Rankings
+        </Link>{' '}
+        /{' '}
+        <Link href={`/rankings/${spec.slug}`} className="hover:text-accent-cyan">
+          {spec.navLabel}
+        </Link>{' '}
+        / {variant.platformLabel}
+      </p>
+      <h1 className="mt-2 text-3xl font-bold text-white md:text-4xl">{variant.h1}</h1>
+
+      <nav aria-label="Ranking categories" className="mt-4 flex flex-wrap gap-2">
+        {RANKING_PAGES.map((p) => (
+          <Link
+            key={p.slug}
+            href={
+              // Stay on the same platform slice while switching metrics where
+              // the sibling has one; most-reliable falls back to its only page.
+              PLATFORM_VARIANT_SLUGS.includes(p.slug)
+                ? `/rankings/${p.slug}/${variant.platform}`
+                : `/rankings/${p.slug}`
+            }
+            className={
+              p.slug === spec.slug
+                ? 'inline-block rounded-full border border-accent-cyan/60 bg-background-elevated px-4 py-1.5 text-sm font-semibold text-accent-cyan'
+                : 'inline-block rounded-full border border-border-default bg-background-elevated px-4 py-1.5 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan'
+            }
+            aria-current={p.slug === spec.slug ? 'page' : undefined}
+          >
+            {p.navLabel}
+          </Link>
+        ))}
+      </nav>
+
+      <PlatformChips slug={spec.slug} active={variant.platform} />
+
+      {entries.length > 0 ? (
+        <>
+          <p className="mt-4 max-w-2xl text-text-secondary">
+            {variant.buildIntro(entries.length, top)}
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-text-muted">
+            {variant.methodologyNote}
+            {refreshedLabel && (
+              <>
+                {' '}
+                Data refreshed <time dateTime={refreshedAt!}>{refreshedLabel}</time>.
+              </>
+            )}
+          </p>
+          {top && primaryColumn && (
+            <RankingSpotlight
+              entry={top}
+              metricValue={primaryColumn.format(top)}
+              metricLabel={primaryColumn.header}
+              isLive={liveIds.has(top.streamer.id)}
+              nextSlot={nextSlots.get(top.streamer.id)}
+              mainGameSlugs={mainGameSlugs}
+            />
+          )}
+          <div className="mt-6">
+            <RankingTable
+              caption={variant.h1}
+              columns={variant.columns}
+              entries={entries}
+              rowAnchorPrefix="rank"
+              liveIds={liveIds}
+              nextSlots={nextSlots}
+              mainGameSlugs={mainGameSlugs}
+            />
+          </div>
+          {total > entries.length && (
+            <p className="mt-2 text-xs text-text-muted">
+              Showing the top {entries.length} of {total}{' '}
+              {variant.platformLabel} streamers in this ranking.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-text-muted">
+            Next stream: announced schedule or AI-predicted (~) start within the next
+            7 days, shown in your local time, with the expected game below it.
+          </p>
+          {hasMissingValues(spec, entries) && (
+            <p className="mt-2 text-xs text-text-muted">
+              — means we haven&apos;t collected enough data for that channel yet, for
+              example viewer sampling for recently added channels.
+            </p>
+          )}
+          {variant.faq.length > 0 && (
+            <section aria-labelledby="ranking-faq-heading" className="mt-12 max-w-2xl">
+              <h2 id="ranking-faq-heading" className="text-xl font-bold text-white">
+                About this ranking
+              </h2>
+              <dl className="mt-4 space-y-5">
+                {variant.faq.map(({ q, a }) => (
+                  <div key={q}>
+                    <dt className="font-semibold text-text-primary">{q}</dt>
+                    <dd className="mt-1 text-sm text-text-secondary">{a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+        </>
+      ) : (
+        <p className="mt-4 max-w-2xl text-text-secondary">
+          This ranking is warming up — we need a bit more data before it&apos;s
+          meaningful. Check back soon.
+        </p>
+      )}
+
+      <p className="mt-12 border-t border-divider pt-6 text-sm text-text-secondary">
+        <Link
+          href={`/rankings/${spec.slug}`}
+          className="text-accent-cyan hover:text-text-primary"
+        >
+          ← {spec.h1} (all platforms)
+        </Link>
+        {'  ·  '}
+        <Link href="/rankings" className="text-accent-cyan hover:text-text-primary">
+          All rankings
         </Link>
         {'  ·  '}
         <Link href="/streamers" className="text-accent-cyan hover:text-text-primary">

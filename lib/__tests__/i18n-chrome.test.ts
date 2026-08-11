@@ -96,26 +96,25 @@ describe('SITE_META_STRINGS', () => {
     const M = SITE_META_STRINGS.en;
     // app/page.tsx
     expect(M.home.title).toBe(
-      'Stream Schedule, Highlights & Stats — Twitch & YouTube | StreamerTimes',
+      'Stream Schedule, Highlights & Stats — Twitch & YouTube | Streamer Times',
     );
     expect(M.home.description).toBe(
       'Stream schedules, weekly highlights and channel stats for Twitch and YouTube — all in one place. See who is live now and when your favorites go live next.',
     );
     // app/live/page.tsx
-    expect(M.live.title).toBe("Who's Live Now on Twitch & YouTube | StreamerTimes");
+    expect(M.live.title).toBe("Who's Live Now on Twitch & YouTube | Streamer Times");
     expect(M.live.description).toBe(
       'See every streamer live right now on Twitch and YouTube, grouped by game and category — plus who is starting in the next few hours. Updated every minute.',
     );
     // app/streamers/page.tsx
     expect(M.streamers.title).toBe(
-      'All Streamers A–Z — Twitch & YouTube Live Schedules | StreamerTimes',
+      'All Streamers A–Z — Twitch & YouTube Live Schedules | Streamer Times',
     );
     // app/games/page.tsx via DEFAULT_GAMES_HUB_VIEW.buildTitle()
-    expect(M.games.title).toBe('Most Popular Games on Twitch & YouTube | StreamerTimes');
-    // app/rankings/page.tsx
-    expect(M.rankings.title).toBe(
-      'Streamer Rankings — Most Followed, Most Watched & Most Active',
-    );
+    expect(M.games.title).toBe('Most Popular Games on Twitch & YouTube | Streamer Times');
+    // app/rankings/page.tsx (date-free base — the page appends the current
+    // month via monthYearLabel(), SEO round 2026-08-11)
+    expect(M.rankings.title).toBe('Twitch & YouTube Streamer Rankings & Stats');
   });
 
   it('siteMetaFor returns the English table for en', () => {

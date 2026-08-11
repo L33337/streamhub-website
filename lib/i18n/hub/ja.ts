@@ -325,9 +325,9 @@ export const ja: HubLex = {
       'いいえ。配信時間は、そのカテゴリーで配信者がライブだった時間の長さです。視聴者の視聴時間は集計していません。カードに表示されるライブ視聴者数はその時点のサンプルで、合計ではありません。',
   },
   rankings: {
-    h1: 'ストリーマーランキング',
+    h1: 'Twitch・YouTubeストリーマーランキング',
     intro: (n) =>
-      `Twitch と YouTube で最も大きく、最も急成長中で、最も活発で、最も頼れるストリーマーは誰でしょう? 追跡中の全ストリーマーを対象にした${n}つのランキングを、実際の配信データから毎日更新しています。`,
+      `Twitch と YouTube で最も大きく、最も急成長中で、最も活発で、最も頼れるストリーマーは誰でしょう? 追跡中の全ストリーマーを対象に、フォロワー・視聴者・活動の統計を含む${n}つのランキングを、実際の配信データから毎日更新しています。`,
     dataRefreshed: (label) => ` データ更新日: ${label}。`,
     seeFullRanking: 'ランキング全体を見る →',
     warmingUp: 'ランキングは準備中です — またすぐにチェックしてください。',
@@ -338,6 +338,7 @@ export const ja: HubLex = {
     byGameSubtitle: '各ゲーム・カテゴリーでフォロワーの多いストリーマーです。',
     byGameAria: '人気ゲームのランキング',
     topGameStreamers: (category) => `${category} のトップストリーマー`,
+    gameChipStats: (category) => `${category} のストリーマー統計`,
     whoIsLive: '今誰が配信中?',
     climbersThisWeek: '今週の急上昇ストリーマー',
     metricH1: {
@@ -380,6 +381,16 @@ export const ja: HubLex = {
     trendMoveTitle: (up, delta) => `先週から${delta}${up ? 'ランクアップ' : 'ランクダウン'}`,
     mainGameShareTitle: (pct) => `カテゴリー付き配信の${pct}%`,
     alwaysOnTitle: '常時配信チャンネル — 24時間ライブ',
+    faqHeading: 'これらのランキングについて',
+    faqCalculatedQ: 'ストリーマーランキングはどのように算出されていますか?',
+    faqCalculatedA:
+      '各ランキングは、当サイトが自ら収集した実際の配信データから算出しています: フォロワー数・登録者数、1時間ごとのライブ視聴者サンプリング、追跡中の全 Twitch・YouTube チャンネルの配信履歴です。自己申告の数字は使いません。',
+    faqUpdatedQ: '統計はどのくらいの頻度で更新されますか?',
+    faqUpdatedA:
+      'ランキングは毎晩再集計されます。フォロワー・視聴者・活動の統計は毎日更新され、ライブバッジや次回配信の時刻は日中も随時更新されます。',
+    faqPlatformsQ: '対象のプラットフォームは?',
+    faqPlatformsA:
+      'Twitch と YouTube です。ほとんどのランキングは両プラットフォームを合算しています — Twitch のフォロワーは YouTube の登録者に相当します。時間の正確さランキングは、Twitch の告知済みスケジュールを測定するため Twitch のみが対象です。',
   },
   recaps: {
     weeklyKicker: '週間まとめ',
@@ -421,7 +432,7 @@ export const ja: HubLex = {
     trendTitle: '前週比のアクティブなストリーマー数の変化',
   },
   game: {
-    notFoundTitle: 'ゲームが見つかりません — StreamerTimes',
+    notFoundTitle: 'ゲームが見つかりません — Streamer Times',
     metaTitle: (category) => `${category} のストリーマー — 配信中・ランキング・スケジュール`,
     metaDescription: (category, names) => {
       const tail = `今誰が配信中か、今後の配信、AI が予測した Twitch・YouTube の配信スケジュール。`;
@@ -535,7 +546,7 @@ export const ja: HubLex = {
     allGamesFooter: '← すべてのゲームとカテゴリー',
   },
   gameRanking: {
-    notFoundTitle: 'ページが見つかりません — StreamerTimes',
+    notFoundTitle: 'ページが見つかりません — Streamer Times',
     metaTitle: (category, page) =>
       page === 1
         ? `${category} ストリーマーランキング — フォロワー数順`

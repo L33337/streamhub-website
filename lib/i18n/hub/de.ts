@@ -334,9 +334,9 @@ export const de: HubLex = {
       'Nein. „Stunden gestreamt“ misst, wie lange Streamer in einer Kategorie live waren. Zuschauer-Watchtime erfassen wir nicht; die Live-Zuschauerzahlen auf den Karten sind eine Momentaufnahme, keine Summe.',
   },
   rankings: {
-    h1: 'Streamer-Rankings',
+    h1: 'Twitch- & YouTube-Streamer-Rankings',
     intro: (n) =>
-      `Wer sind die größten, am schnellsten wachsenden, fleißigsten und verlässlichsten Streamer auf Twitch und YouTube? ${n} Ranglisten über alle Streamer, die wir erfassen — täglich aktualisiert aus echten Broadcast-Daten.`,
+      `Wer sind die größten, am schnellsten wachsenden, fleißigsten und verlässlichsten Streamer auf Twitch und YouTube? ${n} Ranglisten mit Follower-, Zuschauer- und Aktivitäts-Statistiken zu allen Streamern, die wir erfassen — täglich aktualisiert aus echten Broadcast-Daten.`,
     dataRefreshed: (label) => ` Daten aktualisiert: ${label}.`,
     seeFullRanking: 'Zum kompletten Ranking →',
     warmingUp: 'Die Ranglisten laufen sich noch warm — schau bald wieder vorbei.',
@@ -347,6 +347,7 @@ export const de: HubLex = {
     byGameSubtitle: 'Die meistgefolgten Streamer für jedes Spiel und jede Kategorie.',
     byGameAria: 'Beliebte Spiel-Rankings',
     topGameStreamers: (category) => `Die besten ${category}-Streamer`,
+    gameChipStats: (category) => `${category}-Streamer-Statistiken`,
     whoIsLive: 'Wer ist gerade live?',
     climbersThisWeek: 'Größte Aufsteiger der Woche',
     metricH1: {
@@ -390,6 +391,16 @@ export const de: HubLex = {
       `Seit letzter Woche ${delta} ${delta === 1 ? 'Platz' : 'Plätze'} ${up ? 'nach oben' : 'nach unten'}`,
     mainGameShareTitle: (pct) => `${pct} % ihrer kategorisierten Streams`,
     alwaysOnTitle: 'Always-on-Kanal — rund um die Uhr live',
+    faqHeading: 'Über diese Rankings',
+    faqCalculatedQ: 'Wie werden diese Streamer-Rankings berechnet?',
+    faqCalculatedA:
+      'Jedes Ranking wird aus echten Broadcast-Daten berechnet, die wir selbst erheben: Follower- und Abonnentenzahlen, stündliche Live-Zuschauer-Stichproben und die Stream-Historie jedes erfassten Twitch- und YouTube-Kanals. Keine selbst gemeldeten Zahlen.',
+    faqUpdatedQ: 'Wie oft werden die Statistiken aktualisiert?',
+    faqUpdatedA:
+      'Die Ranglisten werden jede Nacht neu berechnet — Follower-, Zuschauer- und Aktivitätsstatistiken täglich, Live-Badges und Nächster-Stream-Zeiten laufend über den Tag.',
+    faqPlatformsQ: 'Welche Plattformen werden abgedeckt?',
+    faqPlatformsA:
+      'Twitch und YouTube. Die meisten Rankings mischen beide Plattformen — Follower auf Twitch entsprechen Abonnenten auf YouTube. Das Pünktlichkeits-Ranking ist Twitch-only, weil es angekündigte Twitch-Sendepläne misst.',
   },
   recaps: {
     weeklyKicker: 'Wochenrückblick',
@@ -431,7 +442,7 @@ export const de: HubLex = {
     trendTitle: 'Veränderung aktiver Streamer zur Vorwoche',
   },
   game: {
-    notFoundTitle: 'Spiel nicht gefunden — StreamerTimes',
+    notFoundTitle: 'Spiel nicht gefunden — Streamer Times',
     metaTitle: (category) => `${category}-Streamer — Jetzt live, Rankings & Sendeplan`,
     metaDescription: (category, names) => {
       const tail = `Wer ist jetzt live, kommende Streams und KI-prognostizierte Sendepläne auf Twitch und YouTube.`;
@@ -556,7 +567,7 @@ export const de: HubLex = {
     allGamesFooter: '← Alle Spiele & Kategorien',
   },
   gameRanking: {
-    notFoundTitle: 'Nicht gefunden — StreamerTimes',
+    notFoundTitle: 'Nicht gefunden — Streamer Times',
     metaTitle: (category, page) =>
       page === 1
         ? `Top ${category}-Streamer — nach Followern gerankt`

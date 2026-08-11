@@ -340,9 +340,9 @@ export const en: HubLex = {
       'No. Hours streamed is how long broadcasters were live in a category. We do not report viewer watch time; live viewer counts shown on the cards are a current sample, not a total.',
   },
   rankings: {
-    h1: 'Streamer rankings',
+    h1: 'Twitch & YouTube streamer rankings',
     intro: (n) =>
-      `Who are the biggest, fastest growing, busiest and most dependable streamers on Twitch and YouTube? ${n} leaderboards over every streamer we track — updated daily from real broadcast data.`,
+      `Who are the biggest, fastest growing, busiest and most dependable streamers on Twitch and YouTube? ${n} leaderboards with follower, viewer and activity stats for every streamer we track — updated daily from real broadcast data.`,
     dataRefreshed: (label) => ` Data refreshed ${label}.`,
     seeFullRanking: 'See the full ranking →',
     warmingUp: 'The leaderboards are warming up — check back soon.',
@@ -353,6 +353,7 @@ export const en: HubLex = {
     byGameSubtitle: 'The most followed streamers for each game and category.',
     byGameAria: 'Popular game rankings',
     topGameStreamers: (category) => `Top ${category} streamers`,
+    gameChipStats: (category) => `${category} streamer stats`,
     whoIsLive: 'Who is live right now?',
     climbersThisWeek: 'Biggest climbers this week',
     metricH1: {
@@ -395,6 +396,16 @@ export const en: HubLex = {
     trendMoveTitle: (up, delta) => `${up ? 'Up' : 'Down'} ${delta} since last week`,
     mainGameShareTitle: (pct) => `${pct}% of their categorized streams`,
     alwaysOnTitle: 'Always-on channel — live around the clock',
+    faqHeading: 'About these rankings',
+    faqCalculatedQ: 'How are these streamer rankings calculated?',
+    faqCalculatedA:
+      'Every ranking is computed from real broadcast data we collect ourselves: follower and subscriber counts, hourly live viewer sampling and the stream history of every tracked Twitch and YouTube channel. No self-reported numbers.',
+    faqUpdatedQ: 'How often are the stats updated?',
+    faqUpdatedA:
+      'The leaderboards are rebuilt every night — follower, viewer and activity stats refresh daily, while live badges and next-stream times update throughout the day.',
+    faqPlatformsQ: 'Which platforms are covered?',
+    faqPlatformsA:
+      'Twitch and YouTube. Most rankings mix both platforms — follower counts on Twitch correspond to subscribers on YouTube. The most punctual ranking is Twitch-only, because it measures announced Twitch schedules.',
   },
   recaps: {
     weeklyKicker: 'Weekly recap',
@@ -436,7 +447,7 @@ export const en: HubLex = {
     trendTitle: 'Week-over-week change in active streamers',
   },
   game: {
-    notFoundTitle: 'Game not found — StreamerTimes',
+    notFoundTitle: 'Game not found — Streamer Times',
     metaTitle: (category) => `${category} Streamers — Live Now, Rankings & Schedule`,
     metaDescription: (category, names) => {
       const tail = `Who is live now, upcoming streams and AI-predicted schedules on Twitch and YouTube.`;
@@ -552,7 +563,7 @@ export const en: HubLex = {
     allGamesFooter: '← All games & categories',
   },
   gameRanking: {
-    notFoundTitle: 'Not found — StreamerTimes',
+    notFoundTitle: 'Not found — Streamer Times',
     metaTitle: (category, page) =>
       page === 1
         ? `Top ${category} Streamers — Ranked by Followers`

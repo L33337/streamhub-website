@@ -10,7 +10,7 @@ import { formatCompactNumber } from '@/lib/format/number';
 // wrapped — any error degrades to the count-free fallback subtitle.
 export const runtime = 'nodejs';
 export const revalidate = 300;
-export const alt = 'Streamer rankings on StreamerTimes';
+export const alt = 'Streamer rankings on Streamer Times';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -28,7 +28,7 @@ export default async function Image() {
   }
 
   return new ImageResponse(
-    renderOgFrame({ title: 'Streamer Rankings', subtitle }),
+    renderOgFrame({ title: 'Twitch & YouTube Streamer Rankings', subtitle }),
     { ...OG_SIZE },
   );
 }

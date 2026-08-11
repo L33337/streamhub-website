@@ -127,6 +127,28 @@ export function formatGrowthPercent(percent: number | null | undefined): string 
 }
 
 /**
+ * Current month + year for SERP titles, e.g. "August 2026" / de "August 2026" /
+ * ja "2026年8月". Localized via Intl (never a hand-kept month table), UTC so
+ * every regeneration of every locale variant agrees on the month regardless of
+ * server timezone. The label changes 12× a year, so it is ISR-write-cheap —
+ * deliberately month-granular: a full day date in a <title> would re-write
+ * every locale variant daily for no extra SERP signal.
+ */
+export function monthYearLabel(lang = 'en', date: Date = new Date()): string {
+  const locale = lang === 'en' ? 'en-US' : lang;
+  const opts: Intl.DateTimeFormatOptions = {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  };
+  try {
+    return new Intl.DateTimeFormat(locale, opts).format(date);
+  } catch {
+    return new Intl.DateTimeFormat('en-US', opts).format(date);
+  }
+}
+
+/**
  * "2026-07-18T04:15:00Z" → "Jul 18, 2026" for the visible freshness line.
  * Fixed en-US locale + UTC (site copy is English; avoids server-locale
  * drift across regenerations). null/invalid → null (line is omitted).
@@ -486,6 +508,322 @@ export const RANKING_PAGES: RankingPageSpec[] = [
 
 export function getRankingPageSpec(slug: string): RankingPageSpec | null {
   return RANKING_PAGES.find((p) => p.slug === slug) ?? null;
+}
+
+// ============================================
+// Platform variants (/rankings/<metric>/<platform>, SEO round 2026-08-11)
+// ============================================
+
+export type RankingPlatform = 'twitch' | 'youtube';
+export const RANKING_PLATFORMS: readonly RankingPlatform[] = ['twitch', 'youtube'];
+
+/**
+ * Metrics that ship /twitch + /youtube variants. most-reliable is excluded on
+ * purpose: it is already Twitch-only (punctuality is measured against Twitch
+ * schedules), so a /twitch twin would duplicate the canonical page and a
+ * /youtube page would be permanently empty.
+ */
+export const PLATFORM_VARIANT_SLUGS: readonly string[] = [
+  'most-followed',
+  'fastest-growing',
+  'most-watched',
+  'most-active',
+];
+
+export interface PlatformRankingVariant {
+  spec: RankingPageSpec;
+  platform: RankingPlatform;
+  /** "Twitch" / "YouTube" for breadcrumbs and chips. */
+  platformLabel: string;
+  h1: string;
+  buildTitle(entryCount: number): string;
+  buildDescription(top?: PublicRankingEntry): string;
+  buildIntro(entryCount: number, top?: PublicRankingEntry): string;
+  methodologyNote: string;
+  columns: RankingColumn[];
+  /** Pool filter — see the primary-platform note below. */
+  matches(entry: PublicRankingEntry): boolean;
+  faq: Array<{ q: string; a: string }>;
+}
+
+/**
+ * Platform membership follows the PRIMARY-channel convention the follower data
+ * already encodes: `follower_count` (and its 7d gain) is the Twitch channel's
+ * count whenever the streamer has one (see `followerNoun`). So:
+ *   - twitch  = has a Twitch channel (simulcasters included — every metric
+ *               value is Twitch-anchored or platform-spanning for them)
+ *   - youtube = streams primarily on YouTube (no Twitch channel), where the
+ *               counts genuinely are YouTube subscribers
+ * A dual-platform streamer on the YouTube list would show Twitch followers
+ * under a "Subscribers" header — that mislabel is exactly what this split
+ * avoids.
+ */
+function platformMatcher(platform: RankingPlatform): (e: PublicRankingEntry) => boolean {
+  return platform === 'twitch'
+    ? (e) => e.streamer.platforms.includes('twitch')
+    : (e) => e.streamer.platforms.includes('youtube') && !e.streamer.platforms.includes('twitch');
+}
+
+/** Column list with headers renamed per the map; untouched columns pass through. */
+function relabelColumns(columns: RankingColumn[], map: Record<string, string>): RankingColumn[] {
+  return columns.map((c) => (map[c.header] ? { ...c, header: map[c.header] } : c));
+}
+
+interface VariantCopy {
+  h1: string;
+  /** [count-free base, "Top {n} …" template] — same degradation as the metric pages. */
+  titles: [string, string];
+  /** Evergreen meta-description sentence (the leader clause is prepended). */
+  evergreen: string;
+  intro(n: number, top?: PublicRankingEntry): string;
+  methodologyNote: string;
+  /** Platform-specific inclusion-rule Q&A, prepended to the metric's own FAQ head. */
+  inclusionFaq: { q: string; a: string };
+}
+
+const TWITCH_INCLUSION_FAQ = {
+  q: 'Which streamers count as Twitch streamers?',
+  a: 'Everyone we track with a Twitch channel — including streamers who simulcast on YouTube. The follower stats are always the Twitch channel’s numbers.',
+};
+const YOUTUBE_INCLUSION_FAQ = {
+  q: 'Why is a big YouTube channel missing?',
+  a: 'This ranking covers live streamers whose primary channel is on YouTube. Video-only creators are not tracked, and streamers whose main channel is on Twitch are listed in the Twitch ranking instead.',
+};
+
+const topsClause = (
+  top: PublicRankingEntry | undefined,
+  value: (t: PublicRankingEntry) => string | null,
+): string => {
+  const v = top ? value(top) : null;
+  return top && v ? ` ${top.streamer.name} tops the list with ${v}.` : '';
+};
+
+/** Copy per (metric, platform). Kept next to RANKING_PAGES so wording stays in one file. */
+const VARIANT_COPY: Record<string, Record<RankingPlatform, VariantCopy>> = {
+  'most-followed': {
+    twitch: {
+      h1: 'Most followed Twitch streamers',
+      titles: [
+        'Most Followed Twitch Streamers — Follower Stats',
+        'Top {n} Most Followed Twitch Streamers',
+      ],
+      evergreen:
+        'The most followed streamers on Twitch, ranked by channel followers. Follower stats updated daily.',
+      intro: (n, top) =>
+        `The ${n} most followed Twitch streamers on Streamer Times, ranked by Twitch channel followers.` +
+        topsClause(top, (t) =>
+          t.values.follower_count ? `${compact(t.values.follower_count)} followers` : null,
+        ),
+      methodologyNote:
+        'Updated daily. Covers every tracked streamer with a Twitch channel; the count is their Twitch channel followers.',
+      inclusionFaq: TWITCH_INCLUSION_FAQ,
+    },
+    youtube: {
+      h1: 'Most subscribed YouTube streamers',
+      titles: [
+        'Most Subscribed YouTube Streamers — Subscriber Stats',
+        'Top {n} Most Subscribed YouTube Streamers',
+      ],
+      evergreen:
+        'The most subscribed live streamers on YouTube, ranked by channel subscribers. Subscriber stats updated daily.',
+      intro: (n, top) =>
+        `The ${n} most subscribed YouTube streamers on Streamer Times, ranked by channel subscribers. Only channels that live stream primarily on YouTube are listed.` +
+        topsClause(top, (t) =>
+          t.values.follower_count ? `${compact(t.values.follower_count)} subscribers` : null,
+        ),
+      methodologyNote:
+        'Updated daily. YouTube-first live channels only; the count is their YouTube subscribers.',
+      inclusionFaq: YOUTUBE_INCLUSION_FAQ,
+    },
+  },
+  'fastest-growing': {
+    twitch: {
+      h1: 'Fastest growing Twitch streamers',
+      titles: [
+        'Fastest Growing Twitch Streamers — Follower Gains',
+        'Top {n} Fastest Growing Twitch Streamers',
+      ],
+      evergreen:
+        'The fastest growing Twitch streamers, ranked by follower gain over the last 7 days. Updated daily.',
+      intro: (n, top) =>
+        `The ${n} fastest growing Twitch streamers on Streamer Times, ranked by Twitch follower gain over the last 7 days.` +
+        topsClause(top, (t) =>
+          t.values.follower_gain_7d
+            ? `${formatSignedCompact(t.values.follower_gain_7d)} followers this week`
+            : null,
+        ),
+      methodologyNote:
+        'Gain in Twitch channel followers over the last 7 days, from daily snapshots. Only channels with positive growth rank. Updated daily.',
+      inclusionFaq: TWITCH_INCLUSION_FAQ,
+    },
+    youtube: {
+      h1: 'Fastest growing YouTube streamers',
+      titles: [
+        'Fastest Growing YouTube Streamers — Subscriber Gains',
+        'Top {n} Fastest Growing YouTube Streamers',
+      ],
+      evergreen:
+        'The fastest growing live streamers on YouTube, ranked by subscriber gain over the last 7 days. Updated daily.',
+      intro: (n, top) =>
+        `The ${n} fastest growing YouTube streamers on Streamer Times, ranked by subscriber gain over the last 7 days. Only channels that live stream primarily on YouTube are listed.` +
+        topsClause(top, (t) =>
+          t.values.follower_gain_7d
+            ? `${formatSignedCompact(t.values.follower_gain_7d)} subscribers this week`
+            : null,
+        ),
+      methodologyNote:
+        'Gain in YouTube subscribers over the last 7 days, from daily snapshots of YouTube-first live channels. Only channels with positive growth rank. Updated daily.',
+      inclusionFaq: YOUTUBE_INCLUSION_FAQ,
+    },
+  },
+  'most-watched': {
+    twitch: {
+      h1: 'Most watched Twitch streamers',
+      titles: [
+        'Most Watched Twitch Streamers — Viewer Stats',
+        'Top {n} Most Watched Twitch Streamers',
+      ],
+      evergreen:
+        'Twitch streamers ranked by average concurrent viewers over the last 28 days. Viewer stats updated daily.',
+      intro: (n, top) =>
+        `The ${n} most watched Twitch streamers we track, ranked by their typical concurrent live audience over the last 28 days.` +
+        topsClause(top, (t) =>
+          t.values.avg_view_count
+            ? `${compact(t.values.avg_view_count)} average live viewers`
+            : null,
+        ),
+      methodologyNote:
+        'Median concurrent live viewers over the last 28 days (hourly sampling). Covers every tracked streamer with a Twitch channel. Updated daily.',
+      inclusionFaq: TWITCH_INCLUSION_FAQ,
+    },
+    youtube: {
+      h1: 'Most watched YouTube streamers',
+      titles: [
+        'Most Watched YouTube Streamers — Viewer Stats',
+        'Top {n} Most Watched YouTube Streamers',
+      ],
+      evergreen:
+        'Live streamers on YouTube ranked by average concurrent viewers over the last 28 days. Viewer stats updated daily.',
+      intro: (n, top) =>
+        `The ${n} most watched YouTube streamers we track, ranked by their typical concurrent live audience over the last 28 days. Only channels that live stream primarily on YouTube are listed.` +
+        topsClause(top, (t) =>
+          t.values.avg_view_count
+            ? `${compact(t.values.avg_view_count)} average live viewers`
+            : null,
+        ),
+      methodologyNote:
+        'Median concurrent live viewers over the last 28 days (hourly sampling), for YouTube-first live channels. Updated daily.',
+      inclusionFaq: YOUTUBE_INCLUSION_FAQ,
+    },
+  },
+  'most-active': {
+    twitch: {
+      h1: 'Most active Twitch streamers',
+      titles: [
+        'Most Active Twitch Streamers — Hours Streamed',
+        'Top {n} Most Active Twitch Streamers',
+      ],
+      evergreen:
+        'Twitch streamers ranked by total hours streamed in the last 28 days. Activity stats updated daily.',
+      intro: (n, top) =>
+        `The ${n} most active Twitch streamers of the last 28 days, ranked by total hours live.` +
+        topsClause(top, (t) =>
+          t.values.hours_streamed_28d
+            ? `${formatHours(t.values.hours_streamed_28d)} streamed`
+            : null,
+        ),
+      methodologyNote:
+        'Total hours live in the last 28 days. Each stream is counted once; 24/7 always-on channels are excluded. Covers every tracked streamer with a Twitch channel. Updated daily.',
+      inclusionFaq: TWITCH_INCLUSION_FAQ,
+    },
+    youtube: {
+      h1: 'Most active YouTube streamers',
+      titles: [
+        'Most Active YouTube Streamers — Hours Streamed',
+        'Top {n} Most Active YouTube Streamers',
+      ],
+      evergreen:
+        'Live streamers on YouTube ranked by total hours streamed in the last 28 days. Activity stats updated daily.',
+      intro: (n, top) =>
+        `The ${n} most active YouTube streamers of the last 28 days, ranked by total hours live. Only channels that live stream primarily on YouTube are listed.` +
+        topsClause(top, (t) =>
+          t.values.hours_streamed_28d
+            ? `${formatHours(t.values.hours_streamed_28d)} streamed`
+            : null,
+        ),
+      methodologyNote:
+        'Total hours live in the last 28 days for YouTube-first live channels. Each stream is counted once; 24/7 always-on channels are excluded. Updated daily.',
+      inclusionFaq: YOUTUBE_INCLUSION_FAQ,
+    },
+  },
+};
+
+/**
+ * Resolved platform variant of a leaderboard, or null for unknown metrics,
+ * unknown platforms, and the deliberately-excluded most-reliable.
+ */
+export function getPlatformVariant(
+  metricSlug: string,
+  platform: string,
+): PlatformRankingVariant | null {
+  if (platform !== 'twitch' && platform !== 'youtube') return null;
+  if (!PLATFORM_VARIANT_SLUGS.includes(metricSlug)) return null;
+  const spec = getRankingPageSpec(metricSlug);
+  const copy = VARIANT_COPY[metricSlug]?.[platform];
+  if (!spec || !copy) return null;
+  // Follower-count headers mean subscribers on YouTube-first channels.
+  const columns =
+    platform === 'youtube'
+      ? relabelColumns(spec.columns, {
+          Followers: 'Subscribers',
+          'Followers now': 'Subscribers now',
+        })
+      : spec.columns;
+  return {
+    spec,
+    platform,
+    platformLabel: platform === 'twitch' ? 'Twitch' : 'YouTube',
+    h1: copy.h1,
+    buildTitle: (n) => degradedTitle(copy.titles[0], copy.titles[1], n),
+    buildDescription: (top) => {
+      const noun = platform === 'twitch' ? 'followers' : 'subscribers';
+      const lead =
+        spec.metric === 'most-followed' && top?.values.follower_count
+          ? `${top.streamer.name} leads with ${compact(top.values.follower_count)} ${noun}. `
+          : spec.metric === 'fastest-growing' && top?.values.follower_gain_7d
+            ? `${top.streamer.name} gained ${compact(top.values.follower_gain_7d)} ${noun} in the last 7 days. `
+            : spec.metric === 'most-watched' && top?.values.avg_view_count
+              ? `${top.streamer.name} leads with ${compact(top.values.avg_view_count)} average live viewers. `
+              : spec.metric === 'most-active' && top?.values.hours_streamed_28d
+                ? `${top.streamer.name} leads with ${formatHours(top.values.hours_streamed_28d)} streamed in the last 28 days. `
+                : '';
+      return buildRankingDescription(lead, copy.evergreen);
+    },
+    buildIntro: copy.intro,
+    methodologyNote: copy.methodologyNote,
+    columns,
+    matches: platformMatcher(platform),
+    faq: [copy.inclusionFaq, ...spec.faq.slice(0, 1)],
+  };
+}
+
+/**
+ * Filters a whole ranking pool down to one platform and re-ranks densely
+ * from 1 — a platform page is its own leaderboard ("the #1 Twitch streamer"),
+ * not a filtered view keeping mixed-ranking positions. Capped to `limit`.
+ */
+export function filterPlatformEntries(
+  variant: PlatformRankingVariant,
+  entries: PublicRankingEntry[],
+  limit = 100,
+): PublicRankingEntry[] {
+  const out: PublicRankingEntry[] = [];
+  for (const e of entries) {
+    if (!variant.matches(e)) continue;
+    out.push(e.rank === out.length + 1 ? e : { ...e, rank: out.length + 1 });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 // ============================================

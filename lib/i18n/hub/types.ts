@@ -623,6 +623,12 @@ export interface HubLex {
     byGameAria: string;
     /** Chip label, e.g. "Top Minecraft streamers". */
     topGameStreamers(category: string): string;
+    /**
+     * Alternate chip label ("Minecraft streamer stats") used for every third
+     * game chip — varies the anchor texts (SEO round 2026-08-11) instead of 24
+     * identically patterned links, and carries the "stats" keyword.
+     */
+    gameChipStats(category: string): string;
     whoIsLive: string;
     /** Footer link to /rankings/climbers (weekly movers recap). */
     climbersThisWeek: string;
@@ -654,6 +660,20 @@ export interface HubLex {
     mainGameShareTitle(pct: number): string;
     /** title of the "24/7" next-stream cell. */
     alwaysOnTitle: string;
+    /**
+     * Visible Q&A block at the bottom of the hub (SEO round 2026-08-11) —
+     * targets informational queries ("how are streamer rankings calculated",
+     * "twitch stats"). Plain content, deliberately no FAQPage JSON-LD (same
+     * decision as the metric pages: Google restricted FAQ rich results to
+     * gov/health sites in 2023 — the copy itself is the SEO value).
+     */
+    faqHeading: string;
+    faqCalculatedQ: string;
+    faqCalculatedA: string;
+    faqUpdatedQ: string;
+    faqUpdatedA: string;
+    faqPlatformsQ: string;
+    faqPlatformsA: string;
   };
   /**
    * AI recap articles (2026-08-09): the two teaser cards atop /rankings, the

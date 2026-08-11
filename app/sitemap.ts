@@ -10,7 +10,11 @@ import {
   latestChange,
   streamerIndexableLocales,
 } from '@/lib/seo';
-import { MIN_INDEXABLE_GAME_STREAMERS } from '@/lib/rankings';
+import {
+  MIN_INDEXABLE_GAME_STREAMERS,
+  PLATFORM_VARIANT_SLUGS,
+  RANKING_PLATFORMS,
+} from '@/lib/rankings';
 import { gamesHubSegments } from '@/lib/games-hub';
 import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
@@ -147,6 +151,17 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     changeFrequency: 'daily',
     priority: 0.6,
   },
+  // Per-platform leaderboard variants (2026-08-11). Listed statically like the
+  // metric pages above: a thin platform slice emits noindex itself, so the
+  // residual mismatch self-corrects (same convention as /rankings/game/*).
+  ...PLATFORM_VARIANT_SLUGS.flatMap((slug) =>
+    RANKING_PLATFORMS.map((platform) => ({
+      url: `${SITE_URL}/rankings/${slug}/${platform}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily' as const,
+      priority: 0.5,
+    })),
+  ),
   {
     // Weekly movers recap. Listed while it warms up (same treatment as
     // fastest-growing above — the page emits noindex until it has movers).

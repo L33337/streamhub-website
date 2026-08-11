@@ -389,9 +389,9 @@ export const ar: HubLex = {
       'لا. ساعات البث هي مدة بقاء الستريمرز على الهواء في فئة ما. نحن لا نسجل وقت مشاهدة الجمهور؛ وأعداد المشاهدين المباشرين على البطاقات عينة لحظية، وليست مجموعًا.',
   },
   rankings: {
-    h1: 'تصنيفات الستريمرز',
+    h1: 'تصنيفات ستريمرز Twitch وYouTube',
     intro: (n) =>
-      `من هم الستريمرز الأكبر والأسرع نموًا والأكثر نشاطًا والأكثر انضباطًا على Twitch وYouTube؟ ${n} قوائم تصنيف تغطي كل ستريمر نتتبعه — تُحدَّث يوميًا من بيانات بث حقيقية.`,
+      `من هم الستريمرز الأكبر والأسرع نموًا والأكثر نشاطًا والأكثر انضباطًا على Twitch وYouTube؟ ${n} قوائم تصنيف مع إحصائيات المتابعين والمشاهدين والنشاط لكل ستريمر نتتبعه — تُحدَّث يوميًا من بيانات بث حقيقية.`,
     dataRefreshed: (label) => ` تم تحديث البيانات في ${label}.`,
     seeFullRanking: 'عرض التصنيف الكامل ←',
     warmingUp: 'قوائم التصنيف ما زالت تُجهَّز — عد قريبًا.',
@@ -402,6 +402,7 @@ export const ar: HubLex = {
     byGameSubtitle: 'الستريمرز الأكثر متابعة في كل لعبة وفئة.',
     byGameAria: 'تصنيفات الألعاب الشائعة',
     topGameStreamers: (category) => `أفضل ستريمرز ${category}`,
+    gameChipStats: (category) => `إحصائيات ستريمرز ${category}`,
     whoIsLive: 'من يبث مباشرة الآن؟',
     climbersThisWeek: 'أكبر الصاعدين هذا الأسبوع',
     metricH1: {
@@ -444,6 +445,16 @@ export const ar: HubLex = {
     trendMoveTitle: (up, delta) => `${up ? 'صعد' : 'هبط'} ${delta} منذ الأسبوع الماضي`,
     mainGameShareTitle: (pct) => `${pct}% من بثوثه المصنّفة`,
     alwaysOnTitle: 'قناة تبث على مدار الساعة',
+    faqHeading: 'حول هذه التصنيفات',
+    faqCalculatedQ: 'كيف تُحسب تصنيفات الستريمرز هذه؟',
+    faqCalculatedA:
+      'يُحسب كل تصنيف من بيانات بث حقيقية نجمعها بأنفسنا: أعداد المتابعين والمشتركين، وعينات المشاهدين المباشرين كل ساعة، وسجل بث كل قناة Twitch وYouTube نتتبعها. لا أرقام مُعلنة ذاتيًا.',
+    faqUpdatedQ: 'كم مرة تُحدَّث الإحصائيات؟',
+    faqUpdatedA:
+      'تُعاد حسابات التصنيفات كل ليلة — تُحدَّث إحصائيات المتابعين والمشاهدين والنشاط يوميًا، بينما تتحدّث شارات البث المباشر ومواعيد البث القادم على مدار اليوم.',
+    faqPlatformsQ: 'ما المنصات المشمولة؟',
+    faqPlatformsA:
+      'Twitch وYouTube. تجمع معظم التصنيفات بين المنصتين — المتابعون على Twitch يقابلون المشتركين على YouTube. تصنيف الانضباط خاص بـ Twitch فقط لأنه يقيس الجداول المعلنة على Twitch.',
   },
   recaps: {
     weeklyKicker: 'ملخص الأسبوع',
@@ -501,7 +512,7 @@ export const ar: HubLex = {
     trendTitle: 'تغيّر عدد الستريمرز النشطين مقارنة بالأسبوع الماضي',
   },
   game: {
-    notFoundTitle: 'اللعبة غير موجودة — StreamerTimes',
+    notFoundTitle: 'اللعبة غير موجودة — Streamer Times',
     metaTitle: (category) => `ستريمرز ${category} — البث المباشر والتصنيفات والمواعيد`,
     metaDescription: (category, names) => {
       const tail = `من يبث الآن، البثوث القادمة والمواعيد المتوقعة بالذكاء الاصطناعي على Twitch وYouTube.`;
@@ -654,7 +665,7 @@ export const ar: HubLex = {
     allGamesFooter: '→ كل الألعاب والفئات',
   },
   gameRanking: {
-    notFoundTitle: 'غير موجود — StreamerTimes',
+    notFoundTitle: 'غير موجود — Streamer Times',
     metaTitle: (category, page) =>
       page === 1
         ? `أفضل ستريمرز ${category} — حسب المتابعين`
