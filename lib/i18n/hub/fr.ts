@@ -406,7 +406,7 @@ export const fr: HubLex = {
       'Twitch et YouTube. La plupart des classements mélangent les deux plateformes — les followers Twitch correspondent aux abonnés YouTube. Le classement de ponctualité est réservé à Twitch, car il mesure les horaires annoncés sur Twitch.',
   },
   recaps: {
-    metaTitleSuffix: 'Stats des streamers Twitch et YouTube',
+    metaTitleSuffix: 'Stats des streamers Twitch',
     weeklyKicker: 'Récap de la semaine',
     monthlyKicker: 'Récap du mois',
     readMore: 'Lire le récap complet',

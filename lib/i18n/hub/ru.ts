@@ -473,7 +473,7 @@ export const ru: HubLex = {
       'Twitch и YouTube. Большинство рейтингов объединяют обе платформы — фолловеры на Twitch соответствуют подписчикам на YouTube. Рейтинг пунктуальности учитывает только Twitch, потому что измеряет анонсированные расписания Twitch.',
   },
   recaps: {
-    metaTitleSuffix: 'Статистика стримеров Twitch и YouTube',
+    metaTitleSuffix: 'Статистика стримеров Twitch',
     weeklyKicker: 'Итоги недели',
     monthlyKicker: 'Итоги месяца',
     readMore: 'Читать полный обзор',

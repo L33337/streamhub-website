@@ -395,7 +395,7 @@ export const hu: HubLex = {
       'A Twitchet és a YouTube-ot. A legtöbb ranglista a két platformot együtt kezeli — a Twitch-követők a YouTube-feliratkozóknak felelnek meg. A pontossági ranglista csak Twitch, mert a Twitchen bejelentett műsorrendet méri.',
   },
   recaps: {
-    metaTitleSuffix: 'Twitch- és YouTube-streamer-statisztikák',
+    metaTitleSuffix: 'Twitch-streamer-statisztikák',
     weeklyKicker: 'Heti összefoglaló',
     monthlyKicker: 'Havi összefoglaló',
     readMore: 'A teljes összefoglaló',

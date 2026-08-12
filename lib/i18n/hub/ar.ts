@@ -457,7 +457,7 @@ export const ar: HubLex = {
       'Twitch وYouTube. تجمع معظم التصنيفات بين المنصتين — المتابعون على Twitch يقابلون المشتركين على YouTube. تصنيف الانضباط خاص بـ Twitch فقط لأنه يقيس الجداول المعلنة على Twitch.',
   },
   recaps: {
-    metaTitleSuffix: 'إحصائيات ستريمرز Twitch وYouTube',
+    metaTitleSuffix: 'إحصائيات ستريمرز Twitch',
     weeklyKicker: 'ملخص الأسبوع',
     monthlyKicker: 'ملخص الشهر',
     readMore: 'قراءة الملخص كاملاً',

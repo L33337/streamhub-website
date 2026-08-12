@@ -404,7 +404,7 @@ export const es: HubLex = {
       'Twitch y YouTube. La mayoría de los rankings mezclan ambas plataformas — los seguidores de Twitch equivalen a los suscriptores de YouTube. El ranking de puntualidad es solo de Twitch, porque mide los horarios anunciados en Twitch.',
   },
   recaps: {
-    metaTitleSuffix: 'Stats de streamers de Twitch y YouTube',
+    metaTitleSuffix: 'Stats de streamers de Twitch',
     weeklyKicker: 'Resumen semanal',
     monthlyKicker: 'Resumen mensual',
     readMore: 'Leer el resumen completo',

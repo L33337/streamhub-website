@@ -403,7 +403,7 @@ export const de: HubLex = {
       'Twitch und YouTube. Die meisten Rankings mischen beide Plattformen — Follower auf Twitch entsprechen Abonnenten auf YouTube. Das Pünktlichkeits-Ranking ist Twitch-only, weil es angekündigte Twitch-Sendepläne misst.',
   },
   recaps: {
-    metaTitleSuffix: 'Twitch- & YouTube-Streamer-Stats',
+    metaTitleSuffix: 'Twitch-Streamer-Stats',
     weeklyKicker: 'Wochenrückblick',
     monthlyKicker: 'Monatsrückblick',
     readMore: 'Zum ganzen Rückblick',

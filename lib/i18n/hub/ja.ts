@@ -393,7 +393,7 @@ export const ja: HubLex = {
       'Twitch と YouTube です。ほとんどのランキングは両プラットフォームを合算しています — Twitch のフォロワーは YouTube の登録者に相当します。時間の正確さランキングは、Twitch の告知済みスケジュールを測定するため Twitch のみが対象です。',
   },
   recaps: {
-    metaTitleSuffix: 'TwitchとYouTubeのストリーマー統計',
+    metaTitleSuffix: 'Twitchストリーマー統計',
     weeklyKicker: '週間まとめ',
     monthlyKicker: '月間まとめ',
     readMore: 'まとめ全文を読む',
