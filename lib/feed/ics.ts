@@ -32,6 +32,11 @@ export function toIcsUtc(date: Date): string {
  * Program page's whole-day export (lib/program/ics.ts). STATUS:TENTATIVE on
  * purpose — these are predictions, and calendar apps render tentative events
  * distinctly.
+ *
+ * SEQUENCE (2026-08-17): epoch minutes of the export time. Since slot ids are
+ * stable across prediction re-runs now, a re-export of the same UID with a
+ * moved DTSTART must carry a HIGHER revision number or clients keep the old
+ * time; a later download always wins.
  */
 export function slotVeventLines(
   slot: IcsSlot,
@@ -50,6 +55,7 @@ export function slotVeventLines(
     'BEGIN:VEVENT',
     `UID:${slot.id}@streamertimes.tv`,
     `DTSTAMP:${toIcsUtc(now)}`,
+    `SEQUENCE:${Math.floor(now.getTime() / 60_000)}`,
     `DTSTART:${toIcsUtc(start)}`,
     `DTEND:${toIcsUtc(end)}`,
     `SUMMARY:${escapeIcsText(summary)}`,

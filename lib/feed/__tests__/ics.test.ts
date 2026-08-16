@@ -42,6 +42,14 @@ describe('buildSlotIcs', () => {
     expect(ics.replace(/\r\n/g, '')).not.toContain('\n');
   });
 
+  it('carries a monotonic SEQUENCE so re-exports of a stable UID win in calendar clients', () => {
+    const ics = buildSlotIcs(baseSlot, { now: fixedNow });
+    expect(ics).toContain(`SEQUENCE:${Math.floor(fixedNow.getTime() / 60_000)}`);
+    const later = buildSlotIcs(baseSlot, { now: new Date(fixedNow.getTime() + 60_000) });
+    const seq = (s: string) => Number(/SEQUENCE:(\d+)/.exec(s)![1]);
+    expect(seq(later)).toBeGreaterThan(seq(ics));
+  });
+
   it('escapes calendar-reserved characters in summary and description', () => {
     const ics = buildSlotIcs(
       { ...baseSlot, streamerName: 'A;B', category: 'RPG, Adventure', streamTitle: 'Line1\nLine2' },
