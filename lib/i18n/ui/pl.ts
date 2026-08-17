@@ -171,4 +171,53 @@ export const pl: UiLex = {
     heading: 'Gry',
     navAria: 'Gry, w które gra ten streamer',
   },
+  wiki: {
+    teaserTitle: 'Wiki i fakty',
+    teaserSub: (name) => `Wiek, majątek, kariera — profil wiki streamera ${name}`,
+    breadcrumb: 'Wiki',
+    heading: (name) => `${name} — Wiki`,
+    metaTitle: (name, year) => `${name} Wiki ${year}: wiek, majątek i fakty`,
+    updated: (date) => `Zaktualizowano ${date}`,
+    factsHeading: 'Szybkie fakty',
+    factLabel: {
+      real_name: 'Prawdziwe imię i nazwisko',
+      birth_date: 'Data urodzenia',
+      birthplace: 'Miejsce urodzenia',
+      residence: 'Miejsce zamieszkania',
+      nationality: 'Narodowość',
+      relationship_status: 'Status związku',
+      net_worth_usd: 'Majątek (szacunkowo)',
+      est_income_monthly_usd: 'Miesięczny dochód (szacunkowo)',
+      career_start: 'Streamuje od',
+      teams: 'Drużyny i organizacje',
+      height_cm: 'Wzrost',
+    },
+    relationship: {
+      single: 'Singiel/singielka',
+      in_relationship: 'W związku',
+      engaged: 'Zaręczony/zaręczona',
+      married: 'W małżeństwie',
+      divorced: 'Po rozwodzie',
+      widowed: 'Wdowiec/wdowa',
+    },
+    ageSuffix: (age) => {
+      const mod10 = age % 10;
+      const mod100 = age % 100;
+      const word = mod100 >= 12 && mod100 <= 14 ? 'lat' : mod10 >= 2 && mod10 <= 4 ? 'lata' : 'lat';
+      return `${age} ${word}`;
+    },
+    estimate: 'szacunek',
+    asOf: (when) => `stan na ${when}`,
+    sectionCareer: 'Kariera',
+    sectionPersonalLife: 'Życie prywatne',
+    sectionEarnings: 'Zarobki i majątek',
+    aboutHeading: (name) => `O streamerze ${name}`,
+    sourcesHeading: 'Źródła',
+    minorNote: 'W przypadku streamerów poniżej 18 lat publikujemy wyłącznie informacje o karierze.',
+    disclaimerHeading: 'O tej stronie',
+    disclaimer: (name) =>
+      `Ten profil wiki powstał na podstawie publicznie dostępnych źródeł. Liczby takie jak majątek czy dochody to szacunki osób trzecich, a nie zweryfikowane wartości; dane osobiste odzwierciedlają to, co ${name} lub uznane media podały publicznie.`,
+    disclaimerContact:
+      'Jesteś tym streamerem i chcesz coś poprawić lub usunąć? Napisz do nas:',
+  },
 };

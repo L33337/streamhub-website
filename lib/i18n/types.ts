@@ -165,4 +165,59 @@ export interface UiLex {
     heading: string;
     navAria: string;
   };
+  /** M26 streamer wiki subpage (/streamer/[slug]/wiki) + its teaser card. */
+  wiki: {
+    /** Teaser card on the streamer page (the main internal entry). */
+    teaserTitle: string;
+    teaserSub(name: string): string;
+    /** Breadcrumb tail; the H1 is `heading`. */
+    breadcrumb: string;
+    heading(name: string): string;
+    /** <title>; `year` keeps it fresh at year granularity (ISR byte rule). */
+    metaTitle(name: string, year: string): string;
+    updated(date: string): string;
+    factsHeading: string;
+    /** Infobox labels; keys match the API's WikiFactKey catalog. */
+    factLabel: {
+      real_name: string;
+      birth_date: string;
+      birthplace: string;
+      residence: string;
+      nationality: string;
+      relationship_status: string;
+      net_worth_usd: string;
+      est_income_monthly_usd: string;
+      career_start: string;
+      teams: string;
+      height_cm: string;
+    };
+    /** relationship_status enum values (language-neutral keys from the API). */
+    relationship: {
+      single: string;
+      in_relationship: string;
+      engaged: string;
+      married: string;
+      divorced: string;
+      widowed: string;
+    };
+    /** Appended to the birth date, e.g. "April 8, 1990 (age 36)" — the
+     *  parentheses come from the component. */
+    ageSuffix(age: number): string;
+    /** Badge on estimated values. */
+    estimate: string;
+    /** Stand-date note on a fact, e.g. "as of 2026". */
+    asOf(when: string): string;
+    sectionCareer: string;
+    sectionPersonalLife: string;
+    sectionEarnings: string;
+    /** Section reusing the streamer-page description as extra body text. */
+    aboutHeading(name: string): string;
+    sourcesHeading: string;
+    /** Shown in place of personal facts for minors. */
+    minorNote: string;
+    disclaimerHeading: string;
+    disclaimer(name: string): string;
+    /** Lead-in before the mailto link (correction/removal requests). */
+    disclaimerContact: string;
+  };
 }

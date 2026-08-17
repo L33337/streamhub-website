@@ -104,7 +104,15 @@ const sections = [
     ],
   },
   {
-    heading: "12. Contact Us",
+    heading: "12. Public Streamer Wiki Profiles",
+    paragraphs: [
+      "Our website publishes editorial wiki profiles about the streamers we track — public streaming personalities whose channels we list. These profiles can include publicly reported information such as age, place of residence (city/country level only), nationality, relationship status, career milestones, and estimated net worth or income. This information is researched exclusively from publicly available sources (interviews, news articles, platform pages, established wikis); every profile cites its sources, and estimated figures are always labeled as estimates.",
+      "We publish this information on the basis of our legitimate interest (Art. 6(1)(f) GDPR) in providing encyclopedic information about public figures of the streaming scene. We never publish private addresses or information obtained from leaks, and for streamers under 18 we publish career-related information only.",
+      "If you are a streamer featured in such a profile, you can request a correction or the removal of your profile at any time via the email address in the Contact section — we process such requests promptly.",
+    ],
+  },
+  {
+    heading: "13. Contact Us",
     paragraphs: [
       "If you have any questions about this Privacy Policy, please contact us at: StreamHub.Privacy@icloud.com",
     ],
