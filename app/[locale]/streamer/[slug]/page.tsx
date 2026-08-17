@@ -48,7 +48,20 @@ import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 import { floorToBucket } from '@/lib/home/logic';
 
-export const revalidate = 300;
+// 1800 (was 300 until 2026-08-18): this route was the site's single biggest
+// ISR-write consumer (~375k units/day, 58% of them plain stale_time
+// regenerations — measured via the Observability query API). Freshness is
+// covered on-demand instead of by the TTL: /api/revalidate purges all locale
+// variants on every live/offline transition (LIVE-badge pipeline) AND after
+// every generate-predictions run (2026-08-18), so live badges and new
+// predictions appear immediately regardless of this value. The TTL only
+// bounds staleness of everything else (follower counts, history) at 30 min.
+//
+// ⚠️ The lowest fetch revalidate in the render tree caps the ROUTE's
+// revalidate (Next.js min() rule) — every fetch below and in
+// RelatedStreamers passes `revalidate: 1800` explicitly. Adding a new fetch
+// with a smaller value silently drags the whole route back down.
+export const revalidate = 1800;
 
 /** Slot cards rendered in full before the schedule is cut (the next one peeks). */
 const SCHEDULE_VISIBLE_SLOTS = 2;
@@ -108,7 +121,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // section call is individually safe for a non-existent slug (listSchedules →
   // empty data, getStreamerHistory → [] via its rejection handler, getStreamerStats
   // → null), so on the rare 404 we simply discard their in-flight results below.
-  const streamerCall = api.getStreamer(slug);
+  const streamerCall = api.getStreamer(slug, { revalidate: 1800 });
   // Live + upcoming are split because the partner API filters by start_time >= from,
   // which would exclude currently-live slots that started hours ago and always-on
   // slots whose start_time is days in the past. Splitting keeps the upcoming
@@ -128,6 +141,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       from: oneYearAgo.toISOString(),
       to: sixHoursFromNow.toISOString(),
       limit: 10,
+      revalidate: 1800,
     })
     .then(
       (page) => page.data,
@@ -142,6 +156,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       from: bucketedNow.toISOString(),
       to: sevenDaysFromNow.toISOString(),
       limit: 100,
+      revalidate: 1800,
     })
     .then(
       (page) => page.data,
@@ -156,7 +171,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // folds a Twitch+YouTube simulcast into one item. Before that merge landed, a
   // simulcasting streamer got ~4 actual broadcasts out of these 9 slots, each
   // listed twice under two platform badges.
-  const historyCall = api.getStreamerHistory(slug, { limit: 9 }).then(
+  const historyCall = api.getStreamerHistory(slug, { limit: 9, revalidate: 1800 }).then(
     (page) => page.data,
     () => [] as PublicStreamHistory[],
   );

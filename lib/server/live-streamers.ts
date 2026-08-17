@@ -22,8 +22,20 @@ const BUCKET_MS = 300_000;
  * channels). Process-local cache (60 s) sits in front of the Partner API's own
  * 60 s revalidate, so the hot path is a constant-time Set lookup with no
  * outbound request.
+ *
+ * ⚠️ `revalidate` exists because of the Next.js min() rule: the lowest fetch
+ * revalidate during a render caps the ROUTE's revalidation interval. The 60 s
+ * default silently dragged every calling route down to a 60 s TTL — including
+ * /streamer/[slug], which believed itself at 300 (discovered 2026-08-18).
+ * Long-TTL routes must pass their own route TTL here; the data-cache entry is
+ * keyed by URL+revalidate, so the 60 s entry of the live pages stays separate
+ * and fresh. The process-local cache may still serve a fresher set — freshness
+ * never hurts, only the route-TTL cap did.
  */
-export async function getLiveStreamerIdSet(): Promise<Set<string>> {
+export async function getLiveStreamerIdSet(
+  opts: { revalidate?: number } = {},
+): Promise<Set<string>> {
+  const { revalidate = 60 } = opts;
   if (_cache && _cache.expiresAt > Date.now()) return _cache.set;
 
   const api = getPartnerApi();
@@ -46,7 +58,7 @@ export async function getLiveStreamerIdSet(): Promise<Set<string>> {
       to: wideTo,
       cursor,
       limit: 500,
-      revalidate: 60,
+      revalidate,
     });
     for (const slot of resp.data) ids.add(slot.streamer_id);
     cursor = resp.pagination.next_cursor ?? undefined;

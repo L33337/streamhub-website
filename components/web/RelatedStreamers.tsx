@@ -83,21 +83,27 @@ export async function RelatedStreamers({
   // it hits one shared data-cache entry per revalidate window — not a
   // per-page request. Results are consumed in the same order as before
   // (language first, popular only when too few), so the output is identical.
-  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // revalidate: 1800 everywhere — this component renders inside
+  // /streamer/[slug] (route TTL 1800), and the lowest fetch revalidate in a
+  // render caps the whole route's TTL (Next.js min() rule). The live set's
+  // 60 s default was what silently pinned the streamer route to a 60 s TTL
+  // until 2026-08-18. Related-card live dots and popularity lists may be up
+  // to 30 min stale — same budget as the rest of the page.
+  const livePromise = getLiveStreamerIdSet({ revalidate: 1800 }).catch(() => new Set<string>());
   // One shared cache entry per category (not per streamer page), same as the
   // popular list below.
   const categoryPromise = category
     ? settle(
-        api.listStreamers({ category, order: 'popular', limit: 12, revalidate: 300 }),
+        api.listStreamers({ category, order: 'popular', limit: 12, revalidate: 1800 }),
       )
     : null;
   const languagePromise = language
     ? settle(
-        api.listStreamers({ language, order: 'popular', limit: 12, revalidate: 300 }),
+        api.listStreamers({ language, order: 'popular', limit: 12, revalidate: 1800 }),
       )
     : null;
   const popularPromise = settle(
-    api.listStreamers({ order: 'popular', limit: 16, revalidate: 300 }),
+    api.listStreamers({ order: 'popular', limit: 16, revalidate: 1800 }),
   );
 
   // A failing category lookup is NOT fatal here (unlike the two below): the

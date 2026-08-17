@@ -6,12 +6,15 @@ import { UI_LANGS } from '@/lib/i18n-core';
 export const dynamic = 'force-dynamic';
 
 // On-demand ISR revalidation for streamer pages, called by the StreamHub
-// backend on live/offline transitions BEFORE its Google Indexing API ping
-// (LIVE-badge pipeline): purging the Full Route Cache here means Googlebot's
-// ping-triggered crawl sees the current live state instead of up-to-300s-stale
-// HTML. Shared secret lives as REVALIDATE_SECRET on Vercel and in Supabase
-// (backend side) — while unset the route answers 404 (disabled), the same
-// env-guard idiom as /api/dev-login.
+// backend (1) on live/offline transitions BEFORE its Google Indexing API ping
+// (LIVE-badge pipeline) and (2) after every generate-predictions run that
+// wrote slots (since 2026-08-18): purging the Full Route Cache here means
+// crawlers and visitors see the current live state and fresh predictions
+// instead of up-to-30-min-stale HTML (the streamer route's TTL is 1800 s —
+// this on-demand purge is exactly what makes that long TTL safe). Shared
+// secret lives as REVALIDATE_SECRET on Vercel and in Supabase (backend side)
+// — while unset the route answers 404 (disabled), the same env-guard idiom
+// as /api/dev-login.
 
 // Leading alphanumeric mirrors the isIndexableStreamerSlug gate; the charset
 // covers collision suffixes like "illojuan-075649" / "-OPjYcQ" mid-string and
