@@ -18,7 +18,22 @@ export class PartnerApiAuthError extends PartnerApiError {
 }
 
 export class PartnerApiNotFoundError extends PartnerApiError {
-  constructor(message: string, status: number, code: string, requestId?: string) {
+  /**
+   * Only /v1/schedules/{id} sets this, and only when the slot EXISTED and has
+   * expired — it names the streamer so the caller can redirect instead of
+   * dead-ending. Null for unknown/hidden ids and for every other route.
+   *
+   * It has to come from the API: slot ids do not reliably encode their
+   * streamer (`twitch-live-illojuan-075649-…` vs `twitch-live-quarterjade-…`
+   * split differently but look identical).
+   */
+  constructor(
+    message: string,
+    status: number,
+    code: string,
+    requestId?: string,
+    public readonly expiredStreamerId: string | null = null,
+  ) {
     super(message, status, code, requestId);
     this.name = 'PartnerApiNotFoundError';
   }
