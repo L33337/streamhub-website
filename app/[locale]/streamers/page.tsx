@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const meta: Metadata = {
     title:
       locale === 'en'
-        ? 'All Streamers A–Z — Twitch & YouTube Live Schedules | StreamerTimes'
+        ? 'All Streamers A–Z — Twitch & YouTube Live Schedules | Streamer Times'
         : localized.title,
     description:
       locale === 'en'

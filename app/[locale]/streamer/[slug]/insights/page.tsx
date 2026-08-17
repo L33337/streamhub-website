@@ -99,7 +99,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const { streamer } = await loadInsightsPage(slug);
-  if (!streamer) return { title: 'Streamer not found — StreamerTimes' };
+  if (!streamer) return { title: 'Streamer not found — Streamer Times' };
   const meta: Metadata = {
     title: `${streamer.name} — Streaming Insights`,
     description: `When does ${streamer.name} pull the most viewers? Median viewers by weekday and hour, category performance, consistency and size benchmark.`,

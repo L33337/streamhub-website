@@ -23,7 +23,7 @@ import { notFound } from 'next/navigation';
 // the same root-layout reason.
 
 export const metadata: Metadata = {
-  title: 'Page not found — StreamerTimes',
+  title: 'Page not found — Streamer Times',
   robots: { index: false, follow: false },
 };
 

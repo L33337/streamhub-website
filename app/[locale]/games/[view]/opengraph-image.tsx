@@ -33,7 +33,7 @@ export async function generateImageMetadata({ params }: Props) {
   return [
     {
       id: 'og',
-      alt: spec ? spec.h1 : 'Games on StreamerTimes',
+      alt: spec ? spec.h1 : 'Games on Streamer Times',
       size: OG_SIZE,
       contentType: 'image/png',
     },

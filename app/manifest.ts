@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Streamer Times — Your Livestream Guide',
-    short_name: 'StreamerTimes',
+    short_name: 'Streamer Times',
     description:
       'Your livestream guide for Twitch & YouTube with AI-powered predictions.',
     start_url: '/',

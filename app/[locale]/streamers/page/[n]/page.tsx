@@ -28,9 +28,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, n } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const page = parsePage(n);
-  if (page === null) return { title: 'Streamers — StreamerTimes' };
+  if (page === null) return { title: 'Streamers — Streamer Times' };
   const meta: Metadata = {
-    title: `All Streamers A–Z (Page ${page}) — Twitch & YouTube | StreamerTimes`,
+    title: `All Streamers A–Z (Page ${page}) — Twitch & YouTube | Streamer Times`,
     description: `Page ${page} of every Twitch and YouTube streamer tracked on Streamer Times, A to Z, with live status and AI-predicted next streams.`,
     // Self-canonical per Google's pagination guidance (do NOT canonicalize to
     // page 1). Indexable + follow so both the list content and the streamer

@@ -36,7 +36,7 @@ export async function generateImageMetadata({ params }: Props) {
   return [
     {
       id: 'og',
-      alt: `${label} streamers on StreamerTimes`,
+      alt: `${label} streamers on Streamer Times`,
       size: OG_SIZE,
       contentType: 'image/png',
     },

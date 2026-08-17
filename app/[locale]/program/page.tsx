@@ -16,7 +16,7 @@ import { chromeLexFor } from '@/lib/i18n-chrome';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Program | StreamerTimes',
+  title: 'Program | Streamer Times',
   description: 'Today’s stream schedule of your favorite streamers.',
   robots: { index: false, follow: false },
 };

@@ -26,7 +26,7 @@ const SITE_URL = 'https://streamertimes.tv';
 export const MAX_HUB_TITLE = 60;
 export const MAX_HUB_DESC = 155;
 
-const BRAND_SUFFIX = ' | StreamerTimes';
+const BRAND_SUFFIX = ' | Streamer Times';
 
 /**
  * Slow-moving inputs for <title>/<meta description>. Deliberately excludes

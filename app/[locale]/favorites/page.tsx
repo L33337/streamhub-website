@@ -20,7 +20,7 @@ import { chromeLexFor } from '@/lib/i18n-chrome';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'My Favorites | StreamerTimes',
+  title: 'My Favorites | Streamer Times',
   description: 'Streamers you follow on Streamer Times.',
   robots: { index: false, follow: false },
 };

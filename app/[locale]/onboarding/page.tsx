@@ -22,7 +22,7 @@ import type { OnboardingSuggestion } from '@/components/web/onboarding/types';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Welcome | StreamerTimes',
+  title: 'Welcome | Streamer Times',
   description: 'Set up your Streamer Times feed: import your Twitch follows or pick favorite streamers.',
   robots: { index: false, follow: false },
 };

@@ -37,13 +37,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const query = q?.trim() ?? '';
   if (query.length < MIN_QUERY) {
     return {
-      title: 'Search Streamers | StreamerTimes',
+      title: 'Search Streamers | Streamer Times',
       description: 'Search streamers by name on Streamer Times.',
       robots: { index: false, follow: true },
     };
   }
   return {
-    title: `${query} — Search Streamers | StreamerTimes`,
+    title: `${query} — Search Streamers | Streamer Times`,
     description: `Search results for "${query}" on Streamer Times. Find livestream schedules and AI predictions across Twitch and YouTube.`,
     // Internal search result pages are noindex (thin/duplicate content; unbounded
     // query permutations otherwise become "Crawled - currently not indexed" noise).

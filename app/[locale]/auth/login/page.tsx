@@ -9,7 +9,7 @@ import { EmailLoginForm } from '@/components/web/auth/EmailLoginForm';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Sign in | StreamerTimes',
+  title: 'Sign in | Streamer Times',
   description:
     'Sign in to Streamer Times to sync your favorite streamers across web and the mobile app.',
   robots: { index: false, follow: true },

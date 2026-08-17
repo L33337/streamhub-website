@@ -8,7 +8,7 @@ import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 // whole fetch is wrapped — any error degrades to a count-free subtitle.
 export const runtime = 'nodejs';
 export const revalidate = 300; // refresh the game count every 5 min (ISR)
-export const alt = 'Browse games & categories on StreamerTimes';
+export const alt = 'Browse games & categories on Streamer Times';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

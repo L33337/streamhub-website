@@ -331,7 +331,7 @@ export function buildVideoGameJsonLd(params: {
 // description as the grey snippet, so we front-load the unique data and keep
 // within Google's truncation limits.
 
-const BRAND_SUFFIX = ' | StreamerTimes';
+const BRAND_SUFFIX = ' | Streamer Times';
 const MAX_TITLE = 60; // Google truncates SERP titles around here
 const MAX_DESC = 155; // and descriptions around here
 const MAX_STREAM_TITLE = 70; // budget for the (often long) embedded stream title

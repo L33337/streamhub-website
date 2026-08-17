@@ -6,7 +6,7 @@ import { initialsFromName } from '@/components/web/InitialsAvatar';
 // local `next dev` without extra config — Node lets the env reach the route
 // directly and the static `<img>` fetch in ImageResponse still works the same.
 export const runtime = 'nodejs';
-export const alt = 'Streamer schedule on StreamerTimes';
+export const alt = 'Streamer schedule on Streamer Times';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

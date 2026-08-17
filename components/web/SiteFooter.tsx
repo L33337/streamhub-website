@@ -79,7 +79,7 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
               className="text-lg font-bold text-white"
               aria-label={chrome.nav.home}
             >
-              StreamerTimes
+              Streamer Times
             </Link>
             <p className="mt-2 max-w-xs text-sm text-text-secondary">{f.tagline}</p>
             <div className="mt-4 flex flex-wrap gap-2">

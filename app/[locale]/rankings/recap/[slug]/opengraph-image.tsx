@@ -10,7 +10,7 @@ import { loadRecap } from '@/lib/server/recaps';
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`.
 export const runtime = 'nodejs';
 export const revalidate = 900;
-export const alt = 'Streamer recap on StreamerTimes';
+export const alt = 'Streamer recap on Streamer Times';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

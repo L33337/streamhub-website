@@ -46,7 +46,7 @@ async function loadGameHubSlugs(): Promise<Record<string, string>> {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'My Feed | StreamerTimes',
+  title: 'My Feed | Streamer Times',
   description: 'Your personalized live stream feed on Streamer Times.',
   robots: { index: false, follow: false },
 };

@@ -7,7 +7,7 @@ import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 export const runtime = 'nodejs';
 export const revalidate = 3600;
 
-export const alt = 'Best games to stream right now — StreamerTimes';
+export const alt = 'Best games to stream right now — Streamer Times';
 export const size = OG_SIZE;
 export const contentType = 'image/png';
 

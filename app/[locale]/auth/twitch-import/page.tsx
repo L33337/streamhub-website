@@ -11,7 +11,7 @@ import { TwitchImportReturn } from '@/components/web/twitch-import/TwitchImportR
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Finishing Twitch import… | StreamerTimes',
+  title: 'Finishing Twitch import… | Streamer Times',
   robots: { index: false, follow: false },
 };
 

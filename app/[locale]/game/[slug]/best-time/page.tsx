@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const { category, timing, usable } = await loadBestTime(slug);
-  if (!category) return { title: 'Game not found — StreamerTimes' };
+  if (!category) return { title: 'Game not found — Streamer Times' };
   const url = `${SITE_URL}/game/${slug}/best-time`;
 
   // Metadata must be timezone-neutral AND slow-moving: the top slot comes

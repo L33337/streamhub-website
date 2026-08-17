@@ -144,6 +144,10 @@ export default async function RootLayout({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               name: "Streamer Times",
+              // The compact spelling stays as the alias on purpose: the site
+              // itself no longer writes it anywhere (2026-08-10), but users
+              // still search for it, and alternateName is what tells Google
+              // the two strings are the same product.
               alternateName: "StreamerTimes",
               operatingSystem: "iOS, Android",
               applicationCategory: "EntertainmentApplication",
@@ -197,7 +201,7 @@ export default async function RootLayout({
                 // is what keeps "Bejelentkezés" (hu) inside a 360px screen.
                 className="shrink-0 text-sm font-bold text-white sm:text-base md:text-xl"
               >
-                StreamerTimes
+                Streamer Times
               </Link>
               <SearchBar
                 // Below `lg` this renders as a 36px icon that opens a panel

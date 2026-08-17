@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const localized = siteMetaFor(locale).live;
   const meta: Metadata = {
-    title: locale === 'en' ? "Who's Live Now on Twitch & YouTube | StreamerTimes" : localized.title,
+    title: locale === 'en' ? "Who's Live Now on Twitch & YouTube | Streamer Times" : localized.title,
     description:
       locale === 'en'
         ? 'See every streamer live right now on Twitch and YouTube, grouped by game and category — plus who is starting in the next few hours. Updated every minute.'

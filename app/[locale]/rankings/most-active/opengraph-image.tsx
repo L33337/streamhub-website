@@ -4,7 +4,7 @@ import { buildLeaderboardOgImage } from '@/lib/og/leaderboard';
 // reaches the route in `next dev` (hub-image convention).
 export const runtime = 'nodejs';
 export const revalidate = 300;
-export const alt = 'Most active streamers — ranking on StreamerTimes';
+export const alt = 'Most active streamers — ranking on Streamer Times';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

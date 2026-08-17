@@ -16,7 +16,7 @@ import { LegalLinksSection } from '@/components/web/LegalLinksSection';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Settings | StreamerTimes',
+  title: 'Settings | Streamer Times',
   description: 'Manage your Streamer Times account and preferences.',
   robots: { index: false, follow: false },
 };

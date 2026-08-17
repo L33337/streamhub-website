@@ -55,7 +55,7 @@ function TopBar() {
           href="/"
           className="font-semibold text-lg text-white hover:opacity-80 transition-opacity"
         >
-          StreamerTimes
+          Streamer Times
         </Link>
         <span className="font-mono uppercase text-xs tracking-wider text-accent-cyan">
           Developers

@@ -426,7 +426,7 @@ export default async function AppPromoPage({
             <div className="bracket-frame relative inline-block px-5 py-4 sm:px-8 sm:py-6">
               <div className="bracket-frame-inner absolute inset-0" />
               <h1 className="glow-text-white text-4xl font-bold tracking-tight text-text-primary sm:text-7xl">
-                StreamerTimes
+                Streamer Times
               </h1>
             </div>
 
@@ -633,7 +633,7 @@ export default async function AppPromoPage({
           <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
             <div>
               <span className="glow-text-white text-lg font-bold text-text-primary">
-                StreamerTimes
+                Streamer Times
               </span>
               <p className="mt-1 text-sm text-text-muted">
                 Your Livestream Guide.

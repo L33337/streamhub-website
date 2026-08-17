@@ -8,7 +8,7 @@ import { SignUpForm } from '@/components/web/auth/SignUpForm';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Create account | StreamerTimes',
+  title: 'Create account | Streamer Times',
   description:
     'Create a Streamer Times account to sync your favorite streamers across web and the mobile app.',
   robots: { index: false, follow: true },

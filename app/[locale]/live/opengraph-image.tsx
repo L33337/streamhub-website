@@ -7,7 +7,7 @@ import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 // abort the production prerender, so any error degrades to a count-free subtitle.
 export const runtime = 'nodejs';
 export const revalidate = 300; // refresh the live count every 5 min (ISR)
-export const alt = "Who's live now on StreamerTimes";
+export const alt = "Who's live now on Streamer Times";
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

@@ -225,7 +225,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const { streamer, liveSlots, upcomingSlots, stats, now } = await loadStreamerPage(slug);
   if (!streamer) {
-    return { title: 'Streamer not found — StreamerTimes' };
+    return { title: 'Streamer not found — Streamer Times' };
   }
   // Exactly the slot the page below renders as the next stream. Taking the
   // earliest upcoming slot unfiltered (as this did) let a CANCELLED slot become

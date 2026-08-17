@@ -7,7 +7,7 @@ import { ForgotPasswordForm } from '@/components/web/auth/ForgotPasswordForm';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Forgot password | StreamerTimes',
+  title: 'Forgot password | Streamer Times',
   description: 'Request a password-reset link for your Streamer Times account.',
   robots: { index: false, follow: true },
 };

@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, view } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const spec = gamesHubViewBySegment(view);
-  if (!spec) return { title: 'Not found — StreamerTimes' };
+  if (!spec) return { title: 'Not found — Streamer Times' };
 
   const { meta } = await loadGamesHub();
   const title = spec.buildTitle(meta);

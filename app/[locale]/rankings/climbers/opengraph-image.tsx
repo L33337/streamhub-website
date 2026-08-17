@@ -9,7 +9,7 @@ import { topClimber, topClimbersAcrossMetrics } from '@/lib/rankings-climbers';
 // convention); loadClimbersData never throws (build-abort rule).
 export const runtime = 'nodejs';
 export const revalidate = 300;
-export const alt = 'Biggest climbers this week — streamer ranking movers on StreamerTimes';
+export const alt = 'Biggest climbers this week — streamer ranking movers on Streamer Times';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

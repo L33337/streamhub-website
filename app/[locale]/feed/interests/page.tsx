@@ -9,7 +9,7 @@ import { InterestsPicker } from '@/components/web/feed/InterestsPicker';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Interests | StreamerTimes',
+  title: 'Interests | Streamer Times',
   description: 'Pick categories to personalize your Streamer Times feed.',
   robots: { index: false, follow: false },
 };
