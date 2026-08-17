@@ -14,11 +14,11 @@ export default async function InterceptedSlotPage({ params }: Props) {
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   // revalidate MUST match the full page's loadSlot call (same URL + same
   // revalidate → one shared data-cache entry instead of two).
-  const slot = await getPartnerApi().getSchedule(id, { revalidate: 300 });
+  const { slot, expiredStreamerId } = await getPartnerApi().getSchedule(id, { revalidate: 300 });
   if (!slot) {
-    // Same expired-prediction redirect as the full page — a modal for a
-    // just-expired slot navigates to the streamer page instead of a 404.
-    const slug = expiredPredictionStreamerSlug(id);
+    // Same miss handling as the full page — a modal for a just-expired slot
+    // navigates to the streamer page instead of a 404.
+    const slug = expiredStreamerId ?? expiredPredictionStreamerSlug(id);
     if (slug) permanentRedirect(localeHref(locale, `/streamer/${slug}`));
     notFound();
   }

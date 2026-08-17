@@ -215,3 +215,59 @@ describe('PartnerApiClient retry loop', () => {
     expect(sleep).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// getSchedule — miss handling carries the expired-slot streamer (2026-08-17)
+// ---------------------------------------------------------------------------
+
+describe('getSchedule', () => {
+  const notFoundBody = (extra: Record<string, unknown> = {}) => ({
+    error: 'not_found',
+    error_description: 'Schedule not found',
+    ...extra,
+  });
+
+  it('returns the slot on 200', async () => {
+    const client = makeClient(sequenceFetch(jsonResponse({ id: 'slot-1', status: 'live' })));
+    const result = await client.getSchedule('slot-1');
+    expect(result.slot).toMatchObject({ id: 'slot-1' });
+    expect(result.expiredStreamerId).toBeNull();
+  });
+
+  it('surfaces expired_streamer_id from a 404 body', async () => {
+    const client = makeClient(
+      sequenceFetch(jsonResponse(notFoundBody({ expired_streamer_id: 'illojuan-075649' }), 404)),
+    );
+    const result = await client.getSchedule('twitch-live-illojuan-075649-316727281124');
+    expect(result.slot).toBeNull();
+    // Note the hyphen: parsing this out of the id would have yielded "illojuan".
+    expect(result.expiredStreamerId).toBe('illojuan-075649');
+  });
+
+  it('reports null for an unknown id (no streamer leaked)', async () => {
+    const client = makeClient(sequenceFetch(jsonResponse(notFoundBody(), 404)));
+    const result = await client.getSchedule('nope');
+    expect(result.slot).toBeNull();
+    expect(result.expiredStreamerId).toBeNull();
+  });
+
+  it('ignores a non-string or empty expired_streamer_id', async () => {
+    for (const bad of [42, '', null, {}]) {
+      const client = makeClient(
+        sequenceFetch(jsonResponse(notFoundBody({ expired_streamer_id: bad }), 404)),
+      );
+      expect((await client.getSchedule('x')).expiredStreamerId).toBeNull();
+    }
+  });
+
+  it('still throws on non-404 errors instead of reporting a miss', async () => {
+    const client = makeClient(
+      sequenceFetch(jsonResponse({ error: 'invalid_token', error_description: 'nope' }, 401)),
+    );
+    await expect(client.getSchedule('x')).rejects.toBeInstanceOf(PartnerApiAuthError);
+  });
+
+  it('PartnerApiNotFoundError defaults expiredStreamerId to null', () => {
+    expect(new PartnerApiNotFoundError('m', 404, 'not_found').expiredStreamerId).toBeNull();
+  });
+});

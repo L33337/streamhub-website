@@ -74,6 +74,13 @@ export interface FetchOptions {
   timeoutMs?: number;
 }
 
+/** Result of a single-slot lookup — see `getSchedule`. */
+export interface ScheduleLookup {
+  slot: PublicStreamSlot | null;
+  /** Set only when the slot existed and expired; drives the graceful redirect. */
+  expiredStreamerId: string | null;
+}
+
 export interface ListStreamersOptions extends FetchOptions {
   platform?: Platform[];
   language?: string;
@@ -223,15 +230,23 @@ class PartnerApiClient {
     }
   }
 
-  async getSchedule(id: string, opts: FetchOptions = {}): Promise<PublicStreamSlot | null> {
+  /**
+   * Single slot lookup. A miss is not just "null": an EXPIRED slot names its
+   * streamer, which is what lets the page 308 somewhere useful instead of
+   * rendering a dead end. Unknown/hidden ids yield `expiredStreamerId: null`.
+   */
+  async getSchedule(id: string, opts: FetchOptions = {}): Promise<ScheduleLookup> {
     try {
-      return await this.request<PublicStreamSlot>(
+      const slot = await this.request<PublicStreamSlot>(
         'GET',
         `/v1/schedules/${encodeURIComponent(id)}`,
         opts,
       );
+      return { slot, expiredStreamerId: null };
     } catch (err) {
-      if (err instanceof PartnerApiNotFoundError) return null;
+      if (err instanceof PartnerApiNotFoundError) {
+        return { slot: null, expiredStreamerId: err.expiredStreamerId };
+      }
       throw err;
     }
   }
@@ -492,7 +507,14 @@ class PartnerApiClient {
         throw new PartnerApiAuthError(message, res.status, code, requestId);
       }
       if (res.status === 404) {
-        throw new PartnerApiNotFoundError(message, res.status, code, requestId);
+        const expired = (errBody as { expired_streamer_id?: unknown }).expired_streamer_id;
+        throw new PartnerApiNotFoundError(
+          message,
+          res.status,
+          code,
+          requestId,
+          typeof expired === 'string' && expired.length > 0 ? expired : null,
+        );
       }
       if (res.status === 429) {
         const retryAfterRaw = res.headers.get('retry-after');

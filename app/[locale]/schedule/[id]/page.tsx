@@ -33,6 +33,20 @@ export function generateStaticParams(): Array<{ id: string }> {
 // dedupe — without cache() this page fired two identical getSchedule calls.
 const loadSlot = cache((id: string) => getPartnerApi().getSchedule(id, { revalidate: 300 }));
 
+/**
+ * Where a miss should send the visitor, or null for a real 404.
+ *
+ * Two sources, in order of reliability:
+ *   1. `expiredStreamerId` from the API — authoritative, works for every slot
+ *      kind including real Twitch/YouTube broadcasts.
+ *   2. the slug embedded in an `ai_slot_pred_*` id — the only thing available
+ *      when the row is gone entirely (deleted on a later prediction run), which
+ *      is the common case for old prediction URLs.
+ */
+function missRedirectSlug(id: string, expiredStreamerId: string | null): string | null {
+  return expiredStreamerId ?? expiredPredictionStreamerSlug(id);
+}
+
 interface Props {
   params: Promise<{ locale: string; id: string }>;
 }
@@ -49,7 +63,7 @@ const SLOT_ROBOTS = { index: false, follow: true } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const slot = await loadSlot(id);
+  const { slot } = await loadSlot(id);
   if (!slot) {
     return { title: 'Stream not found — Streamer Times', robots: SLOT_ROBOTS };
   }
@@ -76,11 +90,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SlotPage({ params }: Props) {
   const { locale: rawLocale, id } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const slot = await loadSlot(id);
+  const { slot, expiredStreamerId } = await loadSlot(id);
   if (!slot) {
-    // Expired AI prediction → the id encodes the streamer; send crawlers and
-    // stale links to the streamer page (308) instead of a dead 404.
-    const slug = expiredPredictionStreamerSlug(id);
+    // Expired or vanished slot → send crawlers and stale links to the streamer
+    // page (308) instead of a dead 404. Covers real broadcasts too, not just
+    // predictions, because the API names the streamer of an expired slot.
+    const slug = missRedirectSlug(id, expiredStreamerId);
     if (slug) permanentRedirect(localeHref(locale, `/streamer/${slug}`));
     notFound();
   }

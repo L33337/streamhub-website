@@ -145,3 +145,72 @@ describe('session-cookie survival (compose contract)', () => {
     expect(res.cookies.get('sb-test-auth-token')?.value).toBe('refreshed-token-value');
   });
 });
+
+describe('dead prediction-slot URLs short-circuit before any Partner-API work', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  // Built relative to the real clock so no fake timers are needed.
+  const deadId = (slug: string, ageDays = 30) =>
+    `ai_slot_pred_${slug}_${Date.now() - ageDays * DAY}_0`;
+
+  function redirectTarget(res: Response): string | null {
+    const loc = res.headers.get('location');
+    return loc ? new URL(loc).pathname : null;
+  }
+
+  it('308s an old unprefixed slot URL to the streamer page', async () => {
+    const res = await middleware(req(`/schedule/${deadId('northernlion')}`));
+    expect(res.status).toBe(308);
+    expect(redirectTarget(res)).toBe('/streamer/northernlion');
+  });
+
+  it('keeps the locale prefix on the redirect target', async () => {
+    const res = await middleware(req(`/de/schedule/${deadId('choc')}`));
+    expect(res.status).toBe(308);
+    expect(redirectTarget(res)).toBe('/de/streamer/choc');
+  });
+
+  it('does NOT short-circuit a young id (may still be a live slot)', async () => {
+    const path = `/schedule/${deadId('subroza', 3)}`;
+    const res = await middleware(req(path));
+    expect(res.status).toBe(200);
+    expect(rewriteTarget(res)).toBe(`/en${path}`);
+  });
+
+  it('does NOT short-circuit a real (non-prediction) slot id', async () => {
+    const path = '/schedule/twitch-live-examplestreamer-317259025767';
+    const res = await middleware(req(path));
+    expect(rewriteTarget(res)).toBe(`/en${path}`);
+  });
+
+  it('ignores paths that are not exactly /schedule/<id>', async () => {
+    for (const path of ['/schedule', `/schedule/${deadId('x')}/extra`, `/streamer/${deadId('x')}`]) {
+      const res = await middleware(req(path));
+      expect(rewriteTarget(res)).toBe(`/en${path}`);
+    }
+  });
+
+  it('survives a malformed percent-escape in the id instead of throwing', async () => {
+    const res = await middleware(req('/schedule/ai_slot_pred_%E0%A4%A_1786051545162_0'));
+    expect(res.status).toBe(200);
+  });
+
+  it('carries refreshed sb-* cookies on the short-circuit redirect', async () => {
+    updateSessionMock.mockImplementation((request: NextRequest) => {
+      const res = NextResponse.next({ request });
+      res.cookies.set('sb-test-auth-token', 'refreshed-token-value', { httpOnly: true, path: '/' });
+      return Promise.resolve(res);
+    });
+    const res = await middleware(req(`/schedule/${deadId('scarra')}`));
+    expect(res.status).toBe(308);
+    expect(res.cookies.get('sb-test-auth-token')?.value).toBe('refreshed-token-value');
+  });
+
+  it('/en/schedule/<dead id> normalises first, then short-circuits', async () => {
+    const id = deadId('agent00');
+    const first = await middleware(req(`/en/schedule/${id}`));
+    expect(first.status).toBe(308);
+    expect(redirectTarget(first)).toBe(`/schedule/${id}`);
+    const second = await middleware(req(`/schedule/${id}`));
+    expect(redirectTarget(second)).toBe('/streamer/agent00');
+  });
+});
