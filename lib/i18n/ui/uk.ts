@@ -182,4 +182,60 @@ export const uk: UiLex = {
     heading: 'Ігри',
     navAria: 'Ігри, у які грає цей стример',
   },
+  wiki: {
+    teaserTitle: 'Вікі та факти',
+    teaserSub: (name) => `Вік, статки, кар’єра — вікі-профіль ${name}`,
+    breadcrumb: 'Вікі',
+    heading: (name) => `${name} — Вікі`,
+    metaTitle: (name, year) => `${name} Вікі ${year}: вік, статки та факти`,
+    updated: (date) => `Оновлено ${date}`,
+    factsHeading: 'Коротко про головне',
+    factLabel: {
+      real_name: 'Справжнє ім’я',
+      birth_date: 'Дата народження',
+      birthplace: 'Місце народження',
+      residence: 'Місце проживання',
+      nationality: 'Громадянство',
+      relationship_status: 'Сімейний стан',
+      net_worth_usd: 'Статки (оцінка)',
+      est_income_monthly_usd: 'Дохід на місяць (оцінка)',
+      career_start: 'Стримить із',
+      teams: 'Команди та організації',
+      height_cm: 'Зріст',
+    },
+    relationship: {
+      single: 'Не у стосунках',
+      in_relationship: 'У стосунках',
+      engaged: 'Заручені',
+      married: 'У шлюбі',
+      divorced: 'У розлученні',
+      widowed: 'Вдівець/вдова',
+    },
+    ageSuffix: (age) => {
+      const mod10 = age % 10;
+      const mod100 = age % 100;
+      const word =
+        mod100 >= 11 && mod100 <= 14
+          ? 'років'
+          : mod10 === 1
+            ? 'рік'
+            : mod10 >= 2 && mod10 <= 4
+              ? 'роки'
+              : 'років';
+      return `${age} ${word}`;
+    },
+    estimate: 'оцінка',
+    asOf: (when) => `станом на ${when}`,
+    sectionCareer: 'Кар’єра',
+    sectionPersonalLife: 'Особисте життя',
+    sectionEarnings: 'Доходи та статки',
+    aboutHeading: (name) => `Про ${name}`,
+    sourcesHeading: 'Джерела',
+    minorNote: 'Про стримерів, молодших за 18 років, ми публікуємо лише інформацію про кар’єру.',
+    disclaimerHeading: 'Про цю сторінку',
+    disclaimer: (name) =>
+      `Цей вікі-профіль укладено за відкритими джерелами. Цифри на кшталт статків і доходів — це оцінки третіх сторін, а не підтверджені дані; особиста інформація відображає те, що ${name} або авторитетні медіа оприлюднили самі.`,
+    disclaimerContact:
+      'Ви цей стример і хочете щось виправити чи видалити? Напишіть нам:',
+  },
 };

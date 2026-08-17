@@ -491,6 +491,72 @@ export interface PartnerApiErrorBody {
 }
 
 // ============================================
+// Streamer wiki (GET /v1/streamers/{id}/wiki, M26 2026-08-17)
+// ============================================
+
+/** Fixed fact catalog — the API may GROW this list; render known keys only. */
+export type WikiFactKey =
+  | 'real_name'
+  | 'birth_date'
+  | 'birthplace'
+  | 'residence'
+  | 'nationality'
+  | 'relationship_status'
+  | 'net_worth_usd'
+  | 'est_income_monthly_usd'
+  | 'career_start'
+  | 'teams'
+  | 'height_cm';
+
+export interface WikiFact {
+  key: WikiFactKey | (string & {});
+  /** EN display fallback. birth_date 'YYYY'|'YYYY-MM-DD'; nationality ISO
+   *  alpha-2; relationship_status enum key; money facts prefer the numeric
+   *  range below for locale-aware rendering. */
+  value: string;
+  /** USD (money facts) / centimeters (height_cm). */
+  value_num_low: number | null;
+  value_num_high: number | null;
+  /** Always true for money facts — render with an explicit estimate label. */
+  is_estimate: boolean;
+  /** Year/date the information refers to, e.g. "2026". */
+  as_of: string | null;
+  /** 1-based footnote indexes into `sources`. */
+  source_ids: number[];
+}
+
+export interface WikiSource {
+  url: string;
+  title: string | null;
+  publisher: string | null;
+  published: string | null;
+}
+
+/** Fixed-section article; headings are website UI strings. Paragraphs may
+ *  carry [n] footnote markers referencing `sources`. */
+export interface WikiArticle {
+  summary: string;
+  career: string[];
+  personal_life: string[];
+  earnings: string[];
+}
+
+export interface PublicStreamerWiki {
+  streamer_id: string;
+  facts: WikiFact[];
+  /** Always the English source article. */
+  article: WikiArticle;
+  /** Translation into the streamer's own language, or null. */
+  article_native: WikiArticle | null;
+  native_lang: string | null;
+  /** Ordered footnote list — numbering is positional (first entry = [1]). */
+  sources: WikiSource[];
+  is_minor: boolean;
+  generated_at: string;
+  refreshed_at: string | null;
+}
+
+// ============================================
 // Recap articles (GET /v1/recaps, 2026-08-09)
 // ============================================
 

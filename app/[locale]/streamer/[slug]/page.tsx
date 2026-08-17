@@ -43,6 +43,7 @@ import { RecentStreamsSection } from '@/components/web/RecentStreamsSection';
 import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
 import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
 import { InsightsTeaserCard } from '@/components/web/streamer/InsightsTeaserCard';
+import { WikiTeaserCard } from '@/components/web/streamer/WikiTeaserCard';
 import { buildInsightsTeaser } from '@/lib/streamer-insights';
 import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
@@ -91,6 +92,8 @@ interface StreamerPageData {
   rankings: PublicStreamerRankings | null;
   /** M24: teaser payload for the insights subpage; null = don't render the card. */
   insightsTeaser: { bestDay: string; median: number } | null;
+  /** M26: a published wiki profile exists → render the wiki teaser card. */
+  hasWiki: boolean;
   now: Date;
 }
 
@@ -185,6 +188,9 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // M24 insights teaser. Best-effort inside the client (errors → null),
   // 1h-cached — nightly aggregate.
   const insightsCall = api.getStreamerInsights(slug);
+  // M26 wiki teaser. Best-effort inside the client (404 = no published
+  // profile, the common case → null), 1h-cached — changes on regeneration only.
+  const wikiCall = api.getStreamerWiki(slug);
 
   const streamer = await streamerCall;
   if (!streamer) {
@@ -198,6 +204,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       statsCall,
       rankingsCall,
       insightsCall,
+      wikiCall,
     ]);
     return {
       streamer: null,
@@ -207,6 +214,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       stats: null,
       rankings: null,
       insightsTeaser: null,
+      hasWiki: false,
       now,
     };
   }
@@ -214,13 +222,14 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // Valid slug: await the section batch. Every call is now best-effort (each
   // has its own rejection handler that degrades to []/null), so this Promise.all
   // can no longer reject — a partial outage renders a degraded page, not a 500.
-  const [liveSlots, upcomingSlots, history, stats, rankings, insights] = await Promise.all([
+  const [liveSlots, upcomingSlots, history, stats, rankings, insights, wiki] = await Promise.all([
     liveCall,
     upcomingCall,
     historyCall,
     statsCall,
     rankingsCall,
     insightsCall,
+    wikiCall,
   ]);
 
   return {
@@ -231,6 +240,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     stats,
     rankings,
     insightsTeaser: buildInsightsTeaser(insights),
+    hasWiki: wiki !== null,
     now,
   };
 });
@@ -268,8 +278,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function StreamerPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, liveSlots, upcomingSlots, history, stats, rankings, insightsTeaser, now } =
-    await loadStreamerPage(slug);
+  const {
+    streamer,
+    liveSlots,
+    upcomingSlots,
+    history,
+    stats,
+    rankings,
+    insightsTeaser,
+    hasWiki,
+    now,
+  } = await loadStreamerPage(slug);
   if (!streamer) notFound();
 
   const lastStream = history[0] ?? null;
@@ -502,6 +521,18 @@ export default async function StreamerPage({ params }: Props) {
 
       {stats && !showEmpty && (
         <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />
+      )}
+
+      {/* M26: wiki teaser — the main internal entry to the wiki subpage,
+          rendered whenever a published profile exists. */}
+      {hasWiki && (
+        <WikiTeaserCard
+          locale={locale}
+          slug={streamer.id}
+          name={streamer.name}
+          title={L.wiki.teaserTitle}
+          subtitle={L.wiki.teaserSub(streamer.name)}
+        />
       )}
 
       {/* M24: insights teaser — the ONLY internal entry to the (noindex)

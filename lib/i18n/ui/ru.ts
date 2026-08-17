@@ -183,4 +183,60 @@ export const ru: UiLex = {
     heading: 'Игры',
     navAria: 'Игры, в которые играет этот стример',
   },
+  wiki: {
+    teaserTitle: 'Вики и факты',
+    teaserSub: (name) => `Возраст, состояние, карьера — вики-профиль ${name}`,
+    breadcrumb: 'Вики',
+    heading: (name) => `${name} — Вики`,
+    metaTitle: (name, year) => `${name} Вики ${year}: возраст, состояние и факты`,
+    updated: (date) => `Обновлено ${date}`,
+    factsHeading: 'Коротко о главном',
+    factLabel: {
+      real_name: 'Настоящее имя',
+      birth_date: 'Дата рождения',
+      birthplace: 'Место рождения',
+      residence: 'Место жительства',
+      nationality: 'Гражданство',
+      relationship_status: 'Семейное положение',
+      net_worth_usd: 'Состояние (оценка)',
+      est_income_monthly_usd: 'Доход в месяц (оценка)',
+      career_start: 'Стримит с',
+      teams: 'Команды и организации',
+      height_cm: 'Рост',
+    },
+    relationship: {
+      single: 'Не в отношениях',
+      in_relationship: 'В отношениях',
+      engaged: 'Помолвлен(а)',
+      married: 'В браке',
+      divorced: 'В разводе',
+      widowed: 'Вдовец/вдова',
+    },
+    ageSuffix: (age) => {
+      const mod10 = age % 10;
+      const mod100 = age % 100;
+      const word =
+        mod100 >= 11 && mod100 <= 14
+          ? 'лет'
+          : mod10 === 1
+            ? 'год'
+            : mod10 >= 2 && mod10 <= 4
+              ? 'года'
+              : 'лет';
+      return `${age} ${word}`;
+    },
+    estimate: 'оценка',
+    asOf: (when) => `по данным за ${when}`,
+    sectionCareer: 'Карьера',
+    sectionPersonalLife: 'Личная жизнь',
+    sectionEarnings: 'Доходы и состояние',
+    aboutHeading: (name) => `О стримере ${name}`,
+    sourcesHeading: 'Источники',
+    minorNote: 'О стримерах младше 18 лет мы публикуем только информацию о карьере.',
+    disclaimerHeading: 'Об этой странице',
+    disclaimer: (name) =>
+      `Этот вики-профиль составлен по открытым источникам. Цифры вроде состояния и доходов — оценки третьих сторон, а не подтверждённые данные; личные сведения отражают то, что ${name} или авторитетные издания сделали публичным.`,
+    disclaimerContact:
+      'Вы этот стример и хотите что-то исправить или удалить? Напишите нам:',
+  },
 };

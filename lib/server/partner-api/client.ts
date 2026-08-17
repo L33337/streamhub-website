@@ -20,6 +20,7 @@ import type {
   PublicStreamerStats,
   PublicStreamHistory,
   PublicStreamSlot,
+  PublicStreamerWiki,
   RankingMetric,
   RankingsResponse,
   RecapKind,
@@ -210,6 +211,27 @@ class PartnerApiClient {
       return await this.request<StreamerInsights>(
         'GET',
         `/v1/streamers/${encodeURIComponent(id)}/insights`,
+        { revalidate: 3600, ...opts },
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * AI-researched wiki profile for one streamer (M26). Best-effort: 404 (no
+   * published profile — the common case) and any API/network error collapse
+   * to null so callers can gate rendering on the result. Profiles change only
+   * on regeneration → 1h revalidate.
+   */
+  async getStreamerWiki(
+    id: string,
+    opts: FetchOptions = {},
+  ): Promise<PublicStreamerWiki | null> {
+    try {
+      return await this.request<PublicStreamerWiki>(
+        'GET',
+        `/v1/streamers/${encodeURIComponent(id)}/wiki`,
         { revalidate: 3600, ...opts },
       );
     } catch {
