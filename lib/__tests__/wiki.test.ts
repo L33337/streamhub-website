@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import type { WikiFact } from '../server/partner-api';
+import type { PublicGame, PublicStreamerStatsCategory, WikiFact } from '../server/partner-api';
 import {
+  avatarLargeUrl,
+  bannerDisplayUrl,
   displayAge,
   formatBirthDate,
   formatRegion,
@@ -9,6 +11,7 @@ import {
   pickWikiArticle,
   splitFootnotes,
   wikiMetaDescription,
+  wikiTopGames,
 } from '../wiki';
 
 const NOW = new Date('2026-08-17T12:00:00Z');
@@ -132,5 +135,83 @@ describe('wikiMetaDescription', () => {
     expect(out.length).toBeLessThanOrEqual(160);
     expect(out.endsWith('…')).toBe(true);
     expect(out).not.toContain('wor…'); // no mid-word cut
+  });
+});
+
+describe('avatarLargeUrl', () => {
+  it('upsizes Twitch avatars to the 600px variant', () => {
+    expect(
+      avatarLargeUrl(
+        'https://static-cdn.jtvnw.net/jtv_user_pictures/abc-123-profile_image-300x300.png',
+      ),
+    ).toBe('https://static-cdn.jtvnw.net/jtv_user_pictures/abc-123-profile_image-600x600.png');
+  });
+
+  it('upsizes YouTube avatars via the =s size param, keeping the suffix', () => {
+    expect(
+      avatarLargeUrl('https://yt3.googleusercontent.com/xyz=s176-c-k-c0x00ffffff-no-rj'),
+    ).toBe('https://yt3.googleusercontent.com/xyz=s600-c-k-c0x00ffffff-no-rj');
+  });
+
+  it('passes unknown shapes and null through unchanged', () => {
+    expect(avatarLargeUrl('https://example.com/pic.png')).toBe('https://example.com/pic.png');
+    expect(avatarLargeUrl(null)).toBeNull();
+  });
+});
+
+describe('bannerDisplayUrl', () => {
+  it('appends a width directive to bare YouTube banner URLs', () => {
+    expect(bannerDisplayUrl('https://yt3.googleusercontent.com/AbCdEf')).toBe(
+      'https://yt3.googleusercontent.com/AbCdEf=w1707',
+    );
+  });
+
+  it('never appends twice and leaves Twitch banners untouched', () => {
+    expect(bannerDisplayUrl('https://yt3.googleusercontent.com/AbCdEf=w1707')).toBe(
+      'https://yt3.googleusercontent.com/AbCdEf=w1707',
+    );
+    const twitch =
+      'https://static-cdn.jtvnw.net/jtv_user_pictures/x-channel_offline_image-1920x1080.png';
+    expect(bannerDisplayUrl(twitch)).toBe(twitch);
+    expect(bannerDisplayUrl(null)).toBeNull();
+  });
+});
+
+describe('wikiTopGames', () => {
+  const statCat = (category: string): PublicStreamerStatsCategory => ({
+    category,
+    streams: 10,
+    share_percent: 50,
+  });
+  const game = (category: string, boxArt: string | null): PublicGame => ({
+    category,
+    streamer_count: 5,
+    box_art_url: boxArt,
+  });
+
+  it('joins stats categories against the catalog, keeps stats order', () => {
+    const out = wikiTopGames(
+      [statCat('Fortnite'), statCat('Call of Duty: Warzone')],
+      [game('Call of Duty: Warzone', 'https://img/cod.jpg'), game('Fortnite', 'https://img/fn.jpg')],
+    );
+    expect(out.map((g) => g.category)).toEqual(['Fortnite', 'Call of Duty: Warzone']);
+    expect(out[0]).toEqual({
+      category: 'Fortnite',
+      slug: 'fortnite',
+      boxArtUrl: 'https://img/fn.jpg',
+    });
+  });
+
+  it('drops categories without a catalog game or without box art, respects limit', () => {
+    const out = wikiTopGames(
+      [statCat('Gaming'), statCat('No Art'), statCat('A'), statCat('B'), statCat('C')],
+      [game('No Art', null), game('A', 'https://img/a.jpg'), game('B', 'https://img/b.jpg'), game('C', 'https://img/c.jpg')],
+      2,
+    );
+    expect(out.map((g) => g.category)).toEqual(['A', 'B']);
+  });
+
+  it('returns empty on empty inputs', () => {
+    expect(wikiTopGames([], [])).toEqual([]);
   });
 });

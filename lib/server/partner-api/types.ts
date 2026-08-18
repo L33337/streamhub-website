@@ -42,6 +42,9 @@ export interface PublicStreamer {
   // responses, and only when the backend's nightly aggregate has data for the
   // (streamer, category) pair. Optional in this mirror for deploy skew.
   category_stats?: PublicStreamerCategoryStats;
+  // Channel banner (M26 image round): Twitch offline screen, YouTube channel
+  // banner as fallback. Optional in this mirror for deploy skew.
+  banner_url?: string | null;
 }
 
 // Mirror of supabase/functions/_shared/partner-streamers.ts `PublicCategoryStats`
