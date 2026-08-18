@@ -18,7 +18,9 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
+  type PublicGame,
   type PublicStreamer,
+  type PublicStreamerStats,
   type PublicStreamerWiki,
   type WikiFact,
 } from '@/lib/server/partner-api';
@@ -34,8 +36,11 @@ import {
   streamerIndexableLocales,
 } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { sizedCdnImageUrl } from '@/lib/format/image-size';
 import { uiLexFor, type UiLex } from '@/lib/i18n-ui';
 import {
+  avatarLargeUrl,
+  bannerDisplayUrl,
   displayAge,
   formatBirthDate,
   formatRegion,
@@ -45,6 +50,7 @@ import {
   pickWikiArticle,
   splitFootnotes,
   wikiMetaDescription,
+  wikiTopGames,
 } from '@/lib/wiki';
 
 export const revalidate = 3600;
@@ -58,18 +64,26 @@ interface Props {
 interface WikiPageData {
   streamer: PublicStreamer | null;
   wiki: PublicStreamerWiki | null;
+  stats: PublicStreamerStats | null;
+  games: PublicGame[];
 }
 
-// Both fetches gate the page (no profile = 404), so neither is best-effort
-// beyond the client's own null-collapsing. Explicit revalidate ≥ the route
-// value so no fetch drags the ISR window down (Next min() rule).
+// streamer+wiki gate the page (no profile = 404); stats+games only feed the
+// box-art row (M26 image round) and are best-effort — their failure must
+// never 404 a live wiki page. Explicit revalidate ≥ the route value so no
+// fetch drags the ISR window down (Next min() rule).
 const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
   const api = getPartnerApi();
-  const [streamer, wiki] = await Promise.all([
+  const [streamer, wiki, stats, games] = await Promise.all([
     api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
     api.getStreamerWiki(slug, { revalidate: 3600 }),
+    api.getStreamerStats(slug, { revalidate: 3600 }).catch(() => null),
+    api
+      .listGames({ limit: 500, revalidate: 3600 })
+      .then((r) => r.data)
+      .catch(() => [] as PublicGame[]),
   ]);
-  return { streamer, wiki };
+  return { streamer, wiki, stats, games };
 });
 
 export async function generateStaticParams() {
@@ -193,7 +207,7 @@ function ArticleSection({
 export default async function StreamerWikiPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, wiki } = await loadWikiPage(slug);
+  const { streamer, wiki, stats, games } = await loadWikiPage(slug);
   if (!streamer || !wiki) notFound();
 
   const L = uiLexFor(locale);
@@ -204,6 +218,13 @@ export default async function StreamerWikiPage({ params }: Props) {
   const facts = orderedWikiFacts(wiki.facts);
   const sourceCount = wiki.sources.length;
   const updatedIso = wiki.refreshed_at ?? wiki.generated_at;
+
+  // M26 image round: streamer-chosen channel banner as hero backdrop, the
+  // 600px avatar variant as infobox portrait (replaces the small header
+  // avatar — one portrait, Wikipedia-style), top games as box-art tiles.
+  const bannerUrl = bannerDisplayUrl(streamer.banner_url ?? null);
+  const portraitUrl = avatarLargeUrl(streamer.avatar_url);
+  const topGames = wikiTopGames(stats?.top_categories ?? [], games);
 
   // Extra body text reusing the streamer-page bio (M26: the "Fließtext" of
   // the detail page) — same content-language pick as over there.
@@ -269,25 +290,33 @@ export default async function StreamerWikiPage({ params }: Props) {
         / {L.wiki.breadcrumb}
       </p>
 
-      {/* Identity header (insights-page pattern). */}
-      <div className="mt-3 flex items-center gap-4">
-        {streamer.avatar_url && (
+      {/* Channel banner hero (M26 image round): the streamer's own channel
+          branding (Twitch offline screen / YouTube banner), dimmed toward the
+          bottom so the page keeps its dark canvas. Decorative — alt="". */}
+      {bannerUrl && (
+        <div className="relative mt-3 h-32 overflow-hidden rounded-xl border border-border-default sm:h-44 lg:h-56">
           <Image
-            src={streamer.avatar_url}
-            alt={L.hero.avatarAlt(streamer.name)}
-            width={80}
-            height={80}
-            className="h-14 w-14 shrink-0 rounded-full border-2 border-accent-cyan/40 sm:h-20 sm:w-20"
+            src={bannerUrl}
+            alt=""
+            width={1920}
+            height={1080}
+            priority
+            unoptimized
+            className="h-full w-full object-cover"
           />
-        )}
-        <div className="min-w-0">
-          <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
-            {L.wiki.heading(streamer.name)}
-          </h1>
-          <p className="mt-1 text-sm text-text-muted">
-            {L.wiki.updated(formatWikiDate(updatedIso, locale))}
-          </p>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
         </div>
+      )}
+
+      {/* Identity header. The portrait lives in the infobox (Wikipedia
+          convention) — no duplicate avatar up here. */}
+      <div className="mt-4 min-w-0">
+        <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
+          {L.wiki.heading(streamer.name)}
+        </h1>
+        <p className="mt-1 text-sm text-text-muted">
+          {L.wiki.updated(formatWikiDate(updatedIso, locale))}
+        </p>
       </div>
 
       {/* Summary — content language, not viewer language. */}
@@ -308,6 +337,16 @@ export default async function StreamerWikiPage({ params }: Props) {
             <h2 className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-accent-cyan">
               {L.wiki.factsHeading}
             </h2>
+            {portraitUrl && (
+              <Image
+                src={portraitUrl}
+                alt={L.hero.avatarAlt(streamer.name)}
+                width={600}
+                height={600}
+                unoptimized
+                className="mx-auto mt-3 w-40 rounded-xl border border-border-default sm:w-48 lg:w-full"
+              />
+            )}
             {facts.length > 0 ? (
               <dl className="mt-3 grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-1">
                 {facts.map((fact) => (
@@ -382,6 +421,38 @@ export default async function StreamerWikiPage({ params }: Props) {
                   <p key={i} className="text-pretty leading-relaxed text-text-secondary">
                     {p}
                   </p>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Top games as box-art tiles (M26 image round) — internal links
+              into the game hubs. UI-axis heading; hidden when the stats feed
+              or games catalog is unavailable. */}
+          {topGames.length > 0 && (
+            <section className="mt-8">
+              <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
+                {L.stats.topCategories}
+              </h2>
+              <div className="mt-4 flex flex-wrap gap-4">
+                {topGames.map((game) => (
+                  <Link
+                    key={game.slug}
+                    href={localeHref(locale, `/game/${game.slug}`)}
+                    className="group w-24 min-w-0 sm:w-28"
+                  >
+                    <Image
+                      src={sizedCdnImageUrl(game.boxArtUrl, 112)}
+                      alt={game.category}
+                      width={285}
+                      height={380}
+                      unoptimized
+                      className="w-full rounded-lg border border-border-default transition-colors group-hover:border-accent-cyan/60"
+                    />
+                    <span className="mt-1.5 block text-center text-xs leading-snug text-text-secondary group-hover:text-accent-cyan">
+                      {game.category}
+                    </span>
+                  </Link>
                 ))}
               </div>
             </section>

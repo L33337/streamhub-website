@@ -7,7 +7,14 @@
 // the VIEWER's locale. The article is content (EN source / native
 // translation) and is picked by pickWikiArticle, never reformatted.
 
-import type { PublicStreamerWiki, WikiArticle, WikiFact } from '@/lib/server/partner-api';
+import type {
+  PublicGame,
+  PublicStreamerStatsCategory,
+  PublicStreamerWiki,
+  WikiArticle,
+  WikiFact,
+} from '@/lib/server/partner-api';
+import { gameSlug } from '@/lib/game-slug';
 
 /** Infobox render order: identity → person → career → money. Unknown keys
  *  (a future, newer API) are ignored by orderedWikiFacts. */
@@ -142,6 +149,78 @@ export function formatWikiDate(iso: string, uiLang: string): string {
     dateStyle: 'long',
     timeZone: 'UTC',
   }).format(d);
+}
+
+// ============================================
+// Images (M26 image round, 2026-08-18)
+// ============================================
+
+// Twitch avatars are stored as ...-profile_image-300x300.png; the CDN serves
+// the same asset in fixed sizes (50/70/150/300/600). Swap to the largest —
+// never invent sizes outside the known set.
+//
+// Relationship to lib/format/image-size.ts: sizedAvatarUrl() deliberately
+// never asks for MORE than the stored URL names (its cap protects small
+// circles from 298 KB downloads). The wiki portrait is the one layout that
+// legitimately wants the biggest existing variant — the CDN serves 600x600
+// for every profile image even though the stored URL names 300x300 (verified
+// 2026-08-18). This helper is that documented "future layout asks for a
+// bigger size" case; do not funnel small avatars through it.
+const TWITCH_AVATAR_RE = /^(https:\/\/static-cdn\.jtvnw\.net\/jtv_user_pictures\/.+-profile_image-)\d+x\d+(\.\w+)$/;
+// YouTube avatars carry an =sNN size param (yt3.googleusercontent.com/...=s176-c-...).
+const YT_AVATAR_RE = /^(https:\/\/yt3\.(?:googleusercontent|ggpht)\.com\/[^=]+=)s\d+(.*)$/;
+
+/** Largest known variant of a channel avatar for the infobox portrait / OG
+ *  image. Unknown URL shapes pass through unchanged. */
+export function avatarLargeUrl(url: string | null): string | null {
+  if (!url) return null;
+  const twitch = url.match(TWITCH_AVATAR_RE);
+  if (twitch) return `${twitch[1]}600x600${twitch[2]}`;
+  const yt = url.match(YT_AVATAR_RE);
+  if (yt) return `${yt[1]}s600${yt[2]}`;
+  return url;
+}
+
+/** Renderable banner URL. Twitch offline screens are fixed 1920x1080; YouTube
+ *  bannerExternalUrl is a bare googleusercontent asset that serves a small
+ *  default — append a width directive once (never twice). */
+export function bannerDisplayUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (/^https:\/\/yt3\.(googleusercontent|ggpht)\.com\//.test(url) && !url.includes('=')) {
+    return `${url}=w1707`;
+  }
+  return url;
+}
+
+export interface WikiTopGame {
+  category: string;
+  slug: string;
+  boxArtUrl: string;
+}
+
+/**
+ * The streamer's top categories joined against the games catalog: only
+ * categories with a real game hub AND box art become tiles (YouTube bucket
+ * categories and unresolved games drop out naturally). Order follows the
+ * stats ranking.
+ */
+export function wikiTopGames(
+  categories: PublicStreamerStatsCategory[],
+  games: PublicGame[],
+  limit = 3,
+): WikiTopGame[] {
+  if (categories.length === 0 || games.length === 0) return [];
+  const byCategory = new Map(games.map((g) => [g.category, g]));
+  const out: WikiTopGame[] = [];
+  for (const entry of categories) {
+    if (out.length >= limit) break;
+    const game = byCategory.get(entry.category);
+    if (!game?.box_art_url) continue;
+    const slug = gameSlug(game.category);
+    if (slug.length === 0) continue;
+    out.push({ category: game.category, slug, boxArtUrl: game.box_art_url });
+  }
+  return out;
 }
 
 // ============================================
