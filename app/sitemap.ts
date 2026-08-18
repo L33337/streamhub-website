@@ -185,6 +185,13 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     priority: 0.4,
   },
   {
+    // Source page cited by the model-computed income facts on wiki profiles.
+    url: `${SITE_URL}/methodology/income-estimates`,
+    lastModified: BUILD_TIME,
+    changeFrequency: 'yearly',
+    priority: 0.3,
+  },
+  {
     url: `${SITE_URL}/privacy-policy`,
     lastModified: new Date(LEGAL_LAST_UPDATED['privacy-policy']),
     changeFrequency: 'yearly',

@@ -404,6 +404,10 @@ export default async function StreamerWikiPage({ params }: Props) {
                       label = source.url;
                     }
                   }
+                  // Own pages (e.g. the income-methodology source of the
+                  // model-computed income fact) navigate in-tab and without
+                  // nofollow; external sources keep the defensive rel.
+                  const isInternal = source.url.startsWith('https://streamertimes.tv/');
                   return (
                     <li
                       key={n}
@@ -414,8 +418,9 @@ export default async function StreamerWikiPage({ params }: Props) {
                       <span className="min-w-0">
                         <a
                           href={source.url}
-                          target="_blank"
-                          rel="nofollow noopener noreferrer"
+                          {...(isInternal
+                            ? {}
+                            : { target: '_blank', rel: 'nofollow noopener noreferrer' })}
                           className="break-words text-accent-cyan hover:underline"
                         >
                           {label}
