@@ -196,6 +196,9 @@ export interface WikiTopGame {
   category: string;
   slug: string;
   boxArtUrl: string;
+  /** Integer 0-100: this category's share of the streamer's categorized
+   *  streams in the stats window. */
+  sharePercent: number;
 }
 
 /**
@@ -218,9 +221,22 @@ export function wikiTopGames(
     if (!game?.box_art_url) continue;
     const slug = gameSlug(game.category);
     if (slug.length === 0) continue;
-    out.push({ category: game.category, slug, boxArtUrl: game.box_art_url });
+    out.push({
+      category: game.category,
+      slug,
+      boxArtUrl: game.box_art_url,
+      sharePercent: entry.share_percent,
+    });
   }
   return out;
+}
+
+/** "54 %" / "54%" per viewer locale, from the integer 0-100 share. */
+export function formatSharePercent(sharePercent: number, uiLang: string): string {
+  return new Intl.NumberFormat(intlLocale(uiLang), {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(sharePercent / 100);
 }
 
 // ============================================

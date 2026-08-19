@@ -46,6 +46,7 @@ import {
   displayAge,
   formatBirthDate,
   formatRegion,
+  formatSharePercent,
   formatUsdRange,
   formatWikiDate,
   orderedWikiFacts,
@@ -461,6 +462,25 @@ export default async function StreamerWikiPage({ params }: Props) {
         {/* Article column. Headings/sources/disclaimer stay on the viewer-UI
             axis; only paragraph blocks carry the content language + dir. */}
         <div className="order-2 min-w-0 lg:order-1">
+          {/* Site bio as extra body text (own content language + dir) —
+              deliberately FIRST: the hand-curated "who is this" text opens
+              the page, the sourced AI sections follow (user decision
+              2026-08-19). */}
+          {bio && bioParagraphs.length > 0 && (
+            <section className="mt-8">
+              <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
+                {L.wiki.aboutHeading(streamer.name)}
+              </h2>
+              <div className="mt-4 space-y-4" lang={bio.lang} dir={bio.dir}>
+                {bioParagraphs.map((p, i) => (
+                  <p key={i} className="text-pretty leading-relaxed text-text-secondary">
+                    {p}
+                  </p>
+                ))}
+              </div>
+            </section>
+          )}
+
           <ArticleSection
             heading={L.wiki.sectionCareer}
             paragraphs={picked.article.career}
@@ -493,22 +513,6 @@ export default async function StreamerWikiPage({ params }: Props) {
             dir={articleDir}
           />
 
-          {/* Site bio as extra body text (own content language + dir). */}
-          {bio && bioParagraphs.length > 0 && (
-            <section className="mt-8">
-              <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
-                {L.wiki.aboutHeading(streamer.name)}
-              </h2>
-              <div className="mt-4 space-y-4" lang={bio.lang} dir={bio.dir}>
-                {bioParagraphs.map((p, i) => (
-                  <p key={i} className="text-pretty leading-relaxed text-text-secondary">
-                    {p}
-                  </p>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Top games as box-art tiles (M26 image round) — internal links
               into the game hubs. UI-axis heading; hidden when the stats feed
               or games catalog is unavailable. */}
@@ -534,6 +538,9 @@ export default async function StreamerWikiPage({ params }: Props) {
                     />
                     <span className="mt-1.5 block text-center text-xs leading-snug text-text-secondary group-hover:text-accent-cyan">
                       {game.category}
+                    </span>
+                    <span className="block text-center text-xs font-semibold text-text-muted">
+                      {formatSharePercent(game.sharePercent, locale)}
                     </span>
                   </Link>
                 ))}

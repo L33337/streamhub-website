@@ -6,6 +6,7 @@ import {
   displayAge,
   formatBirthDate,
   formatRegion,
+  formatSharePercent,
   formatUsdRange,
   orderedWikiFacts,
   pickWikiArticle,
@@ -199,6 +200,7 @@ describe('wikiTopGames', () => {
       category: 'Fortnite',
       slug: 'fortnite',
       boxArtUrl: 'https://img/fn.jpg',
+      sharePercent: 50,
     });
   });
 
@@ -213,5 +215,13 @@ describe('wikiTopGames', () => {
 
   it('returns empty on empty inputs', () => {
     expect(wikiTopGames([], [])).toEqual([]);
+  });
+});
+
+describe('formatSharePercent', () => {
+  it('formats the 0-100 integer share for the viewer locale', () => {
+    expect(formatSharePercent(54, 'en')).toBe('54%');
+    // de uses a narrow no-break space before the sign.
+    expect(formatSharePercent(54, 'de')).toMatch(/^54\s%$/u);
   });
 });
