@@ -178,6 +178,8 @@ export const en: UiLex = {
     sectionPersonalLife: 'Personal life',
     sectionEarnings: 'Earnings & net worth',
     aboutHeading: (name) => `About ${name}`,
+    nextStreamHeading: 'Next stream',
+    fullSchedule: (name) => `See ${name}'s full schedule`,
     sourcesHeading: 'Sources',
     minorNote: 'We only publish career-related information for streamers under 18.',
     disclaimerHeading: 'About this page',

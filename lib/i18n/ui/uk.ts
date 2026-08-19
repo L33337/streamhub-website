@@ -230,6 +230,8 @@ export const uk: UiLex = {
     sectionPersonalLife: 'Особисте життя',
     sectionEarnings: 'Доходи та статки',
     aboutHeading: (name) => `Про ${name}`,
+    nextStreamHeading: 'Наступний стрім',
+    fullSchedule: (name) => `Повний розклад стрімів ${name}`,
     sourcesHeading: 'Джерела',
     minorNote: 'Про стримерів, молодших за 18 років, ми публікуємо лише інформацію про кар’єру.',
     disclaimerHeading: 'Про цю сторінку',

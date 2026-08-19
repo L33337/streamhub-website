@@ -179,6 +179,8 @@ export const hu: UiLex = {
     sectionPersonalLife: 'Magánélet',
     sectionEarnings: 'Bevételek és vagyon',
     aboutHeading: (name) => `${name} bemutatása`,
+    nextStreamHeading: 'Következő stream',
+    fullSchedule: (name) => `${name} teljes adásrendje`,
     sourcesHeading: 'Források',
     minorNote: 'A 18 év alatti streamerekről kizárólag karrierrel kapcsolatos információkat közlünk.',
     disclaimerHeading: 'Erről az oldalról',

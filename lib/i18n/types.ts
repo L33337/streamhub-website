@@ -212,6 +212,10 @@ export interface UiLex {
     sectionEarnings: string;
     /** Section reusing the streamer-page description as extra body text. */
     aboutHeading(name: string): string;
+    /** "Next stream" section (pill + link to the profile-page schedule). */
+    nextStreamHeading: string;
+    /** Link label into the streamer-page schedule, e.g. "See <name>'s full schedule". */
+    fullSchedule(name: string): string;
     sourcesHeading: string;
     /** Shown in place of personal facts for minors. */
     minorNote: string;

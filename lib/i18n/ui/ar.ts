@@ -201,6 +201,8 @@ export const ar: UiLex = {
     sectionPersonalLife: 'الحياة الشخصية',
     sectionEarnings: 'الأرباح والثروة',
     aboutHeading: (name) => `عن ${name}`,
+    nextStreamHeading: 'البث القادم',
+    fullSchedule: (name) => `جدول بث ${name} الكامل`,
     sourcesHeading: 'المصادر',
     minorNote: 'بالنسبة إلى الستريمرز دون 18 عامًا، ننشر معلومات المسيرة المهنية فقط.',
     disclaimerHeading: 'عن هذه الصفحة',

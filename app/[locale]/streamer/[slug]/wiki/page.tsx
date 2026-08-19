@@ -23,9 +23,13 @@ import {
   type PublicStreamerStats,
   type PublicStreamerWiki,
   type PublicStreamHistory,
+  type PublicStreamSlot,
   type WikiFact,
 } from '@/lib/server/partner-api';
 import { historyVodLinks, usableThumbnail } from '@/lib/history';
+import { pickNextRealSlot, sevenDayKeys } from '@/lib/format/time';
+import { floorToBucket } from '@/lib/home/logic';
+import { HeroNextStream } from '@/components/web/HeroNextStream';
 import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
@@ -70,15 +74,23 @@ interface WikiPageData {
   stats: PublicStreamerStats | null;
   games: PublicGame[];
   lastStream: PublicStreamHistory | null;
+  upcomingSlots: PublicStreamSlot[];
 }
 
-// streamer+wiki gate the page (no profile = 404); stats+games (box-art row)
-// and lastStream (career figure) are best-effort — their failure must
-// never 404 a live wiki page. Explicit revalidate ≥ the route value so no
-// fetch drags the ISR window down (Next min() rule).
+// streamer+wiki gate the page (no profile = 404); stats+games (box-art row),
+// lastStream (career figure) and upcomingSlots (next-stream section) are
+// best-effort — their failure must never 404 a live wiki page. Explicit
+// revalidate ≥ the route value so no fetch drags the ISR window down (Next
+// min() rule); the schedule window mirrors the streamer page (bucketed now →
+// +7d, predictions + always-on included) so both surfaces name the same
+// "next stream", but limit differs on purpose: a distinct fetch URL keeps
+// this call on ITS OWN data-cache entry with revalidate 3600 — sharing the
+// profile page's entry would inherit its 1800 and halve the wiki ISR window.
 const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
   const api = getPartnerApi();
-  const [streamer, wiki, stats, games, lastStream] = await Promise.all([
+  const bucketedNow = floorToBucket(new Date());
+  const sevenDaysFromNow = new Date(bucketedNow.getTime() + 7 * 86_400_000);
+  const [streamer, wiki, stats, games, lastStream, upcomingSlots] = await Promise.all([
     api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
     api.getStreamerWiki(slug, { revalidate: 3600 }),
     api.getStreamerStats(slug, { revalidate: 3600 }).catch(() => null),
@@ -87,8 +99,23 @@ const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
       .then((r) => r.data)
       .catch(() => [] as PublicGame[]),
     api.getLastStream(slug, { revalidate: 3600 }),
+    api
+      .listSchedules({
+        streamerIds: [slug],
+        status: ['upcoming'],
+        includePredictions: true,
+        includeAlwaysOn: true,
+        from: bucketedNow.toISOString(),
+        to: sevenDaysFromNow.toISOString(),
+        limit: 50,
+        revalidate: 3600,
+      })
+      .then(
+        (page) => page.data,
+        () => [] as PublicStreamSlot[],
+      ),
   ]);
-  return { streamer, wiki, stats, games, lastStream };
+  return { streamer, wiki, stats, games, lastStream, upcomingSlots };
 });
 
 export async function generateStaticParams() {
@@ -281,7 +308,7 @@ function LastStreamFigure({
 export default async function StreamerWikiPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, wiki, stats, games, lastStream } = await loadWikiPage(slug);
+  const { streamer, wiki, stats, games, lastStream, upcomingSlots } = await loadWikiPage(slug);
   if (!streamer || !wiki) notFound();
 
   const L = uiLexFor(locale);
@@ -299,6 +326,12 @@ export default async function StreamerWikiPage({ params }: Props) {
   const bannerUrl = bannerDisplayUrl(streamer.banner_url ?? null);
   const portraitUrl = avatarLargeUrl(streamer.avatar_url);
   const topGames = wikiTopGames(stats?.top_categories ?? [], games);
+
+  // Same pick as the profile page (cancelled slots excluded, 7-day window) so
+  // both surfaces name the same "next stream"; the pill deep-links into that
+  // day's section over there.
+  const profileHref = localeHref(locale, `/streamer/${encodeURIComponent(slug)}`);
+  const nextSlot = pickNextRealSlot(upcomingSlots, sevenDayKeys(now));
 
   // Extra body text reusing the streamer-page bio (M26: the "Fließtext" of
   // the detail page) — same content-language pick as over there.
@@ -547,6 +580,30 @@ export default async function StreamerWikiPage({ params }: Props) {
               </div>
             </section>
           )}
+
+          {/* Next stream (2026-08-19): the profile page's answer pill, deep-
+              linked into its schedule; always followed by the full-schedule
+              link so the section is useful even without an upcoming slot. */}
+          <section className="mt-8">
+            <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
+              {L.wiki.nextStreamHeading}
+            </h2>
+            <div className="mt-4 flex flex-col items-start gap-3">
+              {nextSlot && (
+                <HeroNextStream
+                  nextSlot={nextSlot}
+                  language={locale}
+                  href={`${profileHref}#day-${nextSlot.start_time.slice(0, 10)}`}
+                />
+              )}
+              <Link
+                href={profileHref}
+                className="text-sm font-semibold text-accent-cyan hover:underline"
+              >
+                {L.wiki.fullSchedule(streamer.name)} →
+              </Link>
+            </div>
+          </section>
 
           {/* Sources — ids are the [n] anchor targets. */}
           {wiki.sources.length > 0 && (

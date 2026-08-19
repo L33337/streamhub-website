@@ -178,6 +178,8 @@ export const ja: UiLex = {
     sectionPersonalLife: '私生活',
     sectionEarnings: '収入と資産',
     aboutHeading: (name) => `${name}について`,
+    nextStreamHeading: '次の配信',
+    fullSchedule: (name) => `${name}の配信スケジュールを見る`,
     sourcesHeading: '出典',
     minorNote: '18歳未満のストリーマーについては、経歴に関する情報のみを掲載しています。',
     disclaimerHeading: 'このページについて',

@@ -191,6 +191,8 @@ export const it: UiLex = {
     sectionPersonalLife: 'Vita privata',
     sectionEarnings: 'Guadagni e patrimonio',
     aboutHeading: (name) => `Chi è ${name}`,
+    nextStreamHeading: 'Prossima live',
+    fullSchedule: (name) => `Vedi il palinsesto completo di ${name}`,
     sourcesHeading: 'Fonti',
     minorNote: 'Per gli streamer sotto i 18 anni pubblichiamo solo informazioni sulla carriera.',
     disclaimerHeading: 'Su questa pagina',

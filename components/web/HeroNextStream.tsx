@@ -13,6 +13,9 @@ interface Props {
   /** Earliest real upcoming slot that has a rendered day section, else null. */
   nextSlot: PublicStreamSlot | null;
   language?: string;
+  /** Link target. Default: the slot's day section on the current page; the
+   *  wiki page points it at the profile-page schedule instead. */
+  href?: string;
 }
 
 /**
@@ -30,7 +33,7 @@ interface Props {
  * Live streamers render nothing here — the hero promotes the watch buttons
  * instead, which is the only action that matters mid-stream.
  */
-export function HeroNextStream({ nextSlot, language = 'en' }: Props) {
+export function HeroNextStream({ nextSlot, language = 'en', href }: Props) {
   const L = slotLexFor(language);
   const target = nextSlot?.start_time ?? '';
   const label = useSyncExternalStore(
@@ -43,7 +46,7 @@ export function HeroNextStream({ nextSlot, language = 'en' }: Props) {
 
   return (
     <a
-      href={`#day-${nextSlot.start_time.slice(0, 10)}`}
+      href={href ?? `#day-${nextSlot.start_time.slice(0, 10)}`}
       className="group inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent-cyan/40 bg-accent-cyan/5 px-3 py-1.5 text-sm transition-colors hover:border-accent-cyan/70 hover:bg-accent-cyan/10"
     >
       <span className="shrink-0 text-text-muted">{L.nextStreamPrefix}</span>

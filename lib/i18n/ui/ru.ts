@@ -231,6 +231,8 @@ export const ru: UiLex = {
     sectionPersonalLife: 'Личная жизнь',
     sectionEarnings: 'Доходы и состояние',
     aboutHeading: (name) => `О стримере ${name}`,
+    nextStreamHeading: 'Следующий стрим',
+    fullSchedule: (name) => `Полное расписание стримов ${name}`,
     sourcesHeading: 'Источники',
     minorNote: 'О стримерах младше 18 лет мы публикуем только информацию о карьере.',
     disclaimerHeading: 'Об этой странице',
