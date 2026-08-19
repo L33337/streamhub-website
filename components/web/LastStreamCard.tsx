@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo } from '@/lib/format/time';
-import { historyPlatforms, historyVodLinks } from '@/lib/history';
+import { historyPlatforms, historyVodLinks, usableThumbnail } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
@@ -21,14 +21,6 @@ function PlaceholderThumbnail({ name }: { name: string }) {
 
 const THUMB_SIZES =
   '(min-width: 1024px) 224px, (min-width: 768px) 176px, (min-width: 640px) 144px, 112px';
-
-// Twitch returns this placeholder while a freshly-ended VOD's thumbnail is still being
-// generated. The collector already stores it as null, but guard here too so a stale
-// placeholder URL can never render as the grey 404 image — fall back to the avatar instead.
-function usableThumbnail(url: string | null): string | null {
-  if (!url || url.includes('/_404/404_processing')) return null;
-  return url;
-}
 
 interface Props {
   stream: PublicStreamHistory;

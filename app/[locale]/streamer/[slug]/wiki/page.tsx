@@ -11,7 +11,7 @@
 // rendered with its own lang/dir). Fact values arrive language-neutral and
 // are formatted per viewer locale (lib/wiki.ts).
 
-import { cache } from 'react';
+import { cache, type ReactNode } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,8 +22,10 @@ import {
   type PublicStreamer,
   type PublicStreamerStats,
   type PublicStreamerWiki,
+  type PublicStreamHistory,
   type WikiFact,
 } from '@/lib/server/partner-api';
+import { historyVodLinks, usableThumbnail } from '@/lib/history';
 import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
@@ -66,15 +68,16 @@ interface WikiPageData {
   wiki: PublicStreamerWiki | null;
   stats: PublicStreamerStats | null;
   games: PublicGame[];
+  lastStream: PublicStreamHistory | null;
 }
 
-// streamer+wiki gate the page (no profile = 404); stats+games only feed the
-// box-art row (M26 image round) and are best-effort — their failure must
+// streamer+wiki gate the page (no profile = 404); stats+games (box-art row)
+// and lastStream (career figure) are best-effort — their failure must
 // never 404 a live wiki page. Explicit revalidate ≥ the route value so no
 // fetch drags the ISR window down (Next min() rule).
 const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
   const api = getPartnerApi();
-  const [streamer, wiki, stats, games] = await Promise.all([
+  const [streamer, wiki, stats, games, lastStream] = await Promise.all([
     api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
     api.getStreamerWiki(slug, { revalidate: 3600 }),
     api.getStreamerStats(slug, { revalidate: 3600 }).catch(() => null),
@@ -82,8 +85,9 @@ const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
       .listGames({ limit: 500, revalidate: 3600 })
       .then((r) => r.data)
       .catch(() => [] as PublicGame[]),
+    api.getLastStream(slug, { revalidate: 3600 }),
   ]);
-  return { streamer, wiki, stats, games };
+  return { streamer, wiki, stats, games, lastStream };
 });
 
 export async function generateStaticParams() {
@@ -177,6 +181,7 @@ function ArticleSection({
   sourceCount,
   lang,
   dir,
+  figure,
 }: {
   heading: string;
   paragraphs: string[];
@@ -184,19 +189,87 @@ function ArticleSection({
   /** Content language of the paragraphs (headings stay on the UI axis). */
   lang: string;
   dir: 'rtl' | undefined;
+  /** Optional Wikipedia-style thumb, floated inline-end on sm+ so the text
+   *  wraps around it (flow-root on the section contains the float). */
+  figure?: ReactNode;
 }) {
   if (paragraphs.length === 0) return null;
   return (
-    <section className="mt-8">
+    <section className="mt-8 flow-root">
       <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
         {heading}
       </h2>
+      {figure}
       <div className="mt-4 space-y-4" lang={lang} dir={dir}>
         {paragraphs.map((p, i) => (
           <ArticleParagraph key={i} text={p} sourceCount={sourceCount} />
         ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * Still frame of the streamer's most recent broadcast as a Wikipedia-style
+ * thumb in the Career section: full-width card on phones, floated
+ * inline-end with wrapping text from sm up. Rendered only with a usable
+ * thumbnail — falling back to the avatar (like LastStreamCard does) would
+ * duplicate the infobox portrait right next to it.
+ */
+function LastStreamFigure({
+  stream,
+  streamerName,
+  locale,
+  L,
+}: {
+  stream: PublicStreamHistory;
+  streamerName: string;
+  locale: UiLang;
+  L: UiLex;
+}) {
+  const thumbnailUrl = usableThumbnail(stream.thumbnail_url);
+  if (!thumbnailUrl) return null;
+
+  const title = stream.title?.trim() || L.lastStream.pastStream;
+  const dateLabel = formatWikiDate(stream.started_at, locale);
+  // An anchor must not nest inside another anchor, so the image links only
+  // when the session has exactly one recording (same rule as LastStreamCard).
+  const vodLinks = historyVodLinks(stream);
+  const href = vodLinks.length === 1 ? vodLinks[0].url : null;
+
+  const image = (
+    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-background-highlight">
+      <Image
+        src={sizedCdnImageUrl(thumbnailUrl, 640)}
+        alt={title}
+        fill
+        unoptimized
+        sizes="(min-width: 1024px) 288px, (min-width: 640px) 240px, 100vw"
+        className="object-cover"
+      />
+    </div>
+  );
+
+  return (
+    <figure className="mt-4 w-full rounded-xl border border-border-default bg-background-elevated p-2 sm:float-end sm:mb-3 sm:ms-5 sm:w-60 lg:w-72">
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={L.lastStream.watchAria(streamerName, title)}
+          className="block transition-opacity hover:opacity-90"
+        >
+          {image}
+        </a>
+      ) : (
+        image
+      )}
+      <figcaption className="mt-2 px-1 pb-1 text-xs leading-snug text-text-muted">
+        <span className="font-semibold text-text-secondary">{L.lastStream.heading}:</span> {title}
+        {dateLabel ? ` · ${dateLabel}` : ''}
+      </figcaption>
+    </figure>
   );
 }
 
@@ -207,7 +280,7 @@ function ArticleSection({
 export default async function StreamerWikiPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, wiki, stats, games } = await loadWikiPage(slug);
+  const { streamer, wiki, stats, games, lastStream } = await loadWikiPage(slug);
   if (!streamer || !wiki) notFound();
 
   const L = uiLexFor(locale);
@@ -394,6 +467,16 @@ export default async function StreamerWikiPage({ params }: Props) {
             sourceCount={sourceCount}
             lang={articleLang}
             dir={articleDir}
+            figure={
+              lastStream ? (
+                <LastStreamFigure
+                  stream={lastStream}
+                  streamerName={streamer.name}
+                  locale={locale}
+                  L={L}
+                />
+              ) : undefined
+            }
           />
           <ArticleSection
             heading={L.wiki.sectionPersonalLife}

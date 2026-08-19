@@ -21,6 +21,19 @@ export function historyPlatforms(stream: PublicStreamHistory): Platform[] {
 }
 
 /**
+ * Thumbnail URL safe to render, or null.
+ *
+ * Twitch returns a "/_404/404_processing" placeholder while a freshly-ended
+ * VOD's thumbnail is still being generated. The collector already stores it as
+ * null, but guard here too so a stale placeholder URL can never render as the
+ * grey 404 image.
+ */
+export function usableThumbnail(url: string | null): string | null {
+  if (!url || url.includes('/_404/404_processing')) return null;
+  return url;
+}
+
+/**
  * Watchable VOD links, one per platform, in `platforms` order.
  *
  * A simulcast can carry a link for only one side: Twitch VODs expire after

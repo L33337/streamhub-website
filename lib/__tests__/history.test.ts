@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { historyPlatforms, historyVodLinks } from '@/lib/history';
+import { historyPlatforms, historyVodLinks, usableThumbnail } from '@/lib/history';
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 
 function item(overrides: Partial<PublicStreamHistory> = {}): PublicStreamHistory {
@@ -88,5 +88,22 @@ describe('historyVodLinks', () => {
 
   it('falls back to nothing when the legacy scalar has no VOD either', () => {
     expect(historyVodLinks(item({ vod_url: null, vods: undefined }))).toEqual([]);
+  });
+});
+
+describe('usableThumbnail', () => {
+  it('passes a real thumbnail URL through', () => {
+    const url = 'https://static-cdn.jtvnw.net/cf_vods/abc/thumb/thumb0-640x360.jpg';
+    expect(usableThumbnail(url)).toBe(url);
+  });
+
+  it('rejects null', () => {
+    expect(usableThumbnail(null)).toBeNull();
+  });
+
+  it("rejects Twitch's still-processing placeholder", () => {
+    expect(
+      usableThumbnail('https://vod-secure.twitch.tv/_404/404_processing_640x360.png'),
+    ).toBeNull();
   });
 });
