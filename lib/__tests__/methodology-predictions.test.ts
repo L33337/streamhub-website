@@ -74,6 +74,17 @@ describe('methodology/predictions copy', () => {
     expect(CONFIDENCE_TIERS_COPY.map((t) => t.inPractice).join(' ')).toMatch(/two hours/);
   });
 
+  it('stays a short explainer, not a specification', () => {
+    const words = allCopy()
+      .join(' ')
+      .split(/\s+/)
+      .filter(Boolean).length;
+    // The first draft ran ~2,000 words and read as a spec; the trimmed page
+    // is meant to stay around half of that.
+    expect(words).toBeLessThan(1150);
+    expect(words).toBeGreaterThan(600);
+  });
+
   it('covers the four non-confidence badges the site renders', () => {
     expect(OTHER_BADGES.map((b) => b.id)).toEqual(['new', 'uncertain', 'cancelled', 'live']);
   });
@@ -97,15 +108,44 @@ describe('methodology/predictions copy', () => {
     for (const id of ids) expect(id).toMatch(/^[a-z][a-z0-9-]*$/);
   });
 
-  it('mirrors the backend scoring window and evaluation rules in prose', () => {
+  it('mirrors the backend scoring window in prose — and nothing more', () => {
     const grade = PREDICTIONS_METHODOLOGY_SECTIONS.find((s) => s.id === 'how-we-grade-ourselves');
     const text = [...(grade?.paragraphs ?? []), ...(grade?.bullets ?? [])].join(' ');
-    // ±2h hit window (ACCURACY_THRESHOLD_MS) and the 6h no-show expiry
-    // (evaluateExpiredPredictions) in generate-predictions / conflicts.ts.
+    // ±2h hit window (ACCURACY_THRESHOLD_MS in conflicts.ts + the eventsub /
+    // websub twins) — the one backend constant the page needs.
     expect(text).toMatch(/within two hours/);
-    expect(text).toMatch(/six hours/);
     // Inverted semantics for cancelled slots (M15).
     expect(text).toMatch(/other way round/);
+  });
+
+  it('publishes no recipe: none of the slot-computer thresholds appear anywhere', () => {
+    // Scope decision 2026-08-27 — the page explains sources and badge
+    // semantics, not the parameters. These phrases are the ones the first
+    // draft leaked; keep the list growing if a new number sneaks in.
+    const leaks = [
+      /three of the last four/i,
+      /within (about )?an hour/i,
+      /five hours/i,
+      /30 minutes/i,
+      /six hours/i,
+      /three weeks/i,
+      /two weeks/i,
+      /eight weeks/i,
+      /four weeks/i,
+      /\b(40|75) ?%/,
+      /20 minutes/i,
+      /two consecutive|two or more/i,
+      /capped at MEDIUM/i,
+      /every 30 minutes/i,
+      /15 minutes/i,
+      /closing (part|minutes)/i,
+      /web research|research(es)? .* on the web/i,
+    ];
+    for (const text of allCopy()) {
+      for (const leak of leaks) {
+        expect(text, `${leak} in: ${text}`).not.toMatch(leak);
+      }
+    }
   });
 
   it('dates are ISO and the label is the en-US long form used on legal pages', () => {

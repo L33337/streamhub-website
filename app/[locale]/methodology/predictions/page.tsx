@@ -1,7 +1,8 @@
 // "How predictions work" (2026-08-27): public methodology page for the AI
 // stream predictions and the HIGH / MEDIUM / LOW confidence badges. It
-// DESCRIBES the StreamHub backend — thresholds are mirrored by hand in
-// lib/methodology-predictions.ts (change them together, see its header).
+// explains the sources and the badge semantics — deliberately WITHOUT the
+// recipe (no thresholds, cadences or pipeline internals; see the header of
+// lib/methodology-predictions.ts).
 //
 // EN-only content page (privacy-policy / income-estimates pattern): indexable
 // at /methodology/predictions, noindex+follow self-canonical on every other
@@ -36,7 +37,6 @@ import {
   HOW_WE_GRADE,
   LIMITS,
   FOR_STREAMERS,
-  NEW_CHANNELS,
   OTHER_BADGES,
   OTHER_BADGES_NOTE,
   PREDICTIONS_FAQ,
@@ -350,9 +350,8 @@ export default async function PredictionsMethodologyPage({
         <p className="mt-4 text-xs leading-relaxed text-text-muted">{OTHER_BADGES_NOTE}</p>
       </section>
 
-      {/* 5–9 */}
+      {/* 5–8 */}
       <Section section={WHEN_PREDICTIONS_CHANGE} />
-      <Section section={NEW_CHANNELS} />
       <Section section={HOW_WE_GRADE} />
       <Section section={LIMITS} />
       <Section section={FOR_STREAMERS} />
