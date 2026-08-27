@@ -98,8 +98,8 @@ export const HOW_IT_IS_BUILT: MethodologySection = {
   id: 'how-it-is-built',
   heading: 'How the sources become a prediction',
   paragraphs: [
-    'A fixed set of rules, the same for every channel, turns that evidence into a lineup for the coming days. What the streamer said outranks their published schedule, and the schedule outranks the pattern in their history. When the evidence is too thin or too scattered to call, we show nothing rather than a guess.',
-    'Only then does an AI writer turn those facts into the short title and description on each card, in the streamer’s own language. It cannot move a time or change a badge.',
+    'We look at all of it together: how the channel has streamed so far, what the streamer has announced, and what they said on their last stream. Out of that comes a lineup for the coming days. If there is too little to go on, we would rather show nothing than guess.',
+    'An AI writer then turns those facts into the short title and description on each card, in the streamer’s own language. It cannot move a time or change a badge.',
   ],
 };
 
