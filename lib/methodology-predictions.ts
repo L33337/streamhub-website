@@ -103,38 +103,42 @@ export interface ConfidenceTierCopy {
   inPractice: string;
 }
 
+// Tone (2026-08-27): the three cards read as a viewer's quick guide, not as
+// admission criteria — one benefit-flavoured tagline, three short cues, and
+// the rounded hit rate that makes the badge tangible.
 export const CONFIDENCE_TIERS_COPY: readonly ConfidenceTierCopy[] = [
   {
     level: 'high',
-    tagline: 'Strong, recent evidence.',
+    tagline: 'Plan your evening around it.',
     signals: [
-      'A regular weekday with consistent start times',
-      'or an announced slot from a streamer who keeps their schedule',
-      'or a clear announcement on the last stream',
+      'A streamer with a rock-solid routine',
+      'A published schedule from someone who sticks to it',
+      'Or a promise made on stream: “see you Thursday”',
     ],
     inPractice:
-      'About three out of four high-confidence predictions start within two hours of the predicted time.',
+      'Our most dependable call: about three out of four HIGH predictions start within two hours of the predicted time.',
   },
   {
     level: 'medium',
-    tagline: 'A real pattern with a real question mark.',
+    tagline: 'A good bet worth keeping an eye on.',
     signals: [
-      'A regular weekday, but start times that vary',
-      'An announcement from a streamer with a mixed track record, or a vague hint on stream',
-      'A second stream of the day, or the first days back after a break',
+      'A familiar streaming day, with the start time still open',
+      'A schedule the streamer mostly keeps',
+      'A hint on stream rather than a promise',
     ],
-    inPractice: 'Roughly every second medium-confidence prediction hits the two-hour window.',
+    inPractice:
+      'Roughly every second MEDIUM prediction lands in the two-hour window — set an alert and let the app do the watching.',
   },
   {
     level: 'low',
-    tagline: 'A possibility, not a promise.',
+    tagline: 'Possible, not promised.',
     signals: [
-      'A weekday the channel rarely streams on',
-      'Very little history yet',
-      'A recent quiet spell',
+      'An unusual day for this channel',
+      'A channel we are still getting to know',
+      'A streamer who has gone quiet for a while',
     ],
     inPractice:
-      'About one in three low-confidence predictions comes true. LOW says little about the streamer and a lot about how much evidence we have.',
+      'About one in three LOW predictions comes true. It’s a heads-up, not a verdict — and it says more about how much we know than about the streamer.',
   },
 ];
 
