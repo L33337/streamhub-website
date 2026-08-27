@@ -145,7 +145,7 @@ describe('buildStreamerFaqItems — methodology pointer (2026-08-27)', () => {
     const items = buildStreamerFaqItems(makeStreamer(), [], upcoming, makeStats());
     const predicted = items.find((i) => i.question === "Are Testy's stream times predicted or confirmed?");
     expect(predicted?.more).toEqual({
-      href: '/methodology/predictions',
+      href: '/predictions',
       label: 'How predictions work',
     });
     for (const item of items) {
@@ -158,7 +158,7 @@ describe('buildStreamerFaqItems — methodology pointer (2026-08-27)', () => {
     const items = buildStreamerFaqItems(makeStreamer({ language: 'de' }), [], upcoming, null, 'de');
     const predicted = items.find((i) => i.more);
     expect(predicted?.more).toEqual({
-      href: '/de/methodology/predictions',
+      href: '/de/predictions',
       label: 'Wie Prognosen entstehen',
     });
     expect(predicted?.answer).not.toMatch(/<|href/);

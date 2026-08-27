@@ -5,8 +5,9 @@
 // lib/methodology-predictions.ts).
 //
 // EN-only content page (privacy-policy / income-estimates pattern): indexable
-// at /methodology/predictions, noindex+follow self-canonical on every other
-// locale. ISR hourly for the live "Prediction check" box (anon-REST, never
+// at /predictions (launched at /methodology/predictions and moved to the short
+// URL the same evening; next.config.ts 308s the old paths), noindex+follow
+// self-canonical on every other locale. ISR hourly for the live "Prediction check" box (anon-REST, never
 // throws; the box simply hides when the numbers are unavailable).
 //
 // Linked from: footer (every page), the homepage "Prediction check" fact, the

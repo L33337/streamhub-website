@@ -150,7 +150,7 @@ export default function IncomeMethodologyPage() {
       <p className="mt-4 text-sm text-text-secondary">
         See also:{" "}
         <Link
-          href="/methodology/predictions"
+          href="/predictions"
           className="font-medium text-accent-cyan transition-colors hover:text-text-primary"
         >
           how we predict when streamers go live

@@ -1,5 +1,5 @@
 // Copy + constants of the public prediction-methodology page
-// (/methodology/predictions, 2026-08-27). Kept out of the page component so
+// (/predictions, 2026-08-27). Kept out of the page component so
 // vitest can guard it (meta budgets, brand spelling, structural completeness)
 // without a DOM.
 //
@@ -26,7 +26,7 @@
 import type { ConfidenceLevel } from '@/lib/server/partner-api';
 import { CONTENT_LAST_UPDATED, formatLegalDate } from '@/lib/legal-dates';
 
-export const PREDICTIONS_METHODOLOGY_PATH = '/methodology/predictions';
+export const PREDICTIONS_METHODOLOGY_PATH = '/predictions';
 
 /** ISO date of the last content change — also the sitemap <lastmod>. */
 export const PREDICTIONS_METHODOLOGY_UPDATED_ISO = CONTENT_LAST_UPDATED['methodology-predictions'];

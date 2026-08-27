@@ -255,7 +255,7 @@ export function buildStreamerFaqItems(
           ? L.aAllPredicted(name)
           : L.aMixed(name, predictedCount, total),
       more: {
-        href: localeHref(lang, '/methodology/predictions'),
+        href: localeHref(lang, '/predictions'),
         label: chromeLexFor(lang).footer.howPredictionsWork,
       },
     });

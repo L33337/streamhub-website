@@ -478,7 +478,7 @@ export default async function TonightPage({ params }: PageProps) {
             question={L.tonight.faqHowQ}
             answer={L.tonight.faqHowA}
             more={{
-              href: localeHref(locale, '/methodology/predictions'),
+              href: localeHref(locale, '/predictions'),
               label: chromeLexFor(locale).footer.howPredictionsWork,
             }}
           />

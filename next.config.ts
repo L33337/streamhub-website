@@ -29,6 +29,22 @@ const nextConfig: NextConfig = {
         destination: "https://streamertimes.tv/:path*",
         permanent: true,
       },
+      // "How predictions work" moved from /methodology/predictions to
+      // /predictions on 2026-08-27 (a few hours after launch; the old URL was
+      // in the sitemap, llms.txt and every footer). Permanent (308) for the
+      // unprefixed canonical and for the locale-prefixed variants; /en/… lands
+      // on /en/predictions and the middleware's own /en → unprefixed 308 takes
+      // it from there. These run before the middleware, so no rewrite fires.
+      {
+        source: "/methodology/predictions",
+        destination: "/predictions",
+        permanent: true,
+      },
+      {
+        source: "/:locale/methodology/predictions",
+        destination: "/:locale/predictions",
+        permanent: true,
+      },
     ];
   },
   async headers() {

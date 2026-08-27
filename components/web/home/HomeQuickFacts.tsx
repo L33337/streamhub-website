@@ -88,7 +88,7 @@ export function HomeQuickFacts({
       text: L.homeFeed.factPrediction(facts.prediction.hits, facts.prediction.total),
       // The one aggregate WITH a subject page: the methodology page explains
       // exactly how this number is scored (2026-08-27).
-      href: '/methodology/predictions',
+      href: '/predictions',
       highlight: true,
     });
   }

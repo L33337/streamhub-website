@@ -258,7 +258,7 @@ function ReasoningBox({
           viewer locale (D6); the chrome lexicon is server-safe here. */}
       <p className="mt-3 text-xs">
         <Link
-          href={localeHref(uiLang, '/methodology/predictions')}
+          href={localeHref(uiLang, '/predictions')}
           className="font-semibold text-accent-cyan hover:text-text-primary"
         >
           {chromeLexFor(uiLang).footer.howPredictionsWork} →

@@ -89,7 +89,7 @@ export function ProgramLegend() {
           </p>
           <p className="mt-3 text-xs">
             <Link
-              href="/methodology/predictions"
+              href="/predictions"
               className="font-semibold text-accent-cyan hover:text-text-primary"
             >
               How predictions and confidence levels work →

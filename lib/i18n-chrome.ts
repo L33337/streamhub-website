@@ -82,7 +82,7 @@ export interface ChromeLex {
     getTheApp: string;
     publicApi: string;
     /**
-     * Footer link to /methodology/predictions (2026-08-27). Also reused as the
+     * Footer link to /predictions (2026-08-27). Also reused as the
      * "read more" label under prediction FAQs and in the slot reasoning box —
      * one string, one translation, one place to change it.
      */

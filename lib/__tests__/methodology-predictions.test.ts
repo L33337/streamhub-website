@@ -39,7 +39,7 @@ function allCopy(): string[] {
   ];
 }
 
-describe('methodology/predictions copy', () => {
+describe('/predictions page copy', () => {
   it('keeps the SERP metadata inside the budgets', () => {
     // 60 = MAX_TITLE in lib/seo.ts (Google truncates around there); the
     // brand suffix is part of the string on this page class.
@@ -170,6 +170,6 @@ describe('methodology/predictions copy', () => {
   });
 
   it('lives at the methodology sibling path', () => {
-    expect(PREDICTIONS_METHODOLOGY_PATH).toBe('/methodology/predictions');
+    expect(PREDICTIONS_METHODOLOGY_PATH).toBe('/predictions');
   });
 });

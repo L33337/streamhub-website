@@ -195,7 +195,7 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     // "How predictions work" (2026-08-27): en-only content page, linked from
     // the footer, the homepage prediction fact, streamer/tonight FAQs and the
     // slot reasoning box. <lastmod> = the page's own "Last updated" date.
-    url: `${SITE_URL}/methodology/predictions`,
+    url: `${SITE_URL}/predictions`,
     lastModified: new Date(CONTENT_LAST_UPDATED['methodology-predictions']),
     changeFrequency: 'monthly',
     priority: 0.4,

@@ -134,7 +134,7 @@ describe('sitemap — M22 locale variants', () => {
   it('lists the en-only methodology pages once, unprefixed, without clusters', async () => {
     const entries = await sitemap();
     const urls = urlsOf(entries);
-    for (const path of ['/methodology/predictions', '/methodology/income-estimates']) {
+    for (const path of ['/predictions', '/methodology/income-estimates']) {
       const matches = entries.filter((e) => e.url.endsWith(path));
       expect(matches, path).toHaveLength(1);
       expect(matches[0].url).toBe(`https://streamertimes.tv${path}`);
@@ -144,7 +144,7 @@ describe('sitemap — M22 locale variants', () => {
       expect(urls.some((u) => u.includes(`/de${path}`))).toBe(false);
     }
     // <lastmod> mirrors the page's own "Last updated" line.
-    const predictions = entries.find((e) => e.url.endsWith('/methodology/predictions'));
+    const predictions = entries.find((e) => e.url.endsWith('/predictions'));
     expect(predictions?.lastModified).toEqual(new Date('2026-08-27'));
   });
 

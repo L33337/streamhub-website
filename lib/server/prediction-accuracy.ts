@@ -1,7 +1,7 @@
 import 'server-only';
 
 // Per-tier prediction accuracy for the public methodology page
-// (/methodology/predictions, 2026-08-27). Sibling of the homepage's
+// (/predictions, 2026-08-27). Sibling of the homepage's
 // fetchPredictionFact (lib/server/quick-facts.ts): same anon-read table, same
 // 7-day window, same scoring (buildPredictionAccuracy drops cancelled slots,
 // whose evaluation semantics are inverted) — but one number per confidence
