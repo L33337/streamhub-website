@@ -146,10 +146,11 @@ export const CONFIDENCE_INTRO: readonly string[] = [
   'Every predicted stream has one of three badges. They describe how much evidence sits behind the time — not how good the streamer is. A prediction counts as a hit when the stream starts within two hours of the predicted time.',
 ];
 
-export const CONFIDENCE_FEEDBACK =
-  'Confidence also learns from misses: when a streamer skips predicted streams, their next predictions drop a level and are marked UNCERTAIN until they stream again.';
-
-/** Live calibration box copy (numbers come from lib/server/prediction-accuracy.ts). */
+/**
+ * Live calibration section copy (numbers come from
+ * lib/server/prediction-accuracy.ts). Rendered as its own section with an H2
+ * since 2026-08-27 evening; the section hides entirely when no tier has data.
+ */
 export const CALIBRATION_HEADING = 'Prediction check — the last 7 days';
 export const CALIBRATION_NOTE =
   'Counted the way we grade ourselves: a hit is a stream that started within two hours of the predicted time. Updated hourly.';
@@ -188,21 +189,6 @@ export const OTHER_BADGES: readonly BadgeCopy[] = [
 export const OTHER_BADGES_NOTE =
   'NEW and UNCERTAIN appear in the app and the signed-in Program view; the public website shows the confidence badge and “no stream expected” entries.';
 
-export const WHEN_PREDICTIONS_CHANGE: MethodologySection = {
-  id: 'updates',
-  heading: 'When predictions change',
-  paragraphs: [],
-  bullets: [
-    'After every stream: shortly after a broadcast ends, the channel’s line-up is recomputed.',
-    'When the announced schedule changes.',
-    'Regularly for quiet channels, so a stale line-up doesn’t linger.',
-    'When the real stream starts: the prediction becomes a LIVE entry.',
-  ],
-  afterBullets: [
-    'Each run replaces the previous line-up. Times are computed in the streamer’s own timezone and shown in yours.',
-  ],
-};
-
 export const HOW_WE_GRADE: MethodologySection = {
   id: 'how-we-grade-ourselves',
   heading: 'How we grade ourselves',
@@ -220,8 +206,6 @@ export const LIMITS: MethodologySection = {
   bullets: [
     'Categories come from Twitch; YouTube only reports broad buckets such as “Gaming”.',
     'What a streamer said is only available where captions can be read.',
-    'A channel we have only just started tracking begins with cautious predictions until its first streams have been observed.',
-    'Predictions cover the coming week; beyond that, the typical streaming times on a streamer’s page are the better guide.',
   ],
 };
 
@@ -277,7 +261,6 @@ export const PREDICTIONS_FAQ: readonly MethodologyFaq[] = [
 /** Every long-form section in render order (for tests + the in-page nav). */
 export const PREDICTIONS_METHODOLOGY_SECTIONS: readonly MethodologySection[] = [
   HOW_IT_IS_BUILT,
-  WHEN_PREDICTIONS_CHANGE,
   HOW_WE_GRADE,
   LIMITS,
   FOR_STREAMERS,

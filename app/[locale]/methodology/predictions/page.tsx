@@ -30,7 +30,6 @@ import {
   CALIBRATION_HEADING,
   CALIBRATION_NOTE,
   CALIBRATION_ROW,
-  CONFIDENCE_FEEDBACK,
   CONFIDENCE_INTRO,
   CONFIDENCE_TIERS_COPY,
   HOW_IT_IS_BUILT,
@@ -50,7 +49,6 @@ import {
   PREDICTIONS_METHODOLOGY_UPDATED_ISO,
   PREDICTIONS_METHODOLOGY_UPDATED_LABEL,
   PREDICTION_SOURCES,
-  WHEN_PREDICTIONS_CHANGE,
   type MethodologySection,
 } from '@/lib/methodology-predictions';
 import {
@@ -91,12 +89,14 @@ export async function generateMetadata({
   return applyLocaleSeo(meta, locale, PREDICTIONS_METHODOLOGY_PATH);
 }
 
-const NAV_ITEMS: { href: string; label: string }[] = [
+// `needsCalibration` chips are dropped when the live numbers are unavailable —
+// a chip must never point at an anchor that is not on the page.
+const NAV_ITEMS: { href: string; label: string; needsCalibration?: true }[] = [
   { href: '#sources', label: 'The three sources' },
   { href: `#${HOW_IT_IS_BUILT.id}`, label: 'How a prediction is built' },
   { href: '#confidence', label: 'Confidence badges' },
+  { href: '#calibration', label: 'Prediction check', needsCalibration: true },
   { href: '#badges', label: 'Other badges' },
-  { href: `#${WHEN_PREDICTIONS_CHANGE.id}`, label: 'When predictions change' },
   { href: `#${HOW_WE_GRADE.id}`, label: 'How we grade ourselves' },
   { href: `#${FOR_STREAMERS.id}`, label: 'For streamers' },
   { href: '#faq', label: 'FAQ' },
@@ -218,7 +218,7 @@ export default async function PredictionsMethodologyPage({
       </p>
 
       <nav aria-label="On this page" className="mb-12 flex flex-wrap gap-2">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => !item.needsCalibration || showCalibration).map((item) => (
           <a
             key={item.href}
             href={item.href}
@@ -292,20 +292,14 @@ export default async function PredictionsMethodologyPage({
             </article>
           ))}
         </div>
-        <p className="mt-5 text-sm leading-relaxed text-text-secondary">{CONFIDENCE_FEEDBACK}</p>
+      </section>
 
-        {showCalibration && (
-          <aside
-            aria-labelledby="calibration-heading"
-            className="mt-6 rounded-xl border border-accent-cyan/40 bg-background-elevated p-5 shadow-[0_0_16px_rgba(0,240,255,0.10)]"
-          >
-            <h3
-              id="calibration-heading"
-              className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-accent-cyan"
-            >
-              {CALIBRATION_HEADING}
-            </h3>
-            <ul className="mt-3 space-y-3">
+      {/* 4 — Live calibration (own section + H2; hidden when no tier has data) */}
+      {showCalibration && (
+        <section id="calibration" className="mb-12 scroll-mt-24">
+          <h2 className={H2_CLASS}>{CALIBRATION_HEADING}</h2>
+          <div className="rounded-xl border border-accent-cyan/40 bg-background-elevated p-5 shadow-[0_0_16px_rgba(0,240,255,0.10)]">
+            <ul className="space-y-3">
               {CONFIDENCE_TIERS.map((level) => {
                 const value = tiers[level];
                 if (!value) return null;
@@ -325,11 +319,11 @@ export default async function PredictionsMethodologyPage({
               })}
             </ul>
             <p className="mt-3 text-xs leading-relaxed text-text-muted">{CALIBRATION_NOTE}</p>
-          </aside>
-        )}
-      </section>
+          </div>
+        </section>
+      )}
 
-      {/* 4 — Other badges */}
+      {/* 5 — Other badges */}
       <section id="badges" className="mb-12 scroll-mt-24">
         <h2 className={H2_CLASS}>The other badges you’ll see</h2>
         <ul className="space-y-3">
@@ -350,8 +344,7 @@ export default async function PredictionsMethodologyPage({
         <p className="mt-4 text-xs leading-relaxed text-text-muted">{OTHER_BADGES_NOTE}</p>
       </section>
 
-      {/* 5–8 */}
-      <Section section={WHEN_PREDICTIONS_CHANGE} />
+      {/* 6–8 */}
       <Section section={HOW_WE_GRADE} />
       <Section section={LIMITS} />
       <Section section={FOR_STREAMERS} />
