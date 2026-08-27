@@ -12,8 +12,16 @@
 // here and bump CONTENT_LAST_UPDATED['methodology-predictions'].
 //
 // Register: the site's informal English. "Streamer Times" with the space
-// everywhere (brand rule). No FAQPage JSON-LD anywhere on the site — the FAQ
-// below is visible text only (see lib/streamer-faq.ts for the rationale).
+// everywhere (brand rule). No em/en dashes in any user-facing string (user
+// rule 2026-08-27: they read as machine-written; vitest enforces it on this
+// module) and hyphens only where English needs them. No FAQPage JSON-LD
+// anywhere on the site — the FAQ below is visible text only (see
+// lib/streamer-faq.ts for the rationale).
+//
+// GEO note: the intro's second paragraph and each confidence paragraph are
+// written as self-contained definitions ("Streamer Times predicts … from
+// three sources", "HIGH means …") so an answer engine can quote them
+// without the surrounding page.
 
 import type { ConfidenceLevel } from '@/lib/server/partner-api';
 import { CONTENT_LAST_UPDATED, formatLegalDate } from '@/lib/legal-dates';
@@ -29,7 +37,8 @@ export const PREDICTIONS_METHODOLOGY_UPDATED_LABEL = formatLegalDate(
 );
 
 // <title> ≤ 60 chars incl. the " - Streamer Times" suffix used by the other
-// en-only content pages (support, methodology/income-estimates).
+// en-only content pages (support, methodology/income-estimates). The hyphen
+// in the suffix is the site-wide title convention, not prose.
 export const PREDICTIONS_METHODOLOGY_TITLE =
   'How Predictions & Confidence Levels Work - Streamer Times';
 // ≤ 155 chars (lib/seo.ts MAX_META_DESCRIPTION).
@@ -41,7 +50,8 @@ export const PREDICTIONS_METHODOLOGY_SUBTITLE =
   'Where every predicted stream on Streamer Times comes from, and what the HIGH, MEDIUM and LOW badges mean.';
 
 export const PREDICTIONS_METHODOLOGY_INTRO: readonly string[] = [
-  'Most streamers don’t publish a schedule, and the ones that do don’t always keep it. Streamer Times still shows you a TV-guide-style line-up for the coming days — because we predict it. Every predicted stream carries a confidence badge and is built from evidence about that particular channel. This page explains how, in plain language.',
+  'Most streamers don’t publish a schedule, and the ones that do don’t always keep it. Streamer Times still shows you a TV guide for the coming days, because we predict it.',
+  'Streamer Times predicts when a Twitch or YouTube streamer will go live from three sources: the channel’s broadcast history, its announced schedule, and what the streamer said on their last stream. Every predicted stream carries a HIGH, MEDIUM or LOW confidence badge that tells you how much evidence sits behind the time. This page explains how it works, in plain language.',
 ];
 
 export interface MethodologySource {
@@ -63,7 +73,7 @@ export const PREDICTION_SOURCES: readonly MethodologySource[] = [
     id: 'announcements',
     title: 'Announced schedules',
     paragraphs: [
-      'The streamer’s own Twitch schedule and scheduled YouTube broadcasts — weighted by how reliably that streamer has kept them in the past. Changes to the schedule are picked up automatically.',
+      'The streamer’s own Twitch schedule and scheduled YouTube broadcasts, weighted by how reliably that streamer has kept them in the past. Changes to the schedule are picked up automatically.',
     ],
   },
   {
@@ -88,8 +98,8 @@ export const HOW_IT_IS_BUILT: MethodologySection = {
   id: 'how-it-is-built',
   heading: 'How the sources become a prediction',
   paragraphs: [
-    'A fixed set of rules — the same for every channel — turns that evidence into a line-up for the coming days. What the streamer said outranks their published schedule, and the schedule outranks the pattern in their history. When the evidence is too thin or too scattered to call, we show nothing rather than a guess.',
-    'Only then does an AI writer turn those facts into the short title and description on each card, in the streamer’s own language — it cannot move a time or change a badge.',
+    'A fixed set of rules, the same for every channel, turns that evidence into a lineup for the coming days. What the streamer said outranks their published schedule, and the schedule outranks the pattern in their history. When the evidence is too thin or too scattered to call, we show nothing rather than a guess.',
+    'Only then does an AI writer turn those facts into the short title and description on each card, in the streamer’s own language. It cannot move a time or change a badge.',
   ],
 };
 
@@ -97,53 +107,36 @@ export interface ConfidenceTierCopy {
   level: ConfidenceLevel;
   /** One-line characterisation shown next to the badge. */
   tagline: string;
-  /** What earns the badge. */
-  signals: readonly string[];
-  /** What it has meant in practice (rounded, evergreen wording). */
-  inPractice: string;
+  /**
+   * One self-contained paragraph: what earns the badge and, rounded, how
+   * often it has come true. Starts with the badge name so it quotes well.
+   */
+  body: string;
 }
 
-// Tone (2026-08-27): the three cards read as a viewer's quick guide, not as
-// admission criteria — one benefit-flavoured tagline, three short cues, and
-// the rounded hit rate that makes the badge tangible.
+// Tone (2026-08-27): a viewer's quick guide, not admission criteria. Prose
+// rather than bullets since 2026-08-27 evening so each tier reads as one
+// quotable definition.
 export const CONFIDENCE_TIERS_COPY: readonly ConfidenceTierCopy[] = [
   {
     level: 'high',
     tagline: 'Plan your evening around it.',
-    signals: [
-      'A streamer with a rock-solid routine',
-      'A published schedule from someone who sticks to it',
-      'Or a promise made on stream: “see you Thursday”',
-    ],
-    inPractice:
-      'Our most dependable call: about three out of four HIGH predictions start within two hours of the predicted time.',
+    body: 'HIGH means the evidence is strong: a streamer with a routine you can set your watch by, a published schedule they actually stick to, or a promise made on stream such as “see you Thursday”. It is our most dependable call. About three out of four HIGH predictions start within two hours of the predicted time.',
   },
   {
     level: 'medium',
     tagline: 'A good bet worth keeping an eye on.',
-    signals: [
-      'A familiar streaming day, with the start time still open',
-      'A schedule the streamer mostly keeps',
-      'A hint on stream rather than a promise',
-    ],
-    inPractice:
-      'Roughly every second MEDIUM prediction lands in the two-hour window — set an alert and let the app do the watching.',
+    body: 'MEDIUM means the pattern is real but one thing is still open: a familiar streaming day with a start time that moves around, a schedule the streamer mostly keeps, or a hint on stream rather than a promise. Roughly every second MEDIUM prediction lands within two hours of the predicted time, so set an alert and let the app do the watching.',
   },
   {
     level: 'low',
     tagline: 'Possible, not promised.',
-    signals: [
-      'An unusual day for this channel',
-      'A channel we are still getting to know',
-      'A streamer who has gone quiet for a while',
-    ],
-    inPractice:
-      'About one in three LOW predictions comes true. It’s a heads-up, not a verdict — and it says more about how much we know than about the streamer.',
+    body: 'LOW means we simply don’t know much yet: an unusual day for this channel, a streamer we are still getting to know, or one who has gone quiet for a while. About one in three LOW predictions comes true. Treat it as a heads up, not a verdict. It says more about how much we know than about the streamer.',
   },
 ];
 
 export const CONFIDENCE_INTRO: readonly string[] = [
-  'Every predicted stream has one of three badges. They describe how much evidence sits behind the time — not how good the streamer is. A prediction counts as a hit when the stream starts within two hours of the predicted time.',
+  'Every predicted stream has one of three badges. They describe how much evidence sits behind the time, not how good the streamer is. A prediction counts as a hit when the stream starts within two hours of the predicted time.',
 ];
 
 /**
@@ -151,7 +144,7 @@ export const CONFIDENCE_INTRO: readonly string[] = [
  * lib/server/prediction-accuracy.ts). Rendered as its own section with an H2
  * since 2026-08-27 evening; the section hides entirely when no tier has data.
  */
-export const CALIBRATION_HEADING = 'Prediction check — the last 7 days';
+export const CALIBRATION_HEADING = 'Prediction check: the last 7 days';
 export const CALIBRATION_NOTE =
   'Counted the way we grade ourselves: a hit is a stream that started within two hours of the predicted time. Updated hourly.';
 export const CALIBRATION_ROW = (hits: number, total: number): string =>
@@ -167,7 +160,7 @@ export const OTHER_BADGES: readonly BadgeCopy[] = [
   {
     id: 'new',
     title: 'New',
-    body: 'A day the channel doesn’t usually stream on — added because the streamer announced it.',
+    body: 'A day the channel doesn’t usually stream on, added because the streamer announced it.',
   },
   {
     id: 'uncertain',
@@ -177,23 +170,23 @@ export const OTHER_BADGES: readonly BadgeCopy[] = [
   {
     id: 'cancelled',
     title: 'Cancelled / No stream expected',
-    body: 'A usually-regular slot we expect to stay empty — an announced break, a withdrawn schedule or an unusually long silence.',
+    body: 'A normally regular slot we expect to stay empty: an announced break, a withdrawn schedule or an unusually long silence.',
   },
   {
     id: 'live',
     title: 'Live',
-    body: 'Real-time data, not a prediction. The moment a channel goes live, its prediction is replaced by the live entry.',
+    body: 'Live data, not a prediction. The moment a channel goes live, its prediction is replaced by the live entry.',
   },
 ];
 
 export const OTHER_BADGES_NOTE =
-  'NEW and UNCERTAIN appear in the app and the signed-in Program view; the public website shows the confidence badge and “no stream expected” entries.';
+  'NEW and UNCERTAIN appear in the app and in the Program view once you are signed in; the public website shows the confidence badge and “no stream expected” entries.';
 
 export const HOW_WE_GRADE: MethodologySection = {
   id: 'how-we-grade-ourselves',
-  heading: 'How we grade ourselves',
+  heading: 'How we measure prediction accuracy',
   paragraphs: [
-    'Every prediction is scored against what actually happened, and the scores are public — the “Prediction check” on our home page and the figures above come straight from them. A hit is a stream that started within two hours of the predicted time; a stream that never came is a miss; “no stream expected” entries are scored the other way round. The scores feed back into the badges.',
+    'Every prediction is scored against what actually happened, and the scores are public: the “Prediction check” on our home page and the figures above come straight from them. A hit is a stream that started within two hours of the predicted time. A stream that never came is a miss. “No stream expected” entries are scored the other way round. The scores feed back into the badges.',
   ],
 };
 
@@ -201,7 +194,7 @@ export const LIMITS: MethodologySection = {
   id: 'limits',
   heading: 'What we can’t predict',
   paragraphs: [
-    'A prediction is a well-founded expectation, never a guarantee — spontaneous streams, sudden cancellations and platform outages are exactly what no history can foresee. A few limits worth knowing:',
+    'A prediction is an expectation with good evidence behind it, never a guarantee. Spontaneous streams, sudden cancellations and platform outages are exactly what no history can foresee. Two limits worth knowing:',
   ],
   bullets: [
     'Categories come from Twitch; YouTube only reports broad buckets such as “Gaming”.',
@@ -214,7 +207,7 @@ export const FOR_STREAMERS: MethodologySection = {
   heading: 'For streamers: how to get better predictions for your channel',
   paragraphs: ['The system rewards exactly what viewers appreciate anyway:'],
   bullets: [
-    'Keep a Twitch schedule and follow it — that earns HIGH-confidence slots and a place on the most punctual streamers ranking.',
+    'Keep a Twitch schedule and follow it. That earns HIGH slots and a place on the most punctual streamers ranking.',
     'Say when you’ll be back before you end a stream, and announce breaks.',
     'Consistency beats frequency: three streams a week at the same time predict better than daily streams at random hours.',
   ],
@@ -229,12 +222,12 @@ export const PREDICTIONS_FAQ: readonly MethodologyFaq[] = [
   {
     question: 'What does a HIGH confidence badge mean?',
     answer:
-      'Strong, recent evidence — a regular weekday with consistent start times, a punctual streamer’s announced slot, or a clear announcement on stream. About three out of four such predictions start within two hours of the predicted time.',
+      'HIGH means strong, recent evidence: a streamer with a routine you can set your watch by, a schedule they stick to, or a promise made on stream. About three out of four HIGH predictions start within two hours of the predicted time.',
   },
   {
     question: 'Does LOW confidence mean the streamer is unreliable?',
     answer:
-      'No. LOW means we have little evidence for that particular day — a rarely used weekday, a short history, or a recent quiet spell — not that the streamer is unreliable.',
+      'No. LOW means we have little evidence for that particular day, such as an unusual weekday, a short history or a recent quiet spell. It says nothing about the streamer’s reliability.',
   },
   {
     question: 'Why did a prediction change or disappear?',
@@ -244,7 +237,7 @@ export const PREDICTIONS_FAQ: readonly MethodologyFaq[] = [
   {
     question: 'Why is there no prediction for a streamer I follow?',
     answer:
-      'The channel has been quiet for a while, has very little history, streams at times too scattered to call, or announced a break. We would rather show nothing than guess — live status and go-live alerts work regardless.',
+      'The channel has been quiet for a while, has very little history, streams at times too scattered to call, or announced a break. We would rather show nothing than guess. Live status and the alerts in the app work regardless.',
   },
   {
     question: 'How much of this is AI?',
@@ -254,7 +247,7 @@ export const PREDICTIONS_FAQ: readonly MethodologyFaq[] = [
   {
     question: 'Can I get notified when a predicted stream actually starts?',
     answer:
-      'Yes. The Streamer Times app sends a go-live alert the moment a favourite channel starts streaming, so a prediction only ever has to get you close.',
+      'Yes. The Streamer Times app alerts you the moment a favourite channel starts streaming, so a prediction only ever has to get you close.',
   },
 ];
 

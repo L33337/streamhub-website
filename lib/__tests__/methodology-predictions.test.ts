@@ -33,7 +33,7 @@ function allCopy(): string[] {
       ...(s.bullets ?? []),
       ...(s.afterBullets ?? []),
     ]),
-    ...CONFIDENCE_TIERS_COPY.flatMap((t) => [t.tagline, ...t.signals, t.inPractice]),
+    ...CONFIDENCE_TIERS_COPY.flatMap((t) => [t.tagline, t.body]),
     ...OTHER_BADGES.flatMap((b) => [b.title, b.body]),
     ...PREDICTIONS_FAQ.flatMap((f) => [f.question, f.answer]),
   ];
@@ -63,15 +63,24 @@ describe('methodology/predictions copy', () => {
     }
   });
 
-  it('describes all three confidence tiers, in badge order, with evidence and a hit rate', () => {
+  it('describes all three confidence tiers, in badge order, as one quotable definition each', () => {
     expect(CONFIDENCE_TIERS_COPY.map((t) => t.level)).toEqual(['high', 'medium', 'low']);
     for (const tier of CONFIDENCE_TIERS_COPY) {
-      expect(tier.signals.length, tier.level).toBeGreaterThanOrEqual(3);
-      // The "in practice" line must state the ±2h window semantics somewhere —
-      // that is the contract with the scoring in the backend.
-      expect(tier.inPractice.length).toBeGreaterThan(40);
+      // GEO: each paragraph must stand on its own — it opens with the badge
+      // name ("HIGH means …") and is long enough to carry evidence + hit rate.
+      expect(tier.body.startsWith(`${tier.level.toUpperCase()} means`), tier.level).toBe(true);
+      expect(tier.body.length, tier.level).toBeGreaterThan(150);
+      expect(tier.body.length, tier.level).toBeLessThan(420);
     }
-    expect(CONFIDENCE_TIERS_COPY.map((t) => t.inPractice).join(' ')).toMatch(/two hours/);
+    // The ±2h window semantics must be stated — that is the contract with the
+    // scoring in the backend.
+    expect(CONFIDENCE_TIERS_COPY.map((t) => t.body).join(' ')).toMatch(/two hours/);
+  });
+
+  it('uses no em or en dashes anywhere a reader sees (user rule 2026-08-27)', () => {
+    for (const text of allCopy()) {
+      expect(text, text).not.toMatch(/[—–]/);
+    }
   });
 
   it('stays a short explainer, not a specification', () => {

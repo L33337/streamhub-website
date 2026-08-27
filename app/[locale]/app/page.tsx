@@ -202,7 +202,7 @@ const FAQ_ITEMS = [
   {
     question: "Do I need an account?",
     answer:
-      "Yes — a free one. Sign in with your email address or with Twitch, Google or Apple. Your favorites, go-live alerts and notification settings belong to that account, so they sync across devices and survive a new phone.",
+      "Yes, a free one. Sign in with your email address or with Twitch, Google or Apple. Your favorites, go-live alerts and notification settings belong to that account, so they sync across devices and survive a new phone.",
   },
   {
     question: "Which streamers can I track?",
@@ -604,7 +604,7 @@ export default async function AppPromoPage({
           </h2>
           <p className="mb-10 text-text-secondary">
             Free on iOS and Android. Sign in with your email or with Twitch, Google or
-            Apple — your favorites and alerts follow you to every device.
+            Apple, and your favorites and alerts follow you to every device.
           </p>
           <StoreBadges />
         </div>

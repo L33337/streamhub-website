@@ -97,7 +97,7 @@ const NAV_ITEMS: { href: string; label: string; needsCalibration?: true }[] = [
   { href: '#confidence', label: 'Confidence badges' },
   { href: '#calibration', label: 'Prediction check', needsCalibration: true },
   { href: '#badges', label: 'Other badges' },
-  { href: `#${HOW_WE_GRADE.id}`, label: 'How we grade ourselves' },
+  { href: `#${HOW_WE_GRADE.id}`, label: 'Prediction accuracy' },
   { href: `#${FOR_STREAMERS.id}`, label: 'For streamers' },
   { href: '#faq', label: 'FAQ' },
 ];
@@ -264,7 +264,7 @@ export default async function PredictionsMethodologyPage({
 
       {/* 3 — Confidence badges */}
       <section id="confidence" className="mb-12 scroll-mt-24">
-        <h2 className={H2_CLASS}>What the confidence badges mean</h2>
+        <h2 className={H2_CLASS}>What the HIGH, MEDIUM and LOW confidence badges mean</h2>
         {CONFIDENCE_INTRO.map((paragraph, i) => (
           <p key={i} className={P_CLASS}>
             {paragraph}
@@ -281,14 +281,7 @@ export default async function PredictionsMethodologyPage({
                 <ConfidenceBadge level={tier.level} language={locale} />
                 <h3 className="text-base font-semibold text-text-primary">{tier.tagline}</h3>
               </div>
-              <ul className="mt-3 list-disc space-y-1.5 pl-5">
-                {tier.signals.map((signal, i) => (
-                  <li key={i} className={LI_CLASS}>
-                    {signal}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-sm leading-relaxed text-text-primary">{tier.inPractice}</p>
+              <p className="mt-3 text-sm leading-relaxed text-text-secondary">{tier.body}</p>
             </article>
           ))}
         </div>
@@ -379,7 +372,7 @@ export default async function PredictionsMethodologyPage({
             { href: '/tonight', label: 'Streaming tonight' },
             { href: '/live', label: "Who's live now" },
             { href: '/rankings/most-reliable', label: 'Most punctual streamers' },
-            { href: '/app', label: 'Get go-live alerts in the app' },
+            { href: '/app', label: 'Get alerts in the app when streams start' },
             { href: '/developers', label: 'Predictions via the Partner API' },
             { href: '/methodology/income-estimates', label: 'How we estimate streamer income' },
           ].map((link) => (

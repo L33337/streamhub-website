@@ -5,7 +5,7 @@ import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 // fetch, nothing that can throw during prerender.
 export const runtime = 'nodejs';
 
-export const alt = 'How predictions and confidence levels work — Streamer Times';
+export const alt = 'How predictions and confidence levels work on Streamer Times';
 export const size = OG_SIZE;
 export const contentType = 'image/png';
 

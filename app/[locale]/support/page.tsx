@@ -85,7 +85,7 @@ export default function Support() {
           {[
             {
               q: "Do I need an account to use Streamer Times?",
-              a: "For the app, yes — a free one. Sign in with your email address or with Twitch, Google or Apple. Your favorites, go-live alerts and notification settings belong to that account, so they sync across devices and survive a new phone. The website — schedules, rankings and streamer pages — is open to everyone without an account. If you installed the app before August 2026 and still use a guest session, add an email and password in Settings so your favorites are never lost.",
+              a: "For the app, yes, a free one. Sign in with your email address or with Twitch, Google or Apple. Your favorites, go-live alerts and notification settings belong to that account, so they sync across devices and survive a new phone. The website (schedules, rankings and streamer pages) is open to everyone without an account. If you installed the app before August 2026 and still use a guest session, add an email and password in Settings so your favorites are never lost.",
             },
             {
               q: "How accurate are the AI predictions?",
