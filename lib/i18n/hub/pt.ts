@@ -169,7 +169,7 @@ export const pt: HubLex = {
     titleTail: '',
     subtitle: 'O guia de TV dos streamers.',
     bodyLead:
-      'Um só feed para Twitch e YouTube. Status ao vivo em tempo real, próximos streams previstos por IA e zero ruído. Grátis, sem precisar de conta —',
+      'Um só feed para Twitch e YouTube. Status ao vivo em tempo real, próximos streams previstos por IA e zero ruído. Grátis para iOS e Android —',
     bodyLink: 'baixe o app',
     bodyTail: 'para receber alertas ao vivo.',
     appStoreSub: 'Disponível na',

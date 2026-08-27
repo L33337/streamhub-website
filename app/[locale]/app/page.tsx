@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { jsonLdHtml } from "@/lib/seo";
 import {
   Brain,
   Monitor,
@@ -203,7 +202,7 @@ const FAQ_ITEMS = [
   {
     question: "Do I need an account?",
     answer:
-      "No account required to get started. Streamer Times works right away with anonymous access. You can optionally create an account to sync your favorites across devices.",
+      "Yes — a free one. Sign in with your email address or with Twitch, Google or Apple. Your favorites, go-live alerts and notification settings belong to that account, so they sync across devices and survive a new phone.",
   },
   {
     question: "Which streamers can I track?",
@@ -217,20 +216,9 @@ const FAQ_ITEMS = [
   },
 ];
 
-function buildFaqJsonLd(): object {
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: FAQ_ITEMS.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
-      },
-    })),
-  };
-}
+// No FAQPage JSON-LD here (removed 2026-08-27): Google restricted FAQ rich
+// results to authoritative gov/health sites in 2023 and is retiring the
+// feature — the site rule is visible FAQ text only (see lib/streamer-faq.ts).
 
 function FeatureCard({
   icon: Icon,
@@ -351,13 +339,6 @@ export default async function AppPromoPage({
 
   return (
     <main>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLdHtml(buildFaqJsonLd()),
-        }}
-      />
-
       {/* Hero Section */}
       <section className="relative flex min-h-screen items-center overflow-hidden px-6 pt-8">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-surface to-background" />
@@ -463,7 +444,7 @@ export default async function AppPromoPage({
             <div className="mb-6 flex items-center justify-center gap-2 lg:justify-start">
               <Shield size={14} className="text-live" />
               <span className="text-sm text-text-secondary">
-                Free &middot; No account required
+                Free &middot; Sign in with email, Twitch, Google or Apple
               </span>
             </div>
 
@@ -622,7 +603,8 @@ export default async function AppPromoPage({
             Download Streamer Times
           </h2>
           <p className="mb-10 text-text-secondary">
-            Free on iOS and Android. No account required to get started.
+            Free on iOS and Android. Sign in with your email or with Twitch, Google or
+            Apple — your favorites and alerts follow you to every device.
           </p>
           <StoreBadges />
         </div>

@@ -208,7 +208,7 @@ export const pl: HubLex = {
     titleTail: '',
     subtitle: 'Program TV dla streamerów.',
     bodyLead:
-      'Jeden feed dla Twitcha i YouTube. Status na żywo w czasie rzeczywistym, kolejne streamy przewidywane przez AI i zero szumu. Za darmo, bez konta —',
+      'Jeden feed dla Twitcha i YouTube. Status na żywo w czasie rzeczywistym, kolejne streamy przewidywane przez AI i zero szumu. Za darmo na iOS i Androida —',
     bodyLink: 'pobierz aplikację',
     bodyTail: 'i otrzymuj powiadomienia o streamach.',
     appStoreSub: 'Pobierz w',

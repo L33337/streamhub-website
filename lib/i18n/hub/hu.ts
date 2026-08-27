@@ -164,7 +164,7 @@ export const hu: HubLex = {
     titleTail: '-csatornákhoz',
     subtitle: 'A streamerek tévéújsága.',
     bodyLead:
-      'Egy feed a Twitchhez és a YouTube-hoz. Valós idejű élő státusz, MI által megjósolt következő streamek és nulla zaj. Ingyenes, fiók nélkül —',
+      'Egy feed a Twitchhez és a YouTube-hoz. Valós idejű élő státusz, MI által megjósolt következő streamek és nulla zaj. Ingyenes iOS-re és Androidra —',
     bodyLink: 'töltsd le az appot',
     bodyTail: 'az élő értesítésekhez.',
     appStoreSub: 'Töltsd le az',

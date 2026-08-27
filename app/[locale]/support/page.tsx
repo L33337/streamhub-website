@@ -85,7 +85,7 @@ export default function Support() {
           {[
             {
               q: "Do I need an account to use Streamer Times?",
-              a: "No. Streamer Times creates an anonymous session when you first open the app. You can browse all streams and use all features without creating an account. Creating an account lets you sync favorites across devices.",
+              a: "For the app, yes — a free one. Sign in with your email address or with Twitch, Google or Apple. Your favorites, go-live alerts and notification settings belong to that account, so they sync across devices and survive a new phone. The website — schedules, rankings and streamer pages — is open to everyone without an account. If you installed the app before August 2026 and still use a guest session, add an email and password in Settings so your favorites are never lost.",
             },
             {
               q: "How accurate are the AI predictions?",
@@ -98,7 +98,7 @@ export default function Support() {
             },
             {
               q: "How do I delete my account?",
-              a: "Open the app, go to Settings, and tap \"Delete Account\". This permanently removes your email, favorites, and all associated data. A new anonymous session will be created automatically.",
+              a: "Open the app, go to Settings, and tap \"Delete Account\". This permanently removes your email, favorites, and all associated data. You are taken back to the sign-in screen and can create a new account at any time.",
             },
             {
               q: "Is Streamer Times free?",
