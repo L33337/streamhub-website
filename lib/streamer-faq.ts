@@ -10,13 +10,19 @@ import {
   safeTimeZone,
   timezoneCityLabel,
 } from '@/lib/format/time';
-import { listConjunction, resolveUiLang, weekdayLong } from '@/lib/i18n-core';
+import { listConjunction, localeHref, resolveUiLang, weekdayLong } from '@/lib/i18n-core';
+import { chromeLexFor } from '@/lib/i18n-chrome';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { statsLeadSentence, statsTimezoneLabel } from '@/lib/streamer-stats';
 
 export interface FaqItem {
   question: string;
   answer: string;
+  /**
+   * Optional "read more" pointer rendered after the answer (2026-08-27) —
+   * kept OUT of `answer` so the lexicon strings stay plain text.
+   */
+  more?: { href: string; label: string };
 }
 
 // --- Auto-generated streamer FAQ ----------------------------------------------
@@ -237,7 +243,8 @@ export function buildStreamerFaqItems(
     });
   }
 
-  // Are {name}'s stream times predicted or confirmed?
+  // Are {name}'s stream times predicted or confirmed? — with a pointer to the
+  // public methodology page (the label is chrome → viewer locale, D6).
   const predictedCount = upcoming.filter((s) => s.is_predicted).length;
   if (predictedCount > 0) {
     const total = upcoming.length;
@@ -247,6 +254,10 @@ export function buildStreamerFaqItems(
         predictedCount === total
           ? L.aAllPredicted(name)
           : L.aMixed(name, predictedCount, total),
+      more: {
+        href: localeHref(lang, '/methodology/predictions'),
+        label: chromeLexFor(lang).footer.howPredictionsWork,
+      },
     });
   }
 

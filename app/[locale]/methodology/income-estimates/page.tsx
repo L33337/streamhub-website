@@ -22,8 +22,10 @@ export async function generateMetadata({
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : "en";
   const meta: Metadata = {
     title: "How We Estimate Streamer Income - Streamer Times",
+    // 155-char budget (lib/seo.ts MAX_META_DESCRIPTION) — the original
+    // sentence ran to 189 and was trimmed on 2026-08-27.
     description:
-      "The transparent model behind the estimated monthly income figures on Streamer Times wiki profiles: measured viewer data, per-component revenue ranges, and what we deliberately leave out.",
+      "The transparent model behind the estimated monthly income on Streamer Times wiki profiles: measured viewer data, revenue ranges, and what we leave out.",
     alternates: { canonical: "/methodology/income-estimates" },
   };
   return applyLocaleSeo(meta, locale, "/methodology/income-estimates");
@@ -144,6 +146,17 @@ export default function IncomeMethodologyPage() {
           )}
         </div>
       ))}
+
+      <p className="mt-4 text-sm text-text-secondary">
+        See also:{" "}
+        <Link
+          href="/methodology/predictions"
+          className="font-medium text-accent-cyan transition-colors hover:text-text-primary"
+        >
+          how we predict when streamers go live
+        </Link>
+        .
+      </p>
 
       <footer className="mt-16 border-t border-divider pt-8 text-center text-sm text-text-muted">
         &copy; {new Date().getFullYear()} Streamer Times. All rights reserved.

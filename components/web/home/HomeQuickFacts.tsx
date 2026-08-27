@@ -86,7 +86,9 @@ export function HomeQuickFacts({
       label: L.homeFeed.factPredictionLabel,
       big: `${facts.prediction.pct} %`,
       text: L.homeFeed.factPrediction(facts.prediction.hits, facts.prediction.total),
-      href: null,
+      // The one aggregate WITH a subject page: the methodology page explains
+      // exactly how this number is scored (2026-08-27).
+      href: '/methodology/predictions',
       highlight: true,
     });
   }

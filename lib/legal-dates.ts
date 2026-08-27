@@ -8,6 +8,12 @@ export const LEGAL_LAST_UPDATED = {
   impressum: '2026-04-05',
 } as const;
 
+// Same contract for the evergreen methodology pages (2026-08-27): the page's
+// visible "Last updated" line and its sitemap <lastmod> both read from here.
+export const CONTENT_LAST_UPDATED = {
+  'methodology-predictions': '2026-08-27',
+} as const;
+
 /** "2026-02-21" -> "February 21, 2026" (UTC-stable, matches existing on-page wording). */
 export function formatLegalDate(iso: string): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {

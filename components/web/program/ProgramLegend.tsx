@@ -6,6 +6,7 @@
 // components so the legend can never drift from the cards.
 
 import { useId, useState } from 'react';
+import Link from 'next/link';
 import { ChevronDown, Info } from 'lucide-react';
 import {
   CancelledBadge,
@@ -85,6 +86,14 @@ export function ProgramLegend() {
             favorites that ended within the last 6 hours;{' '}
             <strong className="text-text-secondary">Offline today</strong> lists favorites
             without a stream or prediction today. All times are shown in your local timezone.
+          </p>
+          <p className="mt-3 text-xs">
+            <Link
+              href="/methodology/predictions"
+              className="font-semibold text-accent-cyan hover:text-text-primary"
+            >
+              How predictions and confidence levels work →
+            </Link>
           </p>
         </div>
       )}

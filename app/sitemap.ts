@@ -16,7 +16,7 @@ import {
   RANKING_PLATFORMS,
 } from '@/lib/rankings';
 import { gamesHubSegments } from '@/lib/games-hub';
-import { LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
+import { CONTENT_LAST_UPDATED, LEGAL_LAST_UPDATED } from '@/lib/legal-dates';
 
 export const revalidate = 3600;
 
@@ -190,6 +190,15 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
     lastModified: BUILD_TIME,
     changeFrequency: 'yearly',
     priority: 0.3,
+  },
+  {
+    // "How predictions work" (2026-08-27): en-only content page, linked from
+    // the footer, the homepage prediction fact, streamer/tonight FAQs and the
+    // slot reasoning box. <lastmod> = the page's own "Last updated" date.
+    url: `${SITE_URL}/methodology/predictions`,
+    lastModified: new Date(CONTENT_LAST_UPDATED['methodology-predictions']),
+    changeFrequency: 'monthly',
+    priority: 0.4,
   },
   {
     url: `${SITE_URL}/privacy-policy`,

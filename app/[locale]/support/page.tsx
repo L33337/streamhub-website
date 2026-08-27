@@ -89,7 +89,8 @@ export default function Support() {
             },
             {
               q: "How accurate are the AI predictions?",
-              a: "Our AI analyzes streaming patterns over the past 14 days to predict schedules. Accuracy depends on how consistent a streamer's schedule is. Predictions include a confidence level (high, medium, low) so you know how reliable they are.",
+              a: "Predictions are built from each streamer's broadcasts over the past four weeks, their announced schedule and what they said on their last stream. Accuracy depends on how consistent a streamer's schedule is. Every prediction carries a confidence level (high, medium, low) so you know how much evidence sits behind it.",
+              link: { href: "/methodology/predictions", label: "How predictions and confidence levels work" },
             },
             {
               q: "Which streamers are available?",
@@ -107,7 +108,7 @@ export default function Support() {
               q: "The app shows no streams. What should I do?",
               a: "Make sure you have an internet connection. Try pulling down to refresh. If the problem persists, the service may be temporarily unavailable — please try again later.",
             },
-          ].map((item) => (
+          ].map((item: { q: string; a: string; link?: { href: string; label: string } }) => (
             <div
               key={item.q}
               className="rounded-xl border border-border-default bg-background-elevated p-6"
@@ -125,6 +126,16 @@ export default function Support() {
               <p className="ml-[30px] text-sm leading-relaxed text-text-secondary">
                 {item.a}
               </p>
+              {item.link && (
+                <p className="ml-[30px] mt-2 text-sm">
+                  <Link
+                    href={item.link.href}
+                    className="font-medium text-accent-cyan transition-colors hover:text-text-primary"
+                  >
+                    {item.link.label} →
+                  </Link>
+                </p>
+              )}
             </div>
           ))}
         </div>

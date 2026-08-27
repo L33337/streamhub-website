@@ -59,6 +59,8 @@ describe('CHROME_STRINGS', () => {
     expect(L.footer.tagline).toBe('Your Livestream Guide for Twitch & YouTube.');
     expect(L.footer.copyrightTail).toBe('Streamer Times — Your Livestream Guide.');
     expect(L.footer.impressum).toBe('Impressum');
+    // 2026-08-27: reused as link label in FAQ pointers + the slot reasoning box.
+    expect(L.footer.howPredictionsWork).toBe('How predictions work');
     expect(L.notFound.kicker).toBe('404');
     expect(L.notFound.title).toBe('Page not found');
     expect(L.notFound.body).toBe(
