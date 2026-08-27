@@ -46,7 +46,12 @@ export function StreamerFaqBlock({
       {/* dir only on the prose container (RTL languages) — never on layout. */}
       <div className="mt-4" dir={dirFor(ui)}>
         {items.map((item) => (
-          <FAQItem key={item.question} question={item.question} answer={item.answer} />
+          <FAQItem
+            key={item.question}
+            question={item.question}
+            answer={item.answer}
+            more={item.more}
+          />
         ))}
       </div>
     </section>

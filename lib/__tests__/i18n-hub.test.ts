@@ -694,8 +694,10 @@ describe('English lexicon regression guard (legacy hardcoded strings)', () => {
       'Live stream schedule for Twitch & YouTube',
     );
     expect(L.hero.subtitle).toBe('The TV guide for streamers.');
+    // 2026-08-27: "no account required" dropped — the app requires a sign-in
+    // (email / Twitch / Google / Apple) since 2026-08-10.
     expect(L.hero.bodyLead).toBe(
-      'One feed for Twitch and YouTube. Real-time live status, AI-predicted next slots, and zero noise. Free, no account required —',
+      'One feed for Twitch and YouTube. Real-time live status, AI-predicted next slots, and zero noise. Free on iOS and Android —',
     );
     expect(L.hero.bodyLink).toBe('get the app');
     expect(L.hero.appStoreSub).toBe('Download on the');

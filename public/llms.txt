@@ -32,6 +32,10 @@ transcript analysis. Canonical domain: https://streamertimes.tv
 - Per-game ranking: https://streamertimes.tv/rankings/game/{slug}
 - Best time to stream a game: https://streamertimes.tv/game/{slug}/best-time
 
+## How it works
+- [How predictions and confidence levels work](https://streamertimes.tv/methodology/predictions): How Streamer Times predicts when a streamer goes live (broadcast history, announced schedules and what streamers say on stream) and what the HIGH, MEDIUM and LOW confidence badges mean.
+- [How we estimate streamer income](https://streamertimes.tv/methodology/income-estimates): The model behind the estimated monthly income on wiki profiles.
+
 ## Developers
 - [Partner API](https://streamertimes.tv/developers): Public REST API for live schedules and AI predictions (waitlist).
 

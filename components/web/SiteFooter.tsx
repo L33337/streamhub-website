@@ -41,6 +41,9 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
         { href: localeHref(locale, '/games'), label: f.allGames },
         { href: localeHref(locale, '/rankings'), label: f.rankings },
         { href: localeHref(locale, '/'), label: f.popularStreamers },
+        // Public methodology page (2026-08-27): the site-wide crawlable link
+        // that keeps it out of orphan territory (income-estimates has none).
+        { href: localeHref(locale, '/methodology/predictions'), label: f.howPredictionsWork },
         { href: localeHref(locale, '/app'), label: f.getTheApp },
       ],
     },

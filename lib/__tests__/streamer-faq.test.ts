@@ -139,6 +139,37 @@ describe('buildStreamerFaqItems — English regression guard (language: null)', 
   });
 });
 
+describe('buildStreamerFaqItems — methodology pointer (2026-08-27)', () => {
+  it('attaches the "How predictions work" link ONLY to the predicted-or-confirmed item', () => {
+    const upcoming = [makeSlot({ is_predicted: true })];
+    const items = buildStreamerFaqItems(makeStreamer(), [], upcoming, makeStats());
+    const predicted = items.find((i) => i.question === "Are Testy's stream times predicted or confirmed?");
+    expect(predicted?.more).toEqual({
+      href: '/methodology/predictions',
+      label: 'How predictions work',
+    });
+    for (const item of items) {
+      if (item !== predicted) expect(item.more, item.question).toBeUndefined();
+    }
+  });
+
+  it('localizes the pointer to the VIEWER locale (chrome string, D6) and keeps the answer plain', () => {
+    const upcoming = [makeSlot({ is_predicted: true })];
+    const items = buildStreamerFaqItems(makeStreamer({ language: 'de' }), [], upcoming, null, 'de');
+    const predicted = items.find((i) => i.more);
+    expect(predicted?.more).toEqual({
+      href: '/de/methodology/predictions',
+      label: 'Wie Prognosen entstehen',
+    });
+    expect(predicted?.answer).not.toMatch(/<|href/);
+  });
+
+  it('adds no pointer when nothing is predicted', () => {
+    const items = buildStreamerFaqItems(makeStreamer(), [], [makeSlot({ is_predicted: false })], null);
+    expect(items.some((i) => i.more)).toBe(false);
+  });
+});
+
 describe('buildStreamerFaqItems — localized bodies', () => {
   const live = () => makeSlot({ id: 'live-1', status: 'live', category: 'Minecraft' });
   const upcoming = () => [

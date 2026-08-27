@@ -10,6 +10,7 @@ import { floorToBucket } from '@/lib/home/logic';
 import { languageDisplayName } from '@/lib/format/language';
 import { applyLocaleSeo, buildBreadcrumbJsonLd, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { chromeLexFor } from '@/lib/i18n-chrome';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { toLineupCardSlot } from '@/lib/home/slot-payload';
@@ -473,7 +474,14 @@ export default async function TonightPage({ params }: PageProps) {
         </p>
         <div className="mt-6 space-y-3">
           <FAQItem question={L.tonight.faqWhatQ} answer={L.tonight.faqWhatA} />
-          <FAQItem question={L.tonight.faqHowQ} answer={L.tonight.faqHowA} />
+          <FAQItem
+            question={L.tonight.faqHowQ}
+            answer={L.tonight.faqHowA}
+            more={{
+              href: localeHref(locale, '/methodology/predictions'),
+              label: chromeLexFor(locale).footer.howPredictionsWork,
+            }}
+          />
           <FAQItem
             question={L.tonight.faqTimesQ}
             answer={L.tonight.faqTimesA(zoneLabel)}

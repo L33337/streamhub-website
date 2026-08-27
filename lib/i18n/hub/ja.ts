@@ -164,7 +164,7 @@ export const ja: HubLex = {
     titleTail: ' のライブ配信スケジュール',
     subtitle: 'ストリーマーのための番組表。',
     bodyLead:
-      'Twitch と YouTube をひとつのフィードに。リアルタイムの配信状況、AIが予測する次の配信、余計なノイズはゼロ。無料・アカウント不要 —',
+      'Twitch と YouTube をひとつのフィードに。リアルタイムの配信状況、AIが予測する次の配信、余計なノイズはゼロ。iOS・Android で無料 —',
     bodyLink: 'アプリを入手して',
     bodyTail: '配信通知を受け取りましょう。',
     appStoreSub: 'ダウンロードは',

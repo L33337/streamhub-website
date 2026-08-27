@@ -81,6 +81,12 @@ export interface ChromeLex {
     popularStreamers: string;
     getTheApp: string;
     publicApi: string;
+    /**
+     * Footer link to /methodology/predictions (2026-08-27). Also reused as the
+     * "read more" label under prediction FAQs and in the slot reasoning box —
+     * one string, one translation, one place to change it.
+     */
+    howPredictionsWork: string;
     support: string;
     privacy: string;
     terms: string;
@@ -145,6 +151,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Popular streamers',
       getTheApp: 'Get the app',
       publicApi: 'Public API',
+      howPredictionsWork: 'How predictions work',
       support: 'Support',
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
@@ -204,6 +211,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Beliebte Streamer',
       getTheApp: 'Hol dir die App',
       publicApi: 'Öffentliche API',
+      howPredictionsWork: 'Wie Prognosen entstehen',
       support: 'Support',
       privacy: 'Datenschutzerklärung',
       terms: 'Nutzungsbedingungen',
@@ -263,6 +271,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Streamers populares',
       getTheApp: 'Descarga la app',
       publicApi: 'API pública',
+      howPredictionsWork: 'Cómo funcionan las predicciones',
       support: 'Soporte',
       privacy: 'Política de privacidad',
       terms: 'Términos de servicio',
@@ -322,6 +331,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Streamers populaires',
       getTheApp: `Télécharge l'app`,
       publicApi: 'API publique',
+      howPredictionsWork: 'Comment fonctionnent les prédictions',
       support: 'Support',
       privacy: 'Politique de confidentialité',
       terms: `Conditions d'utilisation`,
@@ -381,6 +391,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Streamers populares',
       getTheApp: 'Baixe o app',
       publicApi: 'API pública',
+      howPredictionsWork: 'Como funcionam as previsões',
       support: 'Suporte',
       privacy: 'Política de Privacidade',
       terms: 'Termos de Serviço',
@@ -440,6 +451,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Streamer popolari',
       getTheApp: `Scarica l'app`,
       publicApi: 'API pubblica',
+      howPredictionsWork: 'Come funzionano le previsioni',
       support: 'Supporto',
       privacy: 'Informativa sulla privacy',
       terms: 'Termini di servizio',
@@ -499,6 +511,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Популярные стримеры',
       getTheApp: 'Скачать приложение',
       publicApi: 'Публичный API',
+      howPredictionsWork: 'Как работают прогнозы',
       support: 'Поддержка',
       privacy: 'Политика конфиденциальности',
       terms: 'Условия использования',
@@ -558,6 +571,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: '人気のストリーマー',
       getTheApp: 'アプリを入手',
       publicApi: '公開API',
+      howPredictionsWork: '予測の仕組み',
       support: 'サポート',
       privacy: 'プライバシーポリシー',
       terms: '利用規約',
@@ -617,6 +631,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Популярні стримери',
       getTheApp: 'Завантажити застосунок',
       publicApi: 'Публічний API',
+      howPredictionsWork: 'Як працюють прогнози',
       support: 'Підтримка',
       privacy: 'Політика конфіденційності',
       terms: 'Умови користування',
@@ -676,6 +691,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'ستريمرز مشهورون',
       getTheApp: 'حمّل التطبيق',
       publicApi: 'واجهة API عامة',
+      howPredictionsWork: 'كيف تعمل التوقعات',
       support: 'الدعم',
       privacy: 'سياسة الخصوصية',
       terms: 'شروط الخدمة',
@@ -735,6 +751,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Népszerű streamerek',
       getTheApp: 'Töltsd le az appot',
       publicApi: 'Nyilvános API',
+      howPredictionsWork: 'Hogyan készülnek az előrejelzések',
       support: 'Támogatás',
       privacy: 'Adatvédelmi irányelvek',
       terms: 'Felhasználási feltételek',
@@ -794,6 +811,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       popularStreamers: 'Popularni streamerzy',
       getTheApp: 'Pobierz aplikację',
       publicApi: 'Publiczne API',
+      howPredictionsWork: 'Jak działają prognozy',
       support: 'Pomoc',
       privacy: 'Polityka prywatności',
       terms: 'Warunki korzystania',

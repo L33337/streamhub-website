@@ -13,7 +13,8 @@ import { InitialsAvatar } from './InitialsAvatar';
 import { LocalTime } from './LocalTime';
 import { WatchButtons } from './WatchButtons';
 import { slotLexFor } from '@/lib/i18n-slot';
-import { resolveUiLang } from '@/lib/i18n-core';
+import { chromeLexFor } from '@/lib/i18n-chrome';
+import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { pickReasoning } from '@/lib/slot-copy';
 
 function formatDuration(minutes: number): string | null {
@@ -226,8 +227,8 @@ function ReasoningBox({
   // under German chrome.
   const picked = pickReasoning(slot, language);
   if (!picked) return null;
-  const textLang =
-    picked.lang && picked.lang !== resolveUiLang(language) ? picked.lang : undefined;
+  const uiLang = resolveUiLang(language);
+  const textLang = picked.lang && picked.lang !== uiLang ? picked.lang : undefined;
   return (
     <section
       aria-labelledby="reasoning-heading"
@@ -253,6 +254,16 @@ function ReasoningBox({
             <p key={i}>{para}</p>
           ))}
       </div>
+      {/* Pointer to the public methodology page (2026-08-27). Chrome string →
+          viewer locale (D6); the chrome lexicon is server-safe here. */}
+      <p className="mt-3 text-xs">
+        <Link
+          href={localeHref(uiLang, '/methodology/predictions')}
+          className="font-semibold text-accent-cyan hover:text-text-primary"
+        >
+          {chromeLexFor(uiLang).footer.howPredictionsWork} →
+        </Link>
+      </p>
     </section>
   );
 }
