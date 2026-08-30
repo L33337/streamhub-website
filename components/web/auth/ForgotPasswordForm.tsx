@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { recoveryRedirectTo, resolveSiteUrl } from '@/lib/auth-email';
 import { friendlyAuthError } from '@/lib/auth-errors';
 import { TurnstileField, type TurnstileFieldHandle } from './TurnstileField';
@@ -61,7 +61,7 @@ export function ForgotPasswordForm() {
           </p>
         </div>
         <p className="mt-4 text-sm text-text-secondary">
-          <Link href="/auth/login" className={`text-accent-cyan ${AUTH_LINK_CLASS}`}>
+          <Link href="/auth/login" prefetch={false} className={`text-accent-cyan ${AUTH_LINK_CLASS}`}>
             Back to sign in
           </Link>
         </p>
@@ -96,7 +96,7 @@ export function ForgotPasswordForm() {
       </button>
 
       <p className="mt-4 text-sm text-text-secondary">
-        <Link href="/auth/login" className={`text-accent-cyan ${AUTH_LINK_CLASS}`}>
+        <Link href="/auth/login" prefetch={false} className={`text-accent-cyan ${AUTH_LINK_CLASS}`}>
           Back to sign in
         </Link>
       </p>

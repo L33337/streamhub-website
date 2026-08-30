@@ -7,7 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFavorites } from '@/hooks/useFavorites';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
+import { functionsUrl } from '@/lib/web/streamerSearch';
 import { clearTwitchToken, readTwitchToken } from '@/lib/web/twitchToken';
 
 export interface TwitchFollow {
@@ -112,8 +113,7 @@ export function useTwitchImport(): TwitchImportState {
       } = await supabase.auth.getSession();
       if (!session) throw new Error('Not signed in. Please reload and try again.');
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/import-twitch-follows`;
-      const res = await fetch(url, {
+      const res = await fetch(functionsUrl('import-twitch-follows'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -174,8 +174,7 @@ export function useTwitchImport(): TwitchImportState {
           streamerId: f.streamerId,
         }));
 
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/import-twitch-follows`;
-      const res = await fetch(url, {
+      const res = await fetch(functionsUrl('import-twitch-follows'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

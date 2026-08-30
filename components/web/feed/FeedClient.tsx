@@ -23,7 +23,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, X, CalendarPlus } from 'lucide-react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { loadFeed, loadVolatileFeed } from '@/lib/feed/loadFeed';
 import { fetchRecentStreams } from '@/lib/feed/service';
 import {

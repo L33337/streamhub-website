@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthProvider';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
+import { functionsUrl } from '@/lib/web/streamerSearch';
 import { clearTwitchToken } from '@/lib/web/twitchToken';
 import { SettingsSection } from './SettingsSection';
 
@@ -45,8 +46,7 @@ export function DeleteAccountButton() {
       if (!session) {
         throw new Error('Not signed in. Please reload and try again.');
       }
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`;
-      const res = await fetch(url, {
+      const res = await fetch(functionsUrl('delete-account'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

@@ -10,7 +10,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthProvider';
 import { useFavorites } from '@/hooks/useFavorites';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { addFavorite } from '@/lib/supabase/favorites';
 import {
   addExternalStreamer,

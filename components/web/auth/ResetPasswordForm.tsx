@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { friendlyAuthError } from '@/lib/auth-errors';
 import {
   AUTH_ERROR_CLASS,

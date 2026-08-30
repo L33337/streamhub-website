@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthProvider';
 import { AUTH_ENABLED } from '@/lib/auth-flag';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import {
   searchExternalStreamers,
   ADD_STREAMER_COPY,

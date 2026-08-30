@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { resolveSiteUrl, signupEmailRedirectTo } from '@/lib/auth-email';
 import { friendlyAuthError } from '@/lib/auth-errors';
 import { TurnstileField, type TurnstileFieldHandle } from './TurnstileField';
