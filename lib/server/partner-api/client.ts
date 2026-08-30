@@ -27,9 +27,15 @@ import type {
   RecapsListResponse,
   StreamerInsights,
 } from './types';
+import { SUPABASE_FUNCTIONS_REGION, SUPABASE_REGION_HEADER } from '@/lib/supabase/region';
 
 const USER_AGENT = 'streamertimes-web/1.0';
-const DEFAULT_TIMEOUT_MS = 15_000;
+/**
+ * 15 s → 10 s on 2026-08-29: production p95 per endpoint sits at 0.8–1.4 s
+ * (sitemap pages 1–3 s), so 10 s still leaves a wide margin while a real
+ * outage stalls a regeneration for at most 2 × 10 s + backoff instead of 30 s.
+ */
+const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_REVALIDATE_SECONDS = 300;
 
 /**
@@ -489,6 +495,8 @@ class PartnerApiClient {
           Authorization: `Bearer ${this.apiKey}`,
           'User-Agent': USER_AGENT,
           Accept: 'application/json',
+          // Run the Edge Function next to the database (see lib/supabase/region.ts).
+          [SUPABASE_REGION_HEADER]: SUPABASE_FUNCTIONS_REGION,
         },
         signal: opts.signal ?? controller.signal,
         ...(noCache

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import type { PublicGame } from '@/lib/server/partner-api';
+import type { GameCardGame } from '@/lib/games-card-payload';
 import { filterGames, type GamesSortMode } from '@/lib/games-sort';
 import { GAMES_HUB_VIEWS, gamesHubPath } from '@/lib/games-hub';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
@@ -50,8 +50,10 @@ export function GamesExplorer({
   locale = 'en',
   labels = EN_LABELS,
 }: {
-  /** Already sorted by the server for `activeMode`. */
-  games: PublicGame[];
+  /** Already sorted by the server for `activeMode`, pruned to what a card
+   *  reads (`toGameCardGame`) — every field here is paid for once per game in
+   *  the flight payload. */
+  games: GameCardGame[];
   // Pre-computed on the server (gameSlug is deterministic, but computing it
   // once server-side keeps the client bundle from needing the games list twice).
   slugs: Record<string, string>;

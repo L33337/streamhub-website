@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import type { PublicGame } from '@/lib/server/partner-api';
+import type { GameCardGame } from '@/lib/games-card-payload';
 import { formatCompactNumber } from '@/lib/format/number';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { slotLexFor } from '@/lib/i18n-slot';
@@ -93,7 +93,10 @@ export function GameCard({
   priority = false,
   locale = 'en',
 }: {
-  game: PublicGame;
+  // The Pick, not the full DTO: GamesExplorer ships these across the client
+  // boundary once per game (lib/games-card-payload.ts). A full PublicGame is
+  // structurally assignable, so server callers pass their rows unchanged.
+  game: GameCardGame;
   slug: string;
   priority?: boolean;
   /** M22 S4.1: localizes the stat lines (SlotLex, client-safe) and keeps the

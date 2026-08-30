@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { ogCacheHeaders } from '@/lib/og/frame';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { initialsFromName } from '@/components/web/InitialsAvatar';
 import { avatarLargeUrl, displayAge, formatRegion, formatUsdRange } from '@/lib/wiki';
@@ -9,12 +10,22 @@ import { avatarLargeUrl, displayAge, formatRegion, formatUsdRange } from '@/lib/
 // carry the wiki's headline facts instead of platforms.
 export const runtime = 'nodejs';
 export const revalidate = 3600;
-export const alt = 'Streamer wiki profile on Streamer Times';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+const size = { width: 1200, height: 630 };
+const contentType = 'image/png';
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+// ISR needs this (2026-08-29): an OG route under [locale] that exports only
+// revalidate still renders per request; with generateImageMetadata Next builds
+// it as …/opengraph-image/[__metadata_id__] and caches it (AGENTS.md "OG image routes").
+export async function generateImageMetadata({ params }: Props) {
+  // Next probes this route during build page-data collection with empty
+  // params — never throw (build-abort rule).
+  const { slug } = (await params) ?? {};
+  const label = typeof slug === 'string' && slug.length > 0 ? slug : 'Streamer';
+  return [{ id: 'og', alt: `${label} wiki profile on Streamer Times`, size, contentType }];
 }
 
 const CORNER = (props: React.CSSProperties): React.CSSProperties => ({
@@ -218,6 +229,6 @@ export default async function OgImage({ params }: Props) {
         </div>
       </div>
     ),
-    { ...size },
+    { ...size, headers: ogCacheHeaders(revalidate) },
   );
 }

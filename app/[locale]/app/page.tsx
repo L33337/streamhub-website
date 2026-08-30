@@ -11,9 +11,11 @@ import {
   Bell,
   Shield,
 } from "lucide-react";
+import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AppQrCode } from "@/components/web/AppQrCode";
+import { AppIntentBanner } from "@/components/web/AppIntentBanner";
 import { isUiLang, type UiLang } from "@/lib/i18n-core";
 import { applyLocaleSeo } from "@/lib/seo";
 
@@ -111,20 +113,8 @@ const APP_ONLY = [
   { icon: Sparkles, title: "AI predictions", desc: "Know when they'll stream next.", accent: "purple" as const },
 ];
 
-// Context-aware banner shown when we know why the visitor was sent here
-// (via ?from= on the redirecting link). Class strings are static lookups so
-// Tailwind can see them — do NOT interpolate token names into class strings.
-const BANNER_CLASS = {
-  cyan: "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan",
-  pink: "border-accent-pink/40 bg-accent-pink/10 text-accent-pink",
-  green: "border-live/40 bg-live/10 text-live",
-} as const;
-
-const INTENT_BANNERS = {
-  add: { icon: Search, text: "Want to add a streamer? That's in the app →", accent: "cyan" as const },
-  favorite: { icon: Heart, text: "Saving a favorite? Do it in the app →", accent: "pink" as const },
-  alerts: { icon: Bell, text: "Want go-live alerts? Turn them on in the app →", accent: "green" as const },
-};
+// The `?from=` intent banner lives in components/web/AppIntentBanner.tsx (a
+// client island) so this page can stay static — see the note there.
 
 const FLOATING_ICONS = [
   { emoji: "🎮", x: "8%", y: "15%", size: 22, bg: "bg-accent-cyan/10", border: "border-accent-cyan/30", anim: "animate-float", delay: "0s", live: false },
@@ -326,17 +316,13 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-export default async function AppPromoPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ from?: string }>;
-}) {
-  const { from } = await searchParams;
-  const intent =
-    from && from in INTENT_BANNERS
-      ? INTENT_BANNERS[from as keyof typeof INTENT_BANNERS]
-      : null;
+// Static page (2026-08-29): reading `searchParams` here made the whole route
+// dynamic — a function render per visit and per link prefetch for one optional
+// hint line. The hint moved into <AppIntentBanner /> (client island). Nothing
+// on this page fetches, so 1 h is only a safety net against a stale build.
+export const revalidate = 3600;
 
+export default async function AppPromoPage() {
   return (
     <main>
       {/* Hero Section */}
@@ -395,14 +381,9 @@ export default async function AppPromoPage({
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
           <div className="text-center lg:text-left">
-            {intent && (
-              <div
-                className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${BANNER_CLASS[intent.accent]}`}
-              >
-                <intent.icon size={15} />
-                {intent.text}
-              </div>
-            )}
+            <Suspense fallback={null}>
+              <AppIntentBanner />
+            </Suspense>
 
             <div className="bracket-frame relative inline-block px-5 py-4 sm:px-8 sm:py-6">
               <div className="bracket-frame-inner absolute inset-0" />

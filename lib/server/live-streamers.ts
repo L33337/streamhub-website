@@ -27,10 +27,13 @@ const BUCKET_MS = 300_000;
  * revalidate during a render caps the ROUTE's revalidation interval. The 60 s
  * default silently dragged every calling route down to a 60 s TTL — including
  * /streamer/[slug], which believed itself at 300 (discovered 2026-08-18).
- * Long-TTL routes must pass their own route TTL here; the data-cache entry is
- * keyed by URL+revalidate, so the 60 s entry of the live pages stays separate
- * and fresh. The process-local cache may still serve a fresher set — freshness
- * never hurts, only the route-TTL cap did.
+ * Long-TTL routes must pass their own route TTL here. Note (corrected
+ * 2026-08-29): the Next data cache keys a fetch by URL/method/headers/body —
+ * NOT by `revalidate` — so all callers share ONE entry per URL and each
+ * applies its own staleness rule to it (`incremental-cache/index.js`). What
+ * the parameter changes is the ROUTE's TTL cap, nothing else. The
+ * process-local cache may still serve a fresher set — freshness never hurts,
+ * only the route-TTL cap did.
  */
 export async function getLiveStreamerIdSet(
   opts: { revalidate?: number } = {},

@@ -188,10 +188,6 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
   // M24 insights teaser. Best-effort inside the client (errors → null),
   // 1h-cached — nightly aggregate.
   const insightsCall = api.getStreamerInsights(slug);
-  // M26 wiki teaser. Best-effort inside the client (404 = no published
-  // profile, the common case → null), 1h-cached — changes on regeneration only.
-  const wikiCall = api.getStreamerWiki(slug);
-
   const streamer = await streamerCall;
   if (!streamer) {
     // 404: discard the in-flight section calls. allSettled attaches a handler to
@@ -204,7 +200,6 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       statsCall,
       rankingsCall,
       insightsCall,
-      wikiCall,
     ]);
     return {
       streamer: null,
@@ -218,6 +213,13 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       now,
     };
   }
+
+  // M26 wiki teaser, gated on the streamer DTO's `has_wiki` (2026-08-29): the
+  // wiki endpoint answers 404 for ~99 % of streamers and Next never caches a
+  // non-200, so asking unconditionally cost ~10,000 Partner API calls a day
+  // for five published profiles. `undefined` = older API without the flag →
+  // ask as before. Best-effort inside the client (404 → null), 1h-cached.
+  const wikiCall = streamer.has_wiki === false ? Promise.resolve(null) : api.getStreamerWiki(slug);
 
   // Valid slug: await the section batch. Every call is now best-effort (each
   // has its own rejection handler that degrades to []/null), so this Promise.all

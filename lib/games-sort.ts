@@ -45,7 +45,7 @@ export function sortGames(games: PublicGame[], mode: GamesSortMode): PublicGame[
 
 /** Case- and diacritic-insensitive substring filter ("pokem" matches
  *  "Pokémon"). Blank query returns the input unchanged. */
-export function filterGames(games: PublicGame[], query: string): PublicGame[] {
+export function filterGames<T extends Pick<PublicGame, 'category'>>(games: T[], query: string): T[] {
   const q = normalizeQuery(query.trim());
   if (q.length === 0) return games;
   return games.filter((g) => normalizeQuery(g.category).includes(q));

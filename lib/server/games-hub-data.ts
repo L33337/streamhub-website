@@ -6,6 +6,10 @@ import {
 } from '@/lib/server/partner-api';
 import { fetchTrendingRail, type TrendingGame } from '@/lib/server/trending';
 import { gameSlug } from '@/lib/game-slug';
+import { floorToBucket } from '@/lib/home/logic';
+
+/** The /games routes export `revalidate = 600`; the freshness stamp follows it. */
+const GAMES_HUB_REVALIDATE_MS = 600_000;
 import type { GamesHubLiveStats, GamesHubMetaStats } from '@/lib/games-hub';
 
 export type GameWithSlug = PublicGame & { slug: string };
@@ -87,6 +91,11 @@ export const loadGamesHub = cache(async (): Promise<GamesHubData> => {
     meta: { gameCount: withSlug.length, totalHours28d: hoursSeen ? hoursSum : null },
     live: { liveGameCount, liveStreamerCount },
     failed,
-    generatedAt: new Date(),
+    // Floored to the route's 600 s ISR window (2026-08-29): the freshness line
+    // and CollectionPage.dateModified render from this value, and a raw clock
+    // made every regeneration of every locale/view byte-different — a billed
+    // ISR write even when no game moved. The label now changes exactly when the
+    // underlying data can change.
+    generatedAt: floorToBucket(new Date(), GAMES_HUB_REVALIDATE_MS),
   };
 });

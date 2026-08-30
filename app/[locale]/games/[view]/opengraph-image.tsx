@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 import { gamesHubViewBySegment } from '@/lib/games-hub';
 
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`. Without this file
@@ -55,5 +55,5 @@ export default async function Image({ params }: Props) {
     // keep the count-free fallback
   }
 
-  return new ImageResponse(renderOgFrame({ title, subtitle }), { ...OG_SIZE });
+  return new ImageResponse(renderOgFrame({ title, subtitle }), { ...OG_SIZE, headers: ogCacheHeaders(revalidate) });
 }

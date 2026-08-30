@@ -1,6 +1,9 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi, type PublicRankingEntry } from '@/lib/server/partner-api';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
+
+/** Must match `export const revalidate` in app/[locale]/rankings/<metric>/opengraph-image.tsx. */
+const LEADERBOARD_OG_REVALIDATE = 300;
 import { leaderboardOgProps } from '@/lib/og/leaderboard-props';
 import { getRankingPageSpec, sanitizeRankingEntries } from '@/lib/rankings';
 import { RANKING_PAGE_SIZE } from '@/lib/streamer-rankings';
@@ -37,6 +40,8 @@ export async function buildLeaderboardOgImage(slug: string): Promise<ImageRespon
     renderOgFrame(
       spec ? leaderboardOgProps(spec, entries) : { title: 'Streamer Rankings' },
     ),
-    { ...OG_SIZE },
+    // The five leaderboard routes export `revalidate = 300`; keep the CDN
+    // TTL identical (see ogCacheHeaders).
+    { ...OG_SIZE, headers: ogCacheHeaders(LEADERBOARD_OG_REVALIDATE) },
   );
 }

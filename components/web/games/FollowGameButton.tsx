@@ -11,7 +11,7 @@
 import { useEffect, useState } from 'react';
 import { Heart } from 'lucide-react';
 import { AUTH_ENABLED } from '@/lib/auth-flag';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient, hasSupabaseAuthCookie } from '@/lib/supabase/client';
 import { followGame, isGameFollowed, unfollowGame } from '@/lib/supabase/gameFollows';
 
 type State = 'hidden' | 'not-following' | 'following';
@@ -30,16 +30,21 @@ export function FollowGameButton({
 
   useEffect(() => {
     if (!AUTH_ENABLED) return;
+    // Public ISR page: only signed-in visitors (auth cookie present) pay for
+    // loading supabase-js here (lazy client, 2026-08-29).
+    if (!hasSupabaseAuthCookie()) return;
     let cancelled = false;
-    const supabase = createSupabaseBrowserClient();
     (async () => {
+      const supabase = await getSupabaseBrowserClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (cancelled || !session) return;
       const followed = await isGameFollowed(supabase, category);
       if (!cancelled) setState(followed ? 'following' : 'not-following');
-    })();
+    })().catch((err) => {
+      console.warn('[FollowGameButton] session check failed:', err);
+    });
     return () => {
       cancelled = true;
     };
@@ -50,10 +55,10 @@ export function FollowGameButton({
   const following = state === 'following';
 
   const toggle = async () => {
-    const supabase = createSupabaseBrowserClient();
     const next: State = following ? 'not-following' : 'following';
     setState(next); // optimistic
     try {
+      const supabase = await getSupabaseBrowserClient();
       if (next === 'following') await followGame(supabase, category);
       else await unfollowGame(supabase, category);
     } catch (err) {

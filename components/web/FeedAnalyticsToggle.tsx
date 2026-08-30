@@ -6,7 +6,7 @@
 // immediately.
 
 import { useMemo, useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { setFeedAnalyticsEnabled } from '@/lib/feed/preferences';
 import { setFeedEventsEnabled } from '@/lib/feed/events';
 import { SettingsSection } from './SettingsSection';

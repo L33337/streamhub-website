@@ -58,7 +58,9 @@ interface PageData {
 const loadStreamersPage = cache(async (page: number): Promise<PageData> => {
   const api = getPartnerApi();
   try {
-    const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+    // /streamers exports revalidate = 300 — pass it, or the fetch's 60 s
+    // default caps the route (Next min() rule; see lib/server/live-streamers.ts).
+    const livePromise = getLiveStreamerIdSet({ revalidate: 300 }).catch(() => new Set<string>());
     const resp = await api.listStreamers({
       order: 'name',
       limit: PAGE_SIZE,

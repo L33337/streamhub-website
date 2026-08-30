@@ -12,6 +12,7 @@ import {
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { buildRootGamesFaq, hubLexFor, type HubLex } from '@/lib/i18n-hub';
 import { sortGames } from '@/lib/games-sort';
+import { toGameCardGame } from '@/lib/games-card-payload';
 import { loadGamesHub, type GameWithSlug } from '@/lib/server/games-hub-data';
 import { GameCard } from './GameCard';
 import { GamesExplorer } from './GamesExplorer';
@@ -185,7 +186,9 @@ export async function GamesHubView({
           <div className="mt-10">
             <h2 className="text-xl font-bold text-white">{L.common.allGamesCategories}</h2>
             <GamesExplorer
-              games={sorted}
+              // Pruned before the client boundary: the full catalog was a
+              // 136 KB flight row on /games (2026-08-29).
+              games={sorted.map(toGameCardGame)}
               slugs={slugsByCategory}
               activeMode={spec.mode}
               // Priority only when nothing is live above (else the live rail

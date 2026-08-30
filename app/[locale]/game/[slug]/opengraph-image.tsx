@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { findGameBySlug } from '@/lib/game-slug';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`. This runs for every
 // game slug at build (generateStaticParams on the page), so it MUST degrade and
@@ -117,6 +117,6 @@ export default async function Image({ params }: Props) {
           : 'Live now · Upcoming schedule · AI predictions',
       sideImage: sideImage ?? undefined,
     }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

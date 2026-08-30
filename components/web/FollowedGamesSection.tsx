@@ -9,7 +9,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { SettingsSection } from './SettingsSection';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { unfollowGame } from '@/lib/supabase/gameFollows';
 
 export interface FollowedGameItem {

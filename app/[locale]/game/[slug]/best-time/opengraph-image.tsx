@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { findGameBySlug } from '@/lib/game-slug';
 import { TIMING_DAY_NAMES } from '@/lib/game-timing';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // M24: own opengraph-image for /best-time — Next 16 file conventions do NOT
 // inherit across segments (documented 2026-07-28 SEO round), so without this
@@ -69,6 +69,6 @@ export default async function Image({ params }: Props) {
       title,
       subtitle: slotLine ?? 'Viewer demand vs competition, hour by hour',
     }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

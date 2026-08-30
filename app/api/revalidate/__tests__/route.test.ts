@@ -60,10 +60,14 @@ describe('POST /api/revalidate', () => {
     expect(res.status).toBe(204);
     // M22: bare path (belt & braces) + one call per locale tree — the
     // LIVE-badge pipeline must purge /de/streamer/x too, not only /streamer/x.
-    expect(revalidatePath).toHaveBeenCalledTimes(1 + UI_LANGS.length);
+    // 2026-08-29: the wiki page is its own route entry and is purged alongside
+    // (wiki publish/takedown must reach it), so every path appears twice.
+    expect(revalidatePath).toHaveBeenCalledTimes(2 * (1 + UI_LANGS.length));
     expect(revalidatePath).toHaveBeenCalledWith('/streamer/illojuan-075649');
+    expect(revalidatePath).toHaveBeenCalledWith('/streamer/illojuan-075649/wiki');
     for (const locale of UI_LANGS) {
       expect(revalidatePath).toHaveBeenCalledWith(`/${locale}/streamer/illojuan-075649`);
+      expect(revalidatePath).toHaveBeenCalledWith(`/${locale}/streamer/illojuan-075649/wiki`);
     }
   });
 });

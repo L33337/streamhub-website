@@ -8,6 +8,8 @@
 // No React in this module: all mapping/copy logic lives here so it is unit-
 // testable in the repo's node-env vitest setup (no jsdom available).
 
+import { withFunctionRegion } from '@/lib/supabase/region';
+
 // Query bounds enforced by the search-streamers Edge Function (the /search
 // page itself allows up to 100 chars — callers must gate on these).
 export const EXTERNAL_QUERY_MIN = 2;
@@ -190,8 +192,14 @@ export function buildAddParams(
   };
 }
 
-function functionsUrl(name: string): string {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${name}`;
+/**
+ * Edge Function URL, pinned to the database's region via the
+ * `forceFunctionRegion` query parameter (a custom header would need the
+ * functions' CORS allow-list; the parameter needs nothing). Exported for the
+ * other browser callers (twitch import, account deletion) and the tests.
+ */
+export function functionsUrl(name: string): string {
+  return withFunctionRegion(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${name}`);
 }
 
 /**

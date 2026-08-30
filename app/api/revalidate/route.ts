@@ -55,9 +55,14 @@ export async function POST(request: Request) {
   // The bare path is kept first for safety across rewrite/cache-key semantics
   // (belt & braces; verified on the Vercel preview).
   revalidatePath(`/streamer/${slug}`);
+  // The wiki page is its own route entry (revalidatePath does not descend into
+  // nested segments), and a publish/takedown in streamer_wiki_profiles must
+  // reach it too (2026-08-29; the M26 migration promised "flip + revalidate").
+  revalidatePath(`/streamer/${slug}/wiki`);
   for (const locale of UI_LANGS) {
     revalidatePath(`/${locale}/streamer/${slug}`);
+    revalidatePath(`/${locale}/streamer/${slug}/wiki`);
   }
-  console.log(`[revalidate] /streamer/${slug} (+${UI_LANGS.length} locale variants)`);
+  console.log(`[revalidate] /streamer/${slug} + /wiki (+${UI_LANGS.length} locale variants)`);
   return new Response(null, { status: 204 });
 }

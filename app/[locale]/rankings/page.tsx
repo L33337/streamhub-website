@@ -91,7 +91,9 @@ export default async function RankingsHubPage({ params }: Props) {
   // AI recap teaser cards (2026-08-09). Failure-isolated like everything else:
   // an empty list falls back to the classic static intro paragraph below.
   const recapsPromise = loadRecapsList(locale);
-  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // Route TTL is 300 — pass it, or the fetch's 60 s default caps the route
+  // (Next min() rule; see lib/server/live-streamers.ts).
+  const livePromise = getLiveStreamerIdSet({ revalidate: 300 }).catch(() => new Set<string>());
   // The WHOLE pool per leaderboard, not just the five rows shown: the filter
   // dropdowns count their options over it, and those counts must describe the
   // same pool /api/rankings/filter then searches — otherwise an option would

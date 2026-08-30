@@ -138,7 +138,9 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
   if (!spec) return null; // unreachable from the fixed wrappers
   // Live badges are decoration — a failed live lookup must never break the
   // page, so it degrades to an empty set (no badges).
-  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // Route TTL is 300 — pass it, or the fetch's 60 s default caps the route
+  // (Next min() rule; see lib/server/live-streamers.ts).
+  const livePromise = getLiveStreamerIdSet({ revalidate: 300 }).catch(() => new Set<string>());
   // Games list gates the "Main game" links: /rankings/game/[slug] 404s for
   // categories outside it, so those render as plain text. Failure → empty map
   // → every main game renders unlinked (never breaks the page).
@@ -439,7 +441,9 @@ export async function PlatformLeaderboardPage({
   const variant = getPlatformVariant(slug, platform);
   if (!variant) return null; // route 404s before this — defensive only
   const { spec } = variant;
-  const livePromise = getLiveStreamerIdSet().catch(() => new Set<string>());
+  // Route TTL is 300 — pass it, or the fetch's 60 s default caps the route
+  // (Next min() rule; see lib/server/live-streamers.ts).
+  const livePromise = getLiveStreamerIdSet({ revalidate: 300 }).catch(() => new Set<string>());
   const gamesPromise = getPartnerApi()
     .listGames({ limit: 500, revalidate: 3600 })
     .catch(() => null);

@@ -7,7 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   addFavorite,
   listFavoriteIds,
@@ -58,7 +58,8 @@ interface FavoritesState {
 const EMPTY_FAVORITES: Set<string> = new Set();
 
 export function FavoritesProvider({ children }: Props) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  // No client in render: supabase-js is loaded lazily and only ever needed
+  // once a user is signed in (see lib/supabase/client.ts, 2026-08-29).
   const [state, setState] = useState<FavoritesState | null>(null);
   const { user } = useAuth();
   // Key everything on the user id, not the user object — auth events (token
@@ -81,13 +82,18 @@ export function FavoritesProvider({ children }: Props) {
   useEffect(() => {
     if (!userId) return;
     let stale = false;
-    void listFavoriteIds(supabase).then((ids) => {
-      if (!stale) setState({ owner: userId, ids: new Set(ids) });
-    });
+    void getSupabaseBrowserClient()
+      .then((supabase) => listFavoriteIds(supabase))
+      .then((ids) => {
+        if (!stale) setState({ owner: userId, ids: new Set(ids) });
+      })
+      .catch((err) => {
+        console.error('[favorites] initial load failed:', err);
+      });
     return () => {
       stale = true;
     };
-  }, [supabase, userId]);
+  }, [userId]);
 
   const isFavorited = useCallback(
     (streamerId: string) => favorites.has(streamerId),
@@ -114,6 +120,7 @@ export function FavoritesProvider({ children }: Props) {
       // Optimistic update.
       applyLocal(streamerId, !wasFavorited);
       try {
+        const supabase = await getSupabaseBrowserClient();
         if (wasFavorited) {
           await removeFavorite(supabase, streamerId);
         } else {
@@ -125,7 +132,7 @@ export function FavoritesProvider({ children }: Props) {
         console.error('[favorites] toggle failed:', err);
       }
     },
-    [favorites, applyLocal, supabase],
+    [favorites, applyLocal],
   );
 
   const addFavoriteIds = useCallback(

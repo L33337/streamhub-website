@@ -23,7 +23,7 @@ import {
 } from 'react';
 import { CalendarArrowDown, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client-eager';
 import { fetchStreamSlots } from '@/lib/feed/service';
 import {
   activeChipForSection,
