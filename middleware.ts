@@ -82,14 +82,20 @@ function withSessionCookies(response: NextResponse, sessionResponse: NextRespons
 }
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Passthrough paths (API routes, the auth route handlers, files) never render
+  // a server component that reads the session, and the auth handlers build
+  // their own Supabase client. Skipping the refresh here (2026-08-29) saves a
+  // GoTrue round trip per /api/search keystroke and sitemap fetch for signed-in
+  // visitors; their token is refreshed on the next page navigation instead.
+  if (isPassthrough(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   // Refresh the Supabase session first — it also updates request.cookies so a
   // rewritten request forwards the fresh token to server components.
   const sessionResponse = await updateSession(request);
-
-  const pathname = request.nextUrl.pathname;
-  if (isPassthrough(pathname)) {
-    return sessionResponse;
-  }
 
   const [, first, ...rest] = pathname.split('/');
 

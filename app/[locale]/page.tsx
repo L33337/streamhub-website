@@ -49,7 +49,14 @@ import { HomeEndCap } from '@/components/web/home/HomeEndCap';
 import { HomeTrendingRail } from '@/components/web/home/HomeTrendingRail';
 import { HomeStreamerWiki, WIKI_CARD_COUNT } from '@/components/web/home/HomeStreamerWiki';
 
-export const revalidate = 60;
+// 60 → 120 s on 2026-08-29: the homepage (12 locales, 1.7 MB each, never
+// byte-identical because of live counters) was 34 % of all ISR writes. Two
+// minutes of staleness on an anonymous feed is invisible — the live rail's
+// runtime lines are re-derived in the browser every minute anyway. Every fetch
+// in this tree must stay ≥ 120 (Next's min() rule caps the route at the lowest
+// fetch revalidate), see HOME_REVALIDATE below.
+export const revalidate = 120;
+const HOME_REVALIDATE = 120;
 
 const SITE_URL = 'https://streamertimes.tv';
 
@@ -158,7 +165,7 @@ async function fetchLiveSlots(bucketedNow: Date): Promise<PublicStreamSlot[]> {
       to,
       limit: LIVE_PAGE_LIMIT,
       cursor,
-      revalidate: 60,
+      revalidate: HOME_REVALIDATE,
     });
     all.push(...resp.data);
     cursor = resp.pagination.next_cursor ?? undefined;
@@ -195,7 +202,7 @@ async function fetchUpcomingSlots(
       to,
       limit: UPCOMING_PAGE_LIMIT,
       cursor,
-      revalidate: 60,
+      revalidate: HOME_REVALIDATE,
     });
     all.push(...resp.data);
     cursor = resp.pagination.next_cursor ?? undefined;
@@ -236,7 +243,7 @@ export default async function HomePage({ params }: Props) {
   ] = await Promise.allSettled([
     fetchUpcomingSlots(bucketedNow, twentyFourHoursAhead),
     fetchLiveSlots(bucketedNow),
-    getLiveStreamerIdSet(),
+    getLiveStreamerIdSet({ revalidate: HOME_REVALIDATE }),
     // 60, not 20: the Streamer Wiki draws its nine cards at random from this
     // list on every regeneration, so the pool has to be several times the
     // nine on show or the "rotation" keeps recycling the same faces. It also

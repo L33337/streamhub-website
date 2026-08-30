@@ -59,6 +59,9 @@ export function HeaderUserMenu({
     return (
       <Link
         href={localeHref(locale, '/auth/login')}
+        // force-dynamic target: prefetching it costs a function invocation
+        // (+ a GoTrue round trip) per header render — load it on click instead.
+        prefetch={false}
         // Marks the row as "four items wide" for the header search, which hides
         // itself below 360px when this button is present (layout.tsx). Nothing
         // else keys off it.
@@ -128,6 +131,7 @@ export function HeaderUserMenu({
           <Link
             role="menuitem"
             href="/feed"
+            prefetch={false}
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-text-secondary hover:bg-background-highlight hover:text-text-primary transition-colors"
           >
@@ -136,6 +140,7 @@ export function HeaderUserMenu({
           <Link
             role="menuitem"
             href="/program"
+            prefetch={false}
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-text-secondary hover:bg-background-highlight hover:text-text-primary transition-colors"
           >
@@ -144,6 +149,7 @@ export function HeaderUserMenu({
           <Link
             role="menuitem"
             href="/favorites"
+            prefetch={false}
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-text-secondary hover:bg-background-highlight hover:text-text-primary transition-colors"
           >
@@ -152,6 +158,7 @@ export function HeaderUserMenu({
           <Link
             role="menuitem"
             href="/settings"
+            prefetch={false}
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-text-secondary hover:bg-background-highlight hover:text-text-primary transition-colors"
           >

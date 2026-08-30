@@ -96,6 +96,11 @@ export function LiveRailCard({
               // the LCP element on a phone, the rest sit off-screen in the
               // horizontal scroller and must not compete for bandwidth.
               priority={priority}
+              // `priority` alone did not put fetchpriority=high on the
+              // rendered <img> (verified in production HTML, 2026-08-29), so
+              // the LCP image queued behind scripts on slow mobile networks
+              // (648 ms load delay in the throttled trace). Say it explicitly.
+              fetchPriority={priority ? 'high' : undefined}
               sizes="268px"
               className="object-cover"
             />

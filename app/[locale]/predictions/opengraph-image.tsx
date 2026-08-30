@@ -5,9 +5,17 @@ import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
 // fetch, nothing that can throw during prerender.
 export const runtime = 'nodejs';
 
-export const alt = 'How predictions and confidence levels work on Streamer Times';
-export const size = OG_SIZE;
-export const contentType = 'image/png';
+export const revalidate = 86400; // static frame; ISR so it is cached, not rendered per request
+const alt = 'How predictions and confidence levels work on Streamer Times';
+const size = OG_SIZE;
+const contentType = 'image/png';
+
+// ISR needs this (2026-08-29): an OG route under [locale] that exports only
+// revalidate still renders per request; with generateImageMetadata Next builds
+// it as …/opengraph-image/[__metadata_id__] and caches it (AGENTS.md "OG image routes").
+export function generateImageMetadata() {
+  return [{ id: 'og', alt, size, contentType }];
+}
 
 // Confidence palette from app/globals.css (--color-confidence-*), inlined:
 // Satori has no access to CSS variables.

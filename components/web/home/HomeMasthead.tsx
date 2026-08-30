@@ -37,7 +37,10 @@ export function HomeMasthead({ locale = 'en' }: { locale?: UiLang }) {
       <p className="mt-3 text-lg font-semibold text-white/70">
         {AUTH_UI_VISIBLE ? (
           <>
-            <Link href={signInGateRedirect('/feed')} className={CTA_LINK_CLASS}>
+            {/* No prefetch: /auth/login is force-dynamic (getUser round trip),
+                and every homepage view was prefetching it — 1,092 function
+                invocations in 28 h for a page almost nobody opened (2026-08-29). */}
+            <Link href={signInGateRedirect('/feed')} prefetch={false} className={CTA_LINK_CLASS}>
               {L.hero.ctaLogin}
             </Link>
             {L.hero.ctaMid}

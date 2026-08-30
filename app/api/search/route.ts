@@ -51,10 +51,21 @@ export async function GET(req: NextRequest): Promise<Response> {
       ...s,
       is_live: liveSet.has(s.id),
     }));
-    return Response.json({
-      data: enriched,
-      pagination: streamersResp.pagination,
-    });
+    return Response.json(
+      {
+        data: enriched,
+        pagination: streamersResp.pagination,
+      },
+      {
+        // Nothing here is personal (no auth, no cookies read), and the live
+        // flag is only ever 60 s fresh anyway — let the CDN absorb repeated
+        // queries instead of one function invocation per keystroke pause
+        // (same policy as /api/rankings/filter). Errors below stay uncached.
+        headers: {
+          'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
+        },
+      },
+    );
   } catch (err) {
     const status = err instanceof PartnerApiError ? 502 : 500;
     const message = err instanceof Error ? err.message : 'search failed';

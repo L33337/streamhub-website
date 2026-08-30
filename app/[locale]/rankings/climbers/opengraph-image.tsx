@@ -9,9 +9,16 @@ import { topClimber, topClimbersAcrossMetrics } from '@/lib/rankings-climbers';
 // convention); loadClimbersData never throws (build-abort rule).
 export const runtime = 'nodejs';
 export const revalidate = 300;
-export const alt = 'Biggest climbers this week — streamer ranking movers on Streamer Times';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+const alt = 'Biggest climbers this week — streamer ranking movers on Streamer Times';
+const size = { width: 1200, height: 630 };
+const contentType = 'image/png';
+
+// ISR needs this (2026-08-29): an OG route under [locale] that exports only
+// revalidate still renders per request; with generateImageMetadata Next builds
+// it as …/opengraph-image/[__metadata_id__] and caches it (AGENTS.md "OG image routes").
+export function generateImageMetadata() {
+  return [{ id: 'og', alt, size, contentType }];
+}
 
 const PILL_STYLE: Omit<OgPill, 'label'> = {
   color: '#00FF88',

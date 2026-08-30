@@ -10,9 +10,16 @@ import { formatCompactNumber } from '@/lib/format/number';
 // wrapped — any error degrades to the count-free fallback subtitle.
 export const runtime = 'nodejs';
 export const revalidate = 300;
-export const alt = 'Streamer rankings on Streamer Times';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+const alt = 'Streamer rankings on Streamer Times';
+const size = { width: 1200, height: 630 };
+const contentType = 'image/png';
+
+// ISR needs this (2026-08-29): an OG route under [locale] that exports only
+// revalidate still renders per request; with generateImageMetadata Next builds
+// it as …/opengraph-image/[__metadata_id__] and caches it (AGENTS.md "OG image routes").
+export function generateImageMetadata() {
+  return [{ id: 'og', alt, size, contentType }];
+}
 
 export default async function Image() {
   let subtitle = 'Most followed, most watched & most active streamers';

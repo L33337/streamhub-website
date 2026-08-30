@@ -45,6 +45,10 @@ export interface PublicStreamer {
   // Channel banner (M26 image round): Twitch offline screen, YouTube channel
   // banner as fallback. Optional in this mirror for deploy skew.
   banner_url?: string | null;
+  // True when a PUBLISHED wiki profile exists (2026-08-29). Optional in this
+  // mirror for deploy skew: `undefined` = older API → callers fall back to
+  // asking the wiki endpoint; `false` = skip the call.
+  has_wiki?: boolean;
 }
 
 // Mirror of supabase/functions/_shared/partner-streamers.ts `PublicCategoryStats`

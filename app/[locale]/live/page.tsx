@@ -14,6 +14,7 @@ import { hubLexFor } from '@/lib/i18n-hub';
 import { chromeLexFor } from '@/lib/i18n-chrome';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { gameSlug } from '@/lib/game-slug';
+import { floorToBucket } from '@/lib/home/logic';
 import { groupLiveSlotsByCategory } from '@/lib/live-hub';
 import { AlwaysOnBadge, LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
@@ -138,18 +139,24 @@ export default async function LivePage({ params }: PageProps) {
   const L = hubLexFor(locale);
   const api = getPartnerApi();
   const now = new Date();
-  const soonCutoff = new Date(now.getTime() + STARTING_SOON_HOURS * 60 * 60 * 1000);
+  // Fetch windows are built from the 5-minute bucket, not the raw clock:
+  // a millisecond-precise `from`/`to` gave every regeneration of every locale
+  // its own data-cache key, i.e. up to 12 × 5 uncached Partner API sweeps per
+  // minute (2026-08-29 health check; same fix the homepage got on 2026-07-27).
+  // The raw `now` still drives status/expiry decisions below.
+  const bucketedNow = floorToBucket(now);
+  const soonCutoff = new Date(bucketedNow.getTime() + STARTING_SOON_HOURS * 60 * 60 * 1000);
 
   // Static route → prerendered at `next build`: every fetch must be
   // failure-isolated, a single throw would abort the whole deploy (same
   // lesson as app/game/[slug]/page.tsx). Upcoming/games degrade
   // independently; only a failed live sweep shows the unavailable state.
   const [liveRes, upcomingRes, gamesRes] = await Promise.allSettled([
-    fetchAllLiveSlots(api, now),
+    fetchAllLiveSlots(api, bucketedNow),
     api.listSchedules({
       status: ['upcoming'],
       includePredictions: true,
-      from: now.toISOString(),
+      from: bucketedNow.toISOString(),
       to: soonCutoff.toISOString(),
       limit: 50,
       revalidate: 60,

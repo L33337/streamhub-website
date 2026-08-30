@@ -8,9 +8,17 @@ import { renderOgFrame } from '@/lib/og/frame';
 // weeks before this was caught). Static content, English for every locale:
 // the default Satori font has Latin glyphs only, so localized titles would
 // render tofu for ja/ru/ar/uk.
-export const alt = 'Streamer Times — Your Livestream Guide';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+export const revalidate = 86400; // static frame; ISR so it is cached, not rendered per request
+const alt = 'Streamer Times — Your Livestream Guide';
+const size = { width: 1200, height: 630 };
+const contentType = 'image/png';
+
+// ISR needs this (2026-08-29): an OG route under [locale] that exports only
+// revalidate still renders per request; with generateImageMetadata Next builds
+// it as …/opengraph-image/[__metadata_id__] and caches it (AGENTS.md "OG image routes").
+export function generateImageMetadata() {
+  return [{ id: 'og', alt, size, contentType }];
+}
 
 export default async function Image() {
   return new ImageResponse(

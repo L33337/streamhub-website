@@ -199,7 +199,8 @@ describe('edge function fetchers', () => {
       const out = await searchExternalStreamers('tok', 'cool', 'twitch');
       expect(out).toEqual(results);
       expect(fetchMock).toHaveBeenCalledWith(
-        'https://proj.supabase.co/functions/v1/search-streamers',
+        // Pinned to the database region via the query parameter (lib/supabase/region.ts).
+        'https://proj.supabase.co/functions/v1/search-streamers?forceFunctionRegion=eu-west-1',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({ Authorization: 'Bearer tok' }),

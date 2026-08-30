@@ -6,12 +6,31 @@ import { initialsFromName } from '@/components/web/InitialsAvatar';
 // local `next dev` without extra config — Node lets the env reach the route
 // directly and the static `<img>` fetch in ImageResponse still works the same.
 export const runtime = 'nodejs';
-export const alt = 'Streamer schedule on Streamer Times';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+// ISR instead of per-request Satori: without `revalidate` AND
+// `generateImageMetadata` this route ran on every hit — 1,943 uncached renders
+// in 28 h, 7.6 % of all function invocations (2026-08-29 health check). The
+// game/insights OG routes, which export both, are cached; this now mirrors
+// them. 1 h: name/platforms/avatar move slower than that.
+export const revalidate = 3600;
+const OG_SIZE = { width: 1200, height: 630 };
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateImageMetadata({ params }: Props) {
+  // Next probes this route during build page-data collection with empty
+  // params — guard so the probe never throws (build-abort rule).
+  const { slug } = (await params) ?? {};
+  const label = typeof slug === 'string' && slug.length > 0 ? slug : 'Streamer';
+  return [
+    {
+      id: 'og',
+      alt: `${label} stream schedule on Streamer Times`,
+      size: OG_SIZE,
+      contentType: 'image/png',
+    },
+  ];
 }
 
 const CORNER = (props: React.CSSProperties): React.CSSProperties => ({
@@ -224,6 +243,6 @@ export default async function OgImage({ params }: Props) {
         </div>
       </div>
     ),
-    { ...size },
+    { ...OG_SIZE },
   );
 }
