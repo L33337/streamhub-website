@@ -9,6 +9,32 @@ import type { CSSProperties, ReactElement } from 'react';
 
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 
+/**
+ * Explicit CDN cache headers for an OG/twitter image response.
+ *
+ * Why (2026-08-30): the `[__metadata_id__]` routes that `generateImageMetadata`
+ * produces are ISR-cached by Next, but Next records no `fallbackRevalidate`
+ * for them in the prerender manifest and emits no `s-maxage` on the response
+ * (`cache-control: public, max-age=0, must-revalidate`). Vercel therefore has
+ * no TTL for the entry and re-renders it in the background every few seconds
+ * under traffic — measured on production: HIT at age 2, STALE at age 4, HIT at
+ * age 1 again, i.e. one Satori render per ~4 s per URL. An explicit `s-maxage`
+ * is what Vercel's cache honours; pass the route's own `revalidate` so the
+ * two never disagree.
+ */
+export function ogCacheHeaders(revalidateSeconds: number): Record<string, string> {
+  const swr = revalidateSeconds * 24;
+  return {
+    // Next's ISR layer rewrites `Cache-Control` on cached responses (it keeps
+    // emitting `public, max-age=0, must-revalidate` for these routes), so the
+    // value Vercel actually needs travels in the CDN-specific headers, which
+    // Next passes through untouched and Vercel strips before the browser.
+    'Cache-Control': `public, max-age=0, s-maxage=${revalidateSeconds}, stale-while-revalidate=${swr}`,
+    'CDN-Cache-Control': `max-age=${revalidateSeconds}, stale-while-revalidate=${swr}`,
+    'Vercel-CDN-Cache-Control': `max-age=${revalidateSeconds}, stale-while-revalidate=${swr}`,
+  };
+}
+
 const BG = '#0A0A0F';
 const GLOW = 'radial-gradient(circle at 50% 50%, rgba(0,240,255,0.08) 0%, transparent 60%)';
 const CYAN = 'rgba(0,240,255,0.5)';

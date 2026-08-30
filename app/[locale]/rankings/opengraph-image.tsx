@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 import { formatCompactNumber } from '@/lib/format/number';
 
 // OG image for the /rankings hub page ONLY — metadata file conventions
@@ -36,6 +36,6 @@ export default async function Image() {
 
   return new ImageResponse(
     renderOgFrame({ title: 'Twitch & YouTube Streamer Rankings', subtitle }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

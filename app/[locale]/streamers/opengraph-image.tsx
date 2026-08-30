@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`. The Partner API
 // exposes no total-streamer count (pagination is cursor-only), so the dynamic
@@ -32,6 +32,6 @@ export default async function Image() {
 
   return new ImageResponse(
     renderOgFrame({ title: 'All Streamers A–Z', subtitle }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

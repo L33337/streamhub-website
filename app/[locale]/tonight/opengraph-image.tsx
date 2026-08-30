@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { floorToBucket } from '@/lib/home/logic';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // Metadata files do NOT inherit across route segments in Next 16 — a page
 // without its own file gets no card at all (verified against prod 2026-07-27).
@@ -59,5 +59,6 @@ export default async function Image() {
 
   return new ImageResponse(renderOgFrame({ title: 'Tonight', subtitle }), {
     ...OG_SIZE,
+    headers: ogCacheHeaders(revalidate),
   });
 }

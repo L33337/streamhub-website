@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { renderOgFrame } from '@/lib/og/frame';
+import { renderOgFrame, ogCacheHeaders } from '@/lib/og/frame';
 
 // Homepage brand card. Lives INSIDE the [locale] segment because metadata
 // file conventions only attach to pages in their OWN segment — the old
@@ -41,6 +41,6 @@ export default async function Image() {
         },
       ],
     }),
-    { ...size },
+    { ...size, headers: ogCacheHeaders(revalidate) },
   );
 }

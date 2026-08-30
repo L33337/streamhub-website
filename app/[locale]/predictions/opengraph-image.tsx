@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // Own OG image (no segment inheritance in Next 16). Fully static — no data
 // fetch, nothing that can throw during prerender.
@@ -32,6 +32,6 @@ export default function Image() {
       subtitle: 'Broadcast history · announced schedules · what streamers say on stream',
       pills: PILLS,
     }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

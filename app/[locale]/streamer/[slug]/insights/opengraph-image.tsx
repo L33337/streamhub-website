@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // M24: own opengraph-image for the (noindex) insights page — social sharing
 // works independently of index status, and Next 16 file conventions do not
@@ -49,6 +49,6 @@ export default async function Image({ params }: Props) {
       title: `${name ?? slug} — streaming insights`,
       subtitle: medianLine ?? 'Viewers by weekday & hour · category performance',
     }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

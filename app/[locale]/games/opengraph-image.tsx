@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`. Game hubs (>=3
 // streamers) are a small set that fits one page, so a single listGames call
@@ -33,6 +33,6 @@ export default async function Image() {
 
   return new ImageResponse(
     renderOgFrame({ title: 'Games & Categories', subtitle }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

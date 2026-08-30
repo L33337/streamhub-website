@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // M24: own opengraph-image (no segment inheritance in Next 16). nodejs +
 // degrade-never-throw, same rules as the game OG images.
@@ -35,6 +35,6 @@ export default async function Image() {
           ? `${topNames.join(' · ')} — viewers vs competition, updated daily`
           : 'Categories ranked by viewers per live channel',
     }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

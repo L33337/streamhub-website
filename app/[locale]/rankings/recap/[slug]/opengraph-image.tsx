@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { renderOgFrame, OG_SIZE } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 import { recapPeriodLabel } from '@/lib/recaps';
 import { loadRecap } from '@/lib/server/recaps';
 
@@ -48,5 +48,5 @@ export default async function Image({ params }: Props) {
     // keep the generic fallback frame
   }
 
-  return new ImageResponse(renderOgFrame({ title, subtitle, eyebrow }), { ...OG_SIZE });
+  return new ImageResponse(renderOgFrame({ title, subtitle, eyebrow }), { ...OG_SIZE, headers: ogCacheHeaders(revalidate) });
 }

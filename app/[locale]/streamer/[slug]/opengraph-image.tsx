@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { ogCacheHeaders } from '@/lib/og/frame';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { initialsFromName } from '@/components/web/InitialsAvatar';
 
@@ -243,6 +244,6 @@ export default async function OgImage({ params }: Props) {
         </div>
       </div>
     ),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }

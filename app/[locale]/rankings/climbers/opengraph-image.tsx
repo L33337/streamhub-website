@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { renderOgFrame, OG_SIZE, type OgPill } from '@/lib/og/frame';
+import { renderOgFrame, OG_SIZE, type OgPill, ogCacheHeaders } from '@/lib/og/frame';
 import { loadClimbersData } from '@/lib/server/climbers';
 import { topClimber, topClimbersAcrossMetrics } from '@/lib/rankings-climbers';
 
@@ -46,6 +46,6 @@ export default async function Image() {
         : 'Weekly movers across the streamer leaderboards',
       pills,
     }),
-    { ...OG_SIZE },
+    { ...OG_SIZE, headers: ogCacheHeaders(revalidate) },
   );
 }
