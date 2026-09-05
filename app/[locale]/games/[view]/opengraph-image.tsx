@@ -11,7 +11,8 @@ import { gamesHubViewBySegment } from '@/lib/games-hub';
 // so it MUST degrade and never throw: a thrown error during prerender aborts
 // the entire production build (documented 2026-07-07 incident).
 export const runtime = 'nodejs';
-export const revalidate = 300;
+// W2 rider (2026-09-05): aligned to the games pages (600).
+export const revalidate = 600;
 
 interface Props {
   params: Promise<{ view: string }>;

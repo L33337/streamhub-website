@@ -38,7 +38,9 @@ import {
 import { RampBars } from '@/components/web/games/RampBars';
 import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
 
-export const revalidate = 300;
+// W2 rider (2026-09-05): nightly aggregates (04:50 UTC refresh) do not need
+// 12 regenerations/h — measured 52k ISR write units per 2 days at TTL 300.
+export const revalidate = 3600;
 
 const SITE_URL = 'https://streamertimes.tv';
 

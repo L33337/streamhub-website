@@ -10,6 +10,7 @@ import {
   rankWeekStreamed,
   reliabilityHits,
   sampleRandom,
+  seededRandom,
   topCategoriesByHours,
 } from '../logic';
 
@@ -271,5 +272,40 @@ describe('reliabilityHits', () => {
     expect(reliabilityHits(0.75, 20)).toBe(15);
     expect(reliabilityHits(0.999, 5)).toBe(5);
     expect(reliabilityHits(0, 5)).toBe(0);
+  });
+});
+
+describe('seededRandom (W2.2 bucket-stable discover sample)', () => {
+  it('same seed yields the identical sequence', () => {
+    const a = seededRandom(1234567);
+    const b = seededRandom(1234567);
+    const seqA = Array.from({ length: 20 }, () => a());
+    const seqB = Array.from({ length: 20 }, () => b());
+    expect(seqA).toEqual(seqB);
+  });
+
+  it('different seeds yield different sequences', () => {
+    const a = Array.from({ length: 8 }, seededRandom(1));
+    const b = Array.from({ length: 8 }, seededRandom(2));
+    expect(a).not.toEqual(b);
+  });
+
+  it('stays in [0, 1)', () => {
+    const rng = seededRandom(99);
+    for (let i = 0; i < 1000; i++) {
+      const v = rng();
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThan(1);
+    }
+  });
+
+  it('makes sampleRandom deterministic per seed (the locale-sharing property)', () => {
+    const items = Array.from({ length: 480 }, (_, i) => `s${i}`);
+    const bucket = 5_961_234; // any fixed bucket index
+    const first = sampleRandom(items, 12, seededRandom(bucket));
+    const second = sampleRandom(items, 12, seededRandom(bucket));
+    const other = sampleRandom(items, 12, seededRandom(bucket + 1));
+    expect(first).toEqual(second);
+    expect(first).not.toEqual(other);
   });
 });

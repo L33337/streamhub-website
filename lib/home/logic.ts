@@ -129,8 +129,30 @@ export function reliabilityHits(rate: number, sample: number): number {
 }
 
 /**
+ * Deterministic PRNG (mulberry32). The homepage discover sample seeds this
+ * with the 5-minute time bucket (the same BUCKET_MS anchor next-streams.ts
+ * uses for its from/to params), so all 12 locale regenerations inside a
+ * bucket draw the SAME sample and build the SAME next-slot fetch URL — one
+ * shared data-cache entry instead of a guaranteed per-locale cache miss
+ * (W2.2, 2026-09-05: Math.random sampling produced ~3,300 uncacheable
+ * /v1/schedules calls/day). Rotation is preserved: a new bucket reseeds
+ * every 5 minutes.
+ */
+export function seededRandom(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
  * Uniform random sample of `count` items (partial Fisher–Yates on a copy).
- * The RNG is injected so tests stay deterministic; callers pass Math.random.
+ * The RNG is injected so tests stay deterministic; callers pass Math.random
+ * or a bucket-seeded seededRandom().
  */
 export function sampleRandom<T>(
   items: T[],

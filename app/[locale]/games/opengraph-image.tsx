@@ -7,7 +7,9 @@ import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 // yields an exact count. getPartnerApi() throws when the key is unset, so the
 // whole fetch is wrapped — any error degrades to a count-free subtitle.
 export const runtime = 'nodejs';
-export const revalidate = 300; // refresh the game count every 5 min (ISR)
+// W2 rider (2026-09-05): aligned to the games pages (600) — the OG image was
+// regenerating twice as often as the page it belongs to.
+export const revalidate = 600;
 const alt = 'Browse games & categories on Streamer Times';
 const size = { width: 1200, height: 630 };
 const contentType = 'image/png';
