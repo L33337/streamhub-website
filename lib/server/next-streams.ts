@@ -17,8 +17,11 @@ const WINDOW_DAYS = 7;
  * it the Next.js data-cache key — stays stable across regenerations inside
  * the revalidate window. A raw `new Date().toISOString()` would produce a
  * unique URL every render and silently disable data caching entirely.
+ * Exported (W2.2) so the homepage discover sample can seed its PRNG on the
+ * SAME anchor — sample rotation and fetch-window bucketing must flip
+ * together or the URL would change mid-bucket anyway.
  */
-const BUCKET_MS = 300_000;
+export const BUCKET_MS = 300_000;
 
 /**
  * Earliest upcoming slot (announced or predicted, always-on excluded) within
@@ -31,7 +34,10 @@ export async function getNextSlotByStreamer(
   ids: string[],
 ): Promise<Map<string, PublicStreamSlot>> {
   const result = new Map<string, PublicStreamSlot>();
-  const unique = [...new Set(ids.filter((id) => id.length > 0))];
+  // Sorted (W2.2): the id list is part of the fetch URL = the data-cache key.
+  // Callers passing the same SET of ids in a different order must share one
+  // cache entry; the returned Map makes order irrelevant to every caller.
+  const unique = [...new Set(ids.filter((id) => id.length > 0))].sort();
   if (unique.length === 0) return result;
 
   let api: ReturnType<typeof getPartnerApi>;

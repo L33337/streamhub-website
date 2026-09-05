@@ -55,6 +55,51 @@ describe('POST /api/revalidate', () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
+  it('scopes the purge to en + given langs (W2.1) and returns 204', async () => {
+    const res = await POST(makeRequest({ slug: 'xqc', langs: ['de'] }, SECRET));
+    expect(res.status).toBe(204);
+    // bare page + bare wiki + (page + wiki) x {en, de}
+    expect(revalidatePath).toHaveBeenCalledTimes(2 + 2 * 2);
+    expect(revalidatePath).toHaveBeenCalledWith('/streamer/xqc');
+    expect(revalidatePath).toHaveBeenCalledWith('/streamer/xqc/wiki');
+    for (const locale of ['en', 'de']) {
+      expect(revalidatePath).toHaveBeenCalledWith(`/${locale}/streamer/xqc`);
+      expect(revalidatePath).toHaveBeenCalledWith(`/${locale}/streamer/xqc/wiki`);
+    }
+    expect(revalidatePath).not.toHaveBeenCalledWith('/ja/streamer/xqc');
+  });
+
+  it('always includes en even when langs omits it (Google ping target)', async () => {
+    const res = await POST(makeRequest({ slug: 'xqc', langs: ['ja'] }, SECRET));
+    expect(res.status).toBe(204);
+    expect(revalidatePath).toHaveBeenCalledWith('/en/streamer/xqc');
+    expect(revalidatePath).toHaveBeenCalledWith('/ja/streamer/xqc');
+    expect(revalidatePath).toHaveBeenCalledTimes(2 + 2 * 2);
+  });
+
+  it('drops unknown langs entries instead of erroring (fail open, never fail the purge)', async () => {
+    const res = await POST(
+      makeRequest({ slug: 'xqc', langs: ['de', 'zz', 42, null, '../x'] }, SECRET)
+    );
+    expect(res.status).toBe(204);
+    // survives as en + de
+    expect(revalidatePath).toHaveBeenCalledTimes(2 + 2 * 2);
+    expect(revalidatePath).toHaveBeenCalledWith('/de/streamer/xqc');
+  });
+
+  it('empty langs array purges en only (scoped minimum)', async () => {
+    const res = await POST(makeRequest({ slug: 'xqc', langs: [] }, SECRET));
+    expect(res.status).toBe(204);
+    expect(revalidatePath).toHaveBeenCalledTimes(2 + 2 * 1);
+    expect(revalidatePath).toHaveBeenCalledWith('/en/streamer/xqc');
+  });
+
+  it('non-array langs falls back to the full purge (pre-W2.1 compatibility)', async () => {
+    const res = await POST(makeRequest({ slug: 'xqc', langs: 'de' }, SECRET));
+    expect(res.status).toBe(204);
+    expect(revalidatePath).toHaveBeenCalledTimes(2 * (1 + UI_LANGS.length));
+  });
+
   it('revalidates the streamer path across every locale variant and returns 204', async () => {
     const res = await POST(makeRequest({ slug: 'illojuan-075649' }, SECRET));
     expect(res.status).toBe(204);

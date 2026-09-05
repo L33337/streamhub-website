@@ -19,7 +19,9 @@ import { BestGamesTable } from '@/components/web/games/BestGamesTable';
 import { BestSlotChips } from '@/components/web/games/BestSlotChips';
 import { GameBoxArt } from '@/components/web/games/GameCard';
 
-export const revalidate = 300;
+// W2 rider (2026-09-05): nightly aggregates (04:50 UTC refresh) do not need
+// 12 regenerations/h — measured 52k ISR write units per 2 days at TTL 300.
+export const revalidate = 3600;
 
 const SITE_URL = 'https://streamertimes.tv';
 const ITEMLIST_LIMIT = 20;

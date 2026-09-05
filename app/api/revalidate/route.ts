@@ -40,8 +40,9 @@ export async function POST(request: Request) {
   }
 
   let slug: unknown;
+  let langs: unknown;
   try {
-    ({ slug } = await request.json());
+    ({ slug, langs } = await request.json());
   } catch {
     return NextResponse.json({ error: 'invalid JSON body' }, { status: 400 });
   }
@@ -49,20 +50,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid slug' }, { status: 400 });
   }
 
+  // W2.1 locale scoping (2026-09-05): the backend may pass `langs` (array of
+  // UI_LANGS codes) to purge only those locale variants — the sender computes
+  // ['en', <streamer language>]. Contract notes:
+  //   - 'en' is ALWAYS purged, even when absent from langs: the Google
+  //     Indexing ping names the UNPREFIXED URL, which the middleware rewrites
+  //     to /en — that crawl target must never be stale.
+  //   - `langs` absent or not an array → full purge (pre-W2.1 behavior; also
+  //     what generate-wiki-profiles sends on purpose — a wiki edit changes
+  //     every locale variant). Unknown entries are dropped, not 400d: this is
+  //     a fire-and-forget freshness call, failing open to a BROADER purge is
+  //     always safe while an error would silently kill the purge entirely.
+  //   - Un-purged locales go stale for at most the route TTL (1800 s) —
+  //     accepted for the <20 % of visitors on non-en, non-streamer-language
+  //     variants (decision 2026-09-05, see AGENTS.md).
+  // Sender counterpart: supabase/functions/_shared/google-indexing.ts
+  // (REVALIDATE_LOCALES must stay in sync with UI_LANGS).
+  let locales: readonly string[] = UI_LANGS;
+  if (Array.isArray(langs)) {
+    const wanted = new Set<string>([
+      'en',
+      ...langs.filter(
+        (v): v is string =>
+          typeof v === 'string' && (UI_LANGS as readonly string[]).includes(v)
+      ),
+    ]);
+    locales = UI_LANGS.filter((l) => wanted.has(l));
+  }
+
   // M22 locale routing: the cached route lives once per locale
   // (/[locale]/streamer/[slug]; unprefixed URLs are middleware-rewritten to
-  // /en). Purge every variant — a live/offline flip changes all of them.
-  // The bare path is kept first for safety across rewrite/cache-key semantics
-  // (belt & braces; verified on the Vercel preview).
+  // /en). The bare path is kept first for safety across rewrite/cache-key
+  // semantics (belt & braces; verified on the Vercel preview).
   revalidatePath(`/streamer/${slug}`);
   // The wiki page is its own route entry (revalidatePath does not descend into
   // nested segments), and a publish/takedown in streamer_wiki_profiles must
   // reach it too (2026-08-29; the M26 migration promised "flip + revalidate").
   revalidatePath(`/streamer/${slug}/wiki`);
-  for (const locale of UI_LANGS) {
+  for (const locale of locales) {
     revalidatePath(`/${locale}/streamer/${slug}`);
     revalidatePath(`/${locale}/streamer/${slug}/wiki`);
   }
-  console.log(`[revalidate] /streamer/${slug} + /wiki (+${UI_LANGS.length} locale variants)`);
+  console.log(
+    `[revalidate] /streamer/${slug} + /wiki (locales: ${
+      locales.length === UI_LANGS.length ? 'all' : locales.join(',')
+    })`
+  );
   return new Response(null, { status: 204 });
 }

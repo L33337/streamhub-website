@@ -13,7 +13,7 @@ import {
 import { MIN_QUICK_FACT_CARDS } from '@/lib/home/quick-facts';
 import { fetchFeaturedStreamers } from '@/lib/server/home-featured';
 import { fetchWeekMostStreamed } from '@/lib/server/most-streamed';
-import { getNextSlotByStreamer } from '@/lib/server/next-streams';
+import { BUCKET_MS, getNextSlotByStreamer } from '@/lib/server/next-streams';
 import { fetchStreamerFeedStats } from '@/lib/server/streamer-feed-stats';
 import { pickWikiStreamers } from '@/lib/home/streamer-wiki';
 import {
@@ -21,6 +21,7 @@ import {
   floorToBucket,
   preferWithNextSlot,
   sampleRandom,
+  seededRandom,
   topCategoriesByHours,
 } from '@/lib/home/logic';
 import { LIVE_RAIL_POOL_MAX, pickBiggestLiveSlots } from '@/lib/home/live-rail';
@@ -305,13 +306,21 @@ export default async function HomePage({ params }: Props) {
   const mostStreamed =
     mostStreamedCall.status === 'fulfilled' ? mostStreamedCall.value : [];
 
-  // Discover grid: 6 RANDOM featured streamers (rotates with every ISR
-  // regeneration), preferring candidates whose next stream is known — the
-  // cards promise "next stream + category". Oversample 12, resolve their
-  // next slots in one small tail fetch (never throws), then cap. Falls back
-  // to the popular list when the featured pool is unavailable.
+  // Discover grid: 6 "random" featured streamers, preferring candidates whose
+  // next stream is known — the cards promise "next stream + category".
+  // Oversample 12, resolve their next slots in one small tail fetch (never
+  // throws), then cap. Falls back to the popular list when the featured pool
+  // is unavailable. W2.2 (2026-09-05): the sample is seeded on the 5-minute
+  // BUCKET_MS anchor instead of Math.random — all locale regenerations inside
+  // a bucket draw the same sample, so the next-slot fetch URL below is
+  // data-cache-shareable (was a guaranteed miss per regeneration, ~3,300
+  // uncacheable /v1/schedules calls/day). Rotation now happens per bucket.
   const discoverPool = featuredStreamers ?? popularStreamers;
-  const discoverSample = sampleRandom(discoverPool, 12, Math.random);
+  const discoverSample = sampleRandom(
+    discoverPool,
+    12,
+    seededRandom(Math.floor(Date.now() / BUCKET_MS))
+  );
 
   // One tail round trip for BOTH bottom sections. The next-slot lookup covers
   // the discover sample AND every popular streamer at once: 52 unique ids stay
