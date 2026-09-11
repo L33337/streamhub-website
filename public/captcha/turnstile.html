@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Streamer Times security check</title>
+<!--
+  Cloudflare Turnstile host page for the MOBILE APP (react-native-webview).
+
+  Why this page exists: the app used to render the widget from an inline HTML
+  string (`source={{ html, baseUrl }}`). That worked on Android but on iOS the
+  widget never reached `ready` (TestFlight 2026-08-12), so every email sign-in
+  ran without a captcha token. Loading a real, hosted document by URL gives
+  WKWebView a proper first-party origin (`https://streamertimes.tv`, which is
+  the hostname allowed on the Turnstile sitekey), first-party cookies for the
+  Cloudflare clearance, and no `loadHTMLString` special cases at all.
+
+  Contract with the app (src/components/CaptchaWidget.tsx in the StreamHub repo):
+    - Query params: `sitekey` (required; the app owns the value, this page only
+      validates its shape), `theme` (dark | light | auto, default dark).
+    - The page posts JSON messages through window.ReactNativeWebView.postMessage:
+        { type: 'ready' } | { type: 'token', token } | { type: 'error', code }
+        | { type: 'interactive' } | { type: 'interactive-done' }
+    - The app triggers a challenge by injecting `window.__stExecute()`.
+  Opened in a normal browser (no bridge) it just renders the widget — harmless.
+
+  It is a static file on purpose: no React, no middleware, no locale rewrite
+  (paths with an extension pass the middleware untouched), cacheable by the CDN.
+  Keep it dependency-free and keep the message contract stable — the app
+  version that consumes it may be months old.
+-->
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: transparent; }
+  #box { display: flex; align-items: center; justify-content: center; height: 100%; }
+</style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+</head>
+<body>
+<div id="box"><div id="widget"></div></div>
+<script>
+  var widgetId = null;
+
+  function post(msg) {
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+  }
+
+  function readParams() {
+    var params = new URLSearchParams(window.location.search);
+    var sitekey = params.get('sitekey') || '';
+    // Turnstile sitekeys are short base64url-ish identifiers. Anything else is
+    // a typo or tampering; refuse instead of handing it to Cloudflare.
+    if (!/^[0-9A-Za-z_-]{6,64}$/.test(sitekey)) sitekey = '';
+    var theme = params.get('theme');
+    if (theme !== 'light' && theme !== 'auto') theme = 'dark';
+    return { sitekey: sitekey, theme: theme };
+  }
+
+  function onTurnstileLoad() {
+    var p = readParams();
+    if (!p.sitekey) { post({ type: 'error', code: 'missing-sitekey' }); return; }
+    try {
+      widgetId = window.turnstile.render('#widget', {
+        sitekey: p.sitekey,
+        execution: 'execute',
+        appearance: 'interaction-only',
+        theme: p.theme,
+        retry: 'never',
+        'response-field': false,
+        callback: function (token) { post({ type: 'token', token: token }); },
+        'error-callback': function (code) { post({ type: 'error', code: code ? String(code) : '' }); },
+        'timeout-callback': function () { post({ type: 'error', code: 'timeout' }); },
+        'expired-callback': function () { post({ type: 'error', code: 'expired' }); },
+        'before-interactive-callback': function () { post({ type: 'interactive' }); },
+        'after-interactive-callback': function () { post({ type: 'interactive-done' }); }
+      });
+      post({ type: 'ready' });
+    } catch (e) {
+      post({ type: 'error', code: 'render-failed' });
+    }
+  }
+
+  window.__stExecute = function () {
+    if (widgetId === null) { post({ type: 'error', code: 'not-ready' }); return; }
+    // Tokens are single-use; reset so 'callback' always describes THIS attempt.
+    window.turnstile.reset(widgetId);
+    window.turnstile.execute('#widget');
+  };
+
+  // The script tag failed entirely (blocked network, CSP, offline). Without
+  // this the app would only ever see silence.
+  window.addEventListener('error', function (ev) {
+    if (ev && ev.target && ev.target.tagName === 'SCRIPT') post({ type: 'error', code: 'script-load' });
+  }, true);
+</script>
+</body>
+</html>
