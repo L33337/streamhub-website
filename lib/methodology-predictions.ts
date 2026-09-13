@@ -131,7 +131,7 @@ export const CONFIDENCE_TIERS_COPY: readonly ConfidenceTierCopy[] = [
   {
     level: 'low',
     tagline: 'Possible, not promised.',
-    body: 'LOW means we simply don’t know much yet: an unusual day for this channel, a streamer we are still getting to know, or one who has gone quiet for a while. About one in three LOW predictions comes true. Treat it as a heads up, not a verdict. It says more about how much we know than about the streamer.',
+    body: 'LOW means we simply don’t know much yet: an unusual day for this channel, a start time we can only roughly guess, or a streamer we are still getting to know. Roughly two in five LOW predictions come true. Treat it as a heads up, not a verdict. It says more about how much we know than about the streamer.',
   },
 ];
 
@@ -237,7 +237,7 @@ export const PREDICTIONS_FAQ: readonly MethodologyFaq[] = [
   {
     question: 'Why is there no prediction for a streamer I follow?',
     answer:
-      'The channel has been quiet for a while, has very little history, streams at times too scattered to call, or announced a break. We would rather show nothing than guess. Live status and the alerts in the app work regardless.',
+      'The channel has been quiet for a while, has very little history, or announced a break. We would rather show nothing than guess, and a channel with very scattered start times gets a cautious LOW badge instead of a firm time. Live status and the alerts in the app work regardless.',
   },
   {
     question: 'How much of this is AI?',

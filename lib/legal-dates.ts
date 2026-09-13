@@ -11,7 +11,7 @@ export const LEGAL_LAST_UPDATED = {
 // Same contract for the evergreen methodology pages (2026-08-27): the page's
 // visible "Last updated" line and its sitemap <lastmod> both read from here.
 export const CONTENT_LAST_UPDATED = {
-  'methodology-predictions': '2026-08-27',
+  'methodology-predictions': '2026-09-13',
 } as const;
 
 /** "2026-02-21" -> "February 21, 2026" (UTC-stable, matches existing on-page wording). */

@@ -145,7 +145,7 @@ describe('sitemap — M22 locale variants', () => {
     }
     // <lastmod> mirrors the page's own "Last updated" line.
     const predictions = entries.find((e) => e.url.endsWith('/predictions'));
-    expect(predictions?.lastModified).toEqual(new Date('2026-08-27'));
+    expect(predictions?.lastModified).toEqual(new Date('2026-09-13'));
   });
 
   it('S4.1: lists every widened hub locale but never an /ar/ hub URL', async () => {
