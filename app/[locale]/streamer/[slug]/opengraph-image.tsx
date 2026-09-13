@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { loadOgAvatar } from '@/lib/og/avatar';
 import { ogCacheHeaders } from '@/lib/og/frame';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { initialsFromName } from '@/components/web/InitialsAvatar';
@@ -58,7 +59,9 @@ export default async function OgImage({ params }: Props) {
 
   const name = streamer?.name ?? slug;
   const platforms = streamer?.platforms ?? [];
-  const avatarUrl = streamer?.avatar_url ?? null;
+  // Verified bytes as a data: URL, or null → initials. A stale avatar_url
+  // (deleted channel, 403 HTML from the CDN) must not fail the whole render.
+  const avatarUrl = await loadOgAvatar(streamer?.avatar_url);
   const initials = initialsFromName(name);
 
   return new ImageResponse(
