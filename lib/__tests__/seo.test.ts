@@ -12,6 +12,8 @@ import {
   buildStreamerMetadata,
   buildVideoGameJsonLd,
   isIndexableStreamerSlug,
+  isStreamerRecentlyActive,
+  isStreamerSitemapIndexable,
   jsonLdHtml,
   langToLocale,
   latestChange,
@@ -742,6 +744,168 @@ describe('buildStreamerMetadata — index gate vs. cancelled slots', () => {
         nextSlot: makeSlot({ status: 'upcoming', start_time: '2026-07-18T19:00:00Z' }),
       }).robots,
     ).toBeUndefined();
+  });
+});
+
+describe('SEO F2 — activity-aware index gates', () => {
+  const NOW = new Date('2026-09-14T12:00:00Z');
+  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
+  const daysAhead = (d: number) => new Date(NOW.getTime() + d * 86_400_000).toISOString();
+  // The API's F2 shape: all four keys present.
+  const active = (overrides: Partial<PublicStreamer> = {}) =>
+    makeStreamer({
+      is_live: false,
+      next_stream_at: null,
+      last_stream_at: null,
+      predictions_updated_at: null,
+      last_status_change_at: daysAgo(90),
+      ...overrides,
+    });
+
+  describe('buildStreamerMetadata page gate', () => {
+    const gate = (s: PublicStreamer, opts: Parameters<typeof buildStreamerMetadata>[2] = {}) =>
+      buildStreamerMetadata(s, 'examplestreamer', { now: NOW, hasUpcoming: false, ...opts }).robots;
+
+    it('keeps a featured streamer that streamed inside the window indexable', () => {
+      expect(gate(active({ is_featured: true, last_stream_at: daysAgo(10) }))).toBeUndefined();
+    });
+
+    it('noindexes a featured streamer dormant for more than 56 days', () => {
+      expect(gate(active({ is_featured: true, last_stream_at: daysAgo(57) }))).toEqual({
+        index: false,
+        follow: true,
+      });
+    });
+
+    it('lets typical-times stats keep a dormant featured page indexable', () => {
+      expect(
+        gate(active({ is_featured: true, last_stream_at: daysAgo(80) }), { stats: makeStats() }),
+      ).toBeUndefined();
+    });
+
+    it('counts a recent live flip even when last_stream_at is null', () => {
+      expect(
+        gate(active({ is_featured: true, last_status_change_at: daysAgo(3) })),
+      ).toBeUndefined();
+    });
+
+    it('falls back to "featured counts" against an API without the F2 fields', () => {
+      // makeStreamer() carries no last_stream_at key at all.
+      expect(gate(makeStreamer({ is_featured: true, last_status_change_at: daysAgo(400) }))).toBeUndefined();
+    });
+
+    it('never lets activity alone index a non-featured page', () => {
+      expect(gate(active({ last_stream_at: daysAgo(1) }))).toEqual({ index: false, follow: true });
+    });
+
+    it('keeps live and upcoming pages indexable regardless of activity', () => {
+      expect(gate(active(), { liveSlot: makeSlot({ status: 'live' }) })).toBeUndefined();
+      expect(gate(active(), { hasUpcoming: true })).toBeUndefined();
+    });
+  });
+
+  describe('isStreamerRecentlyActive', () => {
+    it('includes the 56-day boundary and excludes the day after', () => {
+      expect(isStreamerRecentlyActive(active({ last_stream_at: daysAgo(56) }), NOW)).toBe(true);
+      expect(isStreamerRecentlyActive(active({ last_stream_at: daysAgo(56.01) }), NOW)).toBe(false);
+    });
+
+    it('ignores unparseable timestamps', () => {
+      expect(isStreamerRecentlyActive(active({ last_stream_at: 'garbage' }), NOW)).toBe(false);
+    });
+  });
+
+  describe('isStreamerSitemapIndexable', () => {
+    it('lists live streamers', () => {
+      expect(isStreamerSitemapIndexable(active({ is_live: true }), NOW)).toBe(true);
+    });
+
+    it('lists an upcoming stream within 7 days, not beyond', () => {
+      expect(isStreamerSitemapIndexable(active({ next_stream_at: daysAhead(6.9) }), NOW)).toBe(true);
+      expect(isStreamerSitemapIndexable(active({ next_stream_at: daysAhead(7.1) }), NOW)).toBe(false);
+      expect(isStreamerSitemapIndexable(active({ next_stream_at: 'garbage' }), NOW)).toBe(false);
+    });
+
+    it('lists featured streamers only while active', () => {
+      expect(
+        isStreamerSitemapIndexable(active({ is_featured: true, last_stream_at: daysAgo(20) }), NOW),
+      ).toBe(true);
+      expect(
+        isStreamerSitemapIndexable(active({ is_featured: true, last_stream_at: daysAgo(70) }), NOW),
+      ).toBe(false);
+    });
+
+    it('drops an inactive, non-featured streamer with nothing upcoming', () => {
+      expect(isStreamerSitemapIndexable(active({ last_stream_at: daysAgo(2) }), NOW)).toBe(false);
+    });
+
+    it('agrees with the page gate on the same facts', () => {
+      const cases: Partial<PublicStreamer>[] = [
+        { is_featured: true, last_stream_at: daysAgo(10) },
+        { is_featured: true, last_stream_at: daysAgo(90) },
+        { is_featured: false, last_stream_at: daysAgo(1) },
+        { is_featured: true, last_status_change_at: daysAgo(5) },
+      ];
+      for (const c of cases) {
+        const s = active(c);
+        const pageIndexable =
+          buildStreamerMetadata(s, 'examplestreamer', { now: NOW, hasUpcoming: false }).robots ===
+          undefined;
+        expect(isStreamerSitemapIndexable(s, NOW), JSON.stringify(c)).toBe(pageIndexable);
+      }
+    });
+
+    it('uses the pre-F2 proxy against an older API (is_live absent)', () => {
+      const legacy = (o: Partial<PublicStreamer>) => makeStreamer(o);
+      expect(isStreamerSitemapIndexable(legacy({ last_status_change_at: null }), NOW)).toBe(false);
+      expect(
+        isStreamerSitemapIndexable(legacy({ last_status_change_at: null, is_featured: true }), NOW),
+      ).toBe(true);
+      expect(isStreamerSitemapIndexable(legacy({ last_status_change_at: daysAgo(400) }), NOW)).toBe(
+        true,
+      );
+    });
+  });
+
+  it('latestChange takes the newest of any number of timestamps', () => {
+    expect(
+      latestChange('2026-07-01T00:00:00Z', '2026-07-05T00:00:00Z', '2026-09-01T00:00:00Z').toISOString(),
+    ).toBe('2026-09-01T00:00:00.000Z');
+    expect(
+      latestChange('2026-07-01T00:00:00Z', null, null, undefined, 'garbage').toISOString(),
+    ).toBe('2026-07-01T00:00:00.000Z');
+  });
+});
+
+describe('SEO F3 — German title in the question form', () => {
+  const next = () => makeSlot({ status: 'upcoming', start_time: '2026-07-18T19:00:00Z' });
+
+  it('asks "Wann streamt …?" on the next-stream and the fallback title', () => {
+    expect(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', { nextSlot: next(), viewerLocale: 'de' })
+        .title,
+    ).toBe('Wann streamt ExampleStreamer? Nächster Stream & Live-Status');
+    expect(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', { hasUpcoming: true, viewerLocale: 'de' })
+        .title,
+    ).toBe('Wann streamt ExampleStreamer? Stream-Zeiten & Live-Status');
+  });
+
+  it('stays within the 60-character title budget for long names', () => {
+    const title = String(
+      buildStreamerMetadata(makeStreamer({ name: 'AVeryLongStreamerNameIndeed' }), 'x', {
+        nextSlot: next(),
+        viewerLocale: 'de',
+      }).title,
+    );
+    expect(title.length).toBeLessThanOrEqual(60);
+  });
+
+  it('leaves the English titles untouched', () => {
+    expect(
+      buildStreamerMetadata(makeStreamer(), 'examplestreamer', { nextSlot: next(), viewerLocale: 'en' })
+        .title,
+    ).toBe('ExampleStreamer Stream Schedule — Next Stream & Live Status');
   });
 });
 

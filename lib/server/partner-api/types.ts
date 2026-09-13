@@ -49,6 +49,22 @@ export interface PublicStreamer {
   // mirror for deploy skew: `undefined` = older API → callers fall back to
   // asking the wiki endpoint; `false` = skip the call.
   has_wiki?: boolean;
+  // Activity facts for the index gates (SEO F2, 2026-09): computed per request
+  // by the backend RPC `get_streamer_activity`, not stored columns. The API
+  // always sends all four keys; they are optional here for deploy skew, and
+  // `undefined` means "older API", which the gates treat as "fall back to the
+  // pre-F2 rule" (never as "not live"/"inactive").
+  // Live right now (`last_known_status = 'live'`). false on the backend's RPC
+  // failure path, so it can only ever under-report.
+  is_live?: boolean;
+  // Earliest visible upcoming slot in the future, cancellations INCLUDED (same
+  // population as the streamer page's `hasUpcoming`). null = none.
+  next_stream_at?: string | null;
+  // Later of the newest stream_history start and last_status_change_at.
+  // null = never observed streaming.
+  last_stream_at?: string | null;
+  // Newest ai_predictions row. Feeds the sitemap <lastmod>. null = never predicted.
+  predictions_updated_at?: string | null;
 }
 
 // Mirror of supabase/functions/_shared/partner-streamers.ts `PublicCategoryStats`

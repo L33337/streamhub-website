@@ -2,18 +2,26 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPartnerApi, type GameTiming, type PublicGame } from '@/lib/server/partner-api';
+import {
+  getPartnerApi,
+  type GameTiming,
+  type PublicGame,
+  type PublicStreamer,
+} from '@/lib/server/partner-api';
 import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
+  isIndexableStreamerSlug,
   jsonLdHtml,
   pickMetaDescription,
 } from '@/lib/seo';
 import { isUiLang, type UiLang } from '@/lib/i18n-core';
-import { findGameBySlug } from '@/lib/game-slug';
+import { resolveGameBySlug } from '@/lib/server/games';
+import { formatCompactNumber, formatStatValue } from '@/lib/format/number';
 import {
   MIN_INDEXABLE_TIMING_STREAMERS,
   TIMING_DAY_NAMES,
+  buildBestTimeSummary,
   buildRampView,
   isUsableTimingSeries,
 } from '@/lib/game-timing';
@@ -36,36 +44,67 @@ interface BestTimePageData {
   timing: GameTiming | null;
   /** Passes the tracked-streamers gate AND has usable heatmap series. */
   usable: boolean;
+  /** Most followed streamers of the category, best first (may be empty). */
+  topStreamers: PublicStreamer[];
 }
+
+const TOP_STREAMERS_SHOWN = 3;
+// A little headroom so a degenerate legacy id among the top rows doesn't
+// shrink the list.
+const TOP_STREAMERS_FETCH = 5;
+// Same threshold as the sitemap's per-game ranking entry: below it the ranking
+// page is noindex, so the analysis does not point readers at it.
+const RANKING_LINK_MIN_STREAMERS = 10;
 
 // Same failure-isolation rule as the game hub loader: NEVER throw during
 // prerender (a thrown error aborts the whole production build); ISR self-heals
 // degraded pages within minutes.
 const loadBestTime = cache(async (slug: string): Promise<BestTimePageData> => {
   const api = getPartnerApi();
-  const empty: BestTimePageData = { category: null, game: null, timing: null, usable: false };
+  const empty: BestTimePageData = {
+    category: null,
+    game: null,
+    timing: null,
+    usable: false,
+    topStreamers: [],
+  };
 
-  let game: PublicGame | null;
+  let game: PublicGame;
   try {
-    const games = await api.listGames({ limit: 500 });
-    game = findGameBySlug(games.data, slug);
+    // Thin categories resolve too (SEO F5, see lib/server/games.ts); they have
+    // < 5 tracked streamers, so `usable` is false and the page stays noindex.
+    const resolved = await resolveGameBySlug(api, slug, { limit: 500 });
+    if (!resolved) return empty;
+    game = resolved.game;
   } catch {
     return empty;
   }
-  if (!game) return empty;
 
-  let timing: GameTiming | null = null;
-  try {
-    const rows = await api.listGames({
+  const [timingCall, streamersCall] = await Promise.allSettled([
+    api.listGames({
       category: game.category,
       include: 'timing',
       limit: 1,
       revalidate: 3600,
-    });
-    timing = rows.data[0]?.timing ?? null;
-  } catch {
-    timing = null; // older API / blip → warming state
-  }
+    }),
+    // "Most followed {game} streamers" block (SEO F3): internal links from the
+    // analysis to the people it describes. Nightly-moving data, 1h cache;
+    // degrades to no block.
+    api.listStreamers({
+      category: game.category,
+      order: 'followers',
+      limit: TOP_STREAMERS_FETCH,
+      revalidate: 3600,
+    }),
+  ]);
+  // older API / blip → warming state
+  const timing = timingCall.status === 'fulfilled' ? (timingCall.value.data[0]?.timing ?? null) : null;
+  const topStreamers =
+    streamersCall.status === 'fulfilled'
+      ? streamersCall.value.data
+          .filter((s) => isIndexableStreamerSlug(s.id))
+          .slice(0, TOP_STREAMERS_SHOWN)
+      : [];
 
   const usable =
     !!timing &&
@@ -73,7 +112,7 @@ const loadBestTime = cache(async (slug: string): Promise<BestTimePageData> => {
     isUsableTimingSeries(timing.viewers_histogram) &&
     isUsableTimingSeries(timing.streamers_histogram);
 
-  return { category: game.category, game, timing, usable };
+  return { category: game.category, game, timing, usable, topStreamers };
 });
 
 export async function generateStaticParams() {
@@ -133,13 +172,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BestTimePage({ params }: Props) {
   const { slug } = await params;
-  const { category, game, timing, usable } = await loadBestTime(slug);
+  const { category, game, timing, usable, topStreamers } = await loadBestTime(slug);
   if (!category || !game) notFound();
 
   const bestSlots = (usable ? timing?.best_slots : null) ?? [];
   const ramp = usable ? buildRampView(timing?.ramp_curve) : null;
   const tracked = timing?.tracked_streamers ?? 0;
   const isTrending = timing?.is_trending === true;
+  const summary = usable
+    ? buildBestTimeSummary(category, timing, (n) => formatStatValue(n, 'en'))
+    : null;
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', url: SITE_URL },
@@ -207,6 +249,14 @@ export default async function BestTimePage({ params }: Props) {
               <div className="mt-3">
                 <BestSlotChips slots={bestSlots} />
               </div>
+              {summary && (
+                <div className="mt-4 max-w-2xl space-y-3 text-text-secondary">
+                  <p>{[summary.lead, summary.average].filter(Boolean).join(' ')}</p>
+                  {summary.runnersUp && (
+                    <p>{`${summary.runnersUp} All times in this summary are UTC.`}</p>
+                  )}
+                </div>
+              )}
             </section>
           )}
 
@@ -251,6 +301,20 @@ export default async function BestTimePage({ params }: Props) {
             </section>
           )}
 
+          <section aria-labelledby="reading-heading" className="mt-10">
+            <h2 id="reading-heading" className="text-xl font-bold text-white">
+              {`How to use these ${category} numbers`}
+            </h2>
+            <div className="mt-2 max-w-2xl space-y-3 text-text-secondary">
+              <p>
+                {`Viewers per channel is a ratio, not a promise. An hour with a small audience and even fewer live channels can score well, so switch the heatmap to Viewers before you plan around a quiet hour: a high ratio built on a small audience still means a small audience. Competition shows the other side, the hours when the most ${category} channels are live at once.`}
+              </p>
+              <p>
+                {`Treat the top windows as a starting point for a test rather than a rule. Stream your usual ${category} content in one of them for two or three weeks and compare your average viewers with your current slot. The numbers are rebuilt every night from the last 28 days, so the windows follow the audience as it shifts.`}
+              </p>
+            </div>
+          </section>
+
           <section aria-labelledby="methodology-heading" className="mt-10">
             <h2
               id="methodology-heading"
@@ -292,6 +356,45 @@ export default async function BestTimePage({ params }: Props) {
             <Link href={`/game/${slug}`} className="text-accent-cyan hover:text-text-primary">
               ← Back to {category} streamers
             </Link>
+          </p>
+        </section>
+      )}
+
+      {topStreamers.length > 0 && (
+        <section aria-labelledby="top-streamers-heading" className="mt-10">
+          <h2 id="top-streamers-heading" className="text-xl font-bold text-white">
+            {`Most followed ${category} streamers`}
+          </h2>
+          <ul className="mt-3 max-w-2xl space-y-2">
+            {topStreamers.map((s) => (
+              <li key={s.id} className="text-text-secondary">
+                <Link
+                  href={`/streamer/${encodeURIComponent(s.id)}`}
+                  className="font-semibold text-accent-cyan hover:text-text-primary"
+                >
+                  {s.name}
+                </Link>
+                {s.follower_count != null && (
+                  <span>{` · ${formatCompactNumber(s.follower_count, 'en')} followers`}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 max-w-2xl text-sm text-text-secondary">
+            <Link href={`/game/${slug}`} className="text-accent-cyan hover:text-text-primary">
+              {`All ${category} streamers and their schedules`}
+            </Link>
+            {game.streamer_count >= RANKING_LINK_MIN_STREAMERS && (
+              <>
+                {'  ·  '}
+                <Link
+                  href={`/rankings/game/${slug}`}
+                  className="text-accent-cyan hover:text-text-primary"
+                >
+                  {`Full ${category} streamer ranking`}
+                </Link>
+              </>
+            )}
           </p>
         </section>
       )}

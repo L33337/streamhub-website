@@ -150,8 +150,9 @@ export function gamesHubSegments(): string[] {
 
 /**
  * Would /game/<slug> be indexable? Mirrors isGameHubIndexable() using only the
- * fields a catalog row carries — it cannot see upcoming slots, so this is the
- * same deliberate over-approximation the sitemap uses (app/sitemap.ts). Used to
+ * fields a catalog row carries — it cannot see upcoming slots, so this is a
+ * deliberate over-approximation (the sitemap is stricter since SEO F5 and
+ * ignores the live term, see app/sitemap.ts). Used to
  * keep noindex hubs out of this page's ItemList: structured data that points at
  * noindex URLs contradicts the robots directive.
  */

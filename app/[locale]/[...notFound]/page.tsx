@@ -20,7 +20,10 @@ import { notFound } from 'next/navigation';
 // Residual gap, accepted: paths containing a dot (/wp-login.php) pass through
 // the middleware without a locale rewrite and keep the framework 404 (status
 // is correct, just unbranded) — a root-level catch-all can't exist here for
-// the same root-layout reason.
+// the same root-layout reason. A single-segment dotted path matches
+// app/[locale]/page.tsx with locale = "wp-login.php"; that page 404s on the
+// locale BEFORE any data fetch (SEO F6, 2026-09), otherwise the 404 response
+// carried the whole homepage flight payload (1.3 MB per bot probe).
 
 export const metadata: Metadata = {
   title: 'Page not found — Streamer Times',

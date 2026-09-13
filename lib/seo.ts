@@ -132,6 +132,13 @@ function isNoindex(robots: Metadata['robots']): boolean {
  * - Every other locale variant is viewable but noindex,follow with a
  *   self-canonical (a foreign canonical next to noindex sends conflicting
  *   signals) and is NOT listed in any cluster.
+ * - SEO F4 (2026-09): whenever a variant's canonical is rewritten here, its
+ *   og:url follows it (a /de page used to share the English og:url, so a
+ *   social scraper collapsed both variants onto the English one). og:locale is
+ *   set only for locales of a LOCALIZED page class (`indexableLocales`
+ *   contains the locale): the non-English variants of an English-only page
+ *   render English text, and announcing `de_DE` for it would be false. The
+ *   English pass-through branches stay untouched.
  */
 export function applyLocaleSeo(
   metadata: Metadata,
@@ -140,6 +147,8 @@ export function applyLocaleSeo(
   indexableLocales: readonly UiLang[] = ['en'],
 ): Metadata {
   const indexableHere = !isNoindex(metadata.robots) && indexableLocales.includes(locale);
+  const canonical = absoluteLocaleUrl(locale, path);
+  const ogLocale = indexableLocales.includes(locale) ? LANGUAGE_TO_LOCALE[locale] : undefined;
 
   if (!indexableHere) {
     if (locale === 'en') return metadata;
@@ -147,9 +156,18 @@ export function applyLocaleSeo(
       ...metadata,
       alternates: {
         ...metadata.alternates,
-        canonical: absoluteLocaleUrl(locale, path),
+        canonical,
       },
       robots: { index: false, follow: true },
+      ...(metadata.openGraph
+        ? {
+            openGraph: {
+              ...metadata.openGraph,
+              url: canonical,
+              ...(ogLocale ? { locale: ogLocale } : {}),
+            },
+          }
+        : {}),
     };
   }
 
@@ -161,18 +179,23 @@ export function applyLocaleSeo(
     ...metadata,
     alternates: {
       ...metadata.alternates,
-      canonical: absoluteLocaleUrl(locale, path),
+      canonical,
       ...(languages ? { languages } : {}),
     },
   };
-  if (languages && metadata.openGraph) {
-    const alternate = indexableLocales
-      .filter((l) => l !== locale)
-      .map((l) => LANGUAGE_TO_LOCALE[l])
-      .filter((v): v is string => !!v);
-    if (alternate.length > 0) {
-      result.openGraph = { ...metadata.openGraph, alternateLocale: alternate };
-    }
+  if (metadata.openGraph) {
+    const alternate = languages
+      ? indexableLocales
+          .filter((l) => l !== locale)
+          .map((l) => LANGUAGE_TO_LOCALE[l])
+          .filter((v): v is string => !!v)
+      : [];
+    result.openGraph = {
+      ...metadata.openGraph,
+      url: canonical,
+      ...(ogLocale ? { locale: ogLocale } : {}),
+      ...(alternate.length > 0 ? { alternateLocale: alternate } : {}),
+    };
   }
   return result;
 }
@@ -191,16 +214,104 @@ export function isIndexableStreamerSlug(id: string): boolean {
 }
 
 /**
- * Later of two ISO timestamps as a Date; ignores null/unparseable inputs.
+ * Latest of the given ISO timestamps as a Date; ignores null/unparseable inputs.
  * The honest "content changed" signal for a streamer page: updated_at only
  * moves on metadata writes, last_status_change_at on live↔offline flips —
  * both the sitemap <lastmod> and the ProfilePage dateModified take the max.
+ * The sitemap additionally passes `predictions_updated_at` (a prediction run
+ * rewrites the page's schedule and title).
  */
-export function latestChange(updatedAt: string, lastStatusChangeAt: string | null): Date {
+export function latestChange(
+  updatedAt: string,
+  lastStatusChangeAt: string | null,
+  ...more: (string | null | undefined)[]
+): Date {
   const a = Date.parse(updatedAt);
-  const b = lastStatusChangeAt ? Date.parse(lastStatusChangeAt) : NaN;
-  const max = Math.max(Number.isNaN(a) ? 0 : a, Number.isNaN(b) ? 0 : b);
+  let max = Number.isNaN(a) ? 0 : a;
+  for (const value of [lastStatusChangeAt, ...more]) {
+    const t = value ? Date.parse(value) : NaN;
+    if (!Number.isNaN(t) && t > max) max = t;
+  }
   return new Date(max || (Number.isNaN(a) ? Date.now() : a));
+}
+
+/**
+ * SEO F2 (2026-09): a featured streamer only earns an indexable page while it
+ * is actually streaming. 56 days is two months of silence, long past any
+ * vacation the prediction pipeline's pause handling covers; before this, 35 of
+ * the 57 pages indexable purely through `is_featured` had not streamed in that
+ * window and rendered nothing but an empty schedule.
+ */
+export const STREAMER_ACTIVE_WINDOW_DAYS = 56;
+
+/**
+ * How far ahead an upcoming stream keeps a page in the sitemap. Mirrors the
+ * streamer page's own upcoming fetch (`bucketedNow + 7 d`), so "the page
+ * renders an upcoming slot" and "the sitemap lists it" agree.
+ */
+export const STREAMER_UPCOMING_WINDOW_DAYS = 7;
+
+const DAY_MS = 86_400_000;
+
+type StreamerActivity = Pick<
+  PublicStreamer,
+  'is_featured' | 'last_status_change_at' | 'is_live' | 'next_stream_at' | 'last_stream_at'
+>;
+
+function withinPastDays(iso: string | null | undefined, days: number, nowMs: number): boolean {
+  if (!iso) return false;
+  const t = Date.parse(iso);
+  return !Number.isNaN(t) && nowMs - t <= days * DAY_MS;
+}
+
+/**
+ * Streamed (or flipped live/offline) inside the active window. Reads the
+ * backend's `last_stream_at` and, independently, `last_status_change_at`: the
+ * latter exists on every API version, so a streamer that went live yesterday
+ * counts as active even against an API without the F2 fields.
+ */
+export function isStreamerRecentlyActive(s: StreamerActivity, now: Date): boolean {
+  const nowMs = now.getTime();
+  return (
+    withinPastDays(s.last_stream_at, STREAMER_ACTIVE_WINDOW_DAYS, nowMs) ||
+    withinPastDays(s.last_status_change_at, STREAMER_ACTIVE_WINDOW_DAYS, nowMs)
+  );
+}
+
+/**
+ * Does a featured streamer's editorial flag still count toward the index gate?
+ * Against an API without `last_stream_at` (deploy skew) the answer is the
+ * pre-F2 rule, "always": the gate must never go stricter on missing data.
+ */
+function featuredStillCounts(s: StreamerActivity, now: Date): boolean {
+  if (!s.is_featured) return false;
+  if (s.last_stream_at === undefined) return true;
+  return isStreamerRecentlyActive(s, now);
+}
+
+/**
+ * Sitemap gate for one streamer, built from the same four facts the page gate
+ * in `buildStreamerMetadata` reads (live, upcoming, featured + active), so a
+ * listed URL is an indexable page. The page can additionally keep a dormant
+ * featured streamer indexable through its `has_stats` term, which the list
+ * DTO cannot see; stats cover the last 28 days, which is inside the active
+ * window, so that difference is empty in practice.
+ *
+ * Without the F2 fields (older API) this is the pre-F2 proxy: "was live at
+ * least once, or featured".
+ */
+export function isStreamerSitemapIndexable(s: StreamerActivity, now: Date): boolean {
+  if (s.is_live === undefined) {
+    return s.last_status_change_at !== null || s.is_featured;
+  }
+  if (s.is_live) return true;
+  if (s.next_stream_at) {
+    const t = Date.parse(s.next_stream_at);
+    if (!Number.isNaN(t) && t <= now.getTime() + STREAMER_UPCOMING_WINDOW_DAYS * DAY_MS) {
+      return true;
+    }
+  }
+  return featuredStillCounts(s, now);
 }
 
 /** ISO-639-1 language prefix, lowercased. 'de-AT' → 'de', null/empty → 'en'. */
@@ -490,8 +601,11 @@ const META_STRINGS: Record<string, Lex> = {
   de: {
     q: ['„', '“'],
     liveTitle: (n, c) => (c ? `JETZT LIVE: ${n} — ${c}` : `JETZT LIVE: ${n} streamt`),
-    nextTitle: (n) => `${n} Stream-Zeiten — Nächster Stream & Live-Status`,
-    fallbackTitle: (n) => `${n} — Stream-Zeiten & Live-Status`,
+    // SEO F3 (2026-09): the question form German searchers type ("wann streamt
+    // X"), matching the page's own H2 and FAQ. German only, as a measurable
+    // test against GSC (es/pt keep the pattern that already ranks).
+    nextTitle: (n) => `Wann streamt ${n}? Nächster Stream & Live-Status`,
+    fallbackTitle: (n) => `Wann streamt ${n}? Stream-Zeiten & Live-Status`,
     liveBase: (n) => `${n} ist gerade live`,
     livePlaying: (n, c) => `${n} streamt gerade ${c}`,
     liveHabitTail: (d, t, z) =>
@@ -942,6 +1056,8 @@ export function buildStreamerMetadata(
     // M22 (D6): meta copy follows the VIEWER's locale (the [locale] route
     // param). Omitted → pre-M22 behavior (streamer's language) for old callers.
     viewerLocale?: UiLang;
+    /** Reference time for the active-window gate; defaults to the wall clock. */
+    now?: Date;
   },
 ): Metadata {
   const platforms =
@@ -1053,8 +1169,20 @@ export function buildStreamerMetadata(
   // The gate reads `hasUpcoming`, NOT `next`: `next` excludes cancellations, and
   // a page announcing "Tuesday is cancelled" carries real, streamer-specific
   // information that deserves to stay indexed.
+  //
+  // SEO F2 (2026-09): `is_featured` alone no longer keeps a page indexable. It
+  // counts while the streamer streamed inside STREAMER_ACTIVE_WINDOW_DAYS, or
+  // while its typical-times stats exist (those are real page content). Against
+  // an API without `last_stream_at` the flag counts as before. The sitemap's
+  // `isStreamerSitemapIndexable` reads the same facts; keep the two in step.
+  const now = opts?.now ?? new Date();
+  const featuredCounts =
+    streamer.is_featured &&
+    (streamer.last_stream_at === undefined ||
+      isStreamerRecentlyActive(streamer, now) ||
+      !!stats?.has_stats);
   const indexable =
-    (!!live || (opts?.hasUpcoming ?? !!next) || streamer.is_featured) &&
+    (!!live || (opts?.hasUpcoming ?? !!next) || featuredCounts) &&
     isIndexableStreamerSlug(slug);
 
   const meta: Metadata = {

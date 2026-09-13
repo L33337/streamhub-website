@@ -160,6 +160,54 @@ describe('applyLocaleSeo — indexability matrix', () => {
   });
 });
 
+describe('applyLocaleSeo — og:url / og:locale per variant (SEO F4)', () => {
+  const base: Metadata = {
+    title: 'T',
+    alternates: { canonical: `${SITE}/live` },
+    openGraph: { title: 'T', url: `${SITE}/live`, type: 'website' },
+  };
+  const og = (m: Metadata) => m.openGraph as { url?: string; locale?: string; title?: string; type?: string };
+
+  it('indexable de hub: og:url and og:locale follow the variant, other og fields survive', () => {
+    const out = og(applyLocaleSeo(base, 'de', '/live', INDEXABLE_HUB_LOCALES));
+    expect(out.url).toBe(`${SITE}/de/live`);
+    expect(out.locale).toBe('de_DE');
+    expect(out.title).toBe('T');
+    expect(out.type).toBe('website');
+  });
+
+  it('indexable en variant of a localized class: unprefixed og:url + en_US', () => {
+    const out = og(applyLocaleSeo(base, 'en', '/live', INDEXABLE_HUB_LOCALES));
+    expect(out.url).toBe(`${SITE}/live`);
+    expect(out.locale).toBe('en_US');
+  });
+
+  it('English-only class, de variant: og:url follows, og:locale is NOT claimed', () => {
+    const out = og(applyLocaleSeo(base, 'de', '/app'));
+    expect(out.url).toBe(`${SITE}/de/app`);
+    expect(out.locale).toBeUndefined();
+  });
+
+  it('localized class outside the list (ar hub): og:url follows, no locale claim', () => {
+    const out = og(applyLocaleSeo(base, 'ar', '/live', INDEXABLE_HUB_LOCALES));
+    expect(out.url).toBe(`${SITE}/ar/live`);
+    expect(out.locale).toBeUndefined();
+  });
+
+  it('thin own-language streamer variant: noindex keeps og:url + locale per variant', () => {
+    const thin: Metadata = { ...base, robots: { index: false, follow: true } };
+    const out = og(applyLocaleSeo(thin, 'ja', '/streamer/x', ['en', 'ja']));
+    expect(out.url).toBe(`${SITE}/ja/streamer/x`);
+    expect(out.locale).toBe('ja_JP');
+  });
+
+  it('never invents an og block the page did not declare', () => {
+    const bare: Metadata = { title: 'T' };
+    expect(applyLocaleSeo(bare, 'de', '/live', INDEXABLE_HUB_LOCALES).openGraph).toBeUndefined();
+    expect(applyLocaleSeo(bare, 'de', '/app').openGraph).toBeUndefined();
+  });
+});
+
 describe('pickDescription', () => {
   const s = (d: string | null, en: string | null, lang: string | null) => ({
     description: d,

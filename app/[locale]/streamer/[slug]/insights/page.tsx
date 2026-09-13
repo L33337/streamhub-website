@@ -106,6 +106,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${streamer.name} — Streaming Insights`,
     description: `When does ${streamer.name} pull the most viewers? Median viewers by weekday and hour, category performance, consistency and size benchmark.`,
     alternates: { canonical: `${SITE_URL}/streamer/${encodeURIComponent(slug)}/insights` },
+    // Own og block (SEO F4, 2026-09): without one the page inherited the root
+    // layout's, so a shared insights link unfurled as the HOMEPAGE (og:url
+    // https://streamertimes.tv). The colocated opengraph-image attaches to it.
+    openGraph: {
+      title: `${streamer.name} — Streaming Insights`,
+      description: `Median viewers by weekday and hour, category performance and consistency for ${streamer.name}.`,
+      url: `${SITE_URL}/streamer/${encodeURIComponent(slug)}/insights`,
+      siteName: 'Streamer Times',
+      type: 'website',
+    },
     // v1: fully noindex for ALL locales regardless of data volume (decided
     // 2026-07-31) — not in the sitemap either; reachable via the teaser on
     // the streamer page. Indexing is a possible later step after GSC review

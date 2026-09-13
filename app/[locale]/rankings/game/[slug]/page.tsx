@@ -18,7 +18,8 @@ import {
 } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
-import { gameSlug, findGameBySlug } from '@/lib/game-slug';
+import { dedupeGamesBySlug, gameSlug } from '@/lib/game-slug';
+import { resolveGameBySlug } from '@/lib/server/games';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { formatCompactNumber } from '@/lib/format/number';
 import {
@@ -91,16 +92,18 @@ const loadGameRanking = cache(async (slug: string): Promise<GameRankingData> => 
     related: [],
   };
 
-  let game: PublicGame | null;
+  let game: PublicGame;
   let catalog = new Set<string>();
   try {
-    const games = await api.listGames({ limit: 500, revalidate: 3600 });
-    game = findGameBySlug(games.data, slug);
-    catalog = new Set(games.data.map((g) => g.category));
+    // Thin categories resolve too (SEO F5, see lib/server/games.ts): their
+    // ranking has < 10 rows, so the page's own gate makes it noindex.
+    const resolved = await resolveGameBySlug(api, slug, { limit: 500, revalidate: 3600 });
+    if (!resolved) return empty;
+    game = resolved.game;
+    catalog = new Set(resolved.catalog.map((g) => g.category));
   } catch {
     return empty; // API unavailable → renders as notFound; ISR retries soon
   }
-  if (!game) return empty;
 
   // 5-min bucket for fetch-URL timestamps (lib/home/logic.ts convention):
   // raw ms-precision `now` gave every regeneration of every locale variant its
@@ -186,9 +189,7 @@ export async function generateStaticParams({
   if (params.locale !== 'en') return [];
   try {
     const resp = await getPartnerApi().listGames({ limit: 500 });
-    return resp.data
-      .map((g) => ({ slug: gameSlug(g.category) }))
-      .filter((p) => p.slug.length > 0);
+    return dedupeGamesBySlug(resp.data).map((g) => ({ slug: gameSlug(g.category) }));
   } catch {
     // Backend unavailable at build → render on demand instead of failing the build.
     return [];

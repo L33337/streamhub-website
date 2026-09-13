@@ -326,6 +326,91 @@ export function buildRampView(curve: (number | null)[] | null | undefined): Ramp
   return { cells, peakHour, populated, max };
 }
 
+// ============================================
+// Best-time summary (server-rendered prose)
+// ============================================
+
+export interface BestTimeSummary {
+  /** The top window with its absolute numbers. */
+  lead: string;
+  /** The second and third windows, when the API delivered them. */
+  runnersUp: string | null;
+  /** How far the top window sits above the category's weekly average. */
+  average: string | null;
+}
+
+/** A best slot the prose can state without inventing anything. */
+function isStatableSlot(slot: TimingBestSlot): boolean {
+  return (
+    Number.isInteger(slot.dow) &&
+    slot.dow >= 0 &&
+    slot.dow <= 6 &&
+    Number.isInteger(slot.hour) &&
+    slot.hour >= 0 &&
+    slot.hour <= 23 &&
+    Number.isFinite(slot.score) &&
+    slot.score > 0 &&
+    Number.isFinite(slot.viewers) &&
+    Number.isFinite(slot.streamers) &&
+    slot.streamers > 0
+  );
+}
+
+function utcSlotLabel(slot: TimingBestSlot): string {
+  return `${TIMING_DAY_NAMES[slot.dow]} at ${String(slot.hour).padStart(2, '0')}:00 UTC`;
+}
+
+/** A top window must beat the average by this factor to be called out as one. */
+const STANDOUT_RATIO = 1.15;
+
+/**
+ * Plain-language reading of the timing aggregate for the /best-time page
+ * (SEO F3, 2026-09): the page had a heatmap and three chips but almost no
+ * text a search engine or a skimming reader could take away. Server-rendered,
+ * so every time is UTC and says so (the chips shift to local time after
+ * hydration; prose must not). English only, like the page body. No dashes in
+ * the copy (house style for reader-facing text).
+ *
+ * `format` renders a number (the page passes `formatStatValue`); it is a
+ * parameter so this module stays free of Intl and trivially testable.
+ * Returns null when there is no statable slot.
+ */
+export function buildBestTimeSummary(
+  category: string,
+  timing: GameTiming | null | undefined,
+  format: (value: number) => string,
+): BestTimeSummary | null {
+  const slots = (timing?.best_slots ?? []).filter(isStatableSlot).slice(0, 3);
+  const top = slots[0];
+  if (!top) return null;
+
+  const channels = format(top.streamers);
+  const lead =
+    `The strongest window for ${category} is ${utcSlotLabel(top)}: about ` +
+    `${format(top.viewers)} viewers across ${channels} live ${channels === '1' ? 'channel' : 'channels'}, ` +
+    `or ${format(top.score)} viewers per channel.`;
+
+  const rest = slots.slice(1).map((s) => `${utcSlotLabel(s)} (${format(s.score)} viewers per channel)`);
+  const runnersUp =
+    rest.length === 0
+      ? null
+      : rest.length === 1
+        ? `The next best window is ${rest[0]}.`
+        : `The next best windows are ${rest[0]} and ${rest[1]}.`;
+
+  const avgScore = cellScore(timing?.avg_viewers ?? null, timing?.avg_streamers ?? null);
+  let average: string | null = null;
+  if (avgScore !== null && avgScore > 0) {
+    const ratio = top.score / avgScore;
+    average =
+      ratio >= STANDOUT_RATIO
+        ? `That is ${format(ratio)} times the weekly average of ${format(avgScore)} viewers per channel, so a stream in that hour competes with fewer channels for each viewer.`
+        : `That is close to the weekly average of ${format(avgScore)} viewers per channel: ${category} has no single standout hour, so a consistent schedule matters more than the exact time.`;
+  }
+
+  return { lead, runnersUp, average };
+}
+
 /** Label for ramp bar i (0-based): "h1".."h11", last bar is open-ended. */
 export function rampBarLabel(index: number): string {
   return index === RAMP_CELLS - 1 ? `${RAMP_CELLS}h+` : `h${index + 1}`;

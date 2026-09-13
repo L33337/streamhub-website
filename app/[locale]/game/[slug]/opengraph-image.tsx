@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { findGameBySlug } from '@/lib/game-slug';
+import { resolveGameBySlug } from '@/lib/server/games';
 import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
 // nodejs so PARTNER_API_KEY reaches the route in `next dev`. This runs for every
@@ -92,8 +92,7 @@ export default async function Image({ params }: Props) {
   let topNames: string[] = [];
   let boxArtUrl: string | null = null;
   try {
-    const games = await getPartnerApi().listGames({ limit: 500 });
-    const game = findGameBySlug(games.data, slug);
+    const game = (await resolveGameBySlug(getPartnerApi(), slug, { limit: 500 }))?.game;
     category = game?.category ?? null;
     // Nightly top-3 most-followed names, straight from the games row (no extra
     // API call). Absent against an older API / cold aggregate → generic line.

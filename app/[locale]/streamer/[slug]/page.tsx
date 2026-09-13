@@ -265,6 +265,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Already resolved by the shared cached load — no extra round-trip.
     stats,
     viewerLocale: locale,
+    now,
   });
   // M22 P3 (D2): each streamer page indexes as an en + own-language hreflang
   // pair (en-only for English/unknown-language streamers); the thin-page gate
