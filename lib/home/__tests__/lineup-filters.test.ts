@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   buildLineupFilterItems,
+  buildLineupIslandData,
+  lineupFilterItemsFor,
   computeVisibleLineupIds,
   countLineupCategoryOptions,
   countLineupLanguageOptions,
@@ -460,6 +462,65 @@ describe('splitLineupSlots', () => {
 
   it('defaults to LINEUP_SSR_COUNT', () => {
     expect(splitLineupSlots(pool).ssr).toHaveLength(LINEUP_SSR_COUNT);
+  });
+});
+
+describe('buildLineupIslandData / lineupFilterItemsFor', () => {
+  const languages = ['en', 'DE', 'pt-BR', null, 'other', undefined, 'ja'];
+  const categories = ['Just Chatting', ' VALORANT ', null, 'Fortnite', '  '];
+  const pool = Array.from({ length: 70 }, (_, index) =>
+    slot({
+      id: `ai_slot_pred_s${index}`,
+      category: categories[index % categories.length],
+      streamer_language: languages[index % languages.length],
+      start_time:
+        index % 13 === 0
+          ? 'not-a-date'
+          : new Date(Date.parse('2026-07-30T13:00:00Z') + index * 17 * 60_000).toISOString(),
+    }),
+  );
+  const labels = (code: string) =>
+    ({ de: 'Deutsch', pt: 'Portugiesisch', en: 'Englisch' })[code] ?? code.toUpperCase();
+
+  it('ships items for the server-rendered head only', () => {
+    const { ssr, island } = buildLineupIslandData(pool, 'de', labels);
+    expect(ssr).toHaveLength(LINEUP_SSR_COUNT);
+    expect(island.ssrItems).toHaveLength(LINEUP_SSR_COUNT);
+    expect(island.deferredSlots).toHaveLength(pool.length - LINEUP_SSR_COUNT);
+  });
+
+  // THE property the payload diet rests on: the island's derived items must
+  // be the ones the server used to send for the whole pool, slot by slot, or
+  // the dropdown counts drift.
+  it('derives exactly the server-side items, slot by slot', () => {
+    const { island } = buildLineupIslandData(pool, 'de', labels);
+    const server = buildLineupFilterItems(pool, labels);
+    const client = lineupFilterItemsFor(JSON.parse(JSON.stringify(island)));
+    expect(client).toHaveLength(server.length);
+    server.forEach((item, index) => expect(client[index], item.id).toEqual(item));
+  });
+
+  it('yields identical dropdown options and counts', () => {
+    const { island } = buildLineupIslandData(pool, 'de', labels);
+    const server = buildLineupFilterItems(pool, labels);
+    const client = lineupFilterItemsFor(island);
+    expect(countLineupCategoryOptions(client)).toEqual(countLineupCategoryOptions(server));
+    expect(countLineupLanguageOptions(client)).toEqual(countLineupLanguageOptions(server));
+    const label = (hour: number) => `From ${hour}`;
+    expect(countLineupTimeOptions(client, utcHour, label, NOW)).toEqual(
+      countLineupTimeOptions(server, utcHour, label, NOW),
+    );
+  });
+
+  it('sends each language name once, only for the deferred tail', () => {
+    const { island } = buildLineupIslandData(pool, 'de', labels);
+    expect(island.languageLabels).toEqual({
+      en: 'Englisch',
+      de: 'Deutsch',
+      pt: 'Portugiesisch',
+      other: 'OTHER',
+      ja: 'JA',
+    });
   });
 });
 

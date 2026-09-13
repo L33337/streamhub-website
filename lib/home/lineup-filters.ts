@@ -7,7 +7,13 @@
 
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import { countFilterOptions, type CountedFilterOption } from './filter-options';
+import { collectLanguageLabels, languageNameFromLabels } from './filter-payload';
 import { normalizeSlotLanguage } from './live-rail';
+import {
+  readLineupCardSlot,
+  toLineupCardSlot,
+  type LineupCardSlot,
+} from './slot-payload';
 
 /**
  * Safety cap on the pool — the filter scope, and now a PAYLOAD guard rather
@@ -124,7 +130,9 @@ export function isLineupSelectionActive(selection: LineupSelection): boolean {
  * chronological — the section's own reading order.
  */
 export function buildLineupFilterItems(
-  slots: PublicStreamSlot[],
+  slots: ReadonlyArray<
+    Pick<PublicStreamSlot, 'id' | 'category' | 'start_time' | 'streamer_language'>
+  >,
   languageName: (code: string) => string,
 ): LineupFilterItem[] {
   return slots.map((slot) => {
@@ -138,6 +146,62 @@ export function buildLineupFilterItems(
       startMs: Number.isFinite(startMs) ? startMs : 0,
     };
   });
+}
+
+/**
+ * Everything the lineup island receives as DATA (payload diet 2026-09-14).
+ * Filter items travel only for the server-rendered head, whose cards the
+ * island holds as markup and cannot read back; the deferred tail's items are
+ * derived from `deferredSlots` by `lineupFilterItemsFor`, with the localized
+ * language names sent once per language instead of once per card. Production
+ * shipped 56 KB of items for 400 slots before this.
+ */
+export interface LineupIslandPayload {
+  ssrItems: LineupFilterItem[];
+  deferredSlots: LineupCardSlot[];
+  /** Normalized language code → name in the viewer's locale. */
+  languageLabels: Record<string, string>;
+}
+
+/**
+ * Splits the pool and builds the island payload. `ssr` is what the server
+ * renders as HTML (full DTOs, full reasoning — the crawlable copy); `island`
+ * is what crosses the boundary.
+ */
+export function buildLineupIslandData(
+  slots: PublicStreamSlot[],
+  viewerLanguage: string,
+  languageName: (code: string) => string,
+  ssrCount: number = LINEUP_SSR_COUNT,
+): { ssr: PublicStreamSlot[]; island: LineupIslandPayload } {
+  const { ssr, deferred } = splitLineupSlots(slots, ssrCount);
+  return {
+    ssr,
+    island: {
+      ssrItems: buildLineupFilterItems(ssr, languageName),
+      deferredSlots: deferred.map((slot) => toLineupCardSlot(slot, viewerLanguage)),
+      languageLabels: collectLanguageLabels(
+        deferred.map((slot) => slot.streamer_language),
+        languageName,
+      ),
+    },
+  };
+}
+
+/**
+ * The island's view of the whole pool's filter items: the shipped head plus
+ * the tail derived from its card data. Identical, item by item, to
+ * `buildLineupFilterItems` over the full pool — the dropdown counts depend on
+ * it, and a test compares the two slot by slot.
+ */
+export function lineupFilterItemsFor(payload: LineupIslandPayload): LineupFilterItem[] {
+  return [
+    ...payload.ssrItems,
+    ...buildLineupFilterItems(
+      payload.deferredSlots.map(readLineupCardSlot),
+      languageNameFromLabels(payload.languageLabels),
+    ),
+  ];
 }
 
 /**

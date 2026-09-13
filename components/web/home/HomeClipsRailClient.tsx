@@ -8,8 +8,12 @@ import {
   countClipFilterOptions,
   matchesClipFilters,
   CLIPS_DEFAULT_VISIBLE,
-  type ClipFilterItem,
 } from '@/lib/home/clip-filters';
+import {
+  homeClipFilterItems,
+  hydrateHomeClip,
+  type HomeClipWire,
+} from '@/lib/home/clip-payload';
 import { ClipCard } from '@/components/web/feed/ClipCard';
 import { ClipLightbox } from '@/components/web/feed/ClipLightbox';
 import { RailScroller } from '@/components/web/feed/RailScroller';
@@ -52,18 +56,39 @@ export interface ClipFilterStrings {
  *
  * A JS-less browser keeps the resting cut with inert dropdowns — the honest
  * degradation for a filter nobody can operate.
+ *
+ * The clips arrive PACKED (lib/home/clip-payload.ts, 2026-09-14) and are
+ * hydrated back into plain `FeedClip`s before anything reads them, so
+ * ClipCard and ClipLightbox get exactly the props they always did. The filter
+ * items are derived from the hydrated clips rather than shipped per clip.
  */
 export function HomeClipsRailClient({
-  clips,
+  clips: packedClips,
   names,
-  items,
+  languages,
+  logins,
+  languageLabels,
   strings,
 }: {
-  clips: FeedClip[];
+  clips: HomeClipWire[];
   names: Record<string, string>;
-  items: ClipFilterItem[];
+  /** streamer_id → raw broadcaster language; the clip itself has none. */
+  languages: Record<string, string>;
+  /** streamer_id → Twitch login, to rebuild clip urls. */
+  logins: Record<string, string>;
+  /** Normalized language code → name in the page's locale. */
+  languageLabels: Record<string, string>;
   strings: ClipFilterStrings;
 }) {
+  // Props never change after mount, so both memos run once.
+  const clips = useMemo(
+    () => packedClips.map((clip) => hydrateHomeClip(clip, logins)),
+    [packedClips, logins],
+  );
+  const items = useMemo(
+    () => homeClipFilterItems(clips, { languages, languageLabels }),
+    [clips, languages, languageLabels],
+  );
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState('');
   const [activeClip, setActiveClip] = useState<FeedClip | null>(null);

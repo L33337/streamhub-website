@@ -11,7 +11,10 @@ import {
 } from 'react';
 import { RotateCcw } from 'lucide-react';
 import type { UiLang } from '@/lib/i18n-core';
-import type { LineupCardSlot } from '@/lib/home/slot-payload';
+import {
+  hydrateLineupCardSlot,
+  type LineupCardSlot,
+} from '@/lib/home/slot-payload';
 import { SlotCard } from '@/components/web/SlotCard';
 import { FILTER_SELECT_CLASS } from '@/components/web/home/filter-controls';
 import {
@@ -310,9 +313,12 @@ export function TonightBlocks({
         const canRevealMore = revealLimit < matches.length;
         const steps = revealSteps[block.id] ?? 0;
         // Only as much of the deferred tail as this block's window reaches.
-        const deferredVisible = block.deferredSlots.filter((slot) =>
-          revealedIds.has(slot.id),
-        );
+        // The payload is wire-encoded with its default-valued fields omitted
+        // (lib/home/slot-payload.ts), so it is hydrated before anything reads
+        // a field of it.
+        const deferredVisible = block.deferredSlots
+          .map(hydrateLineupCardSlot)
+          .filter((slot) => revealedIds.has(slot.id));
         return (
           <section
             key={block.id}

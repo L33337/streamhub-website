@@ -35,12 +35,20 @@ type HomeClipRow = Pick<
   | 'view_count'
   | 'category'
   | 'clip_created_at'
-> & { streamers: { name: string; language: string | null } | null };
+> & {
+  streamers: { name: string; language: string | null; twitch_login: string | null } | null;
+};
 
 export interface HomeClips {
   clips: FeedClip[];
   /** streamer_id → display name for ClipCard/lightbox captions. */
   names: Record<string, string>;
+  /**
+   * streamer_id → Twitch login. Lets the island rebuild each clip's url
+   * instead of shipping it (lib/home/clip-payload.ts); anon has column
+   * privilege on streamers.twitch_login (verified 2026-09-14).
+   */
+  logins: Record<string, string>;
   /**
    * streamer_id → raw broadcaster language ("de", "pt-BR", "other"). Only
    * streamers that HAVE one appear; the filter normalizes and labels it.
@@ -56,18 +64,20 @@ export async function fetchTopClipsOfWeek(
   const since = floorToHourIso(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
   const query =
-    `stream_clips?select=${CLIP_COLUMNS},streamers!inner(name,language,is_hidden,approved)` +
+    `stream_clips?select=${CLIP_COLUMNS},streamers!inner(name,language,twitch_login,is_hidden,approved)` +
     `&clip_created_at=gte.${encodeURIComponent(since)}` +
     '&streamers.is_hidden=eq.false&streamers.approved=eq.true' +
     `&order=view_count.desc&limit=${limit}`;
 
   const rows = await anonRestGet<HomeClipRow>(query, 1800);
-  if (!rows) return { clips: [], names: {}, languages: {} };
+  if (!rows) return { clips: [], names: {}, logins: {}, languages: {} };
 
   const names: Record<string, string> = {};
+  const logins: Record<string, string> = {};
   const languages: Record<string, string> = {};
   const clips = rows.map((row) => {
     if (row.streamers?.name) names[row.streamer_id] = row.streamers.name;
+    if (row.streamers?.twitch_login) logins[row.streamer_id] = row.streamers.twitch_login;
     if (row.streamers?.language) languages[row.streamer_id] = row.streamers.language;
     return transformFeedClip(row as unknown as StreamClipRow);
   });
@@ -79,5 +89,5 @@ export async function fetchTopClipsOfWeek(
   // streamer), which reads as a fan page rather than as the week. Same
   // function the app and the signed-in feed rank their Highlights with; an
   // anonymous visitor has no engagement stats, hence null.
-  return { clips: orderClipsByPopularity(clips, null), names, languages };
+  return { clips: orderClipsByPopularity(clips, null), names, logins, languages };
 }

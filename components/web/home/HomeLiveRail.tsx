@@ -4,8 +4,7 @@ import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { languageDisplayName } from '@/lib/format/language';
 import { liveRuntimeLexFor } from '@/lib/i18n/live-runtime';
 import {
-  buildLiveFilterItems,
-  splitLiveSlots,
+  buildLiveIslandData,
   LIVE_RAIL_DEFAULT_VISIBLE,
 } from '@/lib/home/live-rail';
 import { toLiveCardSlot } from '@/lib/home/slot-payload';
@@ -57,13 +56,13 @@ export function HomeLiveRail({
 
   // Language names follow the VIEWER's locale (chrome, not content — CLAUDE.md
   // D6), so a German visitor picks "Japanisch", not "Japanese".
-  const items = buildLiveFilterItems(
-    slots,
-    (code) => languageDisplayName(code, locale) ?? code.toUpperCase(),
-  );
+  const languageName = (code: string) =>
+    languageDisplayName(code, locale) ?? code.toUpperCase();
 
-  // ssr = what becomes HTML, deferred = what the island renders on demand.
-  const { ssr: ssrSlots, deferred: deferredSlots } = splitLiveSlots(slots);
+  // ssr = what becomes HTML; island = the data the island renders the rest
+  // from. Filter items travel only for the head — the island derives the
+  // tail's from its card data (lib/home/live-rail.ts `buildLiveIslandData`).
+  const { ssr: ssrSlots, island } = buildLiveIslandData(slots, languageName);
   const nowMs = now.getTime();
 
   // Handed over as an ARRAY of <li>, not as a finished list: the island puts
@@ -100,10 +99,11 @@ export function HomeLiveRail({
           `liveFilterNote` stays translated for re-use. */}
 
       <HomeLiveRailFilters
-        items={items}
+        ssrItems={island.ssrItems}
+        languageLabels={island.languageLabels}
         locale={locale}
         ssrCards={ssrCards}
-        deferredSlots={deferredSlots.map(toLiveCardSlot)}
+        deferredSlots={island.deferredSlots}
         strings={{
           categoryLabel: L.homeFeed.liveFilterCategory,
           languageLabel: L.homeFeed.liveFilterLanguage,

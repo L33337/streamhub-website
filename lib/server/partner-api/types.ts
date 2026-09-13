@@ -51,11 +51,11 @@ export interface PublicStreamer {
   has_wiki?: boolean;
   // Activity facts for the index gates (SEO F2, 2026-09): computed per request
   // by the backend RPC `get_streamer_activity`, not stored columns. The API
-  // always sends all four keys; they are optional here for deploy skew, and
-  // `undefined` means "older API", which the gates treat as "fall back to the
-  // pre-F2 rule" (never as "not live"/"inactive").
-  // Live right now (`last_known_status = 'live'`). false on the backend's RPC
-  // failure path, so it can only ever under-report.
+  // sends all four keys together, or omits all four when that RPC fails. They
+  // are optional here for that reason and for deploy skew: `undefined` means
+  // "unknown", which the gates treat as "fall back to the pre-F2 rule" (never
+  // as "not live"/"inactive"). Check with `=== undefined`; null is a real value.
+  // Live right now (`last_known_status = 'live'`).
   is_live?: boolean;
   // Earliest visible upcoming slot in the future, cancellations INCLUDED (same
   // population as the streamer page's `hasUpcoming`). null = none.

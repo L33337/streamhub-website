@@ -15,6 +15,7 @@ import {
   computeVisibleLiveIds,
   countLiveFilterOptions,
   formatLiveRuntime,
+  liveFilterItemsFor,
   liveRuntimeFrom,
   matchesLiveFilters,
   LIVE_RAIL_DEFAULT_VISIBLE,
@@ -61,6 +62,10 @@ export interface LiveFilterStrings {
  * regimes must not fight**: the imperative pass deliberately skips
  * `[data-live-deferred]`, because React owns those nodes.
  *
+ * Filter items arrive only for the head (`ssrItems`); the tail's are derived
+ * here from `deferredSlots` and the once-per-language `languageLabels` map
+ * (payload diet 2026-09-14), identical to what the server used to send.
+ *
  * Two additions the lineup filter doesn't need:
  *
  * - **Cross-filtered option counts.** Picking "German" narrows the category
@@ -76,13 +81,17 @@ export interface LiveFilterStrings {
  *   those data attributes, so the two paths can never both own a label.
  */
 export function HomeLiveRailFilters({
-  items,
+  ssrItems,
+  languageLabels,
   strings,
   locale,
   ssrCards,
   deferredSlots,
 }: {
-  items: LiveFilterItem[];
+  /** Filter metadata of the server-rendered head only. */
+  ssrItems: LiveFilterItem[];
+  /** Normalized language code → name in the page's locale, for the tail's items. */
+  languageLabels: Record<string, string>;
   strings: LiveFilterStrings;
   locale: UiLang;
   /** Server-rendered `<li>` cards, placed in the same rail as the deferred ones. */
@@ -105,6 +114,12 @@ export function HomeLiveRailFilters({
     getServerMinuteClockSnapshot,
   );
   const runtimeLex = useMemo(() => liveRuntimeLexFor(locale), [locale]);
+  // The whole sweep's filter metadata, in rank order (head shipped, tail
+  // derived). Props never change after mount, so this runs once.
+  const items = useMemo(
+    () => liveFilterItemsFor({ ssrItems, deferredSlots, languageLabels }),
+    [ssrItems, deferredSlots, languageLabels],
+  );
 
   // Options for one dropdown are counted over the pool narrowed by the OTHER
   // dropdown — never by itself, or picking a value would collapse its own list
