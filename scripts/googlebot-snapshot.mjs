@@ -53,9 +53,9 @@ export const SUMMARY_COLUMNS = [
   'gb_robots',
   'gb_sitemap',
   'gb_distinct_streamers',
-  // Requests on streamer PAGE paths regardless of route/status. Exceeds
-  // gb_streamer_page when Googlebot follows /en/streamer/x (308 from the
-  // middleware, counted under no page route) — M2 is path-based, M1 route-based.
+  // Requests on streamer PAGE paths regardless of route/status (M2 is
+  // path-based, M1 route-based). A gap to gb_streamer_page means some page
+  // paths were not attributed to the page route (e.g. middleware redirects).
   'gb_streamer_path_requests',
   'truncated',
   'captured_at',
@@ -93,6 +93,9 @@ export function summarizeDay(date, routeRows, pathRows) {
 
   const streamers = new Map();
   for (const r of pathRows) {
+    // The API zero-fills buckets: a path crawled only on the neighbouring day
+    // comes back for THIS day with count 0 — it was not fetched today.
+    if (!(Number(r.count) > 0)) continue;
     const slug = streamerSlugFromPath(r.request_path);
     if (!slug) continue;
     const entry = streamers.get(slug) ?? { requests: 0, paths: new Set() };
@@ -297,6 +300,7 @@ function selfTest() {
       { request_path: '/de/streamer/xqc', count: 1 },
       { request_path: '/streamer/gronkh', count: 4 },
       { request_path: '/streamer/gronkh/wiki', count: 3 },
+      { request_path: '/streamer/zerofilled', count: 0 },
     ],
   );
   assert(summary.gb_requests_total === 58, `total ${summary.gb_requests_total}`);
