@@ -6,6 +6,7 @@ import {
   type PublicStreamer,
 } from '@/lib/server/partner-api';
 import { sizedAvatarUrl } from '@/lib/format/image-size';
+import { isRelatableLanguage } from '@/lib/format/language';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
 import { localeHref, resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
@@ -97,9 +98,17 @@ export async function RelatedStreamers({
         api.listStreamers({ category, order: 'popular', limit: 12, revalidate: 1800 }),
       )
     : null;
-  const languagePromise = language
+  // Twitch's `other` is a stored value but not a relation (and the API rejects
+  // it with 400, which used to blank this whole section — see isRelatableLanguage).
+  const relationLanguage = isRelatableLanguage(language) ? language : null;
+  const languagePromise = relationLanguage
     ? settle(
-        api.listStreamers({ language, order: 'popular', limit: 12, revalidate: 1800 }),
+        api.listStreamers({
+          language: relationLanguage,
+          order: 'popular',
+          limit: 12,
+          revalidate: 1800,
+        }),
       )
     : null;
   const popularPromise = settle(

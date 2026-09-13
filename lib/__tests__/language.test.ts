@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { languageDisplayName } from '@/lib/format/language';
+import { isRelatableLanguage, languageDisplayName } from '@/lib/format/language';
+
+describe('isRelatableLanguage', () => {
+  it('accepts ISO 639 codes with or without a region tail', () => {
+    expect(isRelatableLanguage('en')).toBe(true);
+    expect(isRelatableLanguage('DE')).toBe(true);
+    expect(isRelatableLanguage('pt-BR')).toBe(true);
+    expect(isRelatableLanguage('jpn')).toBe(true);
+  });
+
+  it("rejects Twitch's specials — the API answers 400 for them", () => {
+    expect(isRelatableLanguage('other')).toBe(false);
+    expect(isRelatableLanguage('asl')).toBe(true); // 3 letters: valid shape, the API accepts it
+  });
+
+  it('rejects empty, null and malformed input', () => {
+    expect(isRelatableLanguage(null)).toBe(false);
+    expect(isRelatableLanguage(undefined)).toBe(false);
+    expect(isRelatableLanguage('')).toBe(false);
+    expect(isRelatableLanguage('de1')).toBe(false);
+    expect(isRelatableLanguage('<script>')).toBe(false);
+  });
+});
 
 describe('languageDisplayName', () => {
   it('maps common ISO codes to English names', () => {

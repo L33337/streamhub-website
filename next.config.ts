@@ -106,6 +106,16 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      {
+        // Chrome's private prefetch proxy asks every origin for this file
+        // (~30 × 404/day before 2026-09-13). The file in public/ opts out
+        // (fraction 0: the WAF runs bot protection in challenge mode, and a
+        // proxied prefetch it cannot serve is wasted work either way); Chrome
+        // only honours it under this exact media type, and a static file has
+        // no other way to declare one.
+        source: "/.well-known/traffic-advice",
+        headers: [{ key: "Content-Type", value: "application/trafficadvice+json" }],
+      },
     ];
   },
 };

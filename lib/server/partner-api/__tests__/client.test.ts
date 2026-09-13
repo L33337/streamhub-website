@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 // Component. Stub it so the module can be unit-tested in the node env.
 vi.mock('server-only', () => ({}));
 
-import { PartnerApiClient, isRetryableError } from '../client';
+import { PartnerApiClient, RETRY_DELAYS_MS, isRetryableError } from '../client';
 import {
   PartnerApiError,
   PartnerApiAuthError,
@@ -111,7 +111,27 @@ describe('PartnerApiClient retry loop', () => {
     expect(result).toEqual({ id: 'abc', name: 'Streamer' });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledTimes(1);
-    expect(sleep).toHaveBeenCalledWith(300);
+    expect(sleep).toHaveBeenCalledWith(RETRY_DELAYS_MS[0]);
+  });
+
+  it('survives a ~2 s runtime restart: two 503s, then success on the third attempt', async () => {
+    // 2026-09-12 02:00:12–13 UTC: every Partner API call answered 503 for
+    // about two seconds. A single 300 ms retry landed inside that window.
+    const fetchImpl = sequenceFetch(
+      jsonResponse({ error: 'internal_error' }, 503),
+      jsonResponse({ error: 'internal_error' }, 503),
+      jsonResponse({ id: 'abc', name: 'Streamer' }, 200),
+    );
+    const sleep = vi.fn(async (_ms: number) => {});
+    const client = makeClient(fetchImpl, sleep);
+
+    const result = await client.getStreamer('abc');
+
+    expect(result).toEqual({ id: 'abc', name: 'Streamer' });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(sleep.mock.calls.map((c) => c[0])).toEqual([...RETRY_DELAYS_MS]);
+    // The two waits together must outlast a 2 s restart window.
+    expect(RETRY_DELAYS_MS.reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(2_000);
   });
 
   it('retries a transport failure (ECONNRESET) then succeeds', async () => {
@@ -129,12 +149,14 @@ describe('PartnerApiClient retry loop', () => {
       jsonResponse({ error: 'bad_gateway' }, 502),
       jsonResponse({ error: 'bad_gateway' }, 502),
       jsonResponse({ error: 'bad_gateway' }, 502),
+      jsonResponse({ error: 'bad_gateway' }, 502),
     );
     const client = makeClient(fetchImpl);
 
     // listStreamers does not swallow, so the error propagates.
     await expect(client.listStreamers({ limit: 1 })).rejects.toBeInstanceOf(PartnerApiServerError);
-    expect(fetchImpl).toHaveBeenCalledTimes(2); // 1 original + 1 retry, then stop
+    // 1 original + one retry per configured delay, then stop.
+    expect(fetchImpl).toHaveBeenCalledTimes(RETRY_DELAYS_MS.length + 1);
   });
 
   it('does NOT retry a 401 (auth) — fails fast on the first attempt', async () => {

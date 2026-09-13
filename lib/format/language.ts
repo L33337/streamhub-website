@@ -44,6 +44,23 @@ const SPECIALS: Record<string, Record<string, string>> = {
 };
 
 /**
+ * Whether a stored broadcaster-language code can drive a "streams in the same
+ * language" relation query against the Partner API (`GET /v1/streamers?language=`).
+ *
+ * Twitch's specials are real values in `streamers.language` but useless as a
+ * relation: `other` means "none of the listed languages" (two `other` channels
+ * share nothing), and `asl` is a sign language with a handful of channels.
+ * Until 2026-09-13 RelatedStreamers passed `other` through verbatim; the API
+ * rejected it with 400 and the whole section — the page's internal links —
+ * silently disappeared for that streamer. A relatable code is ISO 639-1/2
+ * (2–3 letters) with an optional region tail, i.e. what the API validates.
+ */
+export function isRelatableLanguage(code: string | null | undefined): code is string {
+  if (!code) return false;
+  return /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(code.trim());
+}
+
+/**
  * Human-readable language name for a broadcaster language code, or null when
  * there is no code. Region subtags are dropped for compactness ("zh-hk" →
  * "Chinese", not "Chinese (Hong Kong SAR China)"); codes the CLDR cannot

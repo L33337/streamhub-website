@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { loadOgAvatar } from '@/lib/og/avatar';
 import { ogCacheHeaders } from '@/lib/og/frame';
 import { getPartnerApi } from '@/lib/server/partner-api';
 import { initialsFromName } from '@/components/web/InitialsAvatar';
@@ -45,7 +46,8 @@ export default async function OgImage({ params }: Props) {
   ]);
 
   const name = streamer?.name ?? slug;
-  const avatarUrl = avatarLargeUrl(streamer?.avatar_url ?? null);
+  // Verified bytes as a data: URL, or null → initials (see lib/og/avatar.ts).
+  const avatarUrl = await loadOgAvatar(avatarLargeUrl(streamer?.avatar_url ?? null));
   const initials = initialsFromName(name);
 
   // Headline facts as pills — EN axis (OG cards are single-language), at most

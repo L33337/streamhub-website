@@ -39,15 +39,20 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_REVALIDATE_SECONDS = 300;
 
 /**
- * Total attempts per request (1 original + retries). All partner-API calls in
- * this client are idempotent GETs, so a retry is always safe. One retry is
- * enough to absorb the fast transient failures we actually see in production
- * (gateway 502 on a cold worker, a transient 503 from a saturated DB pooler, an
- * ECONNRESET) without meaningfully inflating tail latency on a real outage.
+ * Wait before retry attempt n (index n-1). All partner-API calls in this
+ * client are idempotent GETs, so a retry is always safe.
+ *
+ * Was a single 300 ms retry until 2026-09-13. The failure it has to absorb is
+ * not a cold worker but a Supabase Edge Runtime restart
+ * (`SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED`): on 2026-09-12 02:00:12–13 UTC
+ * every Partner API call answered 503 for ~2 s, and the 300 ms retry landed
+ * inside that window, so seven streamer-page regenerations failed for good.
+ * Two retries at 1 s and 3 s cover a restart of that length; the extra wait
+ * is only ever paid while the backend is actually down. Total attempts =
+ * RETRY_DELAYS_MS.length + 1.
  */
-const MAX_ATTEMPTS = 2;
-/** Linear backoff between attempts (attempt n waits n * this). Small on purpose — the retry is SSR-blocking. */
-const RETRY_BACKOFF_MS = 300;
+export const RETRY_DELAYS_MS: readonly number[] = [1_000, 3_000];
+const MAX_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 /** 5xx statuses worth a retry. 500 is excluded: it usually signals a deterministic server bug, not a blip. */
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
 
@@ -453,9 +458,9 @@ class PartnerApiClient {
 
   /**
    * Retry wrapper around {@link attempt}. Retries only transient failures (see
-   * {@link isRetryableError}), up to {@link MAX_ATTEMPTS} total, with a short
-   * linear backoff. A caller-aborted signal short-circuits the loop so a
-   * cancelled request is never retried.
+   * {@link isRetryableError}), up to {@link MAX_ATTEMPTS} total, waiting
+   * {@link RETRY_DELAYS_MS} between attempts. A caller-aborted signal
+   * short-circuits the loop so a cancelled request is never retried.
    */
   private async request<T>(method: string, path: string, opts: FetchOptions): Promise<T> {
     let lastErr: unknown;
@@ -469,7 +474,7 @@ class PartnerApiClient {
         if (isLastAttempt || callerAborted || !isRetryableError(err)) {
           throw err;
         }
-        await this.sleep(RETRY_BACKOFF_MS * attempt);
+        await this.sleep(RETRY_DELAYS_MS[attempt - 1]);
       }
     }
     // Unreachable (the loop either returns or throws), but keeps TS happy.
