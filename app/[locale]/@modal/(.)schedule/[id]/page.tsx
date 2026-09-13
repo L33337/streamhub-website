@@ -13,8 +13,9 @@ export default async function InterceptedSlotPage({ params }: Props) {
   const { locale: rawLocale, id } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   // revalidate MUST match the full page's loadSlot call (same URL + same
-  // revalidate → one shared data-cache entry instead of two).
-  const { slot, expiredStreamerId } = await getPartnerApi().getSchedule(id, { revalidate: 300 });
+  // revalidate → one shared data-cache entry instead of two); 1800 since
+  // 2026-09-13, see app/[locale]/schedule/[id]/page.tsx.
+  const { slot, expiredStreamerId } = await getPartnerApi().getSchedule(id, { revalidate: 1800 });
   if (!slot) {
     // Same miss handling as the full page — a modal for a just-expired slot
     // navigates to the streamer page instead of a 404.

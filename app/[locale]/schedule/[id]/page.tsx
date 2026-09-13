@@ -8,13 +8,20 @@ import { StreamSlotDetail } from '@/components/web/StreamSlotDetail';
 import { BackLink } from '@/components/web/BackLink';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 
-// 300 (was 60 until 2026-08-03): slot ids churn every prediction cycle, so most
-// traffic here is a cold first render — but re-crawls of live slots at a 60 s
-// TTL made every hit a billed ISR write (this route was the site's top ISR
-// write consumer together with /streamer/[slug]). 300 matches the site-wide
-// convention; the only freshness cost is a live-status flip appearing up to
-// 5 min late on a slot DETAIL page (homepage + /live keep their 60 s TTL).
-export const revalidate = 300;
+// 1800 (300 from 2026-08-03, 60 before): slot ids churn every prediction
+// cycle, so most traffic here is a cold first render — but re-crawls at a
+// short TTL made every hit a billed ISR write (this route was the site's top
+// ISR write consumer together with /streamer/[slug]). Raised to 1800 on
+// 2026-09-13: the miss outcomes (308 to the streamer page / 404) are cached
+// with the SAME TTL, and Next's data cache never stores the API's 404, so a
+// dead id re-crawled every ~25 min cost a render + a Partner API call each
+// time — 3,500 prediction-id 404s + 860 live-id 404s per day, ids 1–12 days
+// old (younger than the middleware's 21-day shortcut). The freshness cost is
+// a live-status flip appearing up to 30 min late on a slot DETAIL page
+// (homepage + /live keep their 60 s TTL; the streamer page is purged
+// on-demand). Keep loadSlot and the @modal route at the same value — the
+// lowest fetch revalidate in the tree caps the route (AGENTS.md).
+export const revalidate = 1800;
 
 // Required for ISR: without generateStaticParams, Next renders this dynamic
 // route per-request (ƒ in the build output) and never caches the HTML — every
@@ -31,7 +38,7 @@ export function generateStaticParams(): Array<{ id: string }> {
 // a single fetch per request. Load-bearing: the partner-api client always
 // passes an AbortSignal, which opts the fetch out of Next's built-in request
 // dedupe — without cache() this page fired two identical getSchedule calls.
-const loadSlot = cache((id: string) => getPartnerApi().getSchedule(id, { revalidate: 300 }));
+const loadSlot = cache((id: string) => getPartnerApi().getSchedule(id, { revalidate }));
 
 /**
  * Where a miss should send the visitor, or null for a real 404.
