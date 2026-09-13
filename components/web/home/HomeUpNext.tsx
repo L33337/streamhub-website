@@ -3,14 +3,12 @@ import { hubLexFor } from '@/lib/i18n-hub';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { languageDisplayName } from '@/lib/format/language';
 import {
-  buildLineupFilterItems,
+  buildLineupIslandData,
   formatLineupHour,
-  splitLineupSlots,
   LINEUP_REVEAL_STEP,
   LINEUP_TIME_HOURS,
   LINEUP_VISIBLE_COUNT,
 } from '@/lib/home/lineup-filters';
-import { toLineupCardSlot } from '@/lib/home/slot-payload';
 import { FeedSectionHeader } from '@/components/web/feed/FeedSectionHeader';
 import { SlotCard } from '@/components/web/SlotCard';
 import { HomeUpNextFilters } from './HomeUpNextFilters';
@@ -57,10 +55,8 @@ export function HomeUpNext({
 
   // Language names follow the VIEWER's locale (chrome, not content — CLAUDE.md
   // D6), so a German visitor picks "Japanisch", not "Japanese".
-  const items = buildLineupFilterItems(
-    slots,
-    (code) => languageDisplayName(code, locale) ?? code.toUpperCase(),
-  );
+  const languageName = (code: string) =>
+    languageDisplayName(code, locale) ?? code.toUpperCase();
 
   const bellStrings = {
     title: L.homeFeed.upsell.bellTitle,
@@ -78,8 +74,12 @@ export function HomeUpNext({
   };
 
   const listClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
-  // ssr = what becomes HTML, deferred = what the island renders on demand.
-  const { ssr: ssrSlots, deferred: deferredSlots } = splitLineupSlots(slots);
+  // ssr = what becomes HTML; island = the data the island renders the rest
+  // from. The deferred slots are pruned to what SlotCard renders, with the
+  // reasoning already resolved for THIS locale and cut to the teaser, and
+  // filter items travel only for the head — the island derives the tail's
+  // (lib/home/lineup-filters.ts `buildLineupIslandData`).
+  const { ssr: ssrSlots, island } = buildLineupIslandData(slots, locale, languageName);
 
   // Handed over as an ARRAY of <li>, not as a finished list: the island puts
   // them in the SAME <ul> as the cards it renders itself, so all of them share
@@ -124,7 +124,8 @@ export function HomeUpNext({
         </div>
       ) : (
         <HomeUpNextFilters
-          items={items}
+          ssrItems={island.ssrItems}
+          languageLabels={island.languageLabels}
           strings={{
             categoryLabel: L.homeFeed.liveFilterCategory,
             languageLabel: L.homeFeed.liveFilterLanguage,
@@ -165,13 +166,10 @@ export function HomeUpNext({
           upsellStrings={favoritesStrings}
           bellStrings={bellStrings}
           ssrCards={ssrCards}
-          // Pruned to what SlotCard renders, with the reasoning already
-          // resolved for THIS locale: a full DTO would ship a dozen unread
-          // fields plus both copy variants, once per card, in the flight
-          // payload (lib/home/slot-payload.ts).
-          deferredSlots={deferredSlots.map((slot) =>
-            toLineupCardSlot(slot, locale),
-          )}
+          // A full DTO would ship a dozen unread fields plus both copy
+          // variants, once per card, in the flight payload
+          // (lib/home/slot-payload.ts).
+          deferredSlots={island.deferredSlots}
           listClassName={listClass}
           locale={locale}
         />

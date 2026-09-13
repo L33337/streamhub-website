@@ -142,7 +142,7 @@ export function computeVisibleClipIds(
  * slices its resting cut off the front.
  */
 export function buildClipFilterItems(
-  clips: FeedClip[],
+  clips: ReadonlyArray<Pick<FeedClip, 'id' | 'streamerId' | 'category'>>,
   languageByStreamer: Record<string, string>,
   languageName: (code: string) => string,
 ): ClipFilterItem[] {

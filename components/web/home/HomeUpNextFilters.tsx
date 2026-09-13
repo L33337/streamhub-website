@@ -10,7 +10,10 @@ import {
 } from 'react';
 import { Lock, RotateCcw } from 'lucide-react';
 import type { UiLang } from '@/lib/i18n-core';
-import type { LineupCardSlot } from '@/lib/home/slot-payload';
+import {
+  hydrateLineupCardSlot,
+  type LineupCardSlot,
+} from '@/lib/home/slot-payload';
 import { SlotCard } from '@/components/web/SlotCard';
 import { SlotBellButton } from './SlotBellButton';
 import { FILTER_SELECT_CLASS } from './filter-controls';
@@ -24,6 +27,7 @@ import {
   countLineupLanguageOptions,
   countLineupTimeOptions,
   isLineupItemExpired,
+  lineupFilterItemsFor,
   lineupRevealLimit,
   LINEUP_REVEAL_STEP,
   localHourOf,
@@ -86,6 +90,12 @@ export interface LineupFilterStrings {
  * variant). The two regimes must not fight: the imperative pass deliberately
  * skips `[data-home-deferred]`, because React owns those nodes.
  *
+ * Filter items arrive only for the server-rendered head (`ssrItems`); the
+ * tail's are derived here from `deferredSlots` plus the once-per-language
+ * `languageLabels` map (payload diet 2026-09-14). The result is identical,
+ * item by item, to what the server used to send for the whole pool, so the
+ * dropdown counts are unchanged.
+ *
  * What this section needs that the live rail does not:
  *
  * - **A clock, for two jobs.** Cards whose predicted start has passed are
@@ -103,7 +113,8 @@ export interface LineupFilterStrings {
  * The locked "My favorites" chip stays as implicit hook I3 (upsell sheet).
  */
 export function HomeUpNextFilters({
-  items,
+  ssrItems,
+  languageLabels,
   strings,
   upsellStrings,
   bellStrings,
@@ -112,7 +123,10 @@ export function HomeUpNextFilters({
   listClassName,
   locale,
 }: {
-  items: LineupFilterItem[];
+  /** Filter metadata of the server-rendered head only. */
+  ssrItems: LineupFilterItem[];
+  /** Normalized language code → name in the page's locale, for the tail's items. */
+  languageLabels: Record<string, string>;
   strings: LineupFilterStrings;
   upsellStrings: UpsellSheetStrings;
   bellStrings: UpsellSheetStrings;
@@ -121,7 +135,7 @@ export function HomeUpNextFilters({
   /**
    * The pool beyond the server-rendered head, rendered here on demand —
    * pruned to what SlotCard reads, reasoning already resolved for the page's
-   * locale (`toLineupCardSlot`).
+   * locale and default-valued fields omitted (`toLineupCardSlot`).
    */
   deferredSlots: LineupCardSlot[];
   listClassName: string;
@@ -150,6 +164,18 @@ export function HomeUpNextFilters({
   const languageId = useId();
   const timeId = useId();
   const listId = useId();
+
+  // The whole pool's filter metadata, in pool order: the shipped head plus
+  // the tail derived from its card data. Props never change after mount, so
+  // both memos run once.
+  const items = useMemo(
+    () => lineupFilterItemsFor({ ssrItems, deferredSlots, languageLabels }),
+    [ssrItems, deferredSlots, languageLabels],
+  );
+  const deferredCards = useMemo(
+    () => deferredSlots.map(hydrateLineupCardSlot),
+    [deferredSlots],
+  );
 
   // Expired cards leave every pool: they are about to disappear from the
   // section, so counting them would over-promise on each dropdown.
@@ -257,8 +283,8 @@ export function HomeUpNextFilters({
   // matches all sit late in the day still shows its first few cards without
   // opening the whole list.
   const deferredVisible = useMemo(
-    () => deferredSlots.filter((slot) => revealedIds.has(slot.id)),
-    [deferredSlots, revealedIds],
+    () => deferredCards.filter((slot) => revealedIds.has(slot.id)),
+    [deferredCards, revealedIds],
   );
 
   // Server-rendered cards only: the deferred ones are a React-controlled list

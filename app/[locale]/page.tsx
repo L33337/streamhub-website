@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { getPartnerApi, type PublicStreamSlot } from '@/lib/server/partner-api';
 import { fetchTrendingRail } from '@/lib/server/trending';
 import { getLiveStreamerIdSet } from '@/lib/server/live-streamers';
@@ -92,7 +93,13 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale } = await params;
-  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  // SEO F6 (2026-09): a bot probe like /wp-login.php or /ads.txt matches this
+  // route with locale = "wp-login.php" (the middleware passes dotted paths
+  // through unrewritten). The layout 404s on it, but only after this page had
+  // started its dozen section fetches in parallel, so every such 404 shipped
+  // the full homepage flight payload (1.3 MB). Bail out first.
+  if (!isUiLang(rawLocale)) notFound();
+  const locale: UiLang = rawLocale;
   // Title/description come from SITE_META_STRINGS for EVERY locale (the `en`
   // entry used to be duplicated inline here — two copies of one string that
   // could drift; i18n-chrome.test.ts pins the English values). They mirror the
@@ -215,7 +222,13 @@ async function fetchUpcomingSlots(
 
 export default async function HomePage({ params }: Props) {
   const { locale: rawLocale } = await params;
-  const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  // SEO F6 (2026-09): a bot probe like /wp-login.php or /ads.txt matches this
+  // route with locale = "wp-login.php" (the middleware passes dotted paths
+  // through unrewritten). The layout 404s on it, but only after this page had
+  // started its dozen section fetches in parallel, so every such 404 shipped
+  // the full homepage flight payload (1.3 MB). Bail out first.
+  if (!isUiLang(rawLocale)) notFound();
+  const locale: UiLang = rawLocale;
   const L = hubLexFor(locale);
   const api = getPartnerApi();
   const now = new Date();
@@ -294,6 +307,7 @@ export default async function HomePage({ params }: Props) {
       : {
           clips: [],
           names: {} as Record<string, string>,
+          logins: {} as Record<string, string>,
           languages: {} as Record<string, string>,
         };
   const quickFacts: HomeQuickFacts =
@@ -512,6 +526,7 @@ export default async function HomePage({ params }: Props) {
         <HomeClipsRail
           clips={homeClips.clips}
           names={homeClips.names}
+          logins={homeClips.logins}
           languages={homeClips.languages}
           locale={locale}
         />

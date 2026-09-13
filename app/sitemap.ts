@@ -1,12 +1,13 @@
 import type { MetadataRoute } from 'next';
 import { getPartnerApi, PartnerApiError } from '@/lib/server/partner-api';
-import { gameSlug } from '@/lib/game-slug';
+import { dedupeGamesBySlug, gameSlug } from '@/lib/game-slug';
 import {
   absoluteLocaleUrl,
   buildAlternates,
   INDEXABLE_GAME_LOCALES,
   INDEXABLE_HUB_LOCALES,
   isIndexableStreamerSlug,
+  isStreamerSitemapIndexable,
   latestChange,
   streamerIndexableLocales,
 } from '@/lib/seo';
@@ -230,6 +231,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const streamerUrls: MetadataRoute.Sitemap = [];
   const gameUrls: MetadataRoute.Sitemap = [];
   const recapUrls: MetadataRoute.Sitemap = [];
+  // One reference time for every streamer's activity window in this build.
+  const generatedAt = new Date();
 
   try {
     const api = getPartnerApi();
@@ -245,41 +248,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
 
       for (const s of resp.data) {
-        // Index-gate: skip streamers that have never gone live and aren't
-        // editorially featured. Their pages render only an empty-schedule state
-        // and are noindex'd at the page level (see buildStreamerMetadata), so
-        // listing them here only wastes crawl budget on URLs Google will drop.
-        // The public DTO carries no history flag; last_status_change_at !== null
-        // is the proxy for "was live at least once". A streamer re-enters the
-        // sitemap automatically once it goes live or is featured again.
+        // Index-gate: list exactly the streamers whose page is indexable —
+        // live, an upcoming stream within 7 days, or featured AND streamed in
+        // the last 56 days (SEO F2, 2026-09). The DTO's activity facts are the
+        // same ones buildStreamerMetadata gates on, so a listed URL no longer
+        // turns out to be noindex (22 such contradictions before F2), and a
+        // dormant featured streamer no longer earns an entry for an empty
+        // schedule. Against an API without those fields the helper falls back
+        // to the pre-F2 proxy (last_status_change_at !== null || featured).
         // Degenerate legacy slugs ('' or leading '-') never enter the sitemap:
         // their pages are permanently noindex'd, and the empty id would emit a
         // bare /streamer/ URL that 404s.
         if (!isIndexableStreamerSlug(s.id)) continue;
-        if (s.last_status_change_at === null && !s.is_featured) continue;
+        if (!isStreamerSitemapIndexable(s, generatedAt)) continue;
 
         // M22 P3 (S3.4): non-English streamers index as an en + own-language
         // pair — emit BOTH URLs for discovery. English/unknown-language
         // streamers stay single unprefixed entries.
         //
         // NO hreflang alternates here, deliberately (fixed 2026-07-27 after a
-        // post-deploy review): the sitemap's index-gate above is only a PROXY
-        // (last_status_change_at), while the real gate — live || next ||
-        // featured — lives in buildStreamerMetadata and is evaluated per page.
-        // A streamer that passes the proxy but fails the real gate renders
-        // noindex WITHOUT hreflang tags, so a cluster declared here would have
-        // no return tags and GSC would report an hreflang error. The page-level
-        // cluster is exact and reciprocal, and Google accepts hreflang from
-        // either source — so the pages own it alone.
+        // post-deploy review). The gate above now reads the page gate's facts,
+        // but the two are still evaluated at different times: this sitemap is
+        // cached for an hour, the page for 30 minutes and purged on every live
+        // flip, so a streamer can cross the gate in between. A page that has
+        // turned noindex emits no hreflang tags, a cluster declared here would
+        // have no return tags, and GSC would report an hreflang error. The
+        // page-level cluster is exact and reciprocal, and Google accepts
+        // hreflang from either source — so the pages own it alone.
         const path = `/streamer/${encodeURIComponent(s.id)}`;
         for (const l of streamerIndexableLocales(s.language)) {
           streamerUrls.push({
             url: absoluteLocaleUrl(l, path),
             // Honest <lastmod>: updated_at only moves on metadata writes (avatar,
             // discovery), so it misses live↔offline flips that change the page's
-            // title/description. last_status_change_at captures those. Take the
-            // later of the two so Google sees a real "changed" signal.
-            lastModified: latestChange(s.updated_at, s.last_status_change_at),
+            // title/description (last_status_change_at) and prediction runs that
+            // rewrite its schedule (predictions_updated_at). Take the latest so
+            // Google sees a real "changed" signal.
+            lastModified: latestChange(
+              s.updated_at,
+              s.last_status_change_at,
+              s.predictions_updated_at,
+            ),
             changeFrequency: 'daily',
             priority: l === 'en' ? 0.7 : 0.6,
           });
@@ -290,21 +299,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       pages++;
     } while (cursor && pages < MAX_PAGES);
 
-    // Game/category hub pages. The catalog already requires >= 3 streamers;
-    // the >= MIN_INDEXABLE_GAME_STREAMERS / live check is a cheap proxy for
-    // the page's own thin-content gate (isGameHubIndexable — the page also
-    // counts upcoming slots, which the games row can't see; that residual
-    // mismatch self-corrects because sub-threshold pages emit noindex).
+    // Game/category hub pages: only categories that clear the page's STABLE
+    // thin-content term, streamer_count >= MIN_INDEXABLE_GAME_STREAMERS.
+    // The page gate (isGameHubIndexable) additionally admits a small category
+    // while it has live or upcoming activity; the sitemap deliberately stops
+    // listing those (SEO F5, 2026-09): 25 of the 67 live categories on
+    // 2026-09-13 were such transients, whose URL appeared for an hour and then
+    // pointed at a noindex page (or, before F5, a 404 once the category left
+    // the catalog). Such a page is still reachable and indexable through
+    // internal links while it is active.
+    // One entry per slug: case-variant duplicates ("BOMBANANA!"/"Bombanana!")
+    // slug to the same URL, and the page resolves the same winner.
     // No lastModified on game URLs: a per-render "now" on every regeneration
     // teaches Google the value is meaningless — omit rather than fake.
     const gamesResp = await api.listGames({ limit: PAGE_LIMIT, revalidate: 3600 });
-    for (const g of gamesResp.data) {
+    const games = dedupeGamesBySlug(gamesResp.data);
+    for (const g of games) {
       const slug = gameSlug(g.category);
-      if (!slug) continue;
-      if (
-        g.streamer_count >= MIN_INDEXABLE_GAME_STREAMERS ||
-        (g.live_streamer_count ?? 0) > 0
-      ) {
+      if (g.streamer_count >= MIN_INDEXABLE_GAME_STREAMERS) {
         gameUrls.push(
           ...gamePageEntries(`/game/${slug}`, {
             changeFrequency: 'daily',
@@ -333,9 +345,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // rethrowing like the blocks above, because these URLs are additive.
     try {
       const best = await api.listBestGamesToStream();
-      const hubSlugs = new Set(
-        gamesResp.data.map((g) => gameSlug(g.category)).filter((s) => s.length > 0),
-      );
+      const hubSlugs = new Set(games.map((g) => gameSlug(g.category)));
       for (const entry of best.data) {
         const slug = gameSlug(entry.category);
         // Only categories that also have a hub page — /best-time resolves its

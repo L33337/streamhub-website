@@ -32,8 +32,10 @@ beforeEach(() => {
     data: [
       // Passes both game gates (hub >= 5 streamers, ranking >= 10).
       { category: 'Fortnite', streamer_count: 43, live_streamer_count: 3 },
-      // Passes the hub gate only (live), not the >= 10 ranking gate.
+      // Live but below the hub's streamer floor: a transient (SEO F5).
       { category: 'Chess', streamer_count: 4, live_streamer_count: 1 },
+      // Hub gate only (>= 5, < 10).
+      { category: 'Minecraft', streamer_count: 7, live_streamer_count: 0 },
     ],
   });
 });
@@ -67,15 +69,15 @@ describe('sitemap — M22 locale variants', () => {
   it('emits en+de discovery entries for game pages WITHOUT clusters (M22 P4)', async () => {
     const entries = await sitemap();
     const urls = urlsOf(entries);
-    // Hub page passes its proxy gate → both locale entries.
+    // Hub page passes its streamer floor → both locale entries.
     expect(urls).toContain('https://streamertimes.tv/game/fortnite');
     expect(urls).toContain('https://streamertimes.tv/de/game/fortnite');
-    expect(urls).toContain('https://streamertimes.tv/game/chess');
-    expect(urls).toContain('https://streamertimes.tv/de/game/chess');
+    expect(urls).toContain('https://streamertimes.tv/game/minecraft');
+    expect(urls).toContain('https://streamertimes.tv/de/game/minecraft');
     // Ranking page gate (>= 10) admits Fortnite only.
     expect(urls).toContain('https://streamertimes.tv/rankings/game/fortnite');
     expect(urls).toContain('https://streamertimes.tv/de/rankings/game/fortnite');
-    expect(urls).not.toContain('https://streamertimes.tv/rankings/game/chess');
+    expect(urls).not.toContain('https://streamertimes.tv/rankings/game/minecraft');
     // Same "no return tags" guard as streamer entries: the game gates here are
     // proxies, the pages own the exact hreflang clusters — the sitemap must
     // not declare clusters the pages might never confirm.
@@ -149,6 +151,109 @@ describe('sitemap — M22 locale variants', () => {
   });
 
   it('S4.1: lists every widened hub locale but never an /ar/ hub URL', async () => {
+    const entries = await sitemap();
+    const urls = entries.map((e) => e.url);
+    for (const l of INDEXABLE_HUB_LOCALES.filter((x) => x !== 'en')) {
+      expect(urls).toContain(`https://streamertimes.tv/${l}/live`);
+    }
+    expect(urls.some((u) => u.includes('/ar/'))).toBe(false);
+  });
+});
+
+describe('sitemap — SEO F5 game entries', () => {
+  it('no longer lists a small category just because it is live right now', async () => {
+    const urls = urlsOf(await sitemap());
+    expect(urls.some((u) => u.endsWith('/game/chess'))).toBe(false);
+  });
+
+  it('lists a slug once when two category spellings collide', async () => {
+    listGames.mockResolvedValue({
+      data: [
+        { category: 'Bombanana!', streamer_count: 6 },
+        { category: 'BOMBANANA!', streamer_count: 12 },
+      ],
+    });
+    const urls = urlsOf(await sitemap());
+    expect(urls.filter((u) => u === 'https://streamertimes.tv/game/bombanana')).toHaveLength(1);
+    // The ranking gate reads the WINNER's count (12), as the page does.
+    expect(urls.filter((u) => u === 'https://streamertimes.tv/rankings/game/bombanana')).toHaveLength(1);
+  });
+});
+
+describe('sitemap — SEO F2 streamer gate', () => {
+  const NOW = new Date('2026-09-14T12:00:00Z');
+  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
+  const daysAhead = (d: number) => new Date(NOW.getTime() + d * 86_400_000).toISOString();
+  const f2 = (id: string, overrides: Record<string, unknown>) => ({
+    ...streamer(id, 'en'),
+    last_status_change_at: daysAgo(90),
+    is_live: false,
+    next_stream_at: null,
+    last_stream_at: null,
+    predictions_updated_at: null,
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    return () => vi.useRealTimers();
+  });
+
+  it('lists live, upcoming and active-featured streamers only', async () => {
+    listStreamers.mockResolvedValue({
+      data: [
+        f2('livenow', { is_live: true }),
+        f2('soon', { next_stream_at: daysAhead(2) }),
+        f2('farout', { next_stream_at: daysAhead(9) }),
+        f2('featuredactive', { is_featured: true, last_stream_at: daysAgo(12) }),
+        f2('featureddormant', { is_featured: true, last_stream_at: daysAgo(80) }),
+        f2('quiet', { last_stream_at: daysAgo(3) }),
+      ],
+      pagination: { next_cursor: null },
+    });
+    const urls = urlsOf(await sitemap());
+    const listed = (id: string) => urls.includes(`https://streamertimes.tv/streamer/${id}`);
+    expect(listed('livenow')).toBe(true);
+    expect(listed('soon')).toBe(true);
+    expect(listed('featuredactive')).toBe(true);
+    expect(listed('farout')).toBe(false);
+    expect(listed('featureddormant')).toBe(false);
+    expect(listed('quiet')).toBe(false);
+  });
+
+  it('dates <lastmod> by the newest of metadata, live flip and prediction run', async () => {
+    listStreamers.mockResolvedValue({
+      data: [
+        f2('predicted', {
+          is_live: true,
+          updated_at: '2026-09-01T00:00:00Z',
+          last_status_change_at: '2026-09-10T00:00:00Z',
+          predictions_updated_at: '2026-09-13T08:00:00Z',
+        }),
+      ],
+      pagination: { next_cursor: null },
+    });
+    const entry = (await sitemap()).find((e) => e.url.endsWith('/streamer/predicted'));
+    expect(entry?.lastModified).toEqual(new Date('2026-09-13T08:00:00Z'));
+  });
+});
+
+describe('sitemap — legacy API without the F2 fields', () => {
+  it('keeps the pre-F2 proxy: never-live and not featured stays out', async () => {
+    listStreamers.mockResolvedValue({
+      data: [
+        { ...streamer('neverlive', 'en'), last_status_change_at: null },
+        { ...streamer('featuredneverlive', 'en'), last_status_change_at: null, is_featured: true },
+      ],
+      pagination: { next_cursor: null },
+    });
+    const urls = urlsOf(await sitemap());
+    expect(urls).not.toContain('https://streamertimes.tv/streamer/neverlive');
+    expect(urls).toContain('https://streamertimes.tv/streamer/featuredneverlive');
+  });
+
+  it('still lists every locale hub', async () => {
     const entries = await sitemap();
     const urls = entries.map((e) => e.url);
     for (const l of INDEXABLE_HUB_LOCALES.filter((x) => x !== 'en')) {

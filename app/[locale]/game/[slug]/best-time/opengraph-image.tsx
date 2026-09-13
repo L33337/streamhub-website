@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getPartnerApi } from '@/lib/server/partner-api';
-import { findGameBySlug } from '@/lib/game-slug';
+import { resolveGameBySlug } from '@/lib/server/games';
 import { TIMING_DAY_NAMES } from '@/lib/game-timing';
 import { renderOgFrame, OG_SIZE, ogCacheHeaders } from '@/lib/og/frame';
 
@@ -43,8 +43,7 @@ export default async function Image({ params }: Props) {
   let slotLine: string | null = null;
   try {
     const api = getPartnerApi();
-    const games = await api.listGames({ limit: 500 });
-    const game = findGameBySlug(games.data, slug);
+    const game = (await resolveGameBySlug(api, slug, { limit: 500 }))?.game ?? null;
     category = game?.category ?? null;
     if (game) {
       const rows = await api.listGames({

@@ -112,6 +112,36 @@ describe('root route handlers + assets are never rewritten', () => {
   });
 });
 
+describe('SEO F4: /en metadata images are served, not redirected', () => {
+  it.each([
+    '/en/opengraph-image/og',
+    '/en/twitter-image/og',
+    '/en/streamer/montanablack88/opengraph-image/og',
+    '/en/rankings/game/fortnite/opengraph-image/og',
+  ])('%s passes through without a 308 or a session refresh', async (path) => {
+    const res = await middleware(req(`${path}?4f2a9c1b`));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('location')).toBeNull();
+    expect(rewriteTarget(res)).toBeNull();
+    expect(updateSessionMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps redirecting /en pages, including names that merely start alike', async () => {
+    for (const path of ['/en/live', '/en/opengraph-imagery', '/en/streamer/opengraph-image-fan']) {
+      const res = await middleware(req(path));
+      expect(res.status, path).toBe(308);
+    }
+  });
+
+  it('leaves other locales and the unprefixed image URL on their existing paths', async () => {
+    const de = await middleware(req('/de/opengraph-image/og'));
+    expect(de.status).toBe(200);
+    expect(rewriteTarget(de)).toBeNull();
+    const bare = await middleware(req('/streamer/foo/opengraph-image/og'));
+    expect(rewriteTarget(bare)).toBe('/en/streamer/foo/opengraph-image/og');
+  });
+});
+
 describe('session-cookie survival (compose contract)', () => {
   function sessionResponseWithCookie(request: NextRequest): NextResponse {
     const res = NextResponse.next({ request });

@@ -11,6 +11,8 @@ import {
   normalizeLanguageCode,
   type CountedFilterOption,
 } from './filter-options';
+import { collectLanguageLabels, languageNameFromLabels } from './filter-payload';
+import { toLiveCardSlot, type LiveCardSlot } from './slot-payload';
 
 /**
  * `duration` the backend writes for always-on channels (1 year in minutes,
@@ -385,7 +387,7 @@ export function computeVisibleLiveIds(
  * computeVisibleLiveIds slices its default cut off the front.
  */
 export function buildLiveFilterItems(
-  slots: PublicStreamSlot[],
+  slots: ReadonlyArray<Pick<PublicStreamSlot, 'id' | 'category' | 'streamer_language'>>,
   languageName: (code: string) => string,
 ): LiveFilterItem[] {
   return slots.map((slot) => {
@@ -397,4 +399,54 @@ export function buildLiveFilterItems(
       languageLabel: language ? languageName(language) : '',
     };
   });
+}
+
+/**
+ * Everything the live rail's island receives as DATA (payload diet
+ * 2026-09-14, the lineup's arrangement): filter items only for the
+ * server-rendered head, the tail's items derived from its card data, language
+ * names once per language.
+ */
+export interface LiveIslandPayload {
+  ssrItems: LiveFilterItem[];
+  deferredSlots: LiveCardSlot[];
+  /** Normalized language code → name in the viewer's locale. */
+  languageLabels: Record<string, string>;
+}
+
+/**
+ * Splits the ranked pool and builds the island payload. `ssr` is the
+ * server-rendered head (full DTOs), `island` what crosses the boundary.
+ */
+export function buildLiveIslandData(
+  slots: PublicStreamSlot[],
+  languageName: (code: string) => string,
+  ssrCount: number = LIVE_RAIL_SSR_COUNT,
+): { ssr: PublicStreamSlot[]; island: LiveIslandPayload } {
+  const { ssr, deferred } = splitLiveSlots(slots, ssrCount);
+  return {
+    ssr,
+    island: {
+      ssrItems: buildLiveFilterItems(ssr, languageName),
+      deferredSlots: deferred.map(toLiveCardSlot),
+      languageLabels: collectLanguageLabels(
+        deferred.map((slot) => slot.streamer_language),
+        languageName,
+      ),
+    },
+  };
+}
+
+/**
+ * The island's view of the whole sweep's filter items, in rank order —
+ * identical to `buildLiveFilterItems` over the full pool (pinned by a test).
+ */
+export function liveFilterItemsFor(payload: LiveIslandPayload): LiveFilterItem[] {
+  return [
+    ...payload.ssrItems,
+    ...buildLiveFilterItems(
+      payload.deferredSlots,
+      languageNameFromLabels(payload.languageLabels),
+    ),
+  ];
 }

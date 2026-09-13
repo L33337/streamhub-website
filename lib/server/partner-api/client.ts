@@ -141,6 +141,13 @@ export interface ListGamesOptions extends FetchOptions {
    * competition stats.
    */
   include?: 'hour_histogram' | 'timing' | 'hour_histogram,timing' | 'timing,hour_histogram';
+  /**
+   * Catalog floor (integer 1..100; the API default is 3 and it answers 400
+   * outside the range). Lower it only to RESOLVE a slug the default catalog
+   * does not contain (`lib/server/games.ts`), never to build link lists: the
+   * thin tail below 3 streamers must not be linked from anywhere.
+   */
+  minStreamers?: number;
 }
 
 export interface ListHistoryOptions extends FetchOptions {
@@ -183,12 +190,13 @@ class PartnerApiClient {
     return this.request<Paginated<PublicStreamer>>('GET', `/v1/streamers?${params}`, opts);
   }
 
-  /** Categories that qualify for a hub page (>= 3 active streamers), most popular first. */
+  /** Categories that qualify for a hub page (>= 3 active streamers unless `minStreamers` lowers it), most popular first. */
   async listGames(opts: ListGamesOptions = {}): Promise<Paginated<PublicGame>> {
     const params = new URLSearchParams();
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
     if (opts.category) params.set('category', opts.category);
     if (opts.include) params.set('include', opts.include);
+    if (opts.minStreamers !== undefined) params.set('min_streamers', String(opts.minStreamers));
     const qs = params.toString();
     return this.request<Paginated<PublicGame>>('GET', `/v1/games${qs ? `?${qs}` : ''}`, opts);
   }

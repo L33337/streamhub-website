@@ -3,6 +3,8 @@ import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   ALWAYS_ON_DURATION_SENTINEL,
   buildLiveFilterItems,
+  buildLiveIslandData,
+  liveFilterItemsFor,
   computeVisibleLiveIds,
   countLiveFilterOptions,
   formatLiveRuntime,
@@ -466,6 +468,44 @@ describe('computeVisibleLiveIds', () => {
     expect(computeVisibleLiveIds(items, '', '', 3)).toContain('c');
     expect(computeVisibleLiveIds(items, '', 'de', 3)).not.toContain('c');
     expect(computeVisibleLiveIds(items, 'VALORANT', '', 5)).not.toContain('c');
+  });
+});
+
+describe('buildLiveIslandData / liveFilterItemsFor', () => {
+  const languages = ['en', 'DE', 'pt-BR', null, 'asl', undefined];
+  const categories = ['Just Chatting', ' VALORANT ', null, 'Dota 2'];
+  const pool = Array.from({ length: 75 }, (_, index) =>
+    slot({
+      id: `live-${index}`,
+      streamer_id: `streamer-${index}`,
+      category: categories[index % categories.length],
+      streamer_language: languages[index % languages.length],
+      viewer_count: 10_000 - index,
+    }),
+  );
+  const labels = (code: string) => ({ de: 'Deutsch' })[code] ?? code.toUpperCase();
+
+  it('ships items for the server-rendered head only', () => {
+    const { ssr, island } = buildLiveIslandData(pool, labels);
+    expect(ssr).toHaveLength(LIVE_RAIL_SSR_COUNT);
+    expect(island.ssrItems).toHaveLength(LIVE_RAIL_SSR_COUNT);
+    expect(island.deferredSlots).toHaveLength(pool.length - LIVE_RAIL_SSR_COUNT);
+  });
+
+  it('derives exactly the server-side items, slot by slot, in rank order', () => {
+    const { island } = buildLiveIslandData(pool, labels);
+    const server = buildLiveFilterItems(pool, labels);
+    const client = liveFilterItemsFor(JSON.parse(JSON.stringify(island)));
+    expect(client).toHaveLength(server.length);
+    server.forEach((item, index) => expect(client[index], item.id).toEqual(item));
+    for (const dimension of ['category', 'language'] as const) {
+      expect(countLiveFilterOptions(client, dimension)).toEqual(
+        countLiveFilterOptions(server, dimension),
+      );
+    }
+    expect(computeVisibleLiveIds(client, '', '', LIVE_RAIL_DEFAULT_VISIBLE)).toEqual(
+      computeVisibleLiveIds(server, '', '', LIVE_RAIL_DEFAULT_VISIBLE),
+    );
   });
 });
 

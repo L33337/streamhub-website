@@ -21,13 +21,16 @@ export function isRankingIndexable(entryCount: number): boolean {
   return entryCount >= MIN_INDEXABLE_RANKING_ENTRIES;
 }
 
-// Thin-content gate for /game/[slug] hub pages. The catalog itself already
-// requires >= 3 streamers, so this only gates the 3-4-streamer tail — unless
-// the category has actual live/upcoming activity, which makes even a small
-// hub a useful result. Caveat: when the slots fetches degrade (API blip),
-// live/upcoming read as 0 and an active sub-threshold page can flip to
-// noindex for one ISR cycle (300s) — accepted, same failure mode as the
-// ranking pages; do not "fix" by removing the activity terms.
+// Thin-content gate for /game/[slug] hub pages. Since SEO F5 (2026-09) the hub
+// also renders categories below the catalog floor of 3 (resolveGameBySlug), so
+// this gates the whole < 5 tail — unless the category has actual live/upcoming
+// activity, which makes even a small hub a useful result. That activity term
+// is a PAGE gate only: the sitemap lists hubs by streamer_count alone, because
+// a live-only entry pointed at a noindex page an hour later. Caveat: when the
+// slots fetches degrade (API blip), live/upcoming read as 0 and an active
+// sub-threshold page can flip to noindex for one ISR cycle (300s) — accepted,
+// same failure mode as the ranking pages; do not "fix" by removing the
+// activity terms.
 export const MIN_INDEXABLE_GAME_STREAMERS = 5;
 
 export function isGameHubIndexable(params: {

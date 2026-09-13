@@ -73,6 +73,30 @@ export interface FeedClip {
   creatorName?: string;
 }
 
+/**
+ * Wire shape of one clip in the homepage's "Clips of the week" island
+ * (payload diet 2026-09-14). Packed by `buildHomeClipsPayload` and turned back
+ * into a `FeedClip` by `hydrateHomeClip` (lib/home/clip-payload.ts) before
+ * anything renders it. Omitted keys mean: `id` = `externalClipId`, `title` =
+ * null, `url` = rebuilt from the streamer's login, no thumbnail.
+ */
+export interface HomeClipPayload {
+  externalClipId: string;
+  streamerId: string;
+  viewCount: number;
+  title?: string;
+  /** Present only when it cannot be rebuilt byte-identically from the login. */
+  url?: string;
+  /** uuid of a Twitch video-assets thumbnail (the packed form). */
+  thumbId?: string;
+  /** Any other thumbnail, in full. Never set together with `thumbId`. */
+  thumbnailUrl?: string;
+  durationSeconds?: number;
+  category?: string;
+  /** Database id, only for a slug that already occurred earlier in the pool. */
+  id?: string;
+}
+
 export type DiscoverReason = 'category' | 'language' | 'schedule' | 'active' | 'popular';
 
 export interface DiscoverRecommendation {

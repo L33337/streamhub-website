@@ -32,6 +32,23 @@ const PASSTHROUGH_EXACT = new Set([
   '/auth/sign-out',
 ]);
 
+/**
+ * Metadata image routes addressed under the English prefix. Next derives the
+ * og:image / twitter:image URL from the route's SEGMENT path, and every page
+ * lives under `app/[locale]/`, so an English page advertises
+ * `/en/…/opengraph-image/og?<hash>` — there is no option to drop the prefix.
+ * The `/en/*` → 308 below then made every social scraper and crawler fetch
+ * each card twice (SEO F4, 2026-09: Bingbot followed hundreds of these
+ * redirects a day). Serving the image directly is safe: an image has no
+ * canonical to split, and the unprefixed twin keeps working through the
+ * normal rewrite.
+ *
+ * Renaming or moving an `opengraph-image`/`twitter-image` convention file
+ * breaks nothing here as long as the file name stays; a route that serves
+ * images under a DIFFERENT name would need its own entry.
+ */
+const EN_METADATA_IMAGE = /^\/en\/(?:.*\/)?(?:opengraph-image|twitter-image)(?:\/|$)/;
+
 function isPassthrough(pathname: string): boolean {
   if (pathname === '/api' || pathname.startsWith('/api/')) return true;
   if (PASSTHROUGH_EXACT.has(pathname)) return true;
@@ -90,6 +107,12 @@ export async function middleware(request: NextRequest) {
   // GoTrue round trip per /api/search keystroke and sitemap fetch for signed-in
   // visitors; their token is refreshed on the next page navigation instead.
   if (isPassthrough(pathname)) {
+    return NextResponse.next({ request });
+  }
+
+  // Before the session refresh AND before the /en 308: an image render reads
+  // no session, and the prefixed URL is the one Next itself emits.
+  if (EN_METADATA_IMAGE.test(pathname)) {
     return NextResponse.next({ request });
   }
 

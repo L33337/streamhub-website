@@ -27,7 +27,8 @@ import {
   type UiLang,
 } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
-import { gameSlug, findGameBySlug } from '@/lib/game-slug';
+import { dedupeGamesBySlug, gameSlug } from '@/lib/game-slug';
+import { resolveGameBySlug } from '@/lib/server/games';
 import { isVideoGameCategory } from '@/lib/game-categories';
 import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
 import { formatCompactNumber } from '@/lib/format/number';
@@ -131,16 +132,20 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     now,
   };
 
-  let game: PublicGame | null;
+  let game: PublicGame;
   let catalog: Set<string>;
   try {
-    const games = await api.listGames({ limit: 500 });
-    game = findGameBySlug(games.data, slug);
-    catalog = new Set(games.data.map((g) => g.category));
+    // A category below the catalog floor still resolves (SEO F5): it renders
+    // and its thin gate below makes it noindex, instead of a 404 for a URL
+    // crawlers learned while it qualified. Related-game links stay on the
+    // catalog, so the thin tail is never linked.
+    const resolved = await resolveGameBySlug(api, slug, { limit: 500 });
+    if (!resolved) return empty;
+    game = resolved.game;
+    catalog = new Set(resolved.catalog.map((g) => g.category));
   } catch {
     return empty; // API unavailable → renders as notFound; ISR retries soon
   }
-  if (!game) return empty;
 
   // Same filter chain as /rankings/game/[slug]: only categories with a hub
   // page of their own, plus a self-reference guard.
@@ -227,9 +232,7 @@ export async function generateStaticParams({
   if (params.locale !== 'en') return [];
   try {
     const resp = await getPartnerApi().listGames({ limit: 500 });
-    return resp.data
-      .map((g) => ({ slug: gameSlug(g.category) }))
-      .filter((p) => p.slug.length > 0);
+    return dedupeGamesBySlug(resp.data).map((g) => ({ slug: gameSlug(g.category) }));
   } catch {
     // Backend unavailable at build → render on demand instead of failing the build.
     return [];
