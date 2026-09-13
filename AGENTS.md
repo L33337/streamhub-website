@@ -333,6 +333,15 @@ edge and every `scroll-mt-[calc(var(--header-height)+…)]` anchor clears it.
   12px text vs 36px / `rounded-lg` / 14px. The height is the standalone-chip
   touch-target rule from the 2026-07-30 round — do not "fix" it to h-9.
 
+# Release 2026-09-13 — SEO F1–F7 website wave (W2) + Googlebot snapshot script
+
+Merged `feature/seo-f1-f7-website` (`d0452bc`) and `feature/googlebot-snapshot` (`a527791`) together; Vercel deploy `dpl_CQjG5c8cQhHp3d7WFu43L5MWXo9G`, alias live **2026-09-13T23:30:54Z**. Backend counterpart (activity fields, `/v1/games?min_streamers`, Google publish switch) went live 48 minutes earlier; plan: `~/.claude/plans/seo-f1-f7-implementierung-2026-09.md`. What changed is documented in place: "Index gates read the streamer activity facts", "Game hub URLs stay stable", "Content rounds from the SEO plan (F3)" (all under SEO surface), the OG image bullets, the global-404 bullet (F6) and "Homepage payload diet 2026-09".
+
+- **Deployed inside the Google ping experiment on purpose** (user decision 2026-09-13 23:27 UTC; the plan had said "not before 15.09."). The experiment (`GOOGLE_INDEXING_PUBLISH_ENABLED=false` since 22:42:51Z) compares Googlebot crawls over 14 days; 2026-09-14 UTC is marked as the deploy day in `docs/measurements/googlebot-2026-09.csv` and evaluated separately. Do not deploy other SEO-relevant changes (sitemap, robots, index gates, purge behaviour) before the experiment ends (~2026-09-28) without noting the day there.
+- **Production smoke right after the deploy (all green):** homepage document 1,789,472 → 1,314,990 B, flight 1,228,045 → 779,397 B (`home-lineup` 385 → 211 KB, `home-clips` 360 → 107 KB); `/wp-login.php` 404 1,308,600 → 13,026 B; sitemap streamer URLs 1,195 → 1,170, a full scan of all 1,170 found **0 noindex and 0 non-200**; duplicate game-hub URLs in the sitemap 2 → 0; `/game/007-first-light` (2 streamers) 200 + `noindex, follow` instead of 404; unknown slug still 404; `/en/**/opengraph-image/og` 200 without redirect; og:url/og:locale per variant; German streamer titles "Wann streamt …?"; headless UI regression (lineup/live/clip filters and counts, show-more, clip lightbox with the rebuilt `www.twitch.tv/<login>/clip/<slug>` link) identical to before.
+- **Rollback:** revert `d0452bc` (the snapshot merge is scripts/docs only). The backend fields are additive, so the reverted site simply ignores them.
+- **Follow-ups (W3):** 7/14-day checks — Googlebot requests per day, Bingbot 308s on og-image URLs (should drop to 0), the `/[locale]/game/[slug]` 404 series; GSC queries containing "wann streamt" after 2–4 weeks. Known open: the `/app` OG card uses the existing app screenshot, which still shows the old one-word wordmark; `/game/<slug>/best-time` sits at ~520 words, below the plan's 600 target.
+
 # Release 2026-07-31 — three homepage branches merged together
 
 `8155fb4..5b86104` went to production as one release, in this order:
