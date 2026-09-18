@@ -16,11 +16,14 @@ interface Props {
   /** Link target. Default: the slot's day section on the current page; the
    *  wiki page points it at the profile-page schedule instead. */
   href?: string;
-  /** Drop the category of a LOW-confidence prediction (wiki page): the time
-   *  of such a slot is a pattern guess and its category the weakest part of
-   *  it — an encyclopedic page naming "Gambling" for a shooter streamer costs
-   *  more trust than the chip is worth. The profile page keeps it: the slot
-   *  card right below carries the confidence badge. */
+  /** Wiki page: drop a category that is not trustworthy as "the game".
+   *  (1) LOW-confidence predictions: the time of such a slot is a pattern
+   *  guess and its category the weakest part of it; an encyclopedic page
+   *  naming "Gambling" for a shooter streamer costs more trust than the chip
+   *  is worth. (2) Slots without Twitch: YouTube reports a video bucket
+   *  ("Gaming"), never a game; decided by platform, never by name (Twitch has
+   *  real categories called "Music" and "Sports"). The profile page keeps
+   *  both: the slot card right below carries the confidence badge. */
   hideUncertainCategory?: boolean;
 }
 
@@ -54,10 +57,10 @@ export function HeroNextStream({
   );
 
   if (!nextSlot) return null;
-  const category =
-    hideUncertainCategory && nextSlot.is_predicted && nextSlot.confidence === 'low'
-      ? null
-      : nextSlot.category;
+  const untrusted =
+    (nextSlot.is_predicted && nextSlot.confidence === 'low') ||
+    !nextSlot.platforms.includes('twitch');
+  const category = hideUncertainCategory && untrusted ? null : nextSlot.category;
 
   return (
     <a

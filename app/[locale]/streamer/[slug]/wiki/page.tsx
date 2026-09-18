@@ -558,6 +558,7 @@ function HistoryYearTable({
   locale,
   nativeLang,
   hubSlugs,
+  showTopGame,
   L,
 }: {
   group: WikiHistoryYear;
@@ -565,6 +566,9 @@ function HistoryYearTable({
   nativeLang: string | null;
   /** Category name → game hub slug, for catalog games only. */
   hubSlugs: ReadonlyMap<string, string>;
+  /** False when NO tracked month names a game (YouTube-only channels: the API
+   *  never serves a video bucket as a game) — a column of dashes is noise. */
+  showTopGame: boolean;
   L: UiLex;
 }) {
   // The summary rows live INSIDE the table, so the table must never scroll
@@ -587,9 +591,11 @@ function HistoryYearTable({
             <th scope="col" className={`${RIGHT} ${WIDE}`}>
               {L.wiki.historyColHours}
             </th>
-            <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
-              {L.wiki.historyColTopGame}
-            </th>
+            {showTopGame && (
+              <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
+                {L.wiki.historyColTopGame}
+              </th>
+            )}
             <th scope="col" className={`${RIGHT} ${WIDE}`}>
               {L.wiki.historyColFollowers}
             </th>
@@ -616,30 +622,32 @@ function HistoryYearTable({
                   <td className={`px-3 py-2 text-right tabular-nums text-text-secondary ${WIDE}`}>
                     {formatWholeNumber(entry.hours, locale)}
                   </td>
-                  <td className="px-2 py-2 text-text-primary sm:min-w-[12rem] sm:px-3">
-                    {entry.top_category ? (
-                      <>
-                        {hubSlugs.has(entry.top_category) ? (
-                          <Link
-                            href={localeHref(locale, `/game/${hubSlugs.get(entry.top_category)}`)}
-                            className="hover:text-accent-cyan"
-                          >
-                            {entry.top_category}
-                          </Link>
-                        ) : (
-                          entry.top_category
-                        )}
-                        {entry.top_share_percent !== null && (
-                          <span className="whitespace-nowrap text-text-secondary">
-                            {' · '}
-                            {formatSharePercent(entry.top_share_percent, locale)}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      EMPTY_CELL
-                    )}
-                  </td>
+                  {showTopGame && (
+                    <td className="px-2 py-2 text-text-primary sm:min-w-[12rem] sm:px-3">
+                      {entry.top_category ? (
+                        <>
+                          {hubSlugs.has(entry.top_category) ? (
+                            <Link
+                              href={localeHref(locale, `/game/${hubSlugs.get(entry.top_category)}`)}
+                              className="hover:text-accent-cyan"
+                            >
+                              {entry.top_category}
+                            </Link>
+                          ) : (
+                            entry.top_category
+                          )}
+                          {entry.top_share_percent !== null && (
+                            <span className="whitespace-nowrap text-text-secondary">
+                              {' · '}
+                              {formatSharePercent(entry.top_share_percent, locale)}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        EMPTY_CELL
+                      )}
+                    </td>
+                  )}
                   <td className={`px-3 py-2 text-right tabular-nums text-text-secondary ${WIDE}`}>
                     {entry.follower_delta !== null
                       ? formatSignedInt(entry.follower_delta, locale)
@@ -651,7 +659,7 @@ function HistoryYearTable({
                 </tr>
                 {para && (
                   <tr>
-                    <td colSpan={6} className="px-2 pb-3 pt-0 sm:px-3">
+                    <td colSpan={showTopGame ? 6 : 5} className="px-2 pb-3 pt-0 sm:px-3">
                       <p
                         lang={para.lang}
                         dir={dirFor(para.lang)}
@@ -718,6 +726,7 @@ export default async function StreamerWikiPage({ params }: Props) {
   // row's generation time also moves the page's dateModified.
   const history = wikiHistory(wiki);
   const historyYears = groupHistoryByYear(history);
+  const showTopGame = history.some((h) => typeof h.top_category === 'string' && h.top_category.length > 0);
   const dateModifiedIso = laterIso(updatedIso, latestHistoryIso(history));
   // W5: change log, grouped per day (section rewrites collapse to one line).
   const changeDays = groupChangesByDay(wikiChanges(wiki));
@@ -1267,6 +1276,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                     locale={locale}
                     nativeLang={wiki.native_lang}
                     hubSlugs={hubSlugs}
+                    showTopGame={showTopGame}
                     L={L}
                   />
                 ) : (
@@ -1279,6 +1289,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                       locale={locale}
                       nativeLang={wiki.native_lang}
                       hubSlugs={hubSlugs}
+                    showTopGame={showTopGame}
                       L={L}
                     />
                   </details>
