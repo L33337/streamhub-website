@@ -185,7 +185,7 @@ export const ru: UiLex = {
   },
   wiki: {
     teaserTitle: 'Вики и факты',
-    teaserSub: (name) => `Возраст, состояние, карьера: вики-профиль ${name}`,
+    teaserSub: (name, parts) => `${parts}: вики-профиль ${name}`,
     breadcrumb: 'Вики',
     heading: (name) => `${name} Вики`,
     metaTitle: (name, year, parts) => `${name} Вики ${year}: ${parts}`,
@@ -266,6 +266,11 @@ export const ru: UiLex = {
     changeIncomeRemoved: 'Оценка месячного дохода удалена (недостаточно данных)',
     changeSections: (sections) => `Разделы переписаны: ${sections}`,
     sectionSummary: 'Введение',
+    tocLabel: 'На этой странице',
+    tocAbout: 'О стримере',
+    tocStreamTimes: 'Время стримов',
+    tocGames: 'Игры',
+    articleLanguageNote: 'Эта статья пока недоступна на русском языке и показана на английском.',
     updated: (date) => `Обновлено ${date}`,
     factsHeading: 'Коротко о главном',
     factLabel: {

@@ -45,6 +45,7 @@ import { StreamerStatsBlock } from '@/components/web/StreamerStatsBlock';
 import { InsightsTeaserCard } from '@/components/web/streamer/InsightsTeaserCard';
 import { WikiTeaserCard } from '@/components/web/streamer/WikiTeaserCard';
 import { buildInsightsTeaser } from '@/lib/streamer-insights';
+import { wikiTeaserParts } from '@/lib/wiki';
 import { StreamerGames } from '@/components/web/StreamerGames';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 import { floorToBucket } from '@/lib/home/logic';
@@ -94,6 +95,8 @@ interface StreamerPageData {
   insightsTeaser: { bestDay: string; median: number } | null;
   /** M26: a published wiki profile exists → render the wiki teaser card. */
   hasWiki: boolean;
+  /** Fact keys of that profile: the teaser names only what the wiki holds. */
+  wikiFactKeys: string[];
   now: Date;
 }
 
@@ -210,6 +213,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       rankings: null,
       insightsTeaser: null,
       hasWiki: false,
+      wikiFactKeys: [],
       now,
     };
   }
@@ -243,6 +247,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     rankings,
     insightsTeaser: buildInsightsTeaser(insights),
     hasWiki: wiki !== null,
+    wikiFactKeys: (wiki?.facts ?? []).map((f) => f.key),
     now,
   };
 });
@@ -290,6 +295,7 @@ export default async function StreamerPage({ params }: Props) {
     rankings,
     insightsTeaser,
     hasWiki,
+    wikiFactKeys,
     now,
   } = await loadStreamerPage(slug);
   if (!streamer) notFound();
@@ -534,7 +540,16 @@ export default async function StreamerPage({ params }: Props) {
           slug={streamer.id}
           name={streamer.name}
           title={L.wiki.teaserTitle}
-          subtitle={L.wiki.teaserSub(streamer.name)}
+          subtitle={L.wiki.teaserSub(
+            streamer.name,
+            wikiTeaserParts(
+              wikiFactKeys.map((key) => ({ key })),
+              L.wiki.titlePart,
+              L.wiki.titleSep,
+              L.wiki.titleAnd,
+              locale,
+            ),
+          )}
         />
       )}
 

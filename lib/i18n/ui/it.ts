@@ -157,7 +157,7 @@ export const it: UiLex = {
   },
   wiki: {
     teaserTitle: 'Wiki e fatti',
-    teaserSub: (name) => `Età, patrimonio, carriera: il profilo wiki di ${name}`,
+    teaserSub: (name, parts) => `${parts}: il profilo wiki di ${name}`,
     breadcrumb: 'Wiki',
     heading: (name) => `${name} Wiki`,
     metaTitle: (name, year, parts) => `${name} Wiki ${year}: ${parts}`,
@@ -282,5 +282,10 @@ export const it: UiLex = {
     changeIncomeRemoved: 'Reddito mensile stimato rimosso (dati insufficienti)',
     changeSections: (sections) => `Sezioni riscritte: ${sections}`,
     sectionSummary: 'Introduzione',
+    tocLabel: 'In questa pagina',
+    tocAbout: 'Profilo',
+    tocStreamTimes: 'Orari',
+    tocGames: 'Giochi',
+    articleLanguageNote: 'Questo articolo non è ancora disponibile in italiano ed è mostrato in inglese.',
   },
 };

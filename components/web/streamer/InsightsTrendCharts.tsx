@@ -23,7 +23,7 @@ import type {
   InsightsFollowerPoint,
   InsightsMonthlyTrendEntry,
 } from '@/lib/server/partner-api';
-import { formatCompactNumber, formatStatValue } from '@/lib/format/number';
+import { formatCompactDistinct, formatStatValue } from '@/lib/format/number';
 import {
   usableMonthlyTrend,
   type MonthlyTrendView,
@@ -254,8 +254,14 @@ export function FollowerGrowthChart({
 
   if (!view) return null;
   const last = view.mapped[view.mapped.length - 1];
+  // One shared precision for the three tick labels, grown until max / latest /
+  // min read differently (a 7.608M–7.612M range used to label all three "7.6M").
+  const [maxLabel, lastLabel, minLabel] = formatCompactDistinct(
+    [view.max, last.count, view.min],
+    lang,
+  );
 
-  const pick = (clientX: number) => {
+  const pick =(clientX: number) => {
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -270,9 +276,9 @@ export function FollowerGrowthChart({
   return (
     <div className="relative">
       <div className="flex items-baseline justify-between text-[10px] text-text-muted" aria-hidden="true">
-        <span>{formatCompactNumber(view.max, lang)}</span>
+        <span>{maxLabel}</span>
         <span className="font-semibold text-text-secondary">
-          {formatCompactNumber(last.count, lang)} {L.now}
+          {lastLabel} {L.now}
         </span>
       </div>
       {/* Dots live as HTML overlays in % coordinates: the SVG is stretched
@@ -319,7 +325,7 @@ export function FollowerGrowthChart({
       </div>
       <div className="flex items-baseline justify-between text-[10px] text-text-muted" aria-hidden="true">
         <span>{formatDay(points[0].date, lang)}</span>
-        <span>{formatCompactNumber(view.min, lang)} {L.low}</span>
+        <span>{minLabel} {L.low}</span>
         <span>{formatDay(last.date, lang)}</span>
       </div>
       {active && (

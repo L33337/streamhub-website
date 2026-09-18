@@ -145,7 +145,7 @@ export const hu: UiLex = {
   },
   wiki: {
     teaserTitle: 'Wiki és tények',
-    teaserSub: (name) => `Életkor, vagyon, karrier: ${name} wiki-profilja`,
+    teaserSub: (name, parts) => `${parts}: ${name} wiki-profilja`,
     breadcrumb: 'Wiki',
     heading: (name) => `${name} wiki`,
     metaTitle: (name, year, parts) => `${name} wiki ${year}: ${parts}`,
@@ -226,6 +226,11 @@ export const hu: UiLex = {
     changeIncomeRemoved: 'Becsült havi bevétel eltávolítva (nincs elég adat)',
     changeSections: (sections) => `Újraírt szakaszok: ${sections}`,
     sectionSummary: 'Bevezetés',
+    tocLabel: 'Ezen az oldalon',
+    tocAbout: 'Bemutatás',
+    tocStreamTimes: 'Streamidők',
+    tocGames: 'Játékok',
+    articleLanguageNote: 'Ez a cikk még nem érhető el magyarul, ezért angolul jelenik meg.',
     updated: (date) => `Frissítve: ${date}`,
     factsHeading: 'Gyorstények',
     factLabel: {

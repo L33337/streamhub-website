@@ -703,3 +703,200 @@ export function formatHours(minutes: number, uiLang: string): string {
   );
   return `${hours} h`;
 }
+
+// ============================================
+// UX round (2026-09-18): clip gate, date labels, prose links, teaser
+// ============================================
+
+/** A clip below this many views is not a "notable moment". */
+export const NOTABLE_CLIP_MIN_VIEWS = 100;
+/** Fewer qualifying clips than this and the section hides (a lone tile in a
+ *  three-column grid reads as a broken section). */
+export const NOTABLE_CLIPS_MIN_COUNT = 3;
+
+/**
+ * Quality gate for the "Notable moments" section. The API returns a
+ * streamer's top clips by views, which for smaller channels meant tiles with
+ * 5–9 views under a "most watched" heading (audit 2026-09-18: 2 of 5 pilots).
+ * Keeps the API order; returns [] when too few clips clear the floor.
+ */
+export function wikiNotableClips<T extends { view_count: number | null }>(
+  clips: readonly T[],
+  minViews = NOTABLE_CLIP_MIN_VIEWS,
+  minCount = NOTABLE_CLIPS_MIN_COUNT,
+): T[] {
+  const kept = clips.filter((c) => typeof c.view_count === 'number' && c.view_count >= minViews);
+  return kept.length >= minCount ? kept : [];
+}
+
+/**
+ * Infobox "as of" label: a fact's `as_of` arrives at source precision
+ * ('YYYY' | 'YYYY-MM' | 'YYYY-MM-DD'). Rendered at MONTH precision at most:
+ * the raw ISO day next to "Married" read like a wedding date, and the day of
+ * the source article is not a property of the fact. Unknown shapes pass through.
+ */
+export function formatFactAsOf(asOf: string, uiLang: string): string {
+  if (!TIMELINE_DATE_RE.test(asOf)) return asOf;
+  return formatTimelineDate(asOf.slice(0, 7), uiLang);
+}
+
+/** Source "published" label at its own precision, per viewer locale; free
+ *  text from the API (e.g. "n.d.") passes through unchanged. */
+export function formatSourceDate(published: string, uiLang: string): string {
+  return formatTimelineDate(published.trim(), uiLang);
+}
+
+export interface GameLinkTarget {
+  name: string;
+  slug: string;
+}
+
+// Catalog categories that are ordinary words or YouTube's coarse video
+// buckets. Never auto-linked from prose: "Music" at the start of a sentence
+// is not a mention of the Twitch category. (A name list is fine HERE because
+// not linking is the safe side; aggregations must filter by platform.)
+const GENERIC_CATEGORY_NAMES = new Set(
+  [
+    'Gaming',
+    'Entertainment',
+    'News & Politics',
+    'People & Blogs',
+    'Sports',
+    'Music',
+    'Travel & Events',
+    'Science & Technology',
+    'Film & Animation',
+    'Art',
+    'Chess',
+    'Poker',
+    'Slots',
+    'IRL',
+    'ASMR',
+    'Politics',
+    'Special Events',
+    'Just Chatting',
+    'Always On',
+    'Software and Game Development',
+    'Games + Demos',
+  ].map((n) => n.toLowerCase()),
+);
+
+const GAME_LINK_MIN_LENGTH = 4;
+
+/**
+ * Link targets for game mentions in article prose: catalog games (a hub page
+ * exists) minus generic names, longest first so "Counter-Strike 2" wins over
+ * "Counter-Strike". Slug collisions keep the first catalog entry.
+ */
+export function gameLinkTargets(games: readonly Pick<PublicGame, 'category'>[]): GameLinkTarget[] {
+  const seen = new Set<string>();
+  const out: GameLinkTarget[] = [];
+  for (const g of games) {
+    const name = g.category?.trim();
+    if (!name || name.length < GAME_LINK_MIN_LENGTH) continue;
+    if (GENERIC_CATEGORY_NAMES.has(name.toLowerCase())) continue;
+    const slug = gameSlug(name);
+    if (slug.length === 0 || seen.has(name)) continue;
+    seen.add(name);
+    out.push({ name, slug });
+  }
+  return out.sort((a, b) => b.name.length - a.name.length || (a.name < b.name ? -1 : 1));
+}
+
+export type ProseSegment =
+  | { type: 'text'; text: string }
+  | { type: 'game'; text: string; slug: string };
+
+const WORD_CHAR_RE = /[\p{L}\p{N}]/u;
+
+/**
+ * Splits prose into text and game-link segments. Case-sensitive whole-word
+ * matches only (proper nouns; "overwatch" as a verb never links), and each
+ * game links ONCE per page: `linked` is the caller's page-wide set of slugs
+ * already linked, mutated here (Wikipedia's first-mention rule — a paragraph
+ * naming Marvel Rivals seven times must not turn cyan).
+ */
+export function linkGameMentions(
+  text: string,
+  targets: readonly GameLinkTarget[],
+  linked: Set<string>,
+): ProseSegment[] {
+  if (targets.length === 0 || text.length === 0) return [{ type: 'text', text }];
+  // Earliest match wins; on a tie the longer name (targets are longest-first).
+  const hits: Array<{ start: number; end: number; slug: string }> = [];
+  for (const t of targets) {
+    if (linked.has(t.slug)) continue;
+    let from = 0;
+    while (from <= text.length - t.name.length) {
+      const i = text.indexOf(t.name, from);
+      if (i < 0) break;
+      const before = i > 0 ? text[i - 1] : '';
+      const after = text[i + t.name.length] ?? '';
+      const bounded = !WORD_CHAR_RE.test(before) && !WORD_CHAR_RE.test(after);
+      const overlaps = hits.some((h) => i < h.end && i + t.name.length > h.start);
+      if (bounded && !overlaps) {
+        hits.push({ start: i, end: i + t.name.length, slug: t.slug });
+        break; // first mention of THIS game only
+      }
+      from = i + 1;
+    }
+  }
+  if (hits.length === 0) return [{ type: 'text', text }];
+  hits.sort((a, b) => a.start - b.start);
+  const out: ProseSegment[] = [];
+  let last = 0;
+  for (const h of hits) {
+    if (linked.has(h.slug)) continue; // two names sharing a slug
+    if (h.start > last) out.push({ type: 'text', text: text.slice(last, h.start) });
+    out.push({ type: 'game', text: text.slice(h.start, h.end), slug: h.slug });
+    linked.add(h.slug);
+    last = h.end;
+  }
+  if (last < text.length) out.push({ type: 'text', text: text.slice(last) });
+  return out;
+}
+
+/**
+ * Teaser subtitle parts for the streamer page's wiki card: the SAME
+ * fact-derived parts as the wiki <title>, joined with the locale's
+ * separators and sentence-cased (most locales keep their title parts
+ * lowercase because they follow a colon there; here they open the line).
+ */
+export function wikiTeaserParts(
+  facts: ReadonlyArray<Pick<WikiFact, 'key'>>,
+  labels: Record<WikiTitlePart, string>,
+  sep: string,
+  and: string,
+  uiLang: string,
+): string {
+  const joined = joinTitleParts(
+    wikiTitleParts(facts).map((p) => labels[p]),
+    sep,
+    and,
+  );
+  if (joined.length === 0) return joined;
+  const [first] = Array.from(joined);
+  return first.toLocaleUpperCase(intlLocale(uiLang)) + joined.slice(first.length);
+}
+
+export type ArticleSegment = ParagraphSegment | { type: 'game'; text: string; slug: string };
+
+/**
+ * One article paragraph as render segments: footnote refs split out first,
+ * then game mentions linked inside the text runs. `linked` is the page-wide
+ * first-mention set — call this in DOCUMENT order (summary, then the sections
+ * top to bottom) before rendering, never from inside a component.
+ */
+export function articleSegments(
+  paragraph: string,
+  sourceCount: number,
+  targets: readonly GameLinkTarget[],
+  linked: Set<string>,
+): ArticleSegment[] {
+  const out: ArticleSegment[] = [];
+  for (const seg of splitFootnotes(paragraph, sourceCount)) {
+    if (seg.type === 'ref') out.push(seg);
+    else out.push(...linkGameMentions(seg.text, targets, linked));
+  }
+  return out;
+}

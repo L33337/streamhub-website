@@ -167,7 +167,7 @@ export const ar: UiLex = {
   },
   wiki: {
     teaserTitle: 'ويكي وحقائق',
-    teaserSub: (name) => `العمر والثروة والمسيرة: الملف التعريفي لـ${name}`,
+    teaserSub: (name, parts) => `${parts}: الملف التعريفي لـ${name}`,
     breadcrumb: 'ويكي',
     heading: (name) => `${name} ويكي`,
     metaTitle: (name, year, parts) => `${name} ويكي ${year}: ${parts}`,
@@ -247,6 +247,11 @@ export const ar: UiLex = {
     changeIncomeRemoved: 'تمت إزالة الدخل الشهري التقديري (بيانات غير كافية)',
     changeSections: (sections) => `أقسام أُعيدت كتابتها: ${sections}`,
     sectionSummary: 'مقدمة',
+    tocLabel: 'في هذه الصفحة',
+    tocAbout: 'نبذة',
+    tocStreamTimes: 'أوقات البث',
+    tocGames: 'الألعاب',
+    articleLanguageNote: 'هذه المقالة غير متاحة بالعربية بعد، وتُعرض بالإنجليزية.',
     updated: (date) => `آخر تحديث: ${date}`,
     factsHeading: 'حقائق سريعة',
     factLabel: {
