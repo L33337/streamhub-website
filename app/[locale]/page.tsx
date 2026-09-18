@@ -333,7 +333,7 @@ export default async function HomePage({ params }: Props) {
   const discoverSample = sampleRandom(
     discoverPool,
     12,
-    seededRandom(Math.floor(Date.now() / BUCKET_MS))
+    seededRandom(Math.floor(bucketedNow.getTime() / BUCKET_MS))
   );
 
   // One tail round trip for BOTH bottom sections. The next-slot lookup covers
