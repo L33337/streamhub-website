@@ -7,15 +7,24 @@ import type {
   PublicStreamerStatsCategory,
   StreamerInsights,
   WikiFact,
+  WikiHistoryEntry,
 } from '../server/partner-api';
 import {
+  formatHistoryMonth,
   formatHours,
+  formatSignedInt,
   formatTimelineDate,
+  formatWholeNumber,
   formatWikiShortDate,
+  groupHistoryByYear,
+  historyParagraph,
   incomeFact,
   joinTitleParts,
+  laterIso,
+  latestHistoryIso,
   weekdayShortLabels,
   wikiGamesTable,
+  wikiHistory,
   wikiLinkLabel,
   wikiLinks,
   wikiNumbers,
@@ -23,6 +32,87 @@ import {
   wikiTimeline,
   wikiTitleParts,
 } from '../wiki';
+
+// ---- W4 (2026-09-18): monthly history helpers ----
+
+function historyEntry(month: string, extra: Partial<WikiHistoryEntry> = {}): WikiHistoryEntry {
+  return {
+    month,
+    eventful: false,
+    streams: 10,
+    hours: 60,
+    active_days: 10,
+    top_category: 'Marvel Rivals',
+    top_share_percent: 40,
+    median_ccv: 5000,
+    peak_ccv: 9000,
+    follower_delta: 1200,
+    follower_delta_percent: 0.1,
+    paragraph: null,
+    paragraph_native: null,
+    generated_at: '2026-09-18T18:00:00Z',
+    ...extra,
+  };
+}
+
+describe('wikiHistory / groupHistoryByYear', () => {
+  it('drops malformed rows, dedupes months, orders newest first, groups by year', () => {
+    const rows = wikiHistory({
+      history: [
+        historyEntry('2026-01'),
+        historyEntry('2026-08'),
+        historyEntry('2025-12'),
+        historyEntry('2026-08'), // duplicate month
+        { ...historyEntry('2026-13') }, // invalid month
+        { ...historyEntry('2026-07'), streams: 'x' as unknown as number },
+      ],
+    });
+    expect(rows.map((r) => r.month)).toEqual(['2026-08', '2026-01', '2025-12']);
+    const groups = groupHistoryByYear(rows);
+    expect(groups.map((g) => [g.year, g.entries.length])).toEqual([
+      ['2026', 2],
+      ['2025', 1],
+    ]);
+    expect(wikiHistory({})).toEqual([]);
+  });
+});
+
+describe('historyParagraph', () => {
+  it('picks the native text only when the viewer reads that language', () => {
+    const entry = historyEntry('2026-08', { paragraph: 'EN text', paragraph_native: 'DE Text' });
+    expect(historyParagraph(entry, 'de', 'de')).toEqual({ text: 'DE Text', lang: 'de' });
+    expect(historyParagraph(entry, 'fr', 'de')).toEqual({ text: 'EN text', lang: 'en' });
+    expect(historyParagraph(entry, 'de', null)).toEqual({ text: 'EN text', lang: 'en' });
+    expect(historyParagraph(historyEntry('2026-07'), 'en', null)).toBeNull();
+  });
+});
+
+describe('history formatting', () => {
+  it('formats month, signed deltas and whole numbers per locale', () => {
+    expect(formatHistoryMonth('2026-08', 'en')).toBe('Aug 2026');
+    expect(formatHistoryMonth('2026-08', 'de')).toMatch(/Aug\.? 2026/);
+    expect(formatHistoryMonth('nope', 'en')).toBe('nope');
+    expect(formatSignedInt(3594, 'en')).toBe('+3,594');
+    expect(formatSignedInt(-120, 'en')).toBe('-120');
+    expect(formatSignedInt(0, 'en')).toBe('0');
+    expect(formatSignedInt(null, 'en')).toBe('');
+    expect(formatWholeNumber(107.4, 'en')).toBe('107');
+    expect(formatWholeNumber(5101, 'de')).toBe('5.101');
+  });
+
+  it('latestHistoryIso / laterIso pick the newest timestamp', () => {
+    const rows = [
+      historyEntry('2026-07', { generated_at: '2026-09-01T00:00:00Z' }),
+      historyEntry('2026-08', { generated_at: '2026-09-18T18:00:00Z' }),
+      historyEntry('2026-06', { generated_at: 'garbage' }),
+    ];
+    expect(latestHistoryIso(rows)).toBe('2026-09-18T18:00:00Z');
+    expect(latestHistoryIso([])).toBeNull();
+    expect(laterIso('2026-09-10T00:00:00Z', '2026-09-18T18:00:00Z')).toBe('2026-09-18T18:00:00Z');
+    expect(laterIso('2026-09-20T00:00:00Z', '2026-09-18T18:00:00Z')).toBe('2026-09-20T00:00:00Z');
+    expect(laterIso('2026-09-20T00:00:00Z', null)).toBe('2026-09-20T00:00:00Z');
+  });
+});
 
 // ---- W3 (2026-09-18): timeline + links helpers ----
 

@@ -186,6 +186,15 @@ function renderWiki(W: UiLex['wiki']): Array<[string, string]> {
     ['wiki.clipAria', W.clipAria('DAY LUL W')],
     ['wiki.recapsHeading', W.recapsHeading],
     ['wiki.recapsIntro', W.recapsIntro(NAME)],
+    ['wiki.historyHeading', W.historyHeading],
+    ['wiki.historyNote', W.historyNote],
+    ['wiki.historyColMonth', W.historyColMonth],
+    ['wiki.historyColStreams', W.historyColStreams],
+    ['wiki.historyColHours', W.historyColHours],
+    ['wiki.historyColTopGame', W.historyColTopGame],
+    ['wiki.historyColFollowers', W.historyColFollowers],
+    ['wiki.historyColViewers', W.historyColViewers],
+    ['wiki.historyShowYear', W.historyShowYear('2025')],
   ];
 }
 

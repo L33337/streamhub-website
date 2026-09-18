@@ -262,5 +262,15 @@ export const de: UiLex = {
     recapsHeading: 'In den Recaps',
     recapsIntro: (name) =>
       `Ausgaben unserer Wochen- und Monatsrückblicke, in denen ${name} zu den Hauptfiguren gehörte.`,
+    historyHeading: 'Verlauf',
+    historyNote:
+      'Monat für Monat, wie wir es gemessen haben: Streams, Stunden, Top-Spiel und Publikum. Monate mit einer auffälligen Veränderung bekommen eine kurze Zusammenfassung.',
+    historyColMonth: 'Monat',
+    historyColStreams: 'Streams',
+    historyColHours: 'Stunden',
+    historyColTopGame: 'Top-Spiel',
+    historyColFollowers: 'Follower',
+    historyColViewers: 'Median-Zuschauer',
+    historyShowYear: (year) => `${year} anzeigen`,
   },
 };

@@ -208,6 +208,16 @@ export const hu: UiLex = {
     recapsHeading: 'Az összefoglalókban',
     recapsIntro: (name) =>
       `Heti és havi összefoglalóink azon kiadásai, amelyekben ${name} a főszereplők között volt.`,
+    historyHeading: 'Előzmények',
+    historyNote:
+      'Hónapról hónapra, ahogy mértük: streamek, órák, fő játék és közönség. A jelentős változást hozó hónapokhoz rövid összefoglaló tartozik.',
+    historyColMonth: 'Hónap',
+    historyColStreams: 'Streamek',
+    historyColHours: 'Órák',
+    historyColTopGame: 'Fő játék',
+    historyColFollowers: 'Követők',
+    historyColViewers: 'Nézők (medián)',
+    historyShowYear: (year) => `${year} megjelenítése`,
     updated: (date) => `Frissítve: ${date}`,
     factsHeading: 'Gyorstények',
     factLabel: {

@@ -251,5 +251,15 @@ export const en: UiLex = {
     recapsHeading: 'Featured in recaps',
     recapsIntro: (name) =>
       `Editions of our weekly and monthly recaps in which ${name} was one of the protagonists.`,
+    historyHeading: 'History',
+    historyNote:
+      'Month by month as we tracked it: streams, hours, the top game and the audience. Months with a notable change get a short summary.',
+    historyColMonth: 'Month',
+    historyColStreams: 'Streams',
+    historyColHours: 'Hours',
+    historyColTopGame: 'Top game',
+    historyColFollowers: 'Followers',
+    historyColViewers: 'Median viewers',
+    historyShowYear: (year) => `Show ${year}`,
   },
 };

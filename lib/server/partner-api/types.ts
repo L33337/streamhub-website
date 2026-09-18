@@ -586,6 +586,27 @@ export interface WikiArticle {
   timeline?: WikiTimelineEntry[];
 }
 
+/** W4: one month of tracked history. Numbers are session-merged broadcasts;
+ *  `paragraph` (EN) exists only for eventful months, `paragraph_native`
+ *  follows the wiki's `native_lang`. */
+export interface WikiHistoryEntry {
+  /** 'YYYY-MM' */
+  month: string;
+  eventful: boolean;
+  streams: number;
+  hours: number;
+  active_days: number;
+  top_category: string | null;
+  top_share_percent: number | null;
+  median_ccv: number | null;
+  peak_ccv: number | null;
+  follower_delta: number | null;
+  follower_delta_percent: number | null;
+  paragraph: string | null;
+  paragraph_native: string | null;
+  generated_at: string;
+}
+
 export interface PublicStreamerWiki {
   streamer_id: string;
   facts: WikiFact[];
@@ -598,6 +619,8 @@ export interface PublicStreamerWiki {
   sources: WikiSource[];
   /** W3: official links, language-neutral. Optional for deploy skew. */
   links?: WikiLink[];
+  /** W4: monthly history, newest first (≤24). Optional for deploy skew. */
+  history?: WikiHistoryEntry[];
   is_minor: boolean;
   generated_at: string;
   refreshed_at: string | null;

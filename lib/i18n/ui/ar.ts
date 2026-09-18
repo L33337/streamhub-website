@@ -229,6 +229,16 @@ export const ar: UiLex = {
     clipAria: (title) => `شاهد المقطع "${title}" على Twitch`,
     recapsHeading: 'في الملخصات',
     recapsIntro: (name) => `إصدارات ملخصاتنا الأسبوعية والشهرية التي كان ${name} من أبطالها.`,
+    historyHeading: 'السجل الشهري',
+    historyNote:
+      'شهرًا بشهر كما رصدناه: البثوث والساعات واللعبة الأبرز والجمهور. الأشهر التي شهدت تغيّرًا ملحوظًا تحصل على ملخص قصير.',
+    historyColMonth: 'الشهر',
+    historyColStreams: 'البثوث',
+    historyColHours: 'الساعات',
+    historyColTopGame: 'اللعبة الأبرز',
+    historyColFollowers: 'المتابعون',
+    historyColViewers: 'وسيط المشاهدين',
+    historyShowYear: (year) => `عرض ${year}`,
     updated: (date) => `آخر تحديث: ${date}`,
     factsHeading: 'حقائق سريعة',
     factLabel: {
