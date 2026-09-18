@@ -329,5 +329,18 @@ export interface UiLex {
     historyColViewers: string;
     /** `<details>` summary for an older year's table. */
     historyShowYear(year: string): string;
+    /** W5: change log under "About this page". Labels/values are already
+     *  locale-formatted (fact labels from `factLabel`, values like the
+     *  infobox). */
+    changesHeading: string;
+    changeAdded(label: string, value: string): string;
+    changeChanged(label: string, from: string, to: string): string;
+    changeRemoved(label: string): string;
+    changeIncomeRefreshed(from: string, to: string): string;
+    changeIncomeRemoved: string;
+    /** `sections` = comma-joined section names. */
+    changeSections(sections: string): string;
+    /** Name of the intro paragraph as a section (has no heading on the page). */
+    sectionSummary: string;
   };
 }

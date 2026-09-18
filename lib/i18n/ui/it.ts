@@ -274,5 +274,13 @@ export const it: UiLex = {
     historyColFollowers: 'Follower',
     historyColViewers: 'Spettatori (mediana)',
     historyShowYear: (year) => `Mostra ${year}`,
+    changesHeading: 'Modifiche',
+    changeAdded: (label, value) => `Aggiunto ${label}: ${value}`,
+    changeChanged: (label, from, to) => `${label} modificato da ${from} a ${to}`,
+    changeRemoved: (label) => `Rimosso ${label}`,
+    changeIncomeRefreshed: (from, to) => `Reddito mensile stimato aggiornato da ${from} a ${to}`,
+    changeIncomeRemoved: 'Reddito mensile stimato rimosso (dati insufficienti)',
+    changeSections: (sections) => `Sezioni riscritte: ${sections}`,
+    sectionSummary: 'Introduzione',
   },
 };

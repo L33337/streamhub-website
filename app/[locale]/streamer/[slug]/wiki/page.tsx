@@ -34,6 +34,8 @@ import {
   type PublicStreamHistory,
   type PublicStreamSlot,
   type StreamerInsights,
+  type WikiChange,
+  type WikiChangeValue,
   type WikiFact,
 } from '@/lib/server/partner-api';
 import { historyVodLinks, usableThumbnail } from '@/lib/history';
@@ -76,6 +78,7 @@ import {
   formatTimelineDate,
   formatWholeNumber,
   formatWikiShortDate,
+  groupChangesByDay,
   groupHistoryByYear,
   historyParagraph,
   incomeFact,
@@ -86,6 +89,7 @@ import {
   pickWikiArticle,
   splitFootnotes,
   weekdayShortLabels,
+  wikiChanges,
   wikiGamesTable,
   wikiHistory,
   wikiLinkLabel,
@@ -237,11 +241,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // Fact value rendering (locale-aware)
 // ============================================
 
-function factValue(fact: WikiFact, locale: UiLang, L: UiLex, now: Date): string {
+function factValue(fact: WikiFact, locale: UiLang, L: UiLex, now: Date, withAge = true): string {
   switch (fact.key) {
     case 'birth_date': {
       const base = formatBirthDate(fact.value, locale);
-      const age = displayAge(fact.value, now);
+      const age = withAge ? displayAge(fact.value, now) : null;
       return age !== null ? `${base} (${L.wiki.ageSuffix(age)})` : base;
     }
     case 'nationality':
@@ -259,6 +263,66 @@ function factValue(fact: WikiFact, locale: UiLang, L: UiLex, now: Date): string 
       return fact.value_num_low !== null ? `${fact.value_num_low} cm` : fact.value;
     default:
       return fact.value;
+  }
+}
+
+// ============================================
+// Change log (W5, 2026-09-18)
+// ============================================
+
+/** A change-value snapshot rendered exactly like the infobox value (no age
+ *  suffix: a change line names the date, not the person's current age). */
+function changeValueText(key: string, v: WikiChangeValue, locale: UiLang, L: UiLex, now: Date): string {
+  const pseudo: WikiFact = {
+    key,
+    value: v.value,
+    value_num_low: v.value_num_low,
+    value_num_high: v.value_num_high,
+    is_estimate: false,
+    as_of: v.as_of,
+    source_ids: [],
+  };
+  return factValue(pseudo, locale, L, now, false);
+}
+
+function factLabelText(key: string, L: UiLex): string {
+  return L.wiki.factLabel[key as keyof UiLex['wiki']['factLabel']] ?? key;
+}
+
+function sectionLabelText(key: string, L: UiLex): string {
+  const W = L.wiki;
+  const map: Record<string, string> = {
+    summary: W.sectionSummary,
+    career: W.sectionCareer,
+    content_style: W.sectionContentStyle,
+    community: W.sectionCommunity,
+    awards: W.sectionAwards,
+    personal_life: W.sectionPersonalLife,
+    earnings: W.sectionEarnings,
+    timeline: W.timelineHeading,
+    links: W.linksLabel,
+  };
+  return map[key] ?? key;
+}
+
+/** One human-readable line per change entry; null for a kind this build
+ *  does not know (the API's kind set may grow). */
+function changeLine(c: WikiChange, locale: UiLang, L: UiLex, now: Date): string | null {
+  const label = factLabelText(c.key, L);
+  const oldText = c.old_value ? changeValueText(c.key, c.old_value, locale, L, now) : null;
+  const newText = c.new_value ? changeValueText(c.key, c.new_value, locale, L, now) : null;
+  switch (c.kind) {
+    case 'fact_added':
+      return newText ? L.wiki.changeAdded(label, newText) : null;
+    case 'fact_changed':
+      return oldText && newText ? L.wiki.changeChanged(label, oldText, newText) : null;
+    case 'fact_removed':
+      return L.wiki.changeRemoved(label);
+    case 'income_refreshed':
+      if (!newText) return L.wiki.changeIncomeRemoved;
+      return oldText ? L.wiki.changeIncomeRefreshed(oldText, newText) : L.wiki.changeAdded(label, newText);
+    default:
+      return null;
   }
 }
 
@@ -607,6 +671,8 @@ export default async function StreamerWikiPage({ params }: Props) {
   const history = wikiHistory(wiki);
   const historyYears = groupHistoryByYear(history);
   const dateModifiedIso = laterIso(updatedIso, latestHistoryIso(history));
+  // W5: change log, grouped per day (section rewrites collapse to one line).
+  const changeDays = groupChangesByDay(wikiChanges(wiki));
 
   // M26 image round: streamer-chosen channel banner as hero backdrop, the
   // 600px avatar variant as infobox portrait (replaces the small header
@@ -1448,6 +1514,36 @@ export default async function StreamerWikiPage({ params }: Props) {
                 {CONTACT_EMAIL}
               </a>
             </p>
+            {/* W5: what changed between editions (facts with values formatted
+                like the infobox, section rewrites as one line per day). */}
+            {changeDays.length > 0 && (
+              <div className="mt-4 border-t border-border-default pt-4">
+                <h3 className="text-sm font-semibold text-text-primary">{L.wiki.changesHeading}</h3>
+                <ul className="mt-2 space-y-3 text-sm text-text-secondary">
+                  {changeDays.map((day) => {
+                    const lines = day.facts
+                      .map((c) => changeLine(c, locale, L, now))
+                      .filter((line): line is string => line !== null);
+                    if (day.sections.length > 0) {
+                      lines.push(
+                        L.wiki.changeSections(day.sections.map((s) => sectionLabelText(s, L)).join(', ')),
+                      );
+                    }
+                    if (lines.length === 0) return null;
+                    return (
+                      <li key={day.day}>
+                        <span className="font-medium text-text-primary">{formatWikiDate(day.iso, locale)}</span>
+                        <ul className="mt-1 list-disc space-y-0.5 ps-5">
+                          {lines.map((line, i) => (
+                            <li key={i}>{line}</li>
+                          ))}
+                        </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </section>
         </div>
       </div>

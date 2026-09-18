@@ -195,6 +195,14 @@ function renderWiki(W: UiLex['wiki']): Array<[string, string]> {
     ['wiki.historyColFollowers', W.historyColFollowers],
     ['wiki.historyColViewers', W.historyColViewers],
     ['wiki.historyShowYear', W.historyShowYear('2025')],
+    ['wiki.changesHeading', W.changesHeading],
+    ['wiki.changeAdded', W.changeAdded('Born', '8 April 1990')],
+    ['wiki.changeChanged', W.changeChanged('Net worth (est.)', '$8M', '$10M')],
+    ['wiki.changeRemoved', W.changeRemoved('Relationship status')],
+    ['wiki.changeIncomeRefreshed', W.changeIncomeRefreshed('$1K to $4K', '$2K to $5K')],
+    ['wiki.changeIncomeRemoved', W.changeIncomeRemoved],
+    ['wiki.changeSections', W.changeSections('Career, Personal life')],
+    ['wiki.sectionSummary', W.sectionSummary],
   ];
 }
 
