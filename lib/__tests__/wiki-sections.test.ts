@@ -10,15 +10,64 @@ import type {
 } from '../server/partner-api';
 import {
   formatHours,
+  formatTimelineDate,
   formatWikiShortDate,
   incomeFact,
   joinTitleParts,
   weekdayShortLabels,
   wikiGamesTable,
+  wikiLinkLabel,
+  wikiLinks,
   wikiNumbers,
   wikiRecapMentions,
+  wikiTimeline,
   wikiTitleParts,
 } from '../wiki';
+
+// ---- W3 (2026-09-18): timeline + links helpers ----
+
+describe('wikiTimeline', () => {
+  it('keeps valid entries, sorts chronologically, tolerates a pre-W3 article', () => {
+    const entries = wikiTimeline({
+      timeline: [
+        { date: '2021-09-02', text: 'Moved to YouTube.', source_ids: [1] },
+        { date: 'bad', text: 'x', source_ids: [] },
+        { date: '2015', text: 'Started.', source_ids: [2] },
+        { date: '2018-05', text: '   ', source_ids: [1] },
+      ],
+    });
+    expect(entries.map((e) => e.date)).toEqual(['2015', '2021-09-02']);
+    expect(wikiTimeline({})).toEqual([]);
+  });
+});
+
+describe('formatTimelineDate', () => {
+  it('formats at the precision of the input, per locale', () => {
+    expect(formatTimelineDate('2015', 'en')).toBe('2015');
+    expect(formatTimelineDate('2021-09', 'en')).toBe('September 2021');
+    expect(formatTimelineDate('2021-09-02', 'en')).toBe('September 2, 2021');
+    expect(formatTimelineDate('2021-09', 'de')).toBe('September 2021');
+    expect(formatTimelineDate('2021-09-02', 'de')).toBe('2. September 2021');
+    expect(formatTimelineDate('nope', 'en')).toBe('nope');
+  });
+});
+
+describe('wikiLinks / wikiLinkLabel', () => {
+  it('serves https links with proper-name labels, falls back to the raw platform', () => {
+    const links = wikiLinks({
+      links: [
+        { platform: 'x', url: 'https://x.com/a' },
+        { platform: 'tiktok', url: 'http://tiktok.com/@a' },
+        { platform: 'newplatform', url: 'https://new.example/a' },
+      ],
+    });
+    expect(links.map((l) => l.platform)).toEqual(['x', 'newplatform']);
+    expect(wikiLinkLabel('x')).toBe('X');
+    expect(wikiLinkLabel('tiktok')).toBe('TikTok');
+    expect(wikiLinkLabel('newplatform')).toBe('newplatform');
+    expect(wikiLinks({})).toEqual([]);
+  });
+});
 
 // W1/W2 (2026-09-18): title parts, earnings fallback input, own-data section
 // builders. Pure functions — the page only renders their output.

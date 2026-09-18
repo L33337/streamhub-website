@@ -71,6 +71,7 @@ import {
   formatSharePercent,
   formatUsdRange,
   formatWikiDate,
+  formatTimelineDate,
   formatWikiShortDate,
   incomeFact,
   joinTitleParts,
@@ -79,9 +80,12 @@ import {
   splitFootnotes,
   weekdayShortLabels,
   wikiGamesTable,
+  wikiLinkLabel,
+  wikiLinks,
   wikiMetaDescription,
   wikiNumbers,
   wikiRecapMentions,
+  wikiTimeline,
   wikiTitleParts,
 } from '@/lib/wiki';
 
@@ -286,6 +290,7 @@ function ArticleSection({
   lang,
   dir,
   figure,
+  after,
 }: {
   heading: string;
   paragraphs: string[];
@@ -298,6 +303,8 @@ function ArticleSection({
    *  AFTER the first paragraph so on phones the section opens with text,
    *  not with a full-width image (W1.8). */
   figure?: ReactNode;
+  /** Optional block below the paragraphs, inside the section (W3 timeline). */
+  after?: ReactNode;
 }) {
   if (paragraphs.length === 0) return null;
   const [first, ...rest] = paragraphs;
@@ -311,7 +318,52 @@ function ArticleSection({
           <ArticleParagraph key={i} text={p} sourceCount={sourceCount} />
         ))}
       </div>
+      {after}
     </section>
+  );
+}
+
+/**
+ * W3: dated milestones under the Career paragraphs. Dates are formatted per
+ * viewer locale at their own precision (year / month / day); the text is
+ * content (article language), the sourcing renders as footnote refs like a
+ * fact's. `clear-both` keeps the list below the floated career figure.
+ */
+function TimelineList({
+  heading,
+  entries,
+  sourceCount,
+  locale,
+  lang,
+  dir,
+}: {
+  heading: string;
+  entries: ReturnType<typeof wikiTimeline>;
+  sourceCount: number;
+  locale: UiLang;
+  lang: string;
+  dir: 'rtl' | undefined;
+}) {
+  if (entries.length === 0) return null;
+  return (
+    <div className="clear-both pt-6">
+      <h3 className="text-sm font-semibold text-text-primary">{heading}</h3>
+      <ol className="mt-3 space-y-3 border-s border-border-default ps-4" lang={lang} dir={dir}>
+        {entries.map((entry, i) => (
+          <li key={`${entry.date}-${i}`} className="text-sm leading-relaxed text-text-secondary">
+            <span className="me-2 font-mono text-xs text-accent-cyan">
+              {formatTimelineDate(entry.date, locale)}
+            </span>
+            <span>{entry.text}</span>
+            {entry.source_ids
+              .filter((n) => Number.isInteger(n) && n >= 1 && n <= sourceCount)
+              .map((n) => (
+                <FootnoteRef key={n} n={n} />
+              ))}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -417,6 +469,12 @@ export default async function StreamerWikiPage({ params }: Props) {
   const facts = orderedWikiFacts(wiki.facts);
   const sourceCount = wiki.sources.length;
   const updatedIso = wiki.refreshed_at ?? wiki.generated_at;
+  // W3: new article parts, all optional in the DTO (pre-W3 profiles → []).
+  const timeline = wikiTimeline(picked.article);
+  const links = wikiLinks(wiki);
+  const contentStyle = picked.article.content_style ?? [];
+  const community = picked.article.community ?? [];
+  const awards = picked.article.awards ?? [];
 
   // M26 image round: streamer-chosen channel banner as hero backdrop, the
   // 600px avatar variant as infobox portrait (replaces the small header
@@ -690,6 +748,29 @@ export default async function StreamerWikiPage({ params }: Props) {
             {wiki.is_minor && facts.length > 0 && (
               <p className="mt-3 text-xs text-text-secondary">{L.wiki.minorNote}</p>
             )}
+            {/* W3: official accounts as chips. External, so nofollow like the
+                sources; the API allow-listed the hosts at generation time. */}
+            {links.length > 0 && (
+              <div className="mt-4 border-t border-border-default/60 pt-3">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  {L.wiki.linksLabel}
+                </h3>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {links.map((link) => (
+                    <li key={link.platform}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                        className="inline-flex min-h-8 items-center rounded-full border border-border-default bg-background px-3 text-xs font-semibold text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
+                      >
+                        {wikiLinkLabel(link.platform)}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -729,6 +810,40 @@ export default async function StreamerWikiPage({ params }: Props) {
                 />
               ) : undefined
             }
+            after={
+              <TimelineList
+                heading={L.wiki.timelineHeading}
+                entries={timeline}
+                sourceCount={sourceCount}
+                locale={locale}
+                lang={articleLang}
+                dir={articleDir}
+              />
+            }
+          />
+          {/* W3 sections between Career and Personal life: what a stream
+              looks like (own measurements, cited to the profile), the
+              community, awards. Each hides itself when empty. */}
+          <ArticleSection
+            heading={L.wiki.sectionContentStyle}
+            paragraphs={contentStyle}
+            sourceCount={sourceCount}
+            lang={articleLang}
+            dir={articleDir}
+          />
+          <ArticleSection
+            heading={L.wiki.sectionCommunity}
+            paragraphs={community}
+            sourceCount={sourceCount}
+            lang={articleLang}
+            dir={articleDir}
+          />
+          <ArticleSection
+            heading={L.wiki.sectionAwards}
+            paragraphs={awards}
+            sourceCount={sourceCount}
+            lang={articleLang}
+            dir={articleDir}
           />
           <ArticleSection
             heading={L.wiki.sectionPersonalLife}
