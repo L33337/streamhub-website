@@ -607,6 +607,33 @@ export interface WikiHistoryEntry {
   generated_at: string;
 }
 
+/** W5: locale-neutral fact snapshot inside a change entry (render exactly
+ *  like a WikiFact value). */
+export interface WikiChangeValue {
+  value: string;
+  value_num_low: number | null;
+  value_num_high: number | null;
+  as_of: string | null;
+}
+
+export type WikiChangeKind =
+  | 'fact_added'
+  | 'fact_changed'
+  | 'fact_removed'
+  | 'section_updated'
+  | 'income_refreshed';
+
+/** W5: one change-log entry. `key` is a fact key for the fact kinds and
+ *  income_refreshed, an article section key for section_updated. The kind
+ *  set may grow; render known kinds, ignore the rest. */
+export interface WikiChange {
+  changed_at: string;
+  kind: WikiChangeKind | (string & {});
+  key: string;
+  old_value: WikiChangeValue | null;
+  new_value: WikiChangeValue | null;
+}
+
 export interface PublicStreamerWiki {
   streamer_id: string;
   facts: WikiFact[];
@@ -621,6 +648,8 @@ export interface PublicStreamerWiki {
   links?: WikiLink[];
   /** W4: monthly history, newest first (≤24). Optional for deploy skew. */
   history?: WikiHistoryEntry[];
+  /** W5: change log, newest first (≤30). Optional for deploy skew. */
+  changes?: WikiChange[];
   is_minor: boolean;
   generated_at: string;
   refreshed_at: string | null;

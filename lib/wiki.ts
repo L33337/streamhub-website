@@ -17,6 +17,7 @@ import type {
   PublicStreamerWiki,
   StreamerInsights,
   WikiArticle,
+  WikiChange,
   WikiFact,
   WikiHistoryEntry,
   WikiLink,
@@ -619,6 +620,80 @@ export function formatSignedInt(value: number | null, uiLang: string): string {
 export function formatWholeNumber(value: number | null, uiLang: string): string {
   if (value === null || !Number.isFinite(value)) return '';
   return new Intl.NumberFormat(intlLocale(uiLang), { maximumFractionDigits: 0 }).format(value);
+}
+
+// ============================================
+// W5 (2026-09-18): change log
+// ============================================
+
+export const WIKI_CHANGE_KINDS = [
+  'fact_added',
+  'fact_changed',
+  'fact_removed',
+  'section_updated',
+  'income_refreshed',
+] as const;
+
+/** Article parts a `section_updated` entry can name (API contract). */
+export const WIKI_SECTION_KEYS = [
+  'summary',
+  'career',
+  'content_style',
+  'community',
+  'awards',
+  'personal_life',
+  'earnings',
+  'timeline',
+  'links',
+] as const;
+
+/** Defensive read: known kinds with a parseable timestamp, newest first. */
+export function wikiChanges(wiki: Pick<PublicStreamerWiki, 'changes'>): WikiChange[] {
+  return (wiki.changes ?? [])
+    .filter(
+      (c) =>
+        typeof c?.changed_at === 'string' &&
+        !Number.isNaN(new Date(c.changed_at).getTime()) &&
+        (WIKI_CHANGE_KINDS as readonly string[]).includes(c.kind) &&
+        typeof c.key === 'string' &&
+        c.key.length > 0,
+    )
+    .slice()
+    .sort((a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime());
+}
+
+export interface WikiChangeDay {
+  /** 'YYYY-MM-DD' (UTC) */
+  day: string;
+  /** Newest timestamp of the day, for formatting. */
+  iso: string;
+  facts: WikiChange[];
+  /** Section keys rewritten that day, in WIKI_SECTION_KEYS order, deduped. */
+  sections: string[];
+}
+
+/** Groups (newest-first) changes by UTC day: fact/income entries stay
+ *  individual lines, section rewrites collapse into one list per day. */
+export function groupChangesByDay(changes: WikiChange[]): WikiChangeDay[] {
+  const days: WikiChangeDay[] = [];
+  for (const change of changes) {
+    const day = change.changed_at.slice(0, 10);
+    let group = days[days.length - 1];
+    if (!group || group.day !== day) {
+      group = { day, iso: change.changed_at, facts: [], sections: [] };
+      days.push(group);
+    }
+    if (change.kind === 'section_updated') {
+      if (!group.sections.includes(change.key)) group.sections.push(change.key);
+    } else {
+      group.facts.push(change);
+    }
+  }
+  const order = WIKI_SECTION_KEYS as readonly string[];
+  for (const group of days) {
+    group.sections.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  }
+  return days;
 }
 
 /** Minutes → "3.5 h" style duration per viewer locale (one decimal, trimmed). */

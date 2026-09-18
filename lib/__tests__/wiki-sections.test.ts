@@ -6,10 +6,13 @@ import type {
   PublicStreamerStats,
   PublicStreamerStatsCategory,
   StreamerInsights,
+  WikiChange,
   WikiFact,
   WikiHistoryEntry,
 } from '../server/partner-api';
 import {
+  groupChangesByDay,
+  wikiChanges,
   formatHistoryMonth,
   formatHours,
   formatSignedInt,
@@ -32,6 +35,36 @@ import {
   wikiTimeline,
   wikiTitleParts,
 } from '../wiki';
+
+// ---- W5 (2026-09-18): change log helpers ----
+
+function change(kind: string, key: string, changed_at: string, extra: Partial<WikiChange> = {}): WikiChange {
+  return { kind, key, changed_at, old_value: null, new_value: null, ...extra };
+}
+
+describe('wikiChanges / groupChangesByDay', () => {
+  it('drops unknown kinds and bad timestamps, orders newest first, groups per UTC day', () => {
+    const rows = wikiChanges({
+      changes: [
+        change('section_updated', 'career', '2026-09-18T20:00:00Z'),
+        change('fact_added', 'nationality', '2026-09-18T20:00:00Z', { new_value: { value: 'US', value_num_low: null, value_num_high: null, as_of: null } }),
+        change('renamed', 'teams', '2026-09-18T20:00:00Z'),
+        change('income_refreshed', 'est_income_monthly_usd', 'garbage'),
+        change('section_updated', 'summary', '2026-09-18T19:00:00Z'),
+        change('section_updated', 'career', '2026-09-18T19:00:00Z'),
+        change('fact_removed', 'teams', '2026-03-01T06:00:00Z', { old_value: { value: 'A', value_num_low: null, value_num_high: null, as_of: null } }),
+      ],
+    });
+    expect(rows.length).toBe(5);
+    const days = groupChangesByDay(rows);
+    expect(days.map((d) => d.day)).toEqual(['2026-09-18', '2026-03-01']);
+    expect(days[0].facts.map((f) => f.key)).toEqual(['nationality']);
+    expect(days[0].sections).toEqual(['summary', 'career']);
+    expect(days[0].iso).toBe('2026-09-18T20:00:00Z');
+    expect(days[1].facts.map((f) => f.kind)).toEqual(['fact_removed']);
+    expect(wikiChanges({})).toEqual([]);
+  });
+});
 
 // ---- W4 (2026-09-18): monthly history helpers ----
 
