@@ -173,8 +173,26 @@ export interface UiLex {
     /** Breadcrumb tail; the H1 is `heading`. */
     breadcrumb: string;
     heading(name: string): string;
-    /** <title>; `year` keeps it fresh at year granularity (ISR byte rule). */
-    metaTitle(name: string, year: string): string;
+    /**
+     * <title>; `year` keeps it fresh at year granularity (ISR byte rule).
+     * `parts` is the pre-joined list of `titlePart` labels the page derives
+     * from the facts that actually exist (lib/wiki.ts wikiTitleParts), so
+     * the title never promises an age or net worth the page does not have.
+     */
+    metaTitle(name: string, year: string, parts: string): string;
+    /** Title building blocks, joined by the page with titleSep / titleAnd. */
+    titlePart: {
+      age: string;
+      netWorth: string;
+      earnings: string;
+      realName: string;
+      career: string;
+      facts: string;
+    };
+    /** List separator between title parts, e.g. ", ". */
+    titleSep: string;
+    /** Conjunction before the last title part, e.g. " & " (with spaces). */
+    titleAnd: string;
     updated(date: string): string;
     factsHeading: string;
     /** Infobox labels; keys match the API's WikiFactKey catalog. */
@@ -223,5 +241,74 @@ export interface UiLex {
     disclaimer(name: string): string;
     /** Lead-in before the mailto link (correction/removal requests). */
     disclaimerContact: string;
+    // ---- W1/W2 (2026-09-18): earnings fallback + own-data sections ----
+    /**
+     * Earnings section body when the article has no earnings paragraph but
+     * the model-computed income fact exists. `range` is the locale-formatted
+     * USD range, `asOf` the fact's stand year or null.
+     */
+    earningsFallback(name: string, range: string, asOf: string | null): string;
+    /** Link label to /methodology/income-estimates under the fallback. */
+    earningsMethodology: string;
+    /** "By the numbers" tile section (own measurements). */
+    numbersHeading: string;
+    numbersNote(windowDays: number): string;
+    numberLabel: {
+      medianViewers: string;
+      streamsPerWeek: string;
+      activeDays: string;
+      typicalLength: string;
+      followerGain30: string;
+    };
+    /** Question-form H2 over the viewer heatmap. */
+    streamTimesHeading(name: string): string;
+    reliabilityLabel: string;
+    reliabilityTier: { reliable: string; medium: string; unreliable: string };
+    /**
+     * Labels of the client chart components (InsightsCharts /
+     * FollowerGrowthChart). Parameterized ones are `{placeholder}` TEMPLATES,
+     * not functions: the object crosses the server→client boundary as a prop,
+     * and functions are not serializable there.
+     */
+    charts: {
+      weekdayHeading: string;
+      weekdayNote: string;
+      hourHeading: string;
+      tzGroupAria: string;
+      yourTime: string;
+      streamerTime: string;
+      /** `{tz}` = IANA timezone. */
+      streamerTimeNote: string;
+      yourTimeNote: string;
+      utcNote: string;
+      legendCold: string;
+      legendPrime: string;
+      legendFaded: string;
+      weekdayAria: string;
+      hourAria: string;
+      /** `{label}`, `{median}` (formatted), `{samples}`. */
+      tooltip: string;
+      /** `{label}`. */
+      noData: string;
+      followersNow: string;
+      followersLow: string;
+      /** `{from}`, `{to}` = formatted dates. */
+      followerAria: string;
+    };
+    /** Games table (all top categories, not only hub tiles). */
+    gamesNote(windowDays: number): string;
+    gamesColGame: string;
+    gamesColShare: string;
+    gamesColStreams: string;
+    gamesColRank: string;
+    /** "Notable moments" clip grid. */
+    clipsHeading: string;
+    clipsIntro(name: string): string;
+    /** `views` is already locale-formatted (compact). */
+    clipViews(views: string): string;
+    clipAria(title: string): string;
+    /** Recap editions the streamer was a protagonist of. */
+    recapsHeading: string;
+    recapsIntro(name: string): string;
   };
 }

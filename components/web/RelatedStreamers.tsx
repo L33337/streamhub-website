@@ -26,6 +26,13 @@ interface Props {
   // M22 (D6): heading/aria + link locale follow the viewer's locale; defaults
   // to the streamer's language for pre-M22 call sites.
   uiLanguage?: string | null;
+  /**
+   * Data-cache revalidate of every fetch below. Defaults to the streamer
+   * page's route TTL (1800); a host with a longer window (the wiki page,
+   * 3600) passes its own so this component cannot drag that route's TTL
+   * down (Next.js min() rule).
+   */
+  revalidate?: number;
 }
 
 type Settled<T> = { ok: true; value: T } | { ok: false; error: unknown };
@@ -63,6 +70,7 @@ export async function RelatedStreamers({
   language,
   category = null,
   uiLanguage,
+  revalidate = 1800,
 }: Props) {
   const ui = uiLanguage ?? language;
   const api = getPartnerApi();
@@ -90,12 +98,12 @@ export async function RelatedStreamers({
   // 60 s default was what silently pinned the streamer route to a 60 s TTL
   // until 2026-08-18. Related-card live dots and popularity lists may be up
   // to 30 min stale — same budget as the rest of the page.
-  const livePromise = getLiveStreamerIdSet({ revalidate: 1800 }).catch(() => new Set<string>());
+  const livePromise = getLiveStreamerIdSet({ revalidate }).catch(() => new Set<string>());
   // One shared cache entry per category (not per streamer page), same as the
   // popular list below.
   const categoryPromise = category
     ? settle(
-        api.listStreamers({ category, order: 'popular', limit: 12, revalidate: 1800 }),
+        api.listStreamers({ category, order: 'popular', limit: 12, revalidate }),
       )
     : null;
   // Twitch's `other` is a stored value but not a relation (and the API rejects
@@ -107,12 +115,12 @@ export async function RelatedStreamers({
           language: relationLanguage,
           order: 'popular',
           limit: 12,
-          revalidate: 1800,
+          revalidate,
         }),
       )
     : null;
   const popularPromise = settle(
-    api.listStreamers({ order: 'popular', limit: 16, revalidate: 1800 }),
+    api.listStreamers({ order: 'popular', limit: 16, revalidate }),
   );
 
   // A failing category lookup is NOT fatal here (unlike the two below): the

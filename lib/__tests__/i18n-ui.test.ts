@@ -93,6 +93,94 @@ function renderAll(L: UiLex): Array<[string, string]> {
     ['related.liveNowSr', L.related.liveNowSr],
     ['games.heading', L.games.heading],
     ['games.navAria', L.games.navAria],
+    ...renderWiki(L.wiki),
+  ];
+}
+
+/** The M26 wiki section (+ W1/W2 additions of 2026-09-18). */
+function renderWiki(W: UiLex['wiki']): Array<[string, string]> {
+  const C = W.charts;
+  return [
+    ['wiki.teaserTitle', W.teaserTitle],
+    ['wiki.teaserSub', W.teaserSub(NAME)],
+    ['wiki.breadcrumb', W.breadcrumb],
+    ['wiki.heading', W.heading(NAME)],
+    ['wiki.metaTitle', W.metaTitle(NAME, '2026', 'Age & Career')],
+    ['wiki.titlePart.age', W.titlePart.age],
+    ['wiki.titlePart.netWorth', W.titlePart.netWorth],
+    ['wiki.titlePart.earnings', W.titlePart.earnings],
+    ['wiki.titlePart.realName', W.titlePart.realName],
+    ['wiki.titlePart.career', W.titlePart.career],
+    ['wiki.titlePart.facts', W.titlePart.facts],
+    ['wiki.titleSep', W.titleSep],
+    ['wiki.titleAnd', W.titleAnd],
+    ['wiki.updated', W.updated('19 August 2026')],
+    ['wiki.factsHeading', W.factsHeading],
+    ...Object.entries(W.factLabel).map(
+      ([k, v]): [string, string] => [`wiki.factLabel.${k}`, v],
+    ),
+    ...Object.entries(W.relationship).map(
+      ([k, v]): [string, string] => [`wiki.relationship.${k}`, v],
+    ),
+    ['wiki.ageSuffix', W.ageSuffix(36)],
+    ['wiki.estimate', W.estimate],
+    ['wiki.asOf', W.asOf('2026')],
+    ['wiki.sectionCareer', W.sectionCareer],
+    ['wiki.sectionPersonalLife', W.sectionPersonalLife],
+    ['wiki.sectionEarnings', W.sectionEarnings],
+    ['wiki.aboutHeading', W.aboutHeading(NAME)],
+    ['wiki.nextStreamHeading', W.nextStreamHeading],
+    ['wiki.fullSchedule', W.fullSchedule(NAME)],
+    ['wiki.sourcesHeading', W.sourcesHeading],
+    ['wiki.minorNote', W.minorNote],
+    ['wiki.disclaimerHeading', W.disclaimerHeading],
+    ['wiki.disclaimer', W.disclaimer(NAME)],
+    ['wiki.disclaimerContact', W.disclaimerContact],
+    // The range fixture avoids the en dash formatUsdRange really emits: the
+    // guard below is about the LEXICON's prose, not about numeric ranges.
+    ['wiki.earningsFallback.asOf', W.earningsFallback(NAME, '$1K to $4K', '2026')],
+    ['wiki.earningsFallback.noAsOf', W.earningsFallback(NAME, '$1K to $4K', null)],
+    ['wiki.earningsMethodology', W.earningsMethodology],
+    ['wiki.numbersHeading', W.numbersHeading],
+    ['wiki.numbersNote', W.numbersNote(28)],
+    ...Object.entries(W.numberLabel).map(
+      ([k, v]): [string, string] => [`wiki.numberLabel.${k}`, v],
+    ),
+    ['wiki.streamTimesHeading', W.streamTimesHeading(NAME)],
+    ['wiki.reliabilityLabel', W.reliabilityLabel],
+    ...Object.entries(W.reliabilityTier).map(
+      ([k, v]): [string, string] => [`wiki.reliabilityTier.${k}`, v],
+    ),
+    ['wiki.charts.weekdayHeading', C.weekdayHeading],
+    ['wiki.charts.weekdayNote', C.weekdayNote],
+    ['wiki.charts.hourHeading', C.hourHeading],
+    ['wiki.charts.tzGroupAria', C.tzGroupAria],
+    ['wiki.charts.yourTime', C.yourTime],
+    ['wiki.charts.streamerTime', C.streamerTime],
+    ['wiki.charts.streamerTimeNote', C.streamerTimeNote],
+    ['wiki.charts.yourTimeNote', C.yourTimeNote],
+    ['wiki.charts.utcNote', C.utcNote],
+    ['wiki.charts.legendCold', C.legendCold],
+    ['wiki.charts.legendPrime', C.legendPrime],
+    ['wiki.charts.legendFaded', C.legendFaded],
+    ['wiki.charts.weekdayAria', C.weekdayAria],
+    ['wiki.charts.hourAria', C.hourAria],
+    ['wiki.charts.tooltip', C.tooltip],
+    ['wiki.charts.noData', C.noData],
+    ['wiki.charts.followersNow', C.followersNow],
+    ['wiki.charts.followersLow', C.followersLow],
+    ['wiki.charts.followerAria', C.followerAria],
+    ['wiki.gamesNote', W.gamesNote(28)],
+    ['wiki.gamesColGame', W.gamesColGame],
+    ['wiki.gamesColShare', W.gamesColShare],
+    ['wiki.gamesColStreams', W.gamesColStreams],
+    ['wiki.gamesColRank', W.gamesColRank],
+    ['wiki.clipsHeading', W.clipsHeading],
+    ['wiki.clipsIntro', W.clipsIntro(NAME)],
+    ['wiki.clipViews', W.clipViews('2.5K')],
+    ['wiki.clipAria', W.clipAria('DAY LUL W')],
+    ['wiki.recapsHeading', W.recapsHeading],
+    ['wiki.recapsIntro', W.recapsIntro(NAME)],
   ];
 }
 
@@ -105,6 +193,38 @@ describe('UI_STRINGS lexica', () => {
       expect(value.trim(), `${lang}:${key} empty`).not.toBe('');
       expect(value, `${lang}:${key} broken: "${value}"`).not.toMatch(BROKEN);
     }
+  });
+
+  // User rule (2026-08-27): em/en dashes read as machine-written. The wiki
+  // section is the most-read prose lexicon on the site, so it is guarded
+  // as a whole (the streamer name fixture carries none itself).
+  it.each([...UI_LANGS])('%s wiki lexicon carries no em/en dashes', (lang) => {
+    for (const [key, value] of renderWiki(UI_STRINGS[lang].wiki)) {
+      expect(value, `${lang}:${key}`).not.toMatch(/[—–]/);
+    }
+  });
+
+  // The chart labels cross the RSC boundary as plain strings; every
+  // parameterized one must carry its placeholders (a translator dropping
+  // `{tz}` would silently render a note without the timezone).
+  it.each([...UI_LANGS])('%s chart label templates keep their placeholders', (lang) => {
+    const C = UI_STRINGS[lang].wiki.charts;
+    expect(C.streamerTimeNote).toContain('{tz}');
+    expect(C.tooltip).toContain('{label}');
+    expect(C.tooltip).toContain('{median}');
+    expect(C.tooltip).toContain('{samples}');
+    expect(C.noData).toContain('{label}');
+    expect(C.followerAria).toContain('{from}');
+    expect(C.followerAria).toContain('{to}');
+  });
+
+  it.each([...UI_LANGS])('%s wiki title parts join into the metaTitle', (lang) => {
+    const W = UI_STRINGS[lang].wiki;
+    const joined = `${W.titlePart.age}${W.titleSep}${W.titlePart.netWorth}${W.titleAnd}${W.titlePart.career}`;
+    const title = W.metaTitle(NAME, '2026', joined);
+    expect(title).toContain(NAME);
+    expect(title).toContain('2026');
+    expect(title).toContain(joined);
   });
 
   it.each([...UI_LANGS])('%s embeds the streamer name in every FAQ question', (lang) => {

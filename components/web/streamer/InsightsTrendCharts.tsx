@@ -171,7 +171,19 @@ interface FollowerChartPoint extends InsightsFollowerPoint {
   y: number;
 }
 
-function formatDay(date: string): string {
+/** English default when no locale is given (the insights page); a viewer
+ *  locale (wiki page) formats through Intl in the UTC calendar. */
+function formatDay(date: string, lang?: string): string {
+  if (lang) {
+    const d = new Date(`${date}T00:00:00Z`);
+    if (!Number.isNaN(d.getTime())) {
+      return new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : lang, {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+      }).format(d);
+    }
+  }
   const t = formatTrendMonthDay(date);
   return t ?? date;
 }
@@ -184,7 +196,36 @@ function formatTrendMonthDay(date: string): string | null {
   return `${SHORT[m - 1]} ${d}`;
 }
 
-export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[] }) {
+/** Strings only (no functions): the object is a prop from a server
+ *  component. `aria` is a `{from}` / `{to}` template. */
+export interface FollowerChartLabels {
+  now: string;
+  low: string;
+  /** Unit word in the hover tooltip, e.g. "followers". */
+  followers: string;
+  aria: string;
+}
+
+const DEFAULT_FOLLOWER_LABELS: FollowerChartLabels = {
+  now: 'now',
+  low: 'low',
+  followers: 'followers',
+  aria: 'Follower count from {from} to {to}',
+};
+
+export function FollowerGrowthChart({
+  points,
+  labels: labelsProp,
+  lang,
+}: {
+  points: InsightsFollowerPoint[];
+  /** Viewer-locale strings (wiki page); English defaults for the insights page. */
+  labels?: Partial<FollowerChartLabels>;
+  /** Viewer locale for dates/numbers; undefined keeps the English defaults. */
+  lang?: string;
+}) {
+  const L: FollowerChartLabels = { ...DEFAULT_FOLLOWER_LABELS, ...labelsProp };
+  const numberLocale = lang ? (lang === 'en' ? 'en-US' : lang) : 'en-US';
   const [active, setActive] = useState<FollowerChartPoint | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -229,9 +270,9 @@ export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[
   return (
     <div className="relative">
       <div className="flex items-baseline justify-between text-[10px] text-text-muted" aria-hidden="true">
-        <span>{formatCompactNumber(view.max)}</span>
+        <span>{formatCompactNumber(view.max, lang)}</span>
         <span className="font-semibold text-text-secondary">
-          {formatCompactNumber(last.count)} now
+          {formatCompactNumber(last.count, lang)} {L.now}
         </span>
       </div>
       {/* Dots live as HTML overlays in % coordinates: the SVG is stretched
@@ -243,7 +284,9 @@ export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[
           viewBox={`0 0 ${W} ${H}`}
           className="block h-36 w-full text-viz-soft"
           role="img"
-          aria-label={`Follower count from ${formatDay(points[0].date)} to ${formatDay(last.date)}`}
+          aria-label={L.aria
+            .replace('{from}', formatDay(points[0].date, lang))
+            .replace('{to}', formatDay(last.date, lang))}
           preserveAspectRatio="none"
           onMouseMove={(e) => pick(e.clientX)}
           onMouseLeave={() => setActive(null)}
@@ -275,9 +318,9 @@ export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[
         />
       </div>
       <div className="flex items-baseline justify-between text-[10px] text-text-muted" aria-hidden="true">
-        <span>{formatDay(points[0].date)}</span>
-        <span>{formatCompactNumber(view.min)} low</span>
-        <span>{formatDay(last.date)}</span>
+        <span>{formatDay(points[0].date, lang)}</span>
+        <span>{formatCompactNumber(view.min, lang)} {L.low}</span>
+        <span>{formatDay(last.date, lang)}</span>
       </div>
       {active && (
         <div
@@ -286,7 +329,7 @@ export function FollowerGrowthChart({ points }: { points: InsightsFollowerPoint[
             left: `clamp(60px, ${(active.x / W) * 100}%, calc(100% - 60px))`,
           }}
         >
-          {formatDay(active.date)} · {active.count.toLocaleString('en-US')} followers
+          {formatDay(active.date, lang)} · {active.count.toLocaleString(numberLocale)} {L.followers}
         </div>
       )}
     </div>
