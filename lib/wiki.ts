@@ -18,6 +18,8 @@ import type {
   StreamerInsights,
   WikiArticle,
   WikiFact,
+  WikiLink,
+  WikiTimelineEntry,
 } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
 import { gameRankingHref, MIN_POOL_SIZE } from '@/lib/streamer-rankings';
@@ -455,6 +457,68 @@ export function formatWikiShortDate(iso: string, uiLang: string): string {
     day: 'numeric',
     timeZone: 'UTC',
   }).format(d);
+}
+
+// ============================================
+// W3 (2026-09-18): timeline + official links
+// ============================================
+
+const TIMELINE_DATE_RE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
+
+/** Defensive read of the article timeline: valid dates + text only,
+ *  chronological (the API already sorts; string order matches). */
+export function wikiTimeline(article: Pick<WikiArticle, 'timeline'>): WikiTimelineEntry[] {
+  return (article.timeline ?? [])
+    .filter(
+      (t) =>
+        typeof t?.date === 'string' &&
+        TIMELINE_DATE_RE.test(t.date) &&
+        typeof t.text === 'string' &&
+        t.text.trim().length > 0,
+    )
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
+/**
+ * 'YYYY' → "2021", 'YYYY-MM' → "September 2021", 'YYYY-MM-DD' → long date,
+ * per viewer locale (UTC calendar). Malformed input passes through.
+ */
+export function formatTimelineDate(date: string, uiLang: string): string {
+  if (!TIMELINE_DATE_RE.test(date)) return date;
+  if (date.length === 4) return date;
+  const d = new Date(`${date.length === 7 ? `${date}-01` : date}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return date;
+  return new Intl.DateTimeFormat(intlLocale(uiLang), {
+    ...(date.length === 7 ? { month: 'long', year: 'numeric' } : { dateStyle: 'long' }),
+    timeZone: 'UTC',
+  }).format(d);
+}
+
+/** Display labels of the link platforms (proper names, not translated). An
+ *  unknown platform from a newer API falls back to its raw key. */
+export const WIKI_LINK_LABELS: Record<string, string> = {
+  x: 'X',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  youtube: 'YouTube',
+  twitch: 'Twitch',
+  kick: 'Kick',
+  discord: 'Discord',
+  facebook: 'Facebook',
+  bluesky: 'Bluesky',
+  threads: 'Threads',
+};
+
+export function wikiLinkLabel(platform: string): string {
+  return WIKI_LINK_LABELS[platform] ?? platform;
+}
+
+/** https links only (the API allow-lists hosts; this is the client's belt). */
+export function wikiLinks(wiki: Pick<PublicStreamerWiki, 'links'>): WikiLink[] {
+  return (wiki.links ?? []).filter(
+    (l) => typeof l?.url === 'string' && l.url.startsWith('https://') && typeof l.platform === 'string',
+  );
 }
 
 /** Minutes → "3.5 h" style duration per viewer locale (one decimal, trimmed). */

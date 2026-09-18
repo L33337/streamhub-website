@@ -228,6 +228,14 @@ export interface UiLex {
     sectionCareer: string;
     sectionPersonalLife: string;
     sectionEarnings: string;
+    // ---- W3 (2026-09-18): research expansion ----
+    sectionContentStyle: string;
+    sectionCommunity: string;
+    sectionAwards: string;
+    /** h3 over the dated milestone list inside the Career section. */
+    timelineHeading: string;
+    /** Infobox label over the official-account chips. */
+    linksLabel: string;
     /** Section reusing the streamer-page description as extra body text. */
     aboutHeading(name: string): string;
     /** "Next stream" section (pill + link to the profile-page schedule). */

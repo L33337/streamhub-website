@@ -555,13 +555,35 @@ export interface WikiSource {
   published: string | null;
 }
 
+/** W3 (2026-09-18): dated milestone. `date` is 'YYYY' | 'YYYY-MM' |
+ *  'YYYY-MM-DD' (as precise as the source); the text carries no inline
+ *  markers, `source_ids` are the footnote numbers. */
+export interface WikiTimelineEntry {
+  date: string;
+  text: string;
+  source_ids: number[];
+}
+
+/** W3: official account. `platform` is a fixed enum that may GROW — render
+ *  known values, fall back to the raw key as label. */
+export interface WikiLink {
+  platform: string;
+  url: string;
+}
+
 /** Fixed-section article; headings are website UI strings. Paragraphs may
- *  carry [n] footnote markers referencing `sources`. */
+ *  carry [n] footnote markers referencing `sources`. The W3 arrays are
+ *  optional in this mirror for deploy skew (old API, new site) — read them
+ *  as `?? []`. */
 export interface WikiArticle {
   summary: string;
   career: string[];
   personal_life: string[];
   earnings: string[];
+  content_style?: string[];
+  community?: string[];
+  awards?: string[];
+  timeline?: WikiTimelineEntry[];
 }
 
 export interface PublicStreamerWiki {
@@ -574,6 +596,8 @@ export interface PublicStreamerWiki {
   native_lang: string | null;
   /** Ordered footnote list — numbering is positional (first entry = [1]). */
   sources: WikiSource[];
+  /** W3: official links, language-neutral. Optional for deploy skew. */
+  links?: WikiLink[];
   is_minor: boolean;
   generated_at: string;
   refreshed_at: string | null;
