@@ -102,7 +102,7 @@ function renderWiki(W: UiLex['wiki']): Array<[string, string]> {
   const C = W.charts;
   return [
     ['wiki.teaserTitle', W.teaserTitle],
-    ['wiki.teaserSub', W.teaserSub(NAME)],
+    ['wiki.teaserSub', W.teaserSub(NAME, 'Age & Career')],
     ['wiki.breadcrumb', W.breadcrumb],
     ['wiki.heading', W.heading(NAME)],
     ['wiki.metaTitle', W.metaTitle(NAME, '2026', 'Age & Career')],
@@ -203,6 +203,11 @@ function renderWiki(W: UiLex['wiki']): Array<[string, string]> {
     ['wiki.changeIncomeRemoved', W.changeIncomeRemoved],
     ['wiki.changeSections', W.changeSections('Career, Personal life')],
     ['wiki.sectionSummary', W.sectionSummary],
+    ['wiki.tocLabel', W.tocLabel],
+    ['wiki.tocAbout', W.tocAbout],
+    ['wiki.tocStreamTimes', W.tocStreamTimes],
+    ['wiki.tocGames', W.tocGames],
+    ['wiki.articleLanguageNote', W.articleLanguageNote],
   ];
 }
 

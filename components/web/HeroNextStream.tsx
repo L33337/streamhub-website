@@ -16,6 +16,15 @@ interface Props {
   /** Link target. Default: the slot's day section on the current page; the
    *  wiki page points it at the profile-page schedule instead. */
   href?: string;
+  /** Wiki page: drop a category that is not trustworthy as "the game".
+   *  (1) LOW-confidence predictions: the time of such a slot is a pattern
+   *  guess and its category the weakest part of it; an encyclopedic page
+   *  naming "Gambling" for a shooter streamer costs more trust than the chip
+   *  is worth. (2) Slots without Twitch: YouTube reports a video bucket
+   *  ("Gaming"), never a game; decided by platform, never by name (Twitch has
+   *  real categories called "Music" and "Sports"). The profile page keeps
+   *  both: the slot card right below carries the confidence badge. */
+  hideUncertainCategory?: boolean;
 }
 
 /**
@@ -33,7 +42,12 @@ interface Props {
  * Live streamers render nothing here — the hero promotes the watch buttons
  * instead, which is the only action that matters mid-stream.
  */
-export function HeroNextStream({ nextSlot, language = 'en', href }: Props) {
+export function HeroNextStream({
+  nextSlot,
+  language = 'en',
+  href,
+  hideUncertainCategory = false,
+}: Props) {
   const L = slotLexFor(language);
   const target = nextSlot?.start_time ?? '';
   const label = useSyncExternalStore(
@@ -43,6 +57,10 @@ export function HeroNextStream({ nextSlot, language = 'en', href }: Props) {
   );
 
   if (!nextSlot) return null;
+  const untrusted =
+    (nextSlot.is_predicted && nextSlot.confidence === 'low') ||
+    !nextSlot.platforms.includes('twitch');
+  const category = hideUncertainCategory && untrusted ? null : nextSlot.category;
 
   return (
     <a
@@ -57,13 +75,13 @@ export function HeroNextStream({ nextSlot, language = 'en', href }: Props) {
       >
         {nextSlot.is_predicted ? `~ ${label}` : label}
       </time>
-      {nextSlot.category && (
+      {category && (
         <>
           <span aria-hidden="true" className="shrink-0 text-text-muted">
             ·
           </span>
           {/* Only this part may shrink, so a long category never wraps the pill. */}
-          <span className="truncate text-text-secondary">{nextSlot.category}</span>
+          <span className="truncate text-text-secondary">{category}</span>
         </>
       )}
       <span

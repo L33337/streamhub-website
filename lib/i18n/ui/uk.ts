@@ -184,7 +184,7 @@ export const uk: UiLex = {
   },
   wiki: {
     teaserTitle: 'Вікі та факти',
-    teaserSub: (name) => `Вік, статки, кар’єра: вікі-профіль ${name}`,
+    teaserSub: (name, parts) => `${parts}: вікі-профіль ${name}`,
     breadcrumb: 'Вікі',
     heading: (name) => `${name} Вікі`,
     metaTitle: (name, year, parts) => `${name} Вікі ${year}: ${parts}`,
@@ -265,6 +265,11 @@ export const uk: UiLex = {
     changeIncomeRemoved: 'Оцінку місячного доходу видалено (недостатньо даних)',
     changeSections: (sections) => `Розділи переписано: ${sections}`,
     sectionSummary: 'Вступ',
+    tocLabel: 'На цій сторінці',
+    tocAbout: 'Про стримера',
+    tocStreamTimes: 'Час стримів',
+    tocGames: 'Ігри',
+    articleLanguageNote: 'Ця стаття поки недоступна українською і показана англійською.',
     updated: (date) => `Оновлено ${date}`,
     factsHeading: 'Коротко про головне',
     factLabel: {

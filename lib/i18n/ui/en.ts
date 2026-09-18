@@ -144,7 +144,7 @@ export const en: UiLex = {
   },
   wiki: {
     teaserTitle: 'Wiki & facts',
-    teaserSub: (name) => `Age, net worth, career: the ${name} wiki profile`,
+    teaserSub: (name, parts) => `${parts}: the ${name} wiki profile`,
     breadcrumb: 'Wiki',
     heading: (name) => `${name} Wiki`,
     metaTitle: (name, year, parts) => `${name} Wiki ${year}: ${parts}`,
@@ -269,5 +269,10 @@ export const en: UiLex = {
     changeIncomeRemoved: 'Estimated monthly income removed (not enough data)',
     changeSections: (sections) => `Sections rewritten: ${sections}`,
     sectionSummary: 'Introduction',
+    tocLabel: 'On this page',
+    tocAbout: 'About',
+    tocStreamTimes: 'Stream times',
+    tocGames: 'Games',
+    articleLanguageNote: 'This article is not available in this language yet and is shown in English.',
   },
 };

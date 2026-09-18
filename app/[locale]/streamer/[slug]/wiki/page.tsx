@@ -42,6 +42,9 @@ import { historyVodLinks, usableThumbnail } from '@/lib/history';
 import { pickNextRealSlot, sevenDayKeys } from '@/lib/format/time';
 import { floorToBucket } from '@/lib/home/logic';
 import { HeroNextStream } from '@/components/web/HeroNextStream';
+import { LiveBadge } from '@/components/web/Badges';
+import { FavoriteButton } from '@/components/web/FavoriteButton';
+import { WatchButtons } from '@/components/web/WatchButtons';
 import { InsightsCharts } from '@/components/web/streamer/InsightsCharts';
 import { FollowerGrowthChart } from '@/components/web/streamer/InsightsTrendCharts';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
@@ -64,10 +67,14 @@ import { uiLexFor, type UiLex } from '@/lib/i18n-ui';
 import { buildStreamerRankingRows } from '@/lib/streamer-rankings';
 import { COLLECTING_THRESHOLD, followerStats, usableCells } from '@/lib/streamer-insights';
 import {
+  articleSegments,
   avatarLargeUrl,
   bannerDisplayUrl,
   displayAge,
   formatBirthDate,
+  formatFactAsOf,
+  formatSourceDate,
+  gameLinkTargets,
   formatHours,
   formatRegion,
   formatSharePercent,
@@ -85,9 +92,9 @@ import {
   joinTitleParts,
   laterIso,
   latestHistoryIso,
+  linkGameMentions,
   orderedWikiFacts,
   pickWikiArticle,
-  splitFootnotes,
   weekdayShortLabels,
   wikiChanges,
   wikiGamesTable,
@@ -95,10 +102,13 @@ import {
   wikiLinkLabel,
   wikiLinks,
   wikiMetaDescription,
+  wikiNotableClips,
   wikiNumbers,
   wikiRecapMentions,
   wikiTimeline,
   wikiTitleParts,
+  type ArticleSegment,
+  type ProseSegment,
   type WikiHistoryYear,
 } from '@/lib/wiki';
 
@@ -344,30 +354,56 @@ function FootnoteRef({ n }: { n: number }) {
   );
 }
 
-function ArticleParagraph({ text, sourceCount }: { text: string; sourceCount: number }) {
+// In-prose link to a game hub: reads as body text with a quiet underline so a
+// paragraph never turns into a cyan link list (each game links once per page).
+const PROSE_LINK =
+  'text-text-primary underline decoration-text-secondary/50 underline-offset-4 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan';
+
+function ProseRun({ seg, locale }: { seg: ProseSegment; locale: UiLang }) {
+  if (seg.type === 'game') {
+    return (
+      <Link href={localeHref(locale, `/game/${seg.slug}`)} className={PROSE_LINK}>
+        {seg.text}
+      </Link>
+    );
+  }
+  return <span>{seg.text}</span>;
+}
+
+function ArticleParagraph({ segments, locale }: { segments: ArticleSegment[]; locale: UiLang }) {
   return (
     <p className="text-pretty leading-relaxed text-text-secondary">
-      {splitFootnotes(text, sourceCount).map((seg, i) =>
-        seg.type === 'ref' ? <FootnoteRef key={i} n={seg.n} /> : <span key={i}>{seg.text}</span>,
+      {segments.map((seg, i) =>
+        seg.type === 'ref' ? (
+          <FootnoteRef key={i} n={seg.n} />
+        ) : (
+          <ProseRun key={i} seg={seg} locale={locale} />
+        ),
       )}
     </p>
   );
 }
 
 const SECTION_H2 = 'border-b border-border-default pb-2 text-xl font-bold text-text-primary';
+/** Every jump-nav target clears the sticky site header. */
+const SECTION = 'mt-8 scroll-mt-24';
 
 function ArticleSection({
+  id,
   heading,
   paragraphs,
-  sourceCount,
+  locale,
   lang,
   dir,
   figure,
   after,
 }: {
+  /** Anchor id (jump nav target). */
+  id: string;
   heading: string;
-  paragraphs: string[];
-  sourceCount: number;
+  /** Pre-segmented paragraphs (footnote refs + first-mention game links). */
+  paragraphs: ArticleSegment[][];
+  locale: UiLang;
   /** Content language of the paragraphs (headings stay on the UI axis). */
   lang: string;
   dir: 'rtl' | undefined;
@@ -382,13 +418,13 @@ function ArticleSection({
   if (paragraphs.length === 0) return null;
   const [first, ...rest] = paragraphs;
   return (
-    <section className="mt-8 flow-root">
+    <section id={id} className={`${SECTION} flow-root`}>
       <h2 className={SECTION_H2}>{heading}</h2>
       <div className="mt-4 space-y-4" lang={lang} dir={dir}>
-        <ArticleParagraph text={first} sourceCount={sourceCount} />
+        <ArticleParagraph segments={first} locale={locale} />
         {figure}
         {rest.map((p, i) => (
-          <ArticleParagraph key={i} text={p} sourceCount={sourceCount} />
+          <ArticleParagraph key={i} segments={p} locale={locale} />
         ))}
       </div>
       {after}
@@ -521,11 +557,18 @@ function HistoryYearTable({
   group,
   locale,
   nativeLang,
+  hubSlugs,
+  showTopGame,
   L,
 }: {
   group: WikiHistoryYear;
   locale: UiLang;
   nativeLang: string | null;
+  /** Category name → game hub slug, for catalog games only. */
+  hubSlugs: ReadonlyMap<string, string>;
+  /** False when NO tracked month names a game (YouTube-only channels: the API
+   *  never serves a video bucket as a game) — a column of dashes is noise. */
+  showTopGame: boolean;
   L: UiLex;
 }) {
   // The summary rows live INSIDE the table, so the table must never scroll
@@ -548,9 +591,11 @@ function HistoryYearTable({
             <th scope="col" className={`${RIGHT} ${WIDE}`}>
               {L.wiki.historyColHours}
             </th>
-            <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
-              {L.wiki.historyColTopGame}
-            </th>
+            {showTopGame && (
+              <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
+                {L.wiki.historyColTopGame}
+              </th>
+            )}
             <th scope="col" className={`${RIGHT} ${WIDE}`}>
               {L.wiki.historyColFollowers}
             </th>
@@ -577,21 +622,32 @@ function HistoryYearTable({
                   <td className={`px-3 py-2 text-right tabular-nums text-text-secondary ${WIDE}`}>
                     {formatWholeNumber(entry.hours, locale)}
                   </td>
-                  <td className="px-2 py-2 text-text-primary sm:min-w-[12rem] sm:px-3">
-                    {entry.top_category ? (
-                      <>
-                        {entry.top_category}
-                        {entry.top_share_percent !== null && (
-                          <span className="whitespace-nowrap text-text-secondary">
-                            {' · '}
-                            {formatSharePercent(entry.top_share_percent, locale)}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      EMPTY_CELL
-                    )}
-                  </td>
+                  {showTopGame && (
+                    <td className="px-2 py-2 text-text-primary sm:min-w-[12rem] sm:px-3">
+                      {entry.top_category ? (
+                        <>
+                          {hubSlugs.has(entry.top_category) ? (
+                            <Link
+                              href={localeHref(locale, `/game/${hubSlugs.get(entry.top_category)}`)}
+                              className="hover:text-accent-cyan"
+                            >
+                              {entry.top_category}
+                            </Link>
+                          ) : (
+                            entry.top_category
+                          )}
+                          {entry.top_share_percent !== null && (
+                            <span className="whitespace-nowrap text-text-secondary">
+                              {' · '}
+                              {formatSharePercent(entry.top_share_percent, locale)}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        EMPTY_CELL
+                      )}
+                    </td>
+                  )}
                   <td className={`px-3 py-2 text-right tabular-nums text-text-secondary ${WIDE}`}>
                     {entry.follower_delta !== null
                       ? formatSignedInt(entry.follower_delta, locale)
@@ -603,7 +659,7 @@ function HistoryYearTable({
                 </tr>
                 {para && (
                   <tr>
-                    <td colSpan={6} className="px-2 pb-3 pt-0 sm:px-3">
+                    <td colSpan={showTopGame ? 6 : 5} className="px-2 pb-3 pt-0 sm:px-3">
                       <p
                         lang={para.lang}
                         dir={dirFor(para.lang)}
@@ -670,6 +726,7 @@ export default async function StreamerWikiPage({ params }: Props) {
   // row's generation time also moves the page's dateModified.
   const history = wikiHistory(wiki);
   const historyYears = groupHistoryByYear(history);
+  const showTopGame = history.some((h) => typeof h.top_category === 'string' && h.top_category.length > 0);
   const dateModifiedIso = laterIso(updatedIso, latestHistoryIso(history));
   // W5: change log, grouped per day (section rewrites collapse to one line).
   const changeDays = groupChangesByDay(wikiChanges(wiki));
@@ -701,7 +758,7 @@ export default async function StreamerWikiPage({ params }: Props) {
       ? L.wiki.earningsFallback(
           streamer.name,
           formatUsdRange(income.value_num_low, income.value_num_high, locale),
-          income.as_of,
+          income.as_of ? formatFactAsOf(income.as_of, locale) : income.as_of,
         )
       : null;
 
@@ -787,6 +844,48 @@ export default async function StreamerWikiPage({ params }: Props) {
 
   const gameRows = wikiGamesTable(stats?.top_categories ?? [], games, rankings?.games ?? [], GAMES_LIMIT);
   const recapMentions = wikiRecapMentions(recaps, streamer.id, RECAPS_LIMIT);
+  // Quality gate: "Notable moments" only with clips people actually watched.
+  const notableClips = wikiNotableClips(clips);
+
+  // Game mentions in the article prose link into their hubs, once per page
+  // (first mention, document order: summary, then the sections top to bottom).
+  const linkTargets = gameLinkTargets(games);
+  const hubSlugs = new Map(linkTargets.map((t) => [t.name, t.slug]));
+  const linkedGames = new Set<string>();
+  const summarySegments = linkGameMentions(picked.article.summary, linkTargets, linkedGames);
+  const segmentsOf = (paragraphs: string[]): ArticleSegment[][] =>
+    paragraphs.map((text) => articleSegments(text, sourceCount, linkTargets, linkedGames));
+  const careerSegments = segmentsOf(picked.article.career);
+  const contentStyleSegments = segmentsOf(contentStyle);
+  const communitySegments = segmentsOf(community);
+  const awardsSegments = segmentsOf(awards);
+  const personalLifeSegments = segmentsOf(picked.article.personal_life);
+  const earningsSegments = segmentsOf(picked.article.earnings);
+
+  // Live state comes from the streamer DTO's activity facts. `undefined` (the
+  // activity lookup failed) counts as "not live": the next-stream pill is the
+  // safe fallback. Freshness: /api/revalidate purges this route on every
+  // live/offline transition, exactly like the profile page's LIVE badge.
+  const isLive = streamer.is_live === true;
+
+  // Jump nav: one chip per section that actually renders, in page order. The
+  // page is ~15 phone screens long; without it "History" or "Sources" is a
+  // long blind scroll (audit 2026-09-18).
+  const toc: Array<{ id: string; label: string }> = [];
+  if (bio && bioParagraphs.length > 0) toc.push({ id: 'wiki-about', label: L.wiki.tocAbout });
+  if (careerSegments.length > 0) toc.push({ id: 'wiki-career', label: L.wiki.sectionCareer });
+  if (personalLifeSegments.length > 0) {
+    toc.push({ id: 'wiki-personal-life', label: L.wiki.sectionPersonalLife });
+  }
+  if (earningsSegments.length > 0 || earningsFallback) {
+    toc.push({ id: 'wiki-earnings', label: L.wiki.sectionEarnings });
+  }
+  if (historyYears.length > 0) toc.push({ id: 'wiki-history', label: L.wiki.historyHeading });
+  if (showNumbers) toc.push({ id: 'wiki-numbers', label: L.wiki.numbersHeading });
+  if (showStreamTimes) toc.push({ id: 'wiki-times', label: L.wiki.tocStreamTimes });
+  if (gameRows.length > 0) toc.push({ id: 'wiki-games', label: L.wiki.tocGames });
+  if (notableClips.length > 0) toc.push({ id: 'wiki-clips', label: L.wiki.clipsHeading });
+  if (wiki.sources.length > 0) toc.push({ id: 'wiki-sources', label: L.wiki.sourcesHeading });
 
   const path = `/streamer/${encodeURIComponent(slug)}/wiki`;
   const breadcrumb = buildBreadcrumbJsonLd([
@@ -832,13 +931,16 @@ export default async function StreamerWikiPage({ params }: Props) {
       {/* Visible breadcrumb matching the BreadcrumbList JSON-LD (the "Home"
           crumb stays JSON-LD-only, same convention as the streamer page). */}
       <p className="text-sm text-text-secondary">
-        <Link href={localeHref(locale, '/streamers')} className="hover:text-accent-cyan">
+        <Link
+          href={localeHref(locale, '/streamers')}
+          className="-my-1.5 inline-block py-1.5 hover:text-accent-cyan"
+        >
           {L.breadcrumb.streamers}
         </Link>{' '}
         /{' '}
         <Link
           href={localeHref(locale, `/streamer/${encodeURIComponent(slug)}`)}
-          className="hover:text-accent-cyan"
+          className="-my-1.5 inline-block py-1.5 hover:text-accent-cyan"
         >
           {streamer.name}
         </Link>{' '}
@@ -865,34 +967,104 @@ export default async function StreamerWikiPage({ params }: Props) {
         </div>
       )}
 
-      {/* Identity header. The portrait lives in the infobox (Wikipedia
-          convention) — no duplicate avatar up here. */}
-      <div className="mt-3 min-w-0">
-        <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
-          {L.wiki.heading(streamer.name)}
-        </h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          {L.wiki.updated(formatWikiDate(updatedIso, locale))}
-        </p>
-      </div>
+      {/* Lead + infobox share one grid (UX round 2026-09-18): the H1, the
+          status row, the summary and the jump nav sit in the article column
+          and the infobox starts BESIDE them, Wikipedia-style. Before, the
+          header spanned the full width with 320 px of nothing to its right
+          and the first fact sat at y=790 on a 1366x768 laptop, below the
+          fold. DOM order = phone order: lead, infobox, article. */}
+      <div className="mt-4 grid grid-cols-1 items-start gap-x-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <header className="min-w-0 lg:col-start-1 lg:row-start-1">
+          {/* Identity. The portrait lives in the infobox (Wikipedia
+              convention), no duplicate avatar up here. */}
+          <div className="flex items-start gap-3">
+            <h1 className="min-w-0 text-pretty text-3xl font-bold text-white md:text-4xl">
+              {L.wiki.heading(streamer.name)}
+            </h1>
+            <FavoriteButton
+              streamerId={streamer.id}
+              streamerName={streamer.name}
+              size="md"
+              className="mt-1 shrink-0"
+              language={locale}
+            />
+          </div>
+          <p className="mt-1 text-sm text-text-secondary">
+            {L.wiki.updated(formatWikiDate(updatedIso, locale))}
+          </p>
 
-      {/* Summary — content language, not viewer language. */}
-      <p
-        lang={articleLang}
-        dir={articleDir}
-        className="mt-3 max-w-2xl text-pretty text-lg leading-relaxed text-text-secondary"
-      >
-        {picked.article.summary}
-      </p>
+          {/* The site's core answer, above the fold: live right now (watch
+              buttons) or the next stream. It used to sit at 81 % of the page
+              height, and a live streamer's wiki said nothing about it. */}
+          {isLive ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <LiveBadge language={locale} />
+              <WatchButtons
+                twitchLogin={streamer.twitch_login}
+                youtubeChannelId={streamer.youtube_channel_id}
+                grow={false}
+                language={locale}
+                className="flex flex-wrap gap-2"
+              />
+            </div>
+          ) : (
+            nextSlot && (
+              <div className="mt-3">
+                <HeroNextStream
+                  nextSlot={nextSlot}
+                  language={locale}
+                  href={`${profileHref}#day-${nextSlot.start_time.slice(0, 10)}`}
+                  hideUncertainCategory
+                />
+              </div>
+            )
+          )}
 
-      <div className="mt-6 grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        {/* Infobox: full-width card first on phones/tablets (the quick
-            answer), right rail on lg+. Facts flow 2-up from sm so the card
-            never becomes a long skinny list on medium screens. The sticky
-            rail is capped at the viewport (W1.6): a 714 px card on a 768 px
-            laptop used to cut off exactly the income row while sticky. */}
+          {/* Summary: content language, not viewer language. */}
+          <p
+            lang={articleLang}
+            dir={articleDir}
+            className="mt-4 max-w-2xl text-pretty text-lg leading-relaxed text-text-secondary"
+          >
+            {summarySegments.map((seg, i) => (
+              <ProseRun key={i} seg={seg} locale={locale} />
+            ))}
+          </p>
+          {articleLang !== locale && (
+            <p className="mt-2 text-xs text-text-muted">{L.wiki.articleLanguageNote}</p>
+          )}
+
+          {/* Jump nav: one row that scrolls sideways on phones (bleeds to the
+              screen edge), wraps from sm up. Plain anchors, no JS. */}
+          {toc.length > 1 && (
+            <nav aria-label={L.wiki.tocLabel} className="mt-5">
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-text-secondary">
+                {L.wiki.tocLabel}
+              </p>
+              <ul className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+                {toc.map((entry) => (
+                  <li key={entry.id} className="shrink-0">
+                    <a
+                      href={`#${entry.id}`}
+                      className="inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border-default bg-background-elevated px-3 text-sm text-text-primary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan"
+                    >
+                      {entry.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        </header>
+
+        {/* Infobox: full-width card right after the lead on phones/tablets
+            (the quick answer), right rail on lg+ spanning both grid rows so
+            it stays sticky along the whole article. Facts flow 2-up from sm
+            so the card never becomes a long skinny list on medium screens.
+            The sticky rail is capped at the viewport (W1.6): a 714 px card on
+            a 768 px laptop used to cut off exactly the income row. */}
         <aside
-          className="order-1 min-w-0 lg:sticky lg:top-24 lg:order-2 lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-width:thin]"
+          className="mt-6 min-w-0 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-width:thin]"
           aria-label={L.wiki.factsHeading}
         >
           <div className="rounded-xl border border-border-default bg-background-elevated p-4 sm:p-5">
@@ -934,7 +1106,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                         </span>
                       )}
                       {fact.as_of && (
-                        <span className="text-xs text-text-secondary">{L.wiki.asOf(fact.as_of)}</span>
+                        <span className="text-xs text-text-secondary">{L.wiki.asOf(formatFactAsOf(fact.as_of, locale))}</span>
                       )}
                     </dd>
                   </div>
@@ -974,13 +1146,13 @@ export default async function StreamerWikiPage({ params }: Props) {
 
         {/* Article column. Headings/sources/disclaimer stay on the viewer-UI
             axis; only paragraph blocks carry the content language + dir. */}
-        <div className="order-2 min-w-0 lg:order-1">
+        <div className="min-w-0 lg:col-start-1 lg:row-start-2">
           {/* Site bio as extra body text (own content language + dir) —
               deliberately FIRST: the hand-curated "who is this" text opens
               the page, the sourced AI sections follow (user decision
               2026-08-19). */}
           {bio && bioParagraphs.length > 0 && (
-            <section className="mt-8">
+            <section id="wiki-about" className={SECTION}>
               <h2 className={SECTION_H2}>{L.wiki.aboutHeading(streamer.name)}</h2>
               <div className="mt-4 space-y-4" lang={bio.lang} dir={bio.dir}>
                 {bioParagraphs.map((p, i) => (
@@ -993,9 +1165,10 @@ export default async function StreamerWikiPage({ params }: Props) {
           )}
 
           <ArticleSection
+            id="wiki-career"
             heading={L.wiki.sectionCareer}
-            paragraphs={picked.article.career}
-            sourceCount={sourceCount}
+            paragraphs={careerSegments}
+            locale={locale}
             lang={articleLang}
             dir={articleDir}
             figure={
@@ -1023,44 +1196,49 @@ export default async function StreamerWikiPage({ params }: Props) {
               looks like (own measurements, cited to the profile), the
               community, awards. Each hides itself when empty. */}
           <ArticleSection
+            id="wiki-content-style"
             heading={L.wiki.sectionContentStyle}
-            paragraphs={contentStyle}
-            sourceCount={sourceCount}
+            paragraphs={contentStyleSegments}
+            locale={locale}
             lang={articleLang}
             dir={articleDir}
           />
           <ArticleSection
+            id="wiki-community"
             heading={L.wiki.sectionCommunity}
-            paragraphs={community}
-            sourceCount={sourceCount}
+            paragraphs={communitySegments}
+            locale={locale}
             lang={articleLang}
             dir={articleDir}
           />
           <ArticleSection
+            id="wiki-awards"
             heading={L.wiki.sectionAwards}
-            paragraphs={awards}
-            sourceCount={sourceCount}
+            paragraphs={awardsSegments}
+            locale={locale}
             lang={articleLang}
             dir={articleDir}
           />
           <ArticleSection
+            id="wiki-personal-life"
             heading={L.wiki.sectionPersonalLife}
-            paragraphs={picked.article.personal_life}
-            sourceCount={sourceCount}
+            paragraphs={personalLifeSegments}
+            locale={locale}
             lang={articleLang}
             dir={articleDir}
           />
-          {picked.article.earnings.length > 0 ? (
+          {earningsSegments.length > 0 ? (
             <ArticleSection
+              id="wiki-earnings"
               heading={L.wiki.sectionEarnings}
-              paragraphs={picked.article.earnings}
-              sourceCount={sourceCount}
+              paragraphs={earningsSegments}
+              locale={locale}
               lang={articleLang}
               dir={articleDir}
             />
           ) : (
             earningsFallback && (
-              <section className="mt-8">
+              <section id="wiki-earnings" className={SECTION}>
                 <h2 className={SECTION_H2}>{L.wiki.sectionEarnings}</h2>
                 <p className="mt-4 text-pretty leading-relaxed text-text-secondary">
                   {earningsFallback}
@@ -1085,7 +1263,7 @@ export default async function StreamerWikiPage({ params }: Props) {
               (streamer language when the viewer reads it, else English).
               The newest year is open, older years fold into <details>. */}
           {historyYears.length > 0 && (
-            <section className="mt-8" aria-labelledby="wiki-history-heading">
+            <section id="wiki-history" className={SECTION} aria-labelledby="wiki-history-heading">
               <h2 id="wiki-history-heading" className={SECTION_H2}>
                 {L.wiki.historyHeading}
               </h2>
@@ -1097,6 +1275,8 @@ export default async function StreamerWikiPage({ params }: Props) {
                     group={group}
                     locale={locale}
                     nativeLang={wiki.native_lang}
+                    hubSlugs={hubSlugs}
+                    showTopGame={showTopGame}
                     L={L}
                   />
                 ) : (
@@ -1108,6 +1288,8 @@ export default async function StreamerWikiPage({ params }: Props) {
                       group={group}
                       locale={locale}
                       nativeLang={wiki.native_lang}
+                      hubSlugs={hubSlugs}
+                    showTopGame={showTopGame}
                       L={L}
                     />
                   </details>
@@ -1120,7 +1302,7 @@ export default async function StreamerWikiPage({ params }: Props) {
               chart. Numbers are locale-formatted; nothing here depends on
               "now" (ISR byte-determinism). */}
           {showNumbers && (
-            <section className="mt-8" aria-labelledby="wiki-numbers-heading">
+            <section id="wiki-numbers" className={SECTION} aria-labelledby="wiki-numbers-heading">
               <h2 id="wiki-numbers-heading" className={SECTION_H2}>
                 {L.wiki.numbersHeading}
               </h2>
@@ -1213,7 +1395,7 @@ export default async function StreamerWikiPage({ params }: Props) {
           {/* W2.2: viewer heatmap under a question-form heading (the SERP
               question this page competes for), plus the M14 reliability tier. */}
           {showStreamTimes && (
-            <section className="mt-8" aria-labelledby="wiki-times-heading">
+            <section id="wiki-times" className={SECTION} aria-labelledby="wiki-times-heading">
               <h2 id="wiki-times-heading" className={SECTION_H2}>
                 {L.wiki.streamTimesHeading(streamer.name)}
               </h2>
@@ -1242,7 +1424,10 @@ export default async function StreamerWikiPage({ params }: Props) {
                 </div>
               )}
               <p className="mt-3 text-sm">
-                <Link href={profileHref} className="font-semibold text-accent-cyan hover:underline">
+                <Link
+                  href={profileHref}
+                  className="-my-1.5 inline-block py-1.5 font-semibold text-accent-cyan hover:underline"
+                >
                   {L.wiki.fullSchedule(streamer.name)} →
                 </Link>
               </p>
@@ -1254,7 +1439,7 @@ export default async function StreamerWikiPage({ params }: Props) {
               Box art only for hub games; the old tile row dropped every
               category without a hub page. */}
           {gameRows.length > 0 && (
-            <section className="mt-8" aria-labelledby="wiki-games-heading">
+            <section id="wiki-games" className={SECTION} aria-labelledby="wiki-games-heading">
               <h2 id="wiki-games-heading" className={SECTION_H2}>
                 {L.stats.topCategories}
               </h2>
@@ -1319,7 +1504,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                                   formatCompactNumber(row.total, locale),
                                   row.category,
                                 )}
-                                className="font-semibold text-accent-cyan hover:underline"
+                                className="-mx-2 -my-1.5 inline-block px-2 py-1.5 font-semibold text-accent-cyan hover:underline"
                               >
                                 #{row.rank}
                               </Link>
@@ -1344,14 +1529,14 @@ export default async function StreamerWikiPage({ params }: Props) {
           {/* W2.4: most-watched clips. External Twitch links on purpose — the
               hosted /clip/<slug> page is a chrome-less embed wrapper for the
               app, not a page to send readers to. */}
-          {clips.length > 0 && (
-            <section className="mt-8" aria-labelledby="wiki-clips-heading">
+          {notableClips.length > 0 && (
+            <section id="wiki-clips" className={SECTION} aria-labelledby="wiki-clips-heading">
               <h2 id="wiki-clips-heading" className={SECTION_H2}>
                 {L.wiki.clipsHeading}
               </h2>
               <p className="mt-2 text-sm text-text-secondary">{L.wiki.clipsIntro(streamer.name)}</p>
               <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {clips.map((clip) => {
+                {notableClips.map((clip) => {
                   const title = clip.title?.trim() || clip.category || streamer.name;
                   const dateLabel = clip.clip_created_at
                     ? formatWikiShortDate(clip.clip_created_at, locale)
@@ -1439,11 +1624,12 @@ export default async function StreamerWikiPage({ params }: Props) {
                   nextSlot={nextSlot}
                   language={locale}
                   href={`${profileHref}#day-${nextSlot.start_time.slice(0, 10)}`}
+                  hideUncertainCategory
                 />
               )}
               <Link
                 href={profileHref}
-                className="text-sm font-semibold text-accent-cyan hover:underline"
+                className="-my-1.5 inline-block py-1.5 text-sm font-semibold text-accent-cyan hover:underline"
               >
                 {L.wiki.fullSchedule(streamer.name)} →
               </Link>
@@ -1452,7 +1638,7 @@ export default async function StreamerWikiPage({ params }: Props) {
 
           {/* Sources — ids are the [n] anchor targets. */}
           {wiki.sources.length > 0 && (
-            <section className="mt-8">
+            <section id="wiki-sources" className={SECTION}>
               <h2 className={SECTION_H2}>{L.wiki.sourcesHeading}</h2>
               <ol className="mt-4 list-none space-y-2">
                 {wiki.sources.map((source, i) => {
@@ -1473,7 +1659,9 @@ export default async function StreamerWikiPage({ params }: Props) {
                     <li
                       key={n}
                       id={`wiki-source-${n}`}
-                      className="flex min-w-0 scroll-mt-24 gap-2 text-sm"
+                      // :target = the footnote the reader just jumped to; without
+                      // the tint it is one of eleven identical rows.
+                      className="-mx-2 flex min-w-0 scroll-mt-24 gap-2 rounded-md px-2 py-0.5 text-sm target:bg-accent-cyan/10 target:ring-1 target:ring-accent-cyan/40"
                     >
                       <span className="shrink-0 font-mono text-xs text-text-secondary">[{n}]</span>
                       <span className="min-w-0">
@@ -1488,8 +1676,13 @@ export default async function StreamerWikiPage({ params }: Props) {
                         </a>
                         {(source.publisher || source.published) && (
                           <span className="text-text-secondary">
-                            {' — '}
-                            {[source.publisher, source.published].filter(Boolean).join(', ')}
+                            {' · '}
+                            {[
+                              source.publisher,
+                              source.published ? formatSourceDate(source.published, locale) : null,
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
                           </span>
                         )}
                       </span>

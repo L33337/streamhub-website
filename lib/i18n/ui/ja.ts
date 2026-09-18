@@ -144,7 +144,7 @@ export const ja: UiLex = {
   },
   wiki: {
     teaserTitle: 'Wiki・プロフィール',
-    teaserSub: (name) => `${name}の年齢・資産・経歴をまとめたWikiプロフィール`,
+    teaserSub: (name, parts) => `${name}の${parts}をまとめたWikiプロフィール`,
     breadcrumb: 'Wiki',
     heading: (name) => `${name} Wiki`,
     metaTitle: (name, year, parts) => `${name} Wiki ${year}：${parts}`,
@@ -224,6 +224,11 @@ export const ja: UiLex = {
     changeIncomeRemoved: '推定月収を削除(データ不足)',
     changeSections: (sections) => `書き直したセクション: ${sections}`,
     sectionSummary: '概要',
+    tocLabel: 'このページの内容',
+    tocAbout: '紹介',
+    tocStreamTimes: '配信時間',
+    tocGames: 'ゲーム',
+    articleLanguageNote: 'この記事はまだ日本語に対応していないため、英語で表示しています。',
     updated: (date) => `${date}更新`,
     factsHeading: '基本情報',
     factLabel: {

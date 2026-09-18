@@ -61,3 +61,34 @@ export function formatStatValue(value: number | null | undefined, lang = 'en'): 
   // decimals are sampling noise. English is unaffected ("9.3K" either way).
   return formatCompactNumber(Math.round(value), lang);
 }
+
+/**
+ * Compact labels for values that belong to ONE scale (a chart's max / latest /
+ * min): the precision grows (1 → 3 fraction digits) until the scale's two ENDS
+ * read differently. With the fixed one-decimal form a follower chart moving
+ * between 7,608,000 and 7,612,000 labelled all three ticks "7.6M" — an axis
+ * that says nothing (wiki audit 2026-09-18). Values in between may still share
+ * a label with an end (a "latest" just under the max is fine). Ends that stay
+ * identical at three digits → full grouped numbers.
+ * Every label uses the same precision; order follows the input.
+ */
+export function formatCompactDistinct(values: readonly number[], lang = 'en'): string[] {
+  const locale = lang === 'en' ? 'en-US' : lang;
+  const finite = values.filter((v) => Number.isFinite(v));
+  const lo = Math.min(...finite);
+  const hi = Math.max(...finite);
+  const make = (options: Intl.NumberFormatOptions): Intl.NumberFormat => {
+    try {
+      return new Intl.NumberFormat(locale, options);
+    } catch {
+      return new Intl.NumberFormat('en-US', options);
+    }
+  };
+  const render = (fmt: Intl.NumberFormat): string[] =>
+    values.map((v) => (Number.isFinite(v) ? fmt.format(v) : ''));
+  for (let digits = 1; digits <= 3; digits++) {
+    const fmt = make({ notation: 'compact', maximumFractionDigits: digits });
+    if (finite.length < 2 || lo === hi || fmt.format(lo) !== fmt.format(hi)) return render(fmt);
+  }
+  return render(make({ maximumFractionDigits: 0 }));
+}

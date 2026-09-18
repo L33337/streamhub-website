@@ -169,7 +169,10 @@ export interface UiLex {
   wiki: {
     /** Teaser card on the streamer page (the main internal entry). */
     teaserTitle: string;
-    teaserSub(name: string): string;
+    /** `parts` = pre-joined, sentence-cased `titlePart` labels of the facts
+     *  the profile actually holds (same rule as `metaTitle`): the old static
+     *  "Age, net worth, career" promised facts 2 of 5 pilots did not have. */
+    teaserSub(name: string, parts: string): string;
     /** Breadcrumb tail; the H1 is `heading`. */
     breadcrumb: string;
     heading(name: string): string;
@@ -342,5 +345,14 @@ export interface UiLex {
     changeSections(sections: string): string;
     /** Name of the intro paragraph as a section (has no heading on the page). */
     sectionSummary: string;
+    /** UX round (2026-09-18): jump-nav label + its short chip names (the
+     *  other chips reuse the section headings). */
+    tocLabel: string;
+    tocAbout: string;
+    tocStreamTimes: string;
+    tocGames: string;
+    /** Shown above the article when the viewer's UI language is not the
+     *  article's content language (content axis, M22 D6). */
+    articleLanguageNote: string;
   };
 }

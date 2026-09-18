@@ -173,7 +173,7 @@ export const pl: UiLex = {
   },
   wiki: {
     teaserTitle: 'Wiki i fakty',
-    teaserSub: (name) => `Wiek, majątek, kariera: profil wiki streamera ${name}`,
+    teaserSub: (name, parts) => `${parts}: profil wiki streamera ${name}`,
     breadcrumb: 'Wiki',
     heading: (name) => `${name} Wiki`,
     metaTitle: (name, year, parts) => `${name} Wiki ${year}: ${parts}`,
@@ -254,6 +254,11 @@ export const pl: UiLex = {
     changeIncomeRemoved: 'Szacowany miesięczny dochód usunięty (za mało danych)',
     changeSections: (sections) => `Sekcje napisane na nowo: ${sections}`,
     sectionSummary: 'Wstęp',
+    tocLabel: 'Na tej stronie',
+    tocAbout: 'O streamerze',
+    tocStreamTimes: 'Godziny streamów',
+    tocGames: 'Gry',
+    articleLanguageNote: 'Ten artykuł nie jest jeszcze dostępny po polsku i jest wyświetlany po angielsku.',
     updated: (date) => `Zaktualizowano ${date}`,
     factsHeading: 'Szybkie fakty',
     factLabel: {
