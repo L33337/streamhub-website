@@ -206,6 +206,16 @@ export const ja: UiLex = {
     clipAria: (title) => `クリップ「${title}」をTwitchで見る`,
     recapsHeading: '振り返り記事に登場',
     recapsIntro: (name) => `${name}が主役の一人として登場した週間・月間の振り返り記事。`,
+    historyHeading: '月別の推移',
+    historyNote:
+      '計測した月ごとの推移: 配信数、時間、主なゲーム、視聴者。目立った変化のあった月には短いまとめが付きます。',
+    historyColMonth: '月',
+    historyColStreams: '配信数',
+    historyColHours: '時間',
+    historyColTopGame: '主なゲーム',
+    historyColFollowers: 'フォロワー',
+    historyColViewers: '視聴者中央値',
+    historyShowYear: (year) => `${year}年を表示`,
     updated: (date) => `${date}更新`,
     factsHeading: '基本情報',
     factLabel: {

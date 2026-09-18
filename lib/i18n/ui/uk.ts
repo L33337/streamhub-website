@@ -247,6 +247,16 @@ export const uk: UiLex = {
     recapsHeading: 'В оглядах',
     recapsIntro: (name) =>
       `Випуски наших тижневих і місячних оглядів, де ${name} був серед головних героїв.`,
+    historyHeading: 'Історія',
+    historyNote:
+      'Місяць за місяцем за нашими вимірюваннями: стріми, години, головна гра та аудиторія. Місяці з помітними змінами отримують короткий опис.',
+    historyColMonth: 'Місяць',
+    historyColStreams: 'Стріми',
+    historyColHours: 'Години',
+    historyColTopGame: 'Головна гра',
+    historyColFollowers: 'Підписники',
+    historyColViewers: 'Медіана глядачів',
+    historyShowYear: (year) => `Показати ${year}`,
     updated: (date) => `Оновлено ${date}`,
     factsHeading: 'Коротко про головне',
     factLabel: {

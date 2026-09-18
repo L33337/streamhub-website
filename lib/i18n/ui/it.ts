@@ -264,5 +264,15 @@ export const it: UiLex = {
     recapsHeading: 'Nei riepiloghi',
     recapsIntro: (name) =>
       `Edizioni dei nostri riepiloghi settimanali e mensili in cui ${name} è stato tra i protagonisti.`,
+    historyHeading: 'Cronologia',
+    historyNote:
+      'Mese per mese, secondo le nostre misurazioni: live, ore, gioco principale e pubblico. I mesi con un cambiamento rilevante hanno un breve riepilogo.',
+    historyColMonth: 'Mese',
+    historyColStreams: 'Live',
+    historyColHours: 'Ore',
+    historyColTopGame: 'Gioco principale',
+    historyColFollowers: 'Follower',
+    historyColViewers: 'Spettatori (mediana)',
+    historyShowYear: (year) => `Mostra ${year}`,
   },
 };

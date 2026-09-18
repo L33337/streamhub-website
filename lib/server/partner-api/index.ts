@@ -45,6 +45,7 @@ export type {
   PublicStreamerWiki,
   PublicStreamerClip,
   StreamerClipsResponse,
+  WikiHistoryEntry,
   WikiLink,
   WikiTimelineEntry,
   WikiFact,

@@ -18,6 +18,7 @@ import type {
   StreamerInsights,
   WikiArticle,
   WikiFact,
+  WikiHistoryEntry,
   WikiLink,
   WikiTimelineEntry,
 } from '@/lib/server/partner-api';
@@ -519,6 +520,105 @@ export function wikiLinks(wiki: Pick<PublicStreamerWiki, 'links'>): WikiLink[] {
   return (wiki.links ?? []).filter(
     (l) => typeof l?.url === 'string' && l.url.startsWith('https://') && typeof l.platform === 'string',
   );
+}
+
+// ============================================
+// W4 (2026-09-18): monthly history
+// ============================================
+
+const MONTH_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** Defensive read of the history: valid month keys, one row per month,
+ *  newest first (the API already orders; a pre-W4 API has no field). */
+export function wikiHistory(wiki: Pick<PublicStreamerWiki, 'history'>): WikiHistoryEntry[] {
+  const seen = new Set<string>();
+  return (wiki.history ?? [])
+    .filter(
+      (h) =>
+        typeof h?.month === 'string' &&
+        MONTH_KEY_RE.test(h.month) &&
+        typeof h.streams === 'number' &&
+        typeof h.generated_at === 'string',
+    )
+    .filter((h) => (seen.has(h.month) ? false : (seen.add(h.month), true)))
+    .sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : 0));
+}
+
+export interface WikiHistoryYear {
+  year: string;
+  entries: WikiHistoryEntry[];
+}
+
+/** Newest year first, entries keep their (newest-first) order. */
+export function groupHistoryByYear(entries: WikiHistoryEntry[]): WikiHistoryYear[] {
+  const groups: WikiHistoryYear[] = [];
+  for (const entry of entries) {
+    const year = entry.month.slice(0, 4);
+    const last = groups[groups.length - 1];
+    if (last && last.year === year) last.entries.push(entry);
+    else groups.push({ year, entries: [entry] });
+  }
+  return groups;
+}
+
+/** 'YYYY-MM' → "Aug 2026" per viewer locale (table cell, so the short form). */
+export function formatHistoryMonth(month: string, uiLang: string): string {
+  if (!MONTH_KEY_RE.test(month)) return month;
+  return new Intl.DateTimeFormat(intlLocale(uiLang), {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${month}-01T00:00:00Z`));
+}
+
+/** The paragraph on the content axis: the streamer-language text when the
+ *  viewer reads that language (same rule as pickWikiArticle), else EN. */
+export function historyParagraph(
+  entry: Pick<WikiHistoryEntry, 'paragraph' | 'paragraph_native'>,
+  viewerLocale: string,
+  nativeLang: string | null,
+): { text: string; lang: string } | null {
+  if (entry.paragraph_native && nativeLang && viewerLocale === nativeLang) {
+    return { text: entry.paragraph_native, lang: nativeLang };
+  }
+  if (entry.paragraph) return { text: entry.paragraph, lang: 'en' };
+  return null;
+}
+
+/** Newest `generated_at` across the rows (feeds ProfilePage.dateModified). */
+export function latestHistoryIso(entries: Pick<WikiHistoryEntry, 'generated_at'>[]): string | null {
+  let best: string | null = null;
+  for (const e of entries) {
+    const t = new Date(e.generated_at).getTime();
+    if (Number.isNaN(t)) continue;
+    if (best === null || t > new Date(best).getTime()) best = e.generated_at;
+  }
+  return best;
+}
+
+/** Later of two ISO timestamps (null-tolerant), for dateModified. */
+export function laterIso(a: string, b: string | null): string {
+  if (!b) return a;
+  const ta = new Date(a).getTime();
+  const tb = new Date(b).getTime();
+  if (Number.isNaN(tb)) return a;
+  if (Number.isNaN(ta)) return b;
+  return tb > ta ? b : a;
+}
+
+/** "+3,594" / "−120" per viewer locale; empty for null. */
+export function formatSignedInt(value: number | null, uiLang: string): string {
+  if (value === null || !Number.isFinite(value)) return '';
+  return new Intl.NumberFormat(intlLocale(uiLang), {
+    signDisplay: 'exceptZero',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+/** Whole-number formatting per viewer locale (hours, viewers). */
+export function formatWholeNumber(value: number | null, uiLang: string): string {
+  if (value === null || !Number.isFinite(value)) return '';
+  return new Intl.NumberFormat(intlLocale(uiLang), { maximumFractionDigits: 0 }).format(value);
 }
 
 /** Minutes → "3.5 h" style duration per viewer locale (one decimal, trimmed). */

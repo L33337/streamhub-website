@@ -265,5 +265,15 @@ export const es: UiLex = {
     recapsHeading: 'En los resúmenes',
     recapsIntro: (name) =>
       `Ediciones de nuestros resúmenes semanales y mensuales en las que ${name} fue protagonista.`,
+    historyHeading: 'Historial',
+    historyNote:
+      'Mes a mes, según nuestras mediciones: streams, horas, juego principal y audiencia. Los meses con un cambio notable llevan un breve resumen.',
+    historyColMonth: 'Mes',
+    historyColStreams: 'Streams',
+    historyColHours: 'Horas',
+    historyColTopGame: 'Juego principal',
+    historyColFollowers: 'Seguidores',
+    historyColViewers: 'Espectadores (mediana)',
+    historyShowYear: (year) => `Mostrar ${year}`,
   },
 };

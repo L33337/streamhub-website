@@ -248,6 +248,16 @@ export const ru: UiLex = {
     recapsHeading: 'В обзорах',
     recapsIntro: (name) =>
       `Выпуски наших недельных и месячных обзоров, где ${name} был среди главных героев.`,
+    historyHeading: 'История',
+    historyNote:
+      'Месяц за месяцем по нашим измерениям: стримы, часы, главная игра и аудитория. Месяцы с заметными изменениями получают краткое описание.',
+    historyColMonth: 'Месяц',
+    historyColStreams: 'Стримы',
+    historyColHours: 'Часы',
+    historyColTopGame: 'Главная игра',
+    historyColFollowers: 'Подписчики',
+    historyColViewers: 'Медиана зрителей',
+    historyShowYear: (year) => `Показать ${year}`,
     updated: (date) => `Обновлено ${date}`,
     factsHeading: 'Коротко о главном',
     factLabel: {

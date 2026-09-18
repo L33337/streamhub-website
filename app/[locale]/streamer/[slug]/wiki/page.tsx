@@ -17,7 +17,7 @@
 // (numbers, viewer heatmap, games table, clips, recap mentions, related
 // streamers) — all best-effort and byte-deterministic (absolute dates only).
 
-import { cache, type ReactNode } from 'react';
+import { cache, Fragment, type ReactNode } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -71,15 +71,23 @@ import {
   formatSharePercent,
   formatUsdRange,
   formatWikiDate,
+  formatHistoryMonth,
+  formatSignedInt,
   formatTimelineDate,
+  formatWholeNumber,
   formatWikiShortDate,
+  groupHistoryByYear,
+  historyParagraph,
   incomeFact,
   joinTitleParts,
+  laterIso,
+  latestHistoryIso,
   orderedWikiFacts,
   pickWikiArticle,
   splitFootnotes,
   weekdayShortLabels,
   wikiGamesTable,
+  wikiHistory,
   wikiLinkLabel,
   wikiLinks,
   wikiMetaDescription,
@@ -87,6 +95,7 @@ import {
   wikiRecapMentions,
   wikiTimeline,
   wikiTitleParts,
+  type WikiHistoryYear,
 } from '@/lib/wiki';
 
 export const revalidate = 3600;
@@ -434,6 +443,123 @@ function LastStreamFigure({
 }
 
 // ============================================
+// History (W4, 2026-09-18)
+// ============================================
+
+const EMPTY_CELL = <span className="text-text-secondary">–</span>;
+
+/**
+ * One year of monthly rows. A month with a written summary gets a second,
+ * full-width row right under its numbers (content axis: `lang`/`dir` follow
+ * the paragraph's language, the headers stay in the viewer's UI language).
+ */
+function HistoryYearTable({
+  group,
+  locale,
+  nativeLang,
+  L,
+}: {
+  group: WikiHistoryYear;
+  locale: UiLang;
+  nativeLang: string | null;
+  L: UiLex;
+}) {
+  // The summary rows live INSIDE the table, so the table must never scroll
+  // horizontally (a scrolled paragraph is unreadable — seen at 400 px).
+  // Phones therefore drop the Hours and Followers columns instead.
+  const RIGHT = 'px-2 py-2 text-right font-semibold sm:px-3';
+  const WIDE = 'hidden sm:table-cell';
+  return (
+    <div className="mt-4 rounded-xl bg-background-elevated p-1">
+      <table className="w-full text-sm">
+        <caption className="sr-only">{group.year}</caption>
+        <thead>
+          <tr className="text-left text-xs uppercase tracking-wider text-text-secondary">
+            <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
+              {L.wiki.historyColMonth}
+            </th>
+            <th scope="col" className={RIGHT}>
+              {L.wiki.historyColStreams}
+            </th>
+            <th scope="col" className={`${RIGHT} ${WIDE}`}>
+              {L.wiki.historyColHours}
+            </th>
+            <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
+              {L.wiki.historyColTopGame}
+            </th>
+            <th scope="col" className={`${RIGHT} ${WIDE}`}>
+              {L.wiki.historyColFollowers}
+            </th>
+            <th scope="col" className={RIGHT}>
+              {L.wiki.historyColViewers}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {group.entries.map((entry) => {
+            const para = historyParagraph(entry, locale, nativeLang);
+            return (
+              <Fragment key={entry.month}>
+                <tr className="border-t border-divider">
+                  <th
+                    scope="row"
+                    className="whitespace-nowrap px-2 py-2 text-left font-medium text-text-primary sm:px-3"
+                  >
+                    {formatHistoryMonth(entry.month, locale)}
+                  </th>
+                  <td className="px-2 py-2 text-right tabular-nums text-text-primary sm:px-3">
+                    {entry.streams}
+                  </td>
+                  <td className={`px-3 py-2 text-right tabular-nums text-text-secondary ${WIDE}`}>
+                    {formatWholeNumber(entry.hours, locale)}
+                  </td>
+                  <td className="px-2 py-2 text-text-primary sm:min-w-[12rem] sm:px-3">
+                    {entry.top_category ? (
+                      <>
+                        {entry.top_category}
+                        {entry.top_share_percent !== null && (
+                          <span className="whitespace-nowrap text-text-secondary">
+                            {' · '}
+                            {formatSharePercent(entry.top_share_percent, locale)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      EMPTY_CELL
+                    )}
+                  </td>
+                  <td className={`px-3 py-2 text-right tabular-nums text-text-secondary ${WIDE}`}>
+                    {entry.follower_delta !== null
+                      ? formatSignedInt(entry.follower_delta, locale)
+                      : EMPTY_CELL}
+                  </td>
+                  <td className="px-2 py-2 text-right tabular-nums text-text-secondary sm:px-3">
+                    {entry.median_ccv !== null ? formatWholeNumber(entry.median_ccv, locale) : EMPTY_CELL}
+                  </td>
+                </tr>
+                {para && (
+                  <tr>
+                    <td colSpan={6} className="px-2 pb-3 pt-0 sm:px-3">
+                      <p
+                        lang={para.lang}
+                        dir={dirFor(para.lang)}
+                        className="max-w-prose text-pretty text-sm leading-relaxed text-text-secondary"
+                      >
+                        {para.text}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ============================================
 // Own-data sections (W2)
 // ============================================
 
@@ -475,6 +601,12 @@ export default async function StreamerWikiPage({ params }: Props) {
   const contentStyle = picked.article.content_style ?? [];
   const community = picked.article.community ?? [];
   const awards = picked.article.awards ?? [];
+  // W4: monthly history — a row per tracked month, summary rows under
+  // eventful ones. The newest year is open, older years fold. The newest
+  // row's generation time also moves the page's dateModified.
+  const history = wikiHistory(wiki);
+  const historyYears = groupHistoryByYear(history);
+  const dateModifiedIso = laterIso(updatedIso, latestHistoryIso(history));
 
   // M26 image round: streamer-chosen channel banner as hero backdrop, the
   // 600px avatar variant as infobox portrait (replaces the small header
@@ -616,7 +748,7 @@ export default async function StreamerWikiPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
     url: absoluteLocaleUrl(locale, path),
-    dateModified: updatedIso,
+    dateModified: dateModifiedIso,
     mainEntity: person,
   };
 
@@ -880,6 +1012,42 @@ export default async function StreamerWikiPage({ params }: Props) {
                 </p>
               </section>
             )
+          )}
+
+          {/* W4: month-by-month history from our own tracking. Every tracked
+              month is a row; eventful months carry a written summary
+              (streamer language when the viewer reads it, else English).
+              The newest year is open, older years fold into <details>. */}
+          {historyYears.length > 0 && (
+            <section className="mt-8" aria-labelledby="wiki-history-heading">
+              <h2 id="wiki-history-heading" className={SECTION_H2}>
+                {L.wiki.historyHeading}
+              </h2>
+              <p className="mt-2 text-sm text-text-secondary">{L.wiki.historyNote}</p>
+              {historyYears.map((group, i) =>
+                i === 0 ? (
+                  <HistoryYearTable
+                    key={group.year}
+                    group={group}
+                    locale={locale}
+                    nativeLang={wiki.native_lang}
+                    L={L}
+                  />
+                ) : (
+                  <details key={group.year} className="mt-4">
+                    <summary className="cursor-pointer text-sm font-semibold text-accent-cyan hover:underline">
+                      {L.wiki.historyShowYear(group.year)}
+                    </summary>
+                    <HistoryYearTable
+                      group={group}
+                      locale={locale}
+                      nativeLang={wiki.native_lang}
+                      L={L}
+                    />
+                  </details>
+                ),
+              )}
+            </section>
           )}
 
           {/* W2.1: own measurements — tiles, leaderboard placements, follower

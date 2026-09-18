@@ -236,6 +236,16 @@ export const pl: UiLex = {
     recapsHeading: 'W podsumowaniach',
     recapsIntro: (name) =>
       `Wydania naszych tygodniowych i miesięcznych podsumowań, w których ${name} był jednym z bohaterów.`,
+    historyHeading: 'Historia',
+    historyNote:
+      'Miesiąc po miesiącu według naszych pomiarów: streamy, godziny, główna gra i widownia. Miesiące z zauważalną zmianą mają krótkie podsumowanie.',
+    historyColMonth: 'Miesiąc',
+    historyColStreams: 'Streamy',
+    historyColHours: 'Godziny',
+    historyColTopGame: 'Główna gra',
+    historyColFollowers: 'Obserwujący',
+    historyColViewers: 'Mediana widzów',
+    historyShowYear: (year) => `Pokaż ${year}`,
     updated: (date) => `Zaktualizowano ${date}`,
     factsHeading: 'Szybkie fakty',
     factLabel: {

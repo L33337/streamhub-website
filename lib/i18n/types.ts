@@ -318,5 +318,16 @@ export interface UiLex {
     /** Recap editions the streamer was a protagonist of. */
     recapsHeading: string;
     recapsIntro(name: string): string;
+    /** W4: monthly history table + short summaries of eventful months. */
+    historyHeading: string;
+    historyNote: string;
+    historyColMonth: string;
+    historyColStreams: string;
+    historyColHours: string;
+    historyColTopGame: string;
+    historyColFollowers: string;
+    historyColViewers: string;
+    /** `<details>` summary for an older year's table. */
+    historyShowYear(year: string): string;
   };
 }
