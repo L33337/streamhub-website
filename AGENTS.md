@@ -633,6 +633,18 @@ Marketing/hub SEO conventions (last extended 2026-07-12 — keywords cleanup, gl
 - German streamer titles use the question form `Wann streamt {name}? Nächster Stream & Live-Status` / `… Stream-Zeiten & Live-Status` (German only, a measurable GSC test; es/pt keep the pattern that already ranks). `clampTitle` drops the brand suffix for every realistic name.
 - `/game/[slug]/best-time` renders a server-side prose reading of the timing aggregate (`buildBestTimeSummary` in `lib/game-timing.ts`: top window in UTC with absolute numbers, runners-up, comparison with the weekly average; UTC always stated because the chips shift to local time after hydration), a "How to use these numbers" section, and "Most followed {game} streamers" (3 via `listStreamers({ category, order: 'followers' })`, links to the hub and, from 10 streamers, to the ranking). English only, no em/en dashes (vitest-guarded).
 
+# Streamer wiki page: W1/W2 round (2026-09-18)
+
+`app/[locale]/streamer/[slug]/wiki/page.tsx` after the SEO/UX audit (StreamHub `docs/Epics/Epic Milestone 26.md` §11). Invariants an agent must not undo:
+
+- **Own `openGraph`/`twitter` block + explicit `alternates.canonical` in `generateMetadata`.** Without them the page inherited the root layout's og (og:url = homepage), and the EN variant of an English-language streamer had no canonical at all: `applyLocaleSeo` passes single-locale English pages through untouched, so a page that wants a canonical must set it itself.
+- **Title parts are derived from the facts that exist** (`wikiTitleParts` + `joinTitleParts` in `lib/wiki.ts`, UiLex `wiki.metaTitle(name, year, parts)` / `titlePart` / `titleSep` / `titleAnd`). Never reintroduce a static "Age, Net Worth & Facts": two of the five pilot profiles had neither.
+- **Chart label objects that cross into a client component carry only strings** (`InsightsCharts` `labels`, `FollowerGrowthChart` `labels`): parameterized entries are `{placeholder}` templates filled by `fillTemplate()` client-side. A function in that object fails at request time with "Functions cannot be passed directly to Client Components" — `tsc` and `next build` do not catch it. `lib/__tests__/i18n-ui.test.ts` pins the placeholders per locale.
+- **Every fetch in `loadWikiPage` passes `revalidate: 3600`, including `listRecaps` (defaults to 900) and `RelatedStreamers` (new `revalidate` prop, defaults to the streamer page's 1800).** One smaller value drags the whole route to it (Next min() rule).
+- The `wiki` UiLex section is guarded against em/en dashes as a whole (user rule); numeric ranges from `formatUsdRange` legitimately contain an en dash, which is why the test fixture passes a dash-free range.
+- Sticky infobox is height-capped (`lg:max-h-[calc(100vh-6.5rem)] overflow-y-auto`, portrait `lg:w-56`): measured at 1366×768 the uncapped 714 px card cut off exactly the income row.
+- Clips come from the Partner API route `GET /v1/streamers/{id}/clips` (`getStreamerClips`, best-effort → `[]`), NOT from an anon PostgREST read, and link to the external Twitch clip URL — the hosted `/clip/<slug>` page is the app's embed wrapper, not a reader page.
+
 # Localization (M22)
 
 The D6 keying rule (applies to EVERY component and metadata builder):

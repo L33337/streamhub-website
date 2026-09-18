@@ -580,6 +580,35 @@ export interface PublicStreamerWiki {
 }
 
 // ============================================
+// Streamer clips (GET /v1/streamers/{id}/clips, wiki W2 2026-09-18)
+// ============================================
+
+/** One Twitch clip of a streamer — allow-list projection of the ingested row. */
+export interface PublicStreamerClip {
+  id: string;
+  platform: Platform | (string & {});
+  /** Platform clip slug (`clips.twitch.tv/<slug>`). */
+  external_clip_id: string;
+  /** Clip creator's own title (untranslated content); null when untitled. */
+  title: string | null;
+  /** Canonical watch URL on the platform. */
+  url: string;
+  /** Platform-CDN preview; can expire for old clips — always render a fallback. */
+  thumbnail_url: string | null;
+  view_count: number | null;
+  duration_seconds: number | null;
+  category: string | null;
+  clip_created_at: string | null;
+  creator_name: string | null;
+}
+
+export interface StreamerClipsResponse {
+  streamer_id: string;
+  /** View count descending (unknown counts last). */
+  data: PublicStreamerClip[];
+}
+
+// ============================================
 // Recap articles (GET /v1/recaps, 2026-08-09)
 // ============================================
 

@@ -10,6 +10,12 @@
 // CONTENT (EN source / native translation, picked by pickWikiArticle and
 // rendered with its own lang/dir). Fact values arrive language-neutral and
 // are formatted per viewer locale (lib/wiki.ts).
+//
+// W1/W2 (2026-09-18): own openGraph/twitter block + canonical (the page used
+// to inherit the homepage's og:url), fact-derived title parts, earnings
+// fallback, sticky-infobox height cap, and the own-measurement sections
+// (numbers, viewer heatmap, games table, clips, recap mentions, related
+// streamers) — all best-effort and byte-deterministic (absolute dates only).
 
 import { cache, type ReactNode } from 'react';
 import type { Metadata } from 'next';
@@ -19,17 +25,24 @@ import { notFound } from 'next/navigation';
 import {
   getPartnerApi,
   type PublicGame,
+  type PublicRecapListItem,
   type PublicStreamer,
+  type PublicStreamerClip,
+  type PublicStreamerRankings,
   type PublicStreamerStats,
   type PublicStreamerWiki,
   type PublicStreamHistory,
   type PublicStreamSlot,
+  type StreamerInsights,
   type WikiFact,
 } from '@/lib/server/partner-api';
 import { historyVodLinks, usableThumbnail } from '@/lib/history';
 import { pickNextRealSlot, sevenDayKeys } from '@/lib/format/time';
 import { floorToBucket } from '@/lib/home/logic';
 import { HeroNextStream } from '@/components/web/HeroNextStream';
+import { InsightsCharts } from '@/components/web/streamer/InsightsCharts';
+import { FollowerGrowthChart } from '@/components/web/streamer/InsightsTrendCharts';
+import { RelatedStreamers } from '@/components/web/RelatedStreamers';
 import {
   applyLocaleSeo,
   buildBreadcrumbJsonLd,
@@ -38,31 +51,49 @@ import {
   dirFor,
   isIndexableStreamerSlug,
   jsonLdHtml,
+  langToLocale,
   pickDescription,
   streamerIndexableLocales,
 } from '@/lib/seo';
 import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { sizedCdnImageUrl } from '@/lib/format/image-size';
+import { formatCompactNumber, formatStatValue } from '@/lib/format/number';
 import { uiLexFor, type UiLex } from '@/lib/i18n-ui';
+import { buildStreamerRankingRows } from '@/lib/streamer-rankings';
+import { COLLECTING_THRESHOLD, followerStats, usableCells } from '@/lib/streamer-insights';
 import {
   avatarLargeUrl,
   bannerDisplayUrl,
   displayAge,
   formatBirthDate,
+  formatHours,
   formatRegion,
   formatSharePercent,
   formatUsdRange,
   formatWikiDate,
+  formatWikiShortDate,
+  incomeFact,
+  joinTitleParts,
   orderedWikiFacts,
   pickWikiArticle,
   splitFootnotes,
+  weekdayShortLabels,
+  wikiGamesTable,
   wikiMetaDescription,
-  wikiTopGames,
+  wikiNumbers,
+  wikiRecapMentions,
+  wikiTitleParts,
 } from '@/lib/wiki';
 
 export const revalidate = 3600;
 
 const CONTACT_EMAIL = 'StreamHub.Privacy@icloud.com';
+const BRAND_SUFFIX = ' | Streamer Times';
+const CLIPS_LIMIT = 6;
+const GAMES_LIMIT = 8;
+const RECAPS_LIMIT = 6;
+/** Schedule-reliability tier needs this many scored announcements to show. */
+const RELIABILITY_MIN_SAMPLE = 5;
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
@@ -75,47 +106,60 @@ interface WikiPageData {
   games: PublicGame[];
   lastStream: PublicStreamHistory | null;
   upcomingSlots: PublicStreamSlot[];
+  insights: StreamerInsights | null;
+  rankings: PublicStreamerRankings | null;
+  clips: PublicStreamerClip[];
+  recaps: PublicRecapListItem[];
 }
 
-// streamer+wiki gate the page (no profile = 404); stats+games (box-art row),
-// lastStream (career figure) and upcomingSlots (next-stream section) are
-// best-effort — their failure must never 404 a live wiki page. Explicit
-// revalidate ≥ the route value so no fetch drags the ISR window down (Next
-// min() rule); the schedule window mirrors the streamer page (bucketed now →
-// +7d, predictions + always-on included) so both surfaces name the same
-// "next stream", but limit differs on purpose: a distinct fetch URL keeps
-// this call on ITS OWN data-cache entry with revalidate 3600 — sharing the
-// profile page's entry would inherit its 1800 and halve the wiki ISR window.
+// streamer+wiki gate the page (no profile = 404); everything else is
+// best-effort — a failing lookup must never 404 a live wiki page. Explicit
+// revalidate ≥ the route value on EVERY fetch so no call drags the ISR window
+// down (Next min() rule; listRecaps defaults to 900, RelatedStreamers to
+// 1800 — both are overridden below). The schedule window mirrors the
+// streamer page (bucketed now → +7d, predictions + always-on included) so
+// both surfaces name the same "next stream", but limit differs on purpose: a
+// distinct fetch URL keeps this call on ITS OWN data-cache entry with
+// revalidate 3600 — sharing the profile page's entry would inherit its 1800
+// and halve the wiki ISR window.
 const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
   const api = getPartnerApi();
   const bucketedNow = floorToBucket(new Date());
   const sevenDaysFromNow = new Date(bucketedNow.getTime() + 7 * 86_400_000);
-  const [streamer, wiki, stats, games, lastStream, upcomingSlots] = await Promise.all([
-    api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
-    api.getStreamerWiki(slug, { revalidate: 3600 }),
-    api.getStreamerStats(slug, { revalidate: 3600 }).catch(() => null),
-    api
-      .listGames({ limit: 500, revalidate: 3600 })
-      .then((r) => r.data)
-      .catch(() => [] as PublicGame[]),
-    api.getLastStream(slug, { revalidate: 3600 }),
-    api
-      .listSchedules({
-        streamerIds: [slug],
-        status: ['upcoming'],
-        includePredictions: true,
-        includeAlwaysOn: true,
-        from: bucketedNow.toISOString(),
-        to: sevenDaysFromNow.toISOString(),
-        limit: 50,
-        revalidate: 3600,
-      })
-      .then(
-        (page) => page.data,
-        () => [] as PublicStreamSlot[],
-      ),
-  ]);
-  return { streamer, wiki, stats, games, lastStream, upcomingSlots };
+  const [streamer, wiki, stats, games, lastStream, upcomingSlots, insights, rankings, clips, recaps] =
+    await Promise.all([
+      api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
+      api.getStreamerWiki(slug, { revalidate: 3600 }),
+      api.getStreamerStats(slug, { revalidate: 3600 }),
+      api
+        .listGames({ limit: 500, revalidate: 3600 })
+        .then((r) => r.data)
+        .catch(() => [] as PublicGame[]),
+      api.getLastStream(slug, { revalidate: 3600 }),
+      api
+        .listSchedules({
+          streamerIds: [slug],
+          status: ['upcoming'],
+          includePredictions: true,
+          includeAlwaysOn: true,
+          from: bucketedNow.toISOString(),
+          to: sevenDaysFromNow.toISOString(),
+          limit: 50,
+          revalidate: 3600,
+        })
+        .then(
+          (page) => page.data,
+          () => [] as PublicStreamSlot[],
+        ),
+      api.getStreamerInsights(slug, { revalidate: 3600 }),
+      api.getStreamerRankings(slug, { revalidate: 3600 }),
+      api.getStreamerClips(slug, { limit: CLIPS_LIMIT, revalidate: 3600 }),
+      api
+        .listRecaps({ limit: 50, revalidate: 3600 })
+        .then((r) => r.data)
+        .catch(() => [] as PublicRecapListItem[]),
+    ]);
+  return { streamer, wiki, stats, games, lastStream, upcomingSlots, insights, rankings, clips, recaps };
 });
 
 export async function generateStaticParams() {
@@ -127,27 +171,53 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
   const { streamer, wiki } = await loadWikiPage(slug);
-  if (!streamer || !wiki) return { title: 'Streamer not found — Streamer Times' };
+  if (!streamer || !wiki) return { title: `Streamer not found${BRAND_SUFFIX}` };
 
   const L = uiLexFor(locale);
-  const { article } = pickWikiArticle(wiki, locale);
+  const { article, lang: articleLang } = pickWikiArticle(wiki, locale);
   // Year from generated_at, not from the clock: the title only changes when
   // the profile actually changes (ISR byte-determinism), and it is honest —
   // the facts ARE from that year.
   const year = (wiki.refreshed_at ?? wiki.generated_at).slice(0, 4);
+  // Title parts name only what the infobox actually holds (W1).
+  const parts = wikiTitleParts(wiki.facts).map((p) => L.wiki.titlePart[p]);
+  const titleCore = L.wiki.metaTitle(
+    streamer.name,
+    year,
+    joinTitleParts(parts, L.wiki.titleSep, L.wiki.titleAnd),
+  );
+  const description = wikiMetaDescription(article.summary);
+  const path = `/streamer/${encodeURIComponent(slug)}/wiki`;
+  const url = absoluteLocaleUrl(locale, path);
   const meta: Metadata = {
-    title: `${L.wiki.metaTitle(streamer.name, year)} — Streamer Times`,
-    description: wikiMetaDescription(article.summary),
+    title: `${titleCore}${BRAND_SUFFIX}`,
+    description,
+    // Explicit canonical on EVERY variant: applyLocaleSeo passes an English
+    // single-locale page through untouched, which used to leave the wiki of
+    // an English-language streamer without one (and `?utm=` duplicates open).
+    alternates: { canonical: url },
+    // Own og/twitter block: without it the page inherits the root layout's
+    // (og:url = homepage), so every shared wiki link unfurled as the site
+    // card. og:locale = the language of the summary shown (content axis);
+    // applyLocaleSeo overrides it for the localized-class variants.
+    openGraph: {
+      title: titleCore,
+      description,
+      url,
+      type: 'profile',
+      siteName: 'Streamer Times',
+      locale: langToLocale(articleLang),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: titleCore,
+      description,
+    },
   };
   if (!isIndexableStreamerSlug(slug)) {
     meta.robots = { index: false, follow: true };
   }
-  return applyLocaleSeo(
-    meta,
-    locale,
-    `/streamer/${encodeURIComponent(slug)}/wiki`,
-    streamerIndexableLocales(streamer.language),
-  );
+  return applyLocaleSeo(meta, locale, path, streamerIndexableLocales(streamer.language));
 }
 
 // ============================================
@@ -179,13 +249,17 @@ function factValue(fact: WikiFact, locale: UiLang, L: UiLex, now: Date): string 
   }
 }
 
-/** Sup footnote link, shared by infobox facts and article paragraphs. */
+/**
+ * Sup footnote link, shared by infobox facts and article paragraphs. The
+ * visible glyph stays small; the padding + negative margins give it a 24 px
+ * hit area without growing the line box (WCAG 2.5.8 target size).
+ */
 function FootnoteRef({ n }: { n: number }) {
   return (
     <sup className="ml-0.5">
       <a
         href={`#wiki-source-${n}`}
-        className="font-mono text-[11px] text-accent-cyan hover:underline"
+        className="-my-1.5 -mx-0.5 inline-block px-1 py-1.5 font-mono text-[11px] leading-[1.2] text-accent-cyan hover:underline"
       >
         [{n}]
       </a>
@@ -203,6 +277,8 @@ function ArticleParagraph({ text, sourceCount }: { text: string; sourceCount: nu
   );
 }
 
+const SECTION_H2 = 'border-b border-border-default pb-2 text-xl font-bold text-text-primary';
+
 function ArticleSection({
   heading,
   paragraphs,
@@ -218,18 +294,20 @@ function ArticleSection({
   lang: string;
   dir: 'rtl' | undefined;
   /** Optional Wikipedia-style thumb, floated inline-end on sm+ so the text
-   *  wraps around it (flow-root on the section contains the float). */
+   *  wraps around it (flow-root on the section contains the float). Rendered
+   *  AFTER the first paragraph so on phones the section opens with text,
+   *  not with a full-width image (W1.8). */
   figure?: ReactNode;
 }) {
   if (paragraphs.length === 0) return null;
+  const [first, ...rest] = paragraphs;
   return (
     <section className="mt-8 flow-root">
-      <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
-        {heading}
-      </h2>
-      {figure}
+      <h2 className={SECTION_H2}>{heading}</h2>
       <div className="mt-4 space-y-4" lang={lang} dir={dir}>
-        {paragraphs.map((p, i) => (
+        <ArticleParagraph text={first} sourceCount={sourceCount} />
+        {figure}
+        {rest.map((p, i) => (
           <ArticleParagraph key={i} text={p} sourceCount={sourceCount} />
         ))}
       </div>
@@ -278,8 +356,10 @@ function LastStreamFigure({
     </div>
   );
 
+  // `!mt-0` neutralises the parent's space-y so the float hugs the paragraph
+  // it follows; the figure's own top margin is `mt-1`.
   return (
-    <figure className="mt-4 w-full rounded-xl border border-border-default bg-background-elevated p-2 sm:float-end sm:mb-3 sm:ms-5 sm:w-60 lg:w-72">
+    <figure className="!mt-1 w-full rounded-xl border border-border-default bg-background-elevated p-2 sm:float-end sm:mb-3 sm:ms-5 sm:w-60 lg:w-72">
       {href ? (
         <a
           href={href}
@@ -293,13 +373,30 @@ function LastStreamFigure({
       ) : (
         image
       )}
-      <figcaption className="mt-2 px-1 pb-1 text-xs leading-snug text-text-muted">
-        <span className="font-semibold text-text-secondary">{L.lastStream.heading}:</span> {title}
+      <figcaption className="mt-2 px-1 pb-1 text-xs leading-snug text-text-secondary">
+        <span className="font-semibold text-text-primary">{L.lastStream.heading}:</span> {title}
         {dateLabel ? ` · ${dateLabel}` : ''}
       </figcaption>
     </figure>
   );
 }
+
+// ============================================
+// Own-data sections (W2)
+// ============================================
+
+interface NumberTile {
+  key: string;
+  label: string;
+  value: string;
+  detail?: string;
+}
+
+const TIER_STYLE: Record<string, string> = {
+  reliable: 'border-delta-up/40 text-delta-up',
+  medium: 'border-viz-soft/40 text-viz-soft',
+  unreliable: 'border-delta-down/40 text-delta-down',
+};
 
 // ============================================
 // Page
@@ -308,7 +405,8 @@ function LastStreamFigure({
 export default async function StreamerWikiPage({ params }: Props) {
   const { locale: rawLocale, slug } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
-  const { streamer, wiki, stats, games, lastStream, upcomingSlots } = await loadWikiPage(slug);
+  const { streamer, wiki, stats, games, lastStream, upcomingSlots, insights, rankings, clips, recaps } =
+    await loadWikiPage(slug);
   if (!streamer || !wiki) notFound();
 
   const L = uiLexFor(locale);
@@ -322,10 +420,9 @@ export default async function StreamerWikiPage({ params }: Props) {
 
   // M26 image round: streamer-chosen channel banner as hero backdrop, the
   // 600px avatar variant as infobox portrait (replaces the small header
-  // avatar — one portrait, Wikipedia-style), top games as box-art tiles.
+  // avatar — one portrait, Wikipedia-style).
   const bannerUrl = bannerDisplayUrl(streamer.banner_url ?? null);
   const portraitUrl = avatarLargeUrl(streamer.avatar_url);
-  const topGames = wikiTopGames(stats?.top_categories ?? [], games);
 
   // Same pick as the profile page (cancelled slots excluded, 7-day window) so
   // both surfaces name the same "next stream"; the pill deep-links into that
@@ -339,6 +436,101 @@ export default async function StreamerWikiPage({ params }: Props) {
   const bioParagraphs = bio
     ? bio.text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
     : [];
+
+  // Earnings: the article's own paragraphs, or (W1.5) one sentence built from
+  // the model-computed income fact so the section the title promises exists.
+  const income = incomeFact(wiki.facts);
+  const earningsFallback =
+    picked.article.earnings.length === 0 && income && income.value_num_low !== null
+      ? L.wiki.earningsFallback(
+          streamer.name,
+          formatUsdRange(income.value_num_low, income.value_num_high, locale),
+          income.as_of,
+        )
+      : null;
+
+  // --- own measurements (W2), every block independently optional ---
+  const numbers = wikiNumbers(streamer, stats, insights);
+  const followerLabel = streamer.platforms.includes('twitch')
+    ? L.channelStats.followers
+    : L.channelStats.subscribers;
+  const tiles: NumberTile[] = [];
+  if (numbers) {
+    if (numbers.followers !== null) {
+      tiles.push({
+        key: 'followers',
+        label: followerLabel,
+        value: formatCompactNumber(numbers.followers, locale),
+      });
+    }
+    if (numbers.medianViewers !== null) {
+      tiles.push({
+        key: 'median',
+        label: L.wiki.numberLabel.medianViewers,
+        value: formatCompactNumber(numbers.medianViewers, locale),
+      });
+    }
+    if (numbers.peakViewers !== null) {
+      tiles.push({
+        key: 'peak',
+        label: L.channelStats.peakViewers,
+        value: formatCompactNumber(numbers.peakViewers, locale),
+        detail: L.channelStats.lastNDays(numbers.windowDays),
+      });
+    }
+    if (numbers.hoursStreamed !== null) {
+      tiles.push({
+        key: 'hours',
+        label: L.channelStats.hoursStreamed,
+        value: formatCompactNumber(Math.round(numbers.hoursStreamed), locale),
+        detail: L.channelStats.lastNDays(numbers.windowDays),
+      });
+    }
+    if (numbers.streamsPerWeek !== null) {
+      tiles.push({
+        key: 'perWeek',
+        label: L.wiki.numberLabel.streamsPerWeek,
+        value: formatStatValue(numbers.streamsPerWeek, locale),
+      });
+    }
+    if (numbers.activeDays !== null) {
+      tiles.push({
+        key: 'activeDays',
+        label: L.wiki.numberLabel.activeDays,
+        value: formatStatValue(numbers.activeDays, locale),
+      });
+    }
+    if (numbers.typicalMinutes !== null) {
+      tiles.push({
+        key: 'typical',
+        label: L.wiki.numberLabel.typicalLength,
+        value: formatHours(numbers.typicalMinutes, locale),
+      });
+    }
+    if (numbers.followerGain30 !== null) {
+      tiles.push({
+        key: 'gain30',
+        label: L.wiki.numberLabel.followerGain30,
+        value: `${numbers.followerGain30 > 0 ? '+' : ''}${formatCompactNumber(numbers.followerGain30, locale)}`,
+      });
+    }
+  }
+  const rankingRows = buildStreamerRankingRows(rankings, { metric: L.streamerRankings.metric });
+  const followers = followerStats(insights?.follower_trend);
+  const showNumbers = tiles.length > 0 || rankingRows.length > 0 || followers !== null;
+
+  const collecting = (insights?.sample_count ?? 0) < COLLECTING_THRESHOLD;
+  const weekdayCells = collecting ? null : usableCells(insights?.weekday_viewers ?? null, 7);
+  const hourCells = collecting ? null : usableCells(insights?.hour_viewers ?? null, 24);
+  const rel = insights?.schedule_reliability ?? null;
+  const tier =
+    rel && (rel.sample ?? 0) >= RELIABILITY_MIN_SAMPLE && rel.time_tier && rel.time_tier !== 'unknown'
+      ? rel.time_tier
+      : null;
+  const showStreamTimes = weekdayCells !== null || hourCells !== null || tier !== null;
+
+  const gameRows = wikiGamesTable(stats?.top_categories ?? [], games, rankings?.games ?? [], GAMES_LIMIT);
+  const recapMentions = wikiRecapMentions(recaps, streamer.id, RECAPS_LIMIT);
 
   const path = `/streamer/${encodeURIComponent(slug)}/wiki`;
   const breadcrumb = buildBreadcrumbJsonLd([
@@ -383,7 +575,7 @@ export default async function StreamerWikiPage({ params }: Props) {
 
       {/* Visible breadcrumb matching the BreadcrumbList JSON-LD (the "Home"
           crumb stays JSON-LD-only, same convention as the streamer page). */}
-      <p className="text-sm text-text-muted">
+      <p className="text-sm text-text-secondary">
         <Link href={localeHref(locale, '/streamers')} className="hover:text-accent-cyan">
           {L.breadcrumb.streamers}
         </Link>{' '}
@@ -399,9 +591,11 @@ export default async function StreamerWikiPage({ params }: Props) {
 
       {/* Channel banner hero (M26 image round): the streamer's own channel
           branding (Twitch offline screen / YouTube banner), dimmed toward the
-          bottom so the page keeps its dark canvas. Decorative — alt="". */}
+          bottom so the page keeps its dark canvas. Decorative — alt="".
+          lg:h-44 (was h-56, W1.7): at 1366×768 the taller hero pushed the
+          infobox and the article start below the fold. */}
       {bannerUrl && (
-        <div className="relative mt-3 h-32 overflow-hidden rounded-xl border border-border-default sm:h-44 lg:h-56">
+        <div className="relative mt-3 h-32 overflow-hidden rounded-xl border border-border-default sm:h-40 lg:h-44">
           <Image
             src={bannerUrl}
             alt=""
@@ -417,11 +611,11 @@ export default async function StreamerWikiPage({ params }: Props) {
 
       {/* Identity header. The portrait lives in the infobox (Wikipedia
           convention) — no duplicate avatar up here. */}
-      <div className="mt-4 min-w-0">
+      <div className="mt-3 min-w-0">
         <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
           {L.wiki.heading(streamer.name)}
         </h1>
-        <p className="mt-1 text-sm text-text-muted">
+        <p className="mt-1 text-sm text-text-secondary">
           {L.wiki.updated(formatWikiDate(updatedIso, locale))}
         </p>
       </div>
@@ -430,16 +624,21 @@ export default async function StreamerWikiPage({ params }: Props) {
       <p
         lang={articleLang}
         dir={articleDir}
-        className="mt-4 max-w-2xl text-pretty text-lg leading-relaxed text-text-secondary"
+        className="mt-3 max-w-2xl text-pretty text-lg leading-relaxed text-text-secondary"
       >
         {picked.article.summary}
       </p>
 
-      <div className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-6 grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Infobox: full-width card first on phones/tablets (the quick
             answer), right rail on lg+. Facts flow 2-up from sm so the card
-            never becomes a long skinny list on medium screens. */}
-        <aside className="order-1 min-w-0 lg:order-2 lg:sticky lg:top-24" aria-label={L.wiki.factsHeading}>
+            never becomes a long skinny list on medium screens. The sticky
+            rail is capped at the viewport (W1.6): a 714 px card on a 768 px
+            laptop used to cut off exactly the income row while sticky. */}
+        <aside
+          className="order-1 min-w-0 lg:sticky lg:top-24 lg:order-2 lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-width:thin]"
+          aria-label={L.wiki.factsHeading}
+        >
           <div className="rounded-xl border border-border-default bg-background-elevated p-4 sm:p-5">
             <h2 className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-accent-cyan">
               {L.wiki.factsHeading}
@@ -451,7 +650,9 @@ export default async function StreamerWikiPage({ params }: Props) {
                 width={600}
                 height={600}
                 unoptimized
-                className="mx-auto mt-3 w-40 rounded-xl border border-border-default sm:w-48 lg:w-full"
+                // lg:w-56 (was w-full = 288 px): with six facts the card then
+                // fits a 768 px laptop viewport without the rail scrollbar.
+                className="mx-auto mt-3 w-40 rounded-xl border border-border-default sm:w-48 lg:w-56"
               />
             )}
             {facts.length > 0 ? (
@@ -461,7 +662,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                     key={fact.key}
                     className="min-w-0 border-b border-border-default/60 py-2.5 last:border-b-0"
                   >
-                    <dt className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                    <dt className="text-xs font-medium uppercase tracking-wide text-text-secondary">
                       {L.wiki.factLabel[fact.key as keyof UiLex['wiki']['factLabel']] ?? fact.key}
                     </dt>
                     <dd className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-text-primary">
@@ -477,17 +678,17 @@ export default async function StreamerWikiPage({ params }: Props) {
                         </span>
                       )}
                       {fact.as_of && (
-                        <span className="text-xs text-text-muted">{L.wiki.asOf(fact.as_of)}</span>
+                        <span className="text-xs text-text-secondary">{L.wiki.asOf(fact.as_of)}</span>
                       )}
                     </dd>
                   </div>
                 ))}
               </dl>
             ) : (
-              <p className="mt-3 text-sm text-text-muted">{L.wiki.minorNote}</p>
+              <p className="mt-3 text-sm text-text-secondary">{L.wiki.minorNote}</p>
             )}
             {wiki.is_minor && facts.length > 0 && (
-              <p className="mt-3 text-xs text-text-muted">{L.wiki.minorNote}</p>
+              <p className="mt-3 text-xs text-text-secondary">{L.wiki.minorNote}</p>
             )}
           </div>
         </aside>
@@ -501,9 +702,7 @@ export default async function StreamerWikiPage({ params }: Props) {
               2026-08-19). */}
           {bio && bioParagraphs.length > 0 && (
             <section className="mt-8">
-              <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
-                {L.wiki.aboutHeading(streamer.name)}
-              </h2>
+              <h2 className={SECTION_H2}>{L.wiki.aboutHeading(streamer.name)}</h2>
               <div className="mt-4 space-y-4" lang={bio.lang} dir={bio.dir}>
                 {bioParagraphs.map((p, i) => (
                   <p key={i} className="text-pretty leading-relaxed text-text-secondary">
@@ -538,46 +737,345 @@ export default async function StreamerWikiPage({ params }: Props) {
             lang={articleLang}
             dir={articleDir}
           />
-          <ArticleSection
-            heading={L.wiki.sectionEarnings}
-            paragraphs={picked.article.earnings}
-            sourceCount={sourceCount}
-            lang={articleLang}
-            dir={articleDir}
-          />
+          {picked.article.earnings.length > 0 ? (
+            <ArticleSection
+              heading={L.wiki.sectionEarnings}
+              paragraphs={picked.article.earnings}
+              sourceCount={sourceCount}
+              lang={articleLang}
+              dir={articleDir}
+            />
+          ) : (
+            earningsFallback && (
+              <section className="mt-8">
+                <h2 className={SECTION_H2}>{L.wiki.sectionEarnings}</h2>
+                <p className="mt-4 text-pretty leading-relaxed text-text-secondary">
+                  {earningsFallback}
+                  {income?.source_ids.map((n) => (
+                    <FootnoteRef key={n} n={n} />
+                  ))}
+                </p>
+                <p className="mt-2 text-sm">
+                  <Link
+                    href={localeHref(locale, '/methodology/income-estimates')}
+                    className="font-semibold text-accent-cyan hover:underline"
+                  >
+                    {L.wiki.earningsMethodology} →
+                  </Link>
+                </p>
+              </section>
+            )
+          )}
 
-          {/* Top games as box-art tiles (M26 image round) — internal links
-              into the game hubs. UI-axis heading; hidden when the stats feed
-              or games catalog is unavailable. */}
-          {topGames.length > 0 && (
-            <section className="mt-8">
-              <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
+          {/* W2.1: own measurements — tiles, leaderboard placements, follower
+              chart. Numbers are locale-formatted; nothing here depends on
+              "now" (ISR byte-determinism). */}
+          {showNumbers && (
+            <section className="mt-8" aria-labelledby="wiki-numbers-heading">
+              <h2 id="wiki-numbers-heading" className={SECTION_H2}>
+                {L.wiki.numbersHeading}
+              </h2>
+              {tiles.length > 0 && (
+                <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {tiles.map((tile) => (
+                    <div key={tile.key} className="rounded-xl bg-background-elevated p-3">
+                      <dt className="text-xs uppercase tracking-wider text-text-secondary">
+                        {tile.label}
+                      </dt>
+                      <dd className="mt-1 text-lg font-bold tabular-nums text-text-primary">
+                        {tile.value}
+                        {tile.detail ? (
+                          <span className="block text-xs font-normal normal-case text-text-secondary">
+                            {tile.detail}
+                          </span>
+                        ) : null}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {rankingRows.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-text-primary">
+                    {L.streamerRankings.heading}
+                  </h3>
+                  <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {rankingRows.map((row) => {
+                      const total = formatCompactNumber(row.total, locale);
+                      const body = (
+                        <>
+                          <span className="text-lg font-bold tabular-nums text-accent-cyan">
+                            #{row.rank}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-text-primary">
+                              {row.label}
+                            </span>
+                            <span className="block text-xs text-text-secondary">
+                              {L.streamerRankings.ofTotal(total)}
+                            </span>
+                          </span>
+                        </>
+                      );
+                      const cls =
+                        'flex items-center gap-3 rounded-xl bg-background-elevated p-3 transition-colors';
+                      return (
+                        <li key={row.key}>
+                          {row.href ? (
+                            <Link
+                              href={localeHref(locale, row.href)}
+                              aria-label={L.streamerRankings.rowAria(row.rank, total, row.label)}
+                              className={`${cls} hover:ring-1 hover:ring-accent-cyan/40`}
+                            >
+                              {body}
+                            </Link>
+                          ) : (
+                            <div className={cls}>{body}</div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              {followers && (
+                <div className="mt-6 max-w-2xl">
+                  <h3 className="text-sm font-semibold text-text-primary">{followerLabel}</h3>
+                  <div className="mt-2">
+                    <FollowerGrowthChart
+                      points={followers.points}
+                      lang={locale}
+                      labels={{
+                        now: L.wiki.charts.followersNow,
+                        low: L.wiki.charts.followersLow,
+                        followers: followerLabel.toLocaleLowerCase(locale),
+                        aria: L.wiki.charts.followerAria,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              <p className="mt-3 text-xs text-text-secondary">
+                {L.wiki.numbersNote(numbers?.windowDays ?? 28)}
+              </p>
+            </section>
+          )}
+
+          {/* W2.2: viewer heatmap under a question-form heading (the SERP
+              question this page competes for), plus the M14 reliability tier. */}
+          {showStreamTimes && (
+            <section className="mt-8" aria-labelledby="wiki-times-heading">
+              <h2 id="wiki-times-heading" className={SECTION_H2}>
+                {L.wiki.streamTimesHeading(streamer.name)}
+              </h2>
+              {tier && (
+                <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-text-secondary">
+                  <span>{L.wiki.reliabilityLabel}:</span>
+                  <span
+                    className={`inline-block rounded-full border bg-background px-2.5 py-1 text-xs font-semibold ${
+                      TIER_STYLE[tier] ?? ''
+                    }`}
+                  >
+                    {L.wiki.reliabilityTier[tier as keyof UiLex['wiki']['reliabilityTier']] ?? tier}
+                  </span>
+                </p>
+              )}
+              {(weekdayCells || hourCells) && (
+                <div className="mt-4">
+                  <InsightsCharts
+                    weekdayCells={weekdayCells}
+                    hourCells={hourCells}
+                    streamerTimezone={insights?.timezone ?? streamer.timezone ?? null}
+                    labels={L.wiki.charts}
+                    weekdayLabels={weekdayShortLabels(locale)}
+                    lang={locale}
+                  />
+                </div>
+              )}
+              <p className="mt-3 text-sm">
+                <Link href={profileHref} className="font-semibold text-accent-cyan hover:underline">
+                  {L.wiki.fullSchedule(streamer.name)} →
+                </Link>
+              </p>
+            </section>
+          )}
+
+          {/* W2.3: every top category as a table (share, streams, in-game
+              rank) — internal links into the game hubs and per-game rankings.
+              Box art only for hub games; the old tile row dropped every
+              category without a hub page. */}
+          {gameRows.length > 0 && (
+            <section className="mt-8" aria-labelledby="wiki-games-heading">
+              <h2 id="wiki-games-heading" className={SECTION_H2}>
                 {L.stats.topCategories}
               </h2>
-              <div className="mt-4 flex flex-wrap gap-4">
-                {topGames.map((game) => (
-                  <Link
-                    key={game.slug}
-                    href={localeHref(locale, `/game/${game.slug}`)}
-                    className="group w-24 min-w-0 sm:w-28"
-                  >
-                    <Image
-                      src={sizedCdnImageUrl(game.boxArtUrl, 112)}
-                      alt={game.category}
-                      width={285}
-                      height={380}
-                      unoptimized
-                      className="w-full rounded-lg border border-border-default transition-colors group-hover:border-accent-cyan/60"
-                    />
-                    <span className="mt-1.5 block text-center text-xs leading-snug text-text-secondary group-hover:text-accent-cyan">
-                      {game.category}
-                    </span>
-                    <span className="block text-center text-xs font-semibold text-text-muted">
-                      {formatSharePercent(game.sharePercent, locale)}
-                    </span>
-                  </Link>
-                ))}
+              <div className="mt-4 overflow-x-auto rounded-xl bg-background-elevated p-1">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wider text-text-secondary">
+                      <th scope="col" className="px-3 py-2 font-semibold">
+                        {L.wiki.gamesColGame}
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-right font-semibold">
+                        {L.wiki.gamesColShare}
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-right font-semibold">
+                        {L.wiki.gamesColStreams}
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-right font-semibold">
+                        {L.wiki.gamesColRank}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gameRows.map((row) => (
+                      <tr key={row.category} className="border-t border-divider">
+                        <th scope="row" className="px-3 py-2 text-left font-medium">
+                          <span className="flex items-center gap-2">
+                            {row.boxArtUrl && (
+                              <Image
+                                src={sizedCdnImageUrl(row.boxArtUrl, 32)}
+                                alt=""
+                                width={32}
+                                height={43}
+                                unoptimized
+                                className="h-[43px] w-8 shrink-0 rounded border border-border-default"
+                              />
+                            )}
+                            {row.slug ? (
+                              <Link
+                                href={localeHref(locale, `/game/${row.slug}`)}
+                                className="text-text-primary hover:text-accent-cyan"
+                              >
+                                {row.category}
+                              </Link>
+                            ) : (
+                              <span className="text-text-primary">{row.category}</span>
+                            )}
+                          </span>
+                        </th>
+                        <td className="px-3 py-2 text-right font-semibold tabular-nums text-text-primary">
+                          {formatSharePercent(row.sharePercent, locale)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-text-secondary">
+                          {row.streams}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {row.rank !== null && row.total !== null ? (
+                            row.rankHref ? (
+                              <Link
+                                href={localeHref(locale, row.rankHref)}
+                                aria-label={L.streamerRankings.rowAria(
+                                  row.rank,
+                                  formatCompactNumber(row.total, locale),
+                                  row.category,
+                                )}
+                                className="font-semibold text-accent-cyan hover:underline"
+                              >
+                                #{row.rank}
+                              </Link>
+                            ) : (
+                              <span className="font-semibold text-text-primary">#{row.rank}</span>
+                            )
+                          ) : (
+                            <span className="text-text-secondary">–</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              <p className="mt-2 text-xs text-text-secondary">
+                {L.wiki.gamesNote(stats?.window_days ?? 28)}
+              </p>
+            </section>
+          )}
+
+          {/* W2.4: most-watched clips. External Twitch links on purpose — the
+              hosted /clip/<slug> page is a chrome-less embed wrapper for the
+              app, not a page to send readers to. */}
+          {clips.length > 0 && (
+            <section className="mt-8" aria-labelledby="wiki-clips-heading">
+              <h2 id="wiki-clips-heading" className={SECTION_H2}>
+                {L.wiki.clipsHeading}
+              </h2>
+              <p className="mt-2 text-sm text-text-secondary">{L.wiki.clipsIntro(streamer.name)}</p>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {clips.map((clip) => {
+                  const title = clip.title?.trim() || clip.category || streamer.name;
+                  const dateLabel = clip.clip_created_at
+                    ? formatWikiShortDate(clip.clip_created_at, locale)
+                    : '';
+                  const metaParts = [
+                    clip.view_count !== null
+                      ? L.wiki.clipViews(formatCompactNumber(clip.view_count, locale))
+                      : null,
+                    clip.category,
+                    dateLabel || null,
+                  ].filter(Boolean);
+                  return (
+                    <li key={clip.id}>
+                      <a
+                        href={clip.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={L.wiki.clipAria(title)}
+                        className="group block rounded-xl border border-border-default bg-background-elevated p-2 transition-colors hover:border-accent-cyan/60"
+                      >
+                        <span className="relative block aspect-video w-full overflow-hidden rounded-lg bg-background-highlight">
+                          {clip.thumbnail_url && (
+                            <Image
+                              src={clip.thumbnail_url}
+                              alt=""
+                              fill
+                              unoptimized
+                              sizes="(min-width: 1024px) 288px, (min-width: 640px) 50vw, 100vw"
+                              className="object-cover transition-opacity group-hover:opacity-90"
+                            />
+                          )}
+                        </span>
+                        <span className="mt-2 block truncate px-1 text-sm font-semibold text-text-primary">
+                          {title}
+                        </span>
+                        {metaParts.length > 0 && (
+                          <span className="mt-0.5 block truncate px-1 pb-1 text-xs text-text-secondary">
+                            {metaParts.join(' · ')}
+                          </span>
+                        )}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          {/* W2.5: recap editions with this streamer among the protagonists. */}
+          {recapMentions.length > 0 && (
+            <section className="mt-8" aria-labelledby="wiki-recaps-heading">
+              <h2 id="wiki-recaps-heading" className={SECTION_H2}>
+                {L.wiki.recapsHeading}
+              </h2>
+              <p className="mt-2 text-sm text-text-secondary">{L.wiki.recapsIntro(streamer.name)}</p>
+              <ul className="mt-4 space-y-2">
+                {recapMentions.map((recap) => (
+                  <li key={recap.slug} className="text-sm">
+                    <Link
+                      href={localeHref(locale, `/rankings/recap/${encodeURIComponent(recap.slug)}`)}
+                      className="font-semibold text-accent-cyan hover:underline"
+                    >
+                      {recap.title}
+                    </Link>
+                    {recap.published_at && (
+                      <span className="text-text-secondary">
+                        {' · '}
+                        {formatWikiDate(recap.published_at, locale)}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 
@@ -585,9 +1083,7 @@ export default async function StreamerWikiPage({ params }: Props) {
               linked into its schedule; always followed by the full-schedule
               link so the section is useful even without an upcoming slot. */}
           <section className="mt-8">
-            <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
-              {L.wiki.nextStreamHeading}
-            </h2>
+            <h2 className={SECTION_H2}>{L.wiki.nextStreamHeading}</h2>
             <div className="mt-4 flex flex-col items-start gap-3">
               {nextSlot && (
                 <HeroNextStream
@@ -608,9 +1104,7 @@ export default async function StreamerWikiPage({ params }: Props) {
           {/* Sources — ids are the [n] anchor targets. */}
           {wiki.sources.length > 0 && (
             <section className="mt-8">
-              <h2 className="border-b border-border-default pb-2 text-xl font-bold text-text-primary">
-                {L.wiki.sourcesHeading}
-              </h2>
+              <h2 className={SECTION_H2}>{L.wiki.sourcesHeading}</h2>
               <ol className="mt-4 list-none space-y-2">
                 {wiki.sources.map((source, i) => {
                   const n = i + 1;
@@ -632,7 +1126,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                       id={`wiki-source-${n}`}
                       className="flex min-w-0 scroll-mt-24 gap-2 text-sm"
                     >
-                      <span className="shrink-0 font-mono text-xs text-text-muted">[{n}]</span>
+                      <span className="shrink-0 font-mono text-xs text-text-secondary">[{n}]</span>
                       <span className="min-w-0">
                         <a
                           href={source.url}
@@ -644,7 +1138,7 @@ export default async function StreamerWikiPage({ params }: Props) {
                           {label}
                         </a>
                         {(source.publisher || source.published) && (
-                          <span className="text-text-muted">
+                          <span className="text-text-secondary">
                             {' — '}
                             {[source.publisher, source.published].filter(Boolean).join(', ')}
                           </span>
@@ -662,18 +1156,31 @@ export default async function StreamerWikiPage({ params }: Props) {
             <h2 className="text-sm font-semibold text-text-primary">
               {L.wiki.disclaimerHeading}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-text-muted">
+            <p className="mt-2 text-sm leading-relaxed text-text-secondary">
               {L.wiki.disclaimer(streamer.name)}
             </p>
-            <p className="mt-2 text-sm text-text-muted">
+            <p className="mt-2 text-sm text-text-secondary">
               {L.wiki.disclaimerContact}{' '}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent-cyan hover:underline">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent-cyan underline hover:text-text-primary">
                 {CONTACT_EMAIL}
               </a>
             </p>
           </section>
         </div>
       </div>
+
+      {/* W2.6: same related-streamers block as the profile page — the wiki
+          used to be a link-graph dead end (9 internal links, 2 of them to its
+          own parent). revalidate 3600 so it cannot drag this route's TTL to
+          its 1800 default. Deliberately no Suspense (cached ISR HTML would
+          keep the fallback markup, making the SEO links JS-dependent). */}
+      <RelatedStreamers
+        currentId={streamer.id}
+        language={streamer.language}
+        category={stats?.top_categories[0]?.category ?? null}
+        uiLanguage={locale}
+        revalidate={3600}
+      />
     </main>
   );
 }

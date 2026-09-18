@@ -9,12 +9,19 @@
 
 import type {
   PublicGame,
+  PublicGamePlacement,
+  PublicRecapListItem,
+  PublicStreamer,
+  PublicStreamerStats,
   PublicStreamerStatsCategory,
   PublicStreamerWiki,
+  StreamerInsights,
   WikiArticle,
   WikiFact,
 } from '@/lib/server/partner-api';
 import { gameSlug } from '@/lib/game-slug';
+import { gameRankingHref, MIN_POOL_SIZE } from '@/lib/streamer-rankings';
+import { COLLECTING_THRESHOLD, followerStats } from '@/lib/streamer-insights';
 
 /** Infobox render order: identity → person → career → money. Unknown keys
  *  (a future, newer API) are ignored by orderedWikiFacts. */
@@ -267,4 +274,193 @@ export function wikiMetaDescription(summary: string): string {
   const cut = clean.slice(0, 157);
   const lastSpace = cut.lastIndexOf(' ');
   return `${cut.slice(0, lastSpace > 80 ? lastSpace : 157)}…`;
+}
+
+// ============================================
+// Title parts (W1, 2026-09-18)
+// ============================================
+
+export type WikiTitlePart = 'age' | 'netWorth' | 'earnings' | 'realName' | 'career' | 'facts';
+
+/** Fact key → title part, in the order the title lists them. */
+const TITLE_PERSONAL_PARTS: ReadonlyArray<readonly [string, WikiTitlePart]> = [
+  ['birth_date', 'age'],
+  ['net_worth_usd', 'netWorth'],
+  ['est_income_monthly_usd', 'earnings'],
+  ['real_name', 'realName'],
+];
+
+/** How many personal parts the title carries before the fixed tail. */
+const TITLE_MAX_PERSONAL_PARTS = 2;
+
+/**
+ * Title building blocks derived from the facts that EXIST: up to two personal
+ * parts (age, net worth, earnings, real name — in that order) followed by
+ * "career", or "career" + "facts" when the profile carries no personal
+ * fact at all. The old static "Age, Net Worth & Facts" promised an age and a
+ * net worth on profiles that had neither (2 of the 5 pilots).
+ */
+export function wikiTitleParts(facts: ReadonlyArray<Pick<WikiFact, 'key'>>): WikiTitlePart[] {
+  const keys = new Set(facts.map((f) => f.key));
+  const personal = TITLE_PERSONAL_PARTS.filter(([key]) => keys.has(key))
+    .map(([, part]) => part)
+    .slice(0, TITLE_MAX_PERSONAL_PARTS);
+  return personal.length > 0 ? [...personal, 'career'] : ['career', 'facts'];
+}
+
+/** "a, b & c" with locale separator/conjunction; 1 label passes through. */
+export function joinTitleParts(labels: readonly string[], sep: string, and: string): string {
+  if (labels.length === 0) return '';
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(sep)}${and}${labels[labels.length - 1]}`;
+}
+
+/** The model-computed income fact when it carries a numeric range, else null
+ *  (the earnings fallback sentence needs a formattable number). */
+export function incomeFact(facts: readonly WikiFact[]): WikiFact | null {
+  return (
+    facts.find((f) => f.key === 'est_income_monthly_usd' && f.value_num_low !== null) ?? null
+  );
+}
+
+// ============================================
+// Own-data sections (W2, 2026-09-18)
+// ============================================
+
+export interface WikiNumbers {
+  followers: number | null;
+  /** Insights overall median; null while the sample count is below the collecting threshold. */
+  medianViewers: number | null;
+  peakViewers: number | null;
+  streamsPerWeek: number | null;
+  activeDays: number | null;
+  typicalMinutes: number | null;
+  hoursStreamed: number | null;
+  /** Stats window the activity numbers describe (28 by default). */
+  windowDays: number;
+  followerGain30: number | null;
+}
+
+/**
+ * Headline numbers for the "By the numbers" tiles. Every source is optional
+ * (a failed or empty lookup nulls its tiles); returns null when NOTHING is
+ * known so the section disappears instead of rendering an empty grid.
+ */
+export function wikiNumbers(
+  streamer: Pick<PublicStreamer, 'follower_count'> | null,
+  stats: PublicStreamerStats | null,
+  insights: StreamerInsights | null,
+): WikiNumbers | null {
+  const collecting = (insights?.sample_count ?? 0) < COLLECTING_THRESHOLD;
+  const num = (v: number | null | undefined): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : null;
+  const out: WikiNumbers = {
+    followers: num(streamer?.follower_count),
+    medianViewers: collecting ? null : num(insights?.overall_median),
+    peakViewers: num(stats?.peak_viewer_count),
+    streamsPerWeek: num(stats?.streams_per_week),
+    activeDays: num(stats?.active_days_per_week),
+    typicalMinutes: num(stats?.typical_duration_minutes),
+    hoursStreamed: num(stats?.hours_streamed),
+    windowDays: stats?.window_days ?? 28,
+    followerGain30: num(followerStats(insights?.follower_trend)?.gain30),
+  };
+  const known = Object.entries(out).some(([k, v]) => k !== 'windowDays' && v !== null);
+  return known ? out : null;
+}
+
+export interface WikiGameRow {
+  category: string;
+  /** Hub link slug — only for categories in the games catalog (a page exists). */
+  slug: string | null;
+  boxArtUrl: string | null;
+  streams: number;
+  sharePercent: number;
+  /** Follower rank inside the category, when the backend reports a meaningful placement. */
+  rank: number | null;
+  total: number | null;
+  rankHref: string | null;
+}
+
+/**
+ * Games table: EVERY top category of the stats window (the old tile row kept
+ * only hub games with box art), joined with the catalog for links/box art and
+ * with the per-game ranking placements. Order = stats ranking (share desc).
+ */
+export function wikiGamesTable(
+  categories: readonly PublicStreamerStatsCategory[],
+  games: readonly PublicGame[],
+  placements: readonly PublicGamePlacement[],
+  limit = 8,
+): WikiGameRow[] {
+  if (categories.length === 0) return [];
+  const byCategory = new Map(games.map((g) => [g.category, g]));
+  const placementBy = new Map(
+    placements
+      .filter(
+        (p) =>
+          Number.isInteger(p.rank) &&
+          p.rank >= 1 &&
+          Number.isInteger(p.total) &&
+          p.total >= MIN_POOL_SIZE &&
+          p.rank <= p.total,
+      )
+      .map((p) => [p.category, p]),
+  );
+  const out: WikiGameRow[] = [];
+  for (const entry of categories) {
+    if (out.length >= limit) break;
+    if (!entry.category) continue;
+    const game = byCategory.get(entry.category) ?? null;
+    const slug = game ? gameSlug(game.category) : '';
+    const placement = placementBy.get(entry.category) ?? null;
+    out.push({
+      category: entry.category,
+      slug: slug.length > 0 ? slug : null,
+      boxArtUrl: game?.box_art_url ?? null,
+      streams: entry.streams,
+      sharePercent: entry.share_percent,
+      rank: placement?.rank ?? null,
+      total: placement?.total ?? null,
+      rankHref: placement ? gameRankingHref(entry.category, placement.rank) : null,
+    });
+  }
+  return out;
+}
+
+/** Recap editions listing the streamer among their hero protagonists. */
+export function wikiRecapMentions(
+  items: readonly PublicRecapListItem[],
+  streamerId: string,
+  limit = 6,
+): PublicRecapListItem[] {
+  return items
+    .filter((item) => item.hero?.streamers?.some((s) => s.id === streamerId) === true)
+    .slice(0, limit);
+}
+
+/** Monday-first short weekday labels in the viewer locale (UTC calendar, like
+ *  the chart's cells). 2024-01-01 is a Monday. */
+export function weekdayShortLabels(uiLang: string): string[] {
+  const fmt = new Intl.DateTimeFormat(intlLocale(uiLang), { weekday: 'short', timeZone: 'UTC' });
+  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(Date.UTC(2024, 0, 1 + i))));
+}
+
+/** ISO date/timestamp → short "Aug 10" style label per viewer locale (UTC). */
+export function formatWikiShortDate(iso: string, uiLang: string): string {
+  const d = new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat(intlLocale(uiLang), {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(d);
+}
+
+/** Minutes → "3.5 h" style duration per viewer locale (one decimal, trimmed). */
+export function formatHours(minutes: number, uiLang: string): string {
+  const hours = new Intl.NumberFormat(intlLocale(uiLang), { maximumFractionDigits: 1 }).format(
+    minutes / 60,
+  );
+  return `${hours} h`;
 }

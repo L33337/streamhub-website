@@ -16,6 +16,7 @@ import type {
   PublicGame,
   PublicRecapArticle,
   PublicStreamer,
+  PublicStreamerClip,
   PublicStreamerRankings,
   PublicStreamerStats,
   PublicStreamHistory,
@@ -25,6 +26,7 @@ import type {
   RankingsResponse,
   RecapKind,
   RecapsListResponse,
+  StreamerClipsResponse,
   StreamerInsights,
 } from './types';
 import { SUPABASE_FUNCTIONS_REGION, SUPABASE_REGION_HEADER } from '@/lib/supabase/region';
@@ -255,6 +257,31 @@ class PartnerApiClient {
       );
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Most-watched clips of one streamer (wiki W2, 2026-09-18). Best-effort:
+   * any API/network error (including a 404 from an older API without the
+   * route) collapses to an empty list so the section simply does not
+   * render. Clips move a few times a day → 1h revalidate.
+   */
+  async getStreamerClips(
+    id: string,
+    opts: FetchOptions & { limit?: number } = {},
+  ): Promise<PublicStreamerClip[]> {
+    const params = new URLSearchParams();
+    if (opts.limit !== undefined) params.set('limit', String(opts.limit));
+    const qs = params.toString();
+    try {
+      const res = await this.request<StreamerClipsResponse>(
+        'GET',
+        `/v1/streamers/${encodeURIComponent(id)}/clips${qs ? `?${qs}` : ''}`,
+        { revalidate: 3600, ...opts },
+      );
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      return [];
     }
   }
 

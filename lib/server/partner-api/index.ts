@@ -43,6 +43,8 @@ export type {
   BestGameEntry,
   StreamerInsights,
   PublicStreamerWiki,
+  PublicStreamerClip,
+  StreamerClipsResponse,
   WikiFact,
   WikiFactKey,
   WikiSource,
