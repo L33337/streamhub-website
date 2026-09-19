@@ -18,6 +18,7 @@
 // streamers) — all best-effort and byte-deterministic (absolute dates only).
 
 import { cache, Fragment, type ReactNode } from 'react';
+import { preload } from 'react-dom';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -68,8 +69,8 @@ import { buildStreamerRankingRows } from '@/lib/streamer-rankings';
 import { COLLECTING_THRESHOLD, followerStats, usableCells } from '@/lib/streamer-insights';
 import {
   articleSegments,
-  avatarLargeUrl,
-  bannerDisplayUrl,
+  avatarSources,
+  bannerSources,
   displayAge,
   formatBirthDate,
   formatFactAsOf,
@@ -732,10 +733,24 @@ export default async function StreamerWikiPage({ params }: Props) {
   const changeDays = groupChangesByDay(wikiChanges(wiki));
 
   // M26 image round: streamer-chosen channel banner as hero backdrop, the
-  // 600px avatar variant as infobox portrait (replaces the small header
-  // avatar — one portrait, Wikipedia-style).
-  const bannerUrl = bannerDisplayUrl(streamer.banner_url ?? null);
-  const portraitUrl = avatarLargeUrl(streamer.avatar_url);
+  // avatar as infobox portrait (replaces the small header avatar — one
+  // portrait, Wikipedia-style). Perf round 2026-09-19: both carry a srcset so
+  // a phone no longer downloads the 1920x1080 offline screen (583 KB) for a
+  // 128 px high box — see bannerSources/avatarSources in lib/wiki.ts.
+  const banner = bannerSources(streamer.banner_url ?? null);
+  const portrait = avatarSources(streamer.avatar_url);
+  // The hero is the desktop LCP element. `next/image priority` used to emit
+  // this preload for the single 1920 file; keep the early fetch, now for the
+  // srcset candidate the browser will actually pick.
+  if (banner) {
+    preload(banner.src, {
+      as: 'image',
+      fetchPriority: 'high',
+      ...(banner.srcSet && banner.sizes
+        ? { imageSrcSet: banner.srcSet, imageSizes: banner.sizes }
+        : {}),
+    });
+  }
 
   // Same pick as the profile page (cancelled slots excluded, 7-day window) so
   // both surfaces name the same "next stream"; the pill deep-links into that
@@ -952,15 +967,22 @@ export default async function StreamerWikiPage({ params }: Props) {
           bottom so the page keeps its dark canvas. Decorative — alt="".
           lg:h-44 (was h-56, W1.7): at 1366×768 the taller hero pushed the
           infobox and the article start below the fold. */}
-      {bannerUrl && (
+      {banner && (
         <div className="relative mt-3 h-32 overflow-hidden rounded-xl border border-border-default sm:h-40 lg:h-44">
-          <Image
-            src={bannerUrl}
+          {/* Plain <img>: `next/image unoptimized` emits no srcset and a
+              loader cannot cross the RSC boundary (perf round 2026-09-19).
+              The box has a fixed height, so the attributes only pin the
+              aspect ratio; CLS is unchanged. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={banner.src}
+            srcSet={banner.srcSet ?? undefined}
+            sizes={banner.sizes ?? undefined}
             alt=""
-            width={1920}
-            height={1080}
-            priority
-            unoptimized
+            width={banner.width}
+            height={banner.height}
+            fetchPriority="high"
+            decoding="async"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
@@ -1071,15 +1093,22 @@ export default async function StreamerWikiPage({ params }: Props) {
             <h2 className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-accent-cyan">
               {L.wiki.factsHeading}
             </h2>
-            {portraitUrl && (
-              <Image
-                src={portraitUrl}
+            {portrait && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={portrait.src}
+                srcSet={portrait.srcSet ?? undefined}
+                sizes={portrait.sizes ?? undefined}
                 alt={L.hero.avatarAlt(streamer.name)}
-                width={600}
-                height={600}
-                unoptimized
+                width={portrait.width}
+                height={portrait.height}
+                // lazy = what next/image did here without `priority`; on a
+                // phone the infobox sits below the lead.
+                loading="lazy"
+                decoding="async"
                 // lg:w-56 (was w-full = 288 px): with six facts the card then
                 // fits a 768 px laptop viewport without the rail scrollbar.
+                // The widths must match PORTRAIT_SIZES in lib/wiki.ts.
                 className="mx-auto mt-3 w-40 rounded-xl border border-border-default sm:w-48 lg:w-56"
               />
             )}

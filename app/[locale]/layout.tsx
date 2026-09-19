@@ -15,6 +15,7 @@ import { jsonLdHtml } from "@/lib/seo";
 import { Providers } from "@/components/web/Providers";
 import { FloatingGetAppButton } from "@/components/web/FloatingGetAppButton";
 import { SiteFooter } from "@/components/web/SiteFooter";
+import { HoverPrefetchLink } from "@/components/web/HoverPrefetchLink";
 import { LocaleSuggestionBanner } from "@/components/web/LocaleSuggestionBanner";
 import { UI_LANGS, isUiLang, localeHref, type UiLang } from "@/lib/i18n-core";
 import { chromeLexFor } from "@/lib/i18n-chrome";
@@ -192,7 +193,11 @@ export default async function RootLayout({
                 runs past the viewport wherever the locale spells sign-in out
                 ("Iniciar sesión", "Bejelentkezés"). */}
             <div className="container mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-3 md:gap-4 lg:h-16">
-              <Link
+              {/* HoverPrefetchLink (perf round 2026-09-19): the homepage's
+                  RSC segment is 175 KB and this link is on every page —
+                  prefetch it on hover/focus, not on view. The nav links
+                  below keep the default (their segments are 19–47 KB). */}
+              <HoverPrefetchLink
                 href={localeHref(locale, "/")}
                 // text-sm below `sm`: brand, search icon, sign-in button and
                 // hamburger are ALL shrink-0 on a phone (the search stopped
@@ -202,7 +207,7 @@ export default async function RootLayout({
                 className="shrink-0 text-sm font-bold text-white sm:text-base md:text-xl"
               >
                 Streamer Times
-              </Link>
+              </HoverPrefetchLink>
               <SearchBar
                 // Below `lg` this renders as a 36px icon that opens a panel
                 // under the header (see SearchBar's `collapsible`): from `md`

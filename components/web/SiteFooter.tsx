@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/get-app-target';
+import { HoverPrefetchLink } from './HoverPrefetchLink';
 import { localeHref, type UiLang } from '@/lib/i18n-core';
 import { chromeLexFor } from '@/lib/i18n-chrome';
 import { CONSENT_STRINGS } from '@/lib/i18n-consent';
@@ -29,7 +30,7 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
 
   const columns: {
     heading: string;
-    links: { href: string; label: string }[];
+    links: { href: string; label: string; hoverPrefetch?: boolean }[];
     extra?: React.ReactNode;
   }[] = [
     {
@@ -40,7 +41,9 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
         { href: localeHref(locale, '/streamers'), label: f.allStreamers },
         { href: localeHref(locale, '/games'), label: f.allGames },
         { href: localeHref(locale, '/rankings'), label: f.rankings },
-        { href: localeHref(locale, '/'), label: f.popularStreamers },
+        // Home links prefetch on intent only (HoverPrefetchLink): the
+        // homepage segment is 175 KB and this footer sits on every page.
+        { href: localeHref(locale, '/'), label: f.popularStreamers, hoverPrefetch: true },
         // Public methodology page (2026-08-27): the site-wide crawlable link
         // that keeps it out of orphan territory (income-estimates has none).
         { href: localeHref(locale, '/predictions'), label: f.howPredictionsWork },
@@ -77,13 +80,13 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-5">
           {/* Brand + store badges */}
           <div className="col-span-2 sm:col-span-1">
-            <Link
+            <HoverPrefetchLink
               href={localeHref(locale, '/')}
               className="text-lg font-bold text-white"
               aria-label={chrome.nav.home}
             >
               Streamer Times
-            </Link>
+            </HoverPrefetchLink>
             <p className="mt-2 max-w-xs text-sm text-text-secondary">{f.tagline}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <a
@@ -120,16 +123,19 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
                 {col.heading}
               </h2>
               <ul className="mt-3 space-y-2">
-                {col.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-text-secondary transition-colors hover:text-accent-cyan"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {col.links.map((link) => {
+                  const LinkComponent = link.hoverPrefetch ? HoverPrefetchLink : Link;
+                  return (
+                    <li key={link.href}>
+                      <LinkComponent
+                        href={link.href}
+                        className="text-sm text-text-secondary transition-colors hover:text-accent-cyan"
+                      >
+                        {link.label}
+                      </LinkComponent>
+                    </li>
+                  );
+                })}
                 {col.extra}
               </ul>
             </nav>

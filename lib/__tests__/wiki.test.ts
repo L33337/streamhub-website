@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import type { PublicGame, PublicStreamerStatsCategory, WikiFact } from '../server/partner-api';
 import {
   avatarLargeUrl,
-  bannerDisplayUrl,
   displayAge,
   formatBirthDate,
   formatRegion,
@@ -157,24 +156,6 @@ describe('avatarLargeUrl', () => {
   it('passes unknown shapes and null through unchanged', () => {
     expect(avatarLargeUrl('https://example.com/pic.png')).toBe('https://example.com/pic.png');
     expect(avatarLargeUrl(null)).toBeNull();
-  });
-});
-
-describe('bannerDisplayUrl', () => {
-  it('appends a width directive to bare YouTube banner URLs', () => {
-    expect(bannerDisplayUrl('https://yt3.googleusercontent.com/AbCdEf')).toBe(
-      'https://yt3.googleusercontent.com/AbCdEf=w1707',
-    );
-  });
-
-  it('never appends twice and leaves Twitch banners untouched', () => {
-    expect(bannerDisplayUrl('https://yt3.googleusercontent.com/AbCdEf=w1707')).toBe(
-      'https://yt3.googleusercontent.com/AbCdEf=w1707',
-    );
-    const twitch =
-      'https://static-cdn.jtvnw.net/jtv_user_pictures/x-channel_offline_image-1920x1080.png';
-    expect(bannerDisplayUrl(twitch)).toBe(twitch);
-    expect(bannerDisplayUrl(null)).toBeNull();
   });
 });
 
