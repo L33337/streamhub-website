@@ -9,9 +9,16 @@ function subscribe(): () => void {
   return () => {};
 }
 
+/** The slot fields the pill reads. A Pick so the wiki's live island (which
+ *  builds slots from a PostgREST row, not the Partner API DTO) can feed it. */
+export type HeroNextSlot = Pick<
+  PublicStreamSlot,
+  'start_time' | 'category' | 'confidence' | 'platforms' | 'is_predicted' | 'slot_kind'
+>;
+
 interface Props {
   /** Earliest real upcoming slot that has a rendered day section, else null. */
-  nextSlot: PublicStreamSlot | null;
+  nextSlot: HeroNextSlot | null;
   language?: string;
   /** Link target. Default: the slot's day section on the current page; the
    *  wiki page points it at the profile-page schedule instead. */
