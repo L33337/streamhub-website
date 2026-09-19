@@ -111,7 +111,10 @@ import {
   type WikiHistoryYear,
 } from '@/lib/wiki';
 
-export const revalidate = 3600;
+export const revalidate = 86400;
+// Every fetch in this route tree passes THIS value (Next min() rule: the lowest
+// fetch revalidate caps the route). Referencing the export keeps them equal.
+const WIKI_REVALIDATE = revalidate;
 
 const CONTACT_EMAIL = 'StreamHub.Privacy@icloud.com';
 const BRAND_SUFFIX = ' | Streamer Times';
@@ -140,28 +143,40 @@ interface WikiPageData {
 
 // streamer+wiki gate the page (no profile = 404); everything else is
 // best-effort — a failing lookup must never 404 a live wiki page. Explicit
-// revalidate ≥ the route value on EVERY fetch so no call drags the ISR window
+// revalidate = WIKI_REVALIDATE on EVERY fetch so no call drags the ISR window
 // down (Next min() rule; listRecaps defaults to 900, RelatedStreamers to
 // 1800 — both are overridden below). The schedule window mirrors the
 // streamer page (bucketed now → +7d, predictions + always-on included) so
 // both surfaces name the same "next stream", but limit differs on purpose: a
-// distinct fetch URL keeps this call on ITS OWN data-cache entry with
-// revalidate 3600 — sharing the profile page's entry would inherit its 1800
-// and halve the wiki ISR window.
+// distinct fetch URL keeps this call on ITS OWN data-cache entry — sharing
+// the profile page's entry would inherit its 1800 and shrink the wiki ISR
+// window to that.
+//
+// TTL 24 h (phase 4b, 2026-09-19; was 3600): everything on this page changes
+// nightly or monthly, and every writer purges — live/offline transitions and
+// prediction runs (en + streamer language), wiki publish/refresh, monthly
+// history and the income refresh (all locales). The only fast-moving facts,
+// live state and the next slot, are corrected in the browser by
+// WikiLiveStatus. Shared data-cache entries (games?limit=500 is refreshed by
+// the homepage every 600 s) are fine: Next judges staleness with the READING
+// call's revalidate, so this page simply reads the fresher entry. Accepted
+// ageing for no-JS clients and crawlers: the pill on un-purged locale
+// variants (all noindex), displayAge on a birthday, nightly stats — each at
+// most 24 h. Rollback: this value and the OG route's back to 3600.
 const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
   const api = getPartnerApi();
   const bucketedNow = floorToBucket(new Date());
   const sevenDaysFromNow = new Date(bucketedNow.getTime() + 7 * 86_400_000);
   const [streamer, wiki, stats, games, lastStream, upcomingSlots, insights, rankings, clips, recaps] =
     await Promise.all([
-      api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
-      api.getStreamerWiki(slug, { revalidate: 3600 }),
-      api.getStreamerStats(slug, { revalidate: 3600 }),
+      api.getStreamer(slug, { revalidate: WIKI_REVALIDATE }).catch(() => null),
+      api.getStreamerWiki(slug, { revalidate: WIKI_REVALIDATE }),
+      api.getStreamerStats(slug, { revalidate: WIKI_REVALIDATE }),
       api
-        .listGames({ limit: 500, revalidate: 3600 })
+        .listGames({ limit: 500, revalidate: WIKI_REVALIDATE })
         .then((r) => r.data)
         .catch(() => [] as PublicGame[]),
-      api.getLastStream(slug, { revalidate: 3600 }),
+      api.getLastStream(slug, { revalidate: WIKI_REVALIDATE }),
       api
         .listSchedules({
           streamerIds: [slug],
@@ -171,17 +186,17 @@ const loadWikiPage = cache(async (slug: string): Promise<WikiPageData> => {
           from: bucketedNow.toISOString(),
           to: sevenDaysFromNow.toISOString(),
           limit: 50,
-          revalidate: 3600,
+          revalidate: WIKI_REVALIDATE,
         })
         .then(
           (page) => page.data,
           () => [] as PublicStreamSlot[],
         ),
-      api.getStreamerInsights(slug, { revalidate: 3600 }),
-      api.getStreamerRankings(slug, { revalidate: 3600 }),
-      api.getStreamerClips(slug, { limit: CLIPS_LIMIT, revalidate: 3600 }),
+      api.getStreamerInsights(slug, { revalidate: WIKI_REVALIDATE }),
+      api.getStreamerRankings(slug, { revalidate: WIKI_REVALIDATE }),
+      api.getStreamerClips(slug, { limit: CLIPS_LIMIT, revalidate: WIKI_REVALIDATE }),
       api
-        .listRecaps({ limit: 50, revalidate: 3600 })
+        .listRecaps({ limit: 50, revalidate: WIKI_REVALIDATE })
         .then((r) => r.data)
         .catch(() => [] as PublicRecapListItem[]),
     ]);
@@ -1755,15 +1770,15 @@ export default async function StreamerWikiPage({ params }: Props) {
 
       {/* W2.6: same related-streamers block as the profile page — the wiki
           used to be a link-graph dead end (9 internal links, 2 of them to its
-          own parent). revalidate 3600 so it cannot drag this route's TTL to
-          its 1800 default. Deliberately no Suspense (cached ISR HTML would
+          own parent). revalidate = WIKI_REVALIDATE so it cannot drag this
+          route's TTL to its 1800 default. Deliberately no Suspense (cached ISR HTML would
           keep the fallback markup, making the SEO links JS-dependent). */}
       <RelatedStreamers
         currentId={streamer.id}
         language={streamer.language}
         category={stats?.top_categories[0]?.category ?? null}
         uiLanguage={locale}
-        revalidate={3600}
+        revalidate={WIKI_REVALIDATE}
       />
     </main>
   );

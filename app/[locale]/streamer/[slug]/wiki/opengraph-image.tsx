@@ -10,7 +10,8 @@ import { avatarLargeUrl, displayAge, formatRegion, formatUsdRange } from '@/lib/
 // system mirrors ../opengraph-image.tsx (streamer schedule card); the pills
 // carry the wiki's headline facts instead of platforms.
 export const runtime = 'nodejs';
-export const revalidate = 3600;
+export const revalidate = 86400;
+const WIKI_REVALIDATE = revalidate;
 const size = { width: 1200, height: 630 };
 const contentType = 'image/png';
 
@@ -41,8 +42,8 @@ export default async function OgImage({ params }: Props) {
   const { slug } = await params;
   const api = getPartnerApi();
   const [streamer, wiki] = await Promise.all([
-    api.getStreamer(slug, { revalidate: 3600 }).catch(() => null),
-    api.getStreamerWiki(slug, { revalidate: 3600 }).catch(() => null),
+    api.getStreamer(slug, { revalidate: WIKI_REVALIDATE }).catch(() => null),
+    api.getStreamerWiki(slug, { revalidate: WIKI_REVALIDATE }).catch(() => null),
   ]);
 
   const name = streamer?.name ?? slug;
