@@ -42,10 +42,8 @@ import {
 import { historyVodLinks, usableThumbnail } from '@/lib/history';
 import { pickNextRealSlot, sevenDayKeys } from '@/lib/format/time';
 import { floorToBucket } from '@/lib/home/logic';
-import { HeroNextStream } from '@/components/web/HeroNextStream';
-import { LiveBadge } from '@/components/web/Badges';
 import { FavoriteButton } from '@/components/web/FavoriteButton';
-import { WatchButtons } from '@/components/web/WatchButtons';
+import { WikiLiveStatus } from '@/components/web/streamer/WikiLiveStatus';
 import { InsightsCharts } from '@/components/web/streamer/InsightsCharts';
 import { FollowerGrowthChart } from '@/components/web/streamer/InsightsTrendCharts';
 import { RelatedStreamers } from '@/components/web/RelatedStreamers';
@@ -880,8 +878,17 @@ export default async function StreamerWikiPage({ params }: Props) {
   // Live state comes from the streamer DTO's activity facts. `undefined` (the
   // activity lookup failed) counts as "not live": the next-stream pill is the
   // safe fallback. Freshness: /api/revalidate purges this route on every
-  // live/offline transition, exactly like the profile page's LIVE badge.
+  // live/offline transition (en + streamer language only), and the
+  // WikiLiveStatus island re-checks in the browser (lib/wiki-live.ts).
   const isLive = streamer.is_live === true;
+  const liveStatusProps = {
+    streamerId: streamer.id,
+    initial: { isLive, nextSlot },
+    twitchLogin: streamer.twitch_login,
+    youtubeChannelId: streamer.youtube_channel_id,
+    locale,
+    profileHref,
+  };
 
   // Jump nav: one chip per section that actually renders, in page order. The
   // page is ~15 phone screens long; without it "History" or "Sources" is a
@@ -1017,30 +1024,13 @@ export default async function StreamerWikiPage({ params }: Props) {
 
           {/* The site's core answer, above the fold: live right now (watch
               buttons) or the next stream. It used to sit at 81 % of the page
-              height, and a live streamer's wiki said nothing about it. */}
-          {isLive ? (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <LiveBadge language={locale} />
-              <WatchButtons
-                twitchLogin={streamer.twitch_login}
-                youtubeChannelId={streamer.youtube_channel_id}
-                grow={false}
-                language={locale}
-                className="flex flex-wrap gap-2"
-              />
-            </div>
-          ) : (
-            nextSlot && (
-              <div className="mt-3">
-                <HeroNextStream
-                  nextSlot={nextSlot}
-                  language={locale}
-                  href={`${profileHref}#day-${nextSlot.start_time.slice(0, 10)}`}
-                  hideUncertainCategory
-                />
-              </div>
-            )
-          )}
+              height, and a live streamer's wiki said nothing about it.
+              Client island (phase 4a): renders exactly this server state
+              first, then corrects it from one anon PostgREST read — the
+              24 h ISR TTL and the en-only purge scoping would otherwise
+              leave a stale pill on most locale variants. */}
+          <WikiLiveStatus variant="lead" {...liveStatusProps} />
+
 
           {/* Summary: content language, not viewer language. */}
           <p
@@ -1648,14 +1638,7 @@ export default async function StreamerWikiPage({ params }: Props) {
           <section className="mt-8">
             <h2 className={SECTION_H2}>{L.wiki.nextStreamHeading}</h2>
             <div className="mt-4 flex flex-col items-start gap-3">
-              {nextSlot && (
-                <HeroNextStream
-                  nextSlot={nextSlot}
-                  language={locale}
-                  href={`${profileHref}#day-${nextSlot.start_time.slice(0, 10)}`}
-                  hideUncertainCategory
-                />
-              )}
+              <WikiLiveStatus variant="section" {...liveStatusProps} />
               <Link
                 href={profileHref}
                 className="-my-1.5 inline-block py-1.5 text-sm font-semibold text-accent-cyan hover:underline"
