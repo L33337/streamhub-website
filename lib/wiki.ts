@@ -192,15 +192,163 @@ export function avatarLargeUrl(url: string | null): string | null {
   return url;
 }
 
-/** Renderable banner URL. Twitch offline screens are fixed 1920x1080; YouTube
- *  bannerExternalUrl is a bare googleusercontent asset that serves a small
- *  default — append a width directive once (never twice). */
-export function bannerDisplayUrl(url: string | null): string | null {
+// ============================================
+// Responsive banner + portrait (perf round, 2026-09-19)
+// ============================================
+//
+// The wiki hero and portrait render as plain <img srcSet sizes> — `next/image`
+// with `unoptimized` emits no srcset, and a `loader` function cannot cross the
+// RSC boundary. Measured 2026-09-18 (timthetatman, mobile Slow 4G): the hero
+// alone was a 583 KB 1920x1080 PNG painted into a 412x128 box; images were
+// 708 of 1331 KiB per page load. Both CDNs resize through the URL, so the
+// candidates below are pure string rewrites. Unknown shapes degrade to a
+// single `src` (today's behaviour), never to a broken URL — the same contract
+// as lib/format/image-size.ts.
+
+export interface ImageSources {
+  /** Fallback for browsers without srcset support; also the preload target. */
+  src: string;
+  /** `w`-descriptor candidate list, or null when only `src` is known. */
+  srcSet: string | null;
+  /** Layout hint for the browser's candidate pick; null without srcSet. */
+  sizes: string | null;
+  /** Intrinsic dimensions of `src` (aspect-ratio hint for the box). */
+  width: number;
+  height: number;
+}
+
+// Twitch offline screens: `…-channel_offline_image-1920x1080.png` plus the
+// legacy `…-channel_offline_image-<hash>-1920x1080.jpeg` form. Unlike profile
+// images (fixed buckets) these accept ARBITRARY 16:9 sizes via the suffix —
+// verified 2026-09-19 for every URL shape in the database (1280x720 = 198 KB,
+// 1024x576 = 116 KB, 640x360 = 38 KB). Asking for MORE than stored distorts
+// (3840x2160 came back as 2560x2160), hence the ≤ stored-width filter. Only
+// the offline-image path is matched on purpose: a profile image would 404 on
+// these widths.
+const TWITCH_BANNER_RE =
+  /^(https:\/\/static-cdn\.jtvnw\.net\/jtv_user_pictures\/\S*channel_offline_image-\S*?)(\d+)x(\d+)(\.(?:png|jpe?g))$/;
+const TWITCH_BANNER_WIDTHS = [640, 828, 1024, 1280, 1920] as const;
+/** The hero is at most 992 CSS px wide (max-w-5xl minus padding); below lg it
+ *  spans the viewport. */
+export const BANNER_SIZES = '(min-width: 1024px) 992px, 100vw';
+
+// YouTube channel banners arrive "bare" (no `=` directive) and serve a small
+// default. The old `=w1707` weighed 618–645 KB — heavier than the Twitch PNG.
+// YouTube's own desktop crop directive returns the 6:1 safe area (the part
+// banners are designed for) as JPEG: 1280 wide = 81–125 KB. The widths are
+// YouTube's own 1x/2x desktop banner sizes.
+const YT_BANNER_HOST_RE = /^https:\/\/yt3\.(?:googleusercontent|ggpht)\.com\//;
+const YT_BANNER_WIDTHS = [1060, 1280, 2120, 2560] as const;
+const YT_BANNER_CROP = '-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj';
+/** Crop height per width: rows 0x5a57..0xa5a8 of a 16:9 source. */
+const YT_BANNER_CROP_RATIO = ((0xa5a8 - 0x5a57) / 0xffff) * (9 / 16);
+/** The 6:1 image is `object-cover`-scaled to the box HEIGHT on phones (128 px
+ *  high → ~770 CSS px effective width), so the hint stays at the desktop width
+ *  instead of `100vw` — a viewport-based pick would fetch a too-small file. */
+export const YT_BANNER_SIZES = '992px';
+
+function srcSetOf(candidates: ReadonlyArray<{ url: string; w: number }>): string {
+  return candidates.map((c) => `${c.url} ${c.w}w`).join(', ');
+}
+
+/** Largest candidate not above `cap`, else the smallest available. */
+function pickFallback<T extends { w: number }>(candidates: readonly T[], cap: number): T {
+  const under = candidates.filter((c) => c.w <= cap);
+  return under.length > 0 ? under[under.length - 1] : candidates[0];
+}
+
+/**
+ * Responsive sources for the channel-banner hero. Null for no banner; a
+ * single-`src` result (no srcSet) for YouTube URLs that already carry a
+ * directive and for hosts we do not know.
+ */
+export function bannerSources(url: string | null): ImageSources | null {
   if (!url) return null;
-  if (/^https:\/\/yt3\.(googleusercontent|ggpht)\.com\//.test(url) && !url.includes('=')) {
-    return `${url}=w1707`;
+
+  const twitch = url.match(TWITCH_BANNER_RE);
+  if (twitch) {
+    const storedW = Number(twitch[2]);
+    const storedH = Number(twitch[3]);
+    if (storedW > 0 && storedH > 0) {
+      const candidates = TWITCH_BANNER_WIDTHS.filter((w) => w <= storedW).map((w) => ({
+        w,
+        url: `${twitch[1]}${w}x${Math.max(1, Math.round((storedH / storedW) * w))}${twitch[4]}`,
+      }));
+      if (candidates.length > 0) {
+        const fallback = pickFallback(candidates, 1280);
+        return {
+          src: fallback.url,
+          srcSet: srcSetOf(candidates),
+          sizes: BANNER_SIZES,
+          width: fallback.w,
+          height: Math.max(1, Math.round((storedH / storedW) * fallback.w)),
+        };
+      }
+    }
+    // Stored smaller than the smallest candidate (theoretical): serve as is.
+    return { src: url, srcSet: null, sizes: null, width: storedW, height: storedH };
   }
-  return url;
+
+  if (YT_BANNER_HOST_RE.test(url) && !url.includes('=')) {
+    const candidates = YT_BANNER_WIDTHS.map((w) => ({ w, url: `${url}=w${w}${YT_BANNER_CROP}` }));
+    const fallback = pickFallback(candidates, 1280);
+    return {
+      src: fallback.url,
+      srcSet: srcSetOf(candidates),
+      sizes: YT_BANNER_SIZES,
+      width: fallback.w,
+      height: Math.max(1, Math.round(fallback.w * YT_BANNER_CROP_RATIO)),
+    };
+  }
+
+  // YouTube with an existing directive, or an unknown host: unchanged, with
+  // the 16:9 attributes the hero always carried.
+  return { src: url, srcSet: null, sizes: null, width: 1920, height: 1080 };
+}
+
+/** Infobox portrait box: w-40 / sm:w-48 / lg:w-56. */
+export const PORTRAIT_SIZES = '(min-width: 1024px) 224px, (min-width: 640px) 192px, 160px';
+// Twitch profile images exist only in fixed buckets (see image-size.ts); the
+// 600 bucket is served for every avatar even though the stored URL names 300
+// (the avatarLargeUrl rule). Anything else 404s, so no other widths.
+const TWITCH_PORTRAIT_WIDTHS = [150, 300, 600] as const;
+// YouTube serves any `=s<N>`: measured 2026-09-18 s320 = 43 KB, s448 = 69 KB,
+// s600 = 110 KB for the same avatar.
+const YT_PORTRAIT_WIDTHS = [224, 320, 448, 600] as const;
+
+/**
+ * Responsive sources for the infobox portrait (square). `src` is the middle
+ * candidate as the no-srcset fallback; OG image + JSON-LD keep avatarLargeUrl
+ * (a single 600 px file is right there).
+ */
+export function avatarSources(url: string | null): ImageSources | null {
+  if (!url) return null;
+  const twitch = url.match(TWITCH_AVATAR_RE);
+  if (twitch) {
+    const candidates = TWITCH_PORTRAIT_WIDTHS.map((w) => ({
+      w,
+      url: `${twitch[1]}${w}x${w}${twitch[2]}`,
+    }));
+    return {
+      src: candidates[1].url,
+      srcSet: srcSetOf(candidates),
+      sizes: PORTRAIT_SIZES,
+      width: candidates[1].w,
+      height: candidates[1].w,
+    };
+  }
+  const yt = url.match(YT_AVATAR_RE);
+  if (yt) {
+    const candidates = YT_PORTRAIT_WIDTHS.map((w) => ({ w, url: `${yt[1]}s${w}${yt[2]}` }));
+    return {
+      src: candidates[2].url,
+      srcSet: srcSetOf(candidates),
+      sizes: PORTRAIT_SIZES,
+      width: candidates[2].w,
+      height: candidates[2].w,
+    };
+  }
+  return { src: url, srcSet: null, sizes: null, width: 600, height: 600 };
 }
 
 export interface WikiTopGame {
