@@ -292,8 +292,16 @@ async function runOnce(browser, scenarioName) {
       });
     }
   }
-  result.requests = count;
-  result.bytes = total;
+  // Headline numbers describe the initial load only; --scroll/--hover
+  // requests are reported as their own deltas so runs with and without the
+  // phases stay comparable.
+  result.requests = byPhase.load?.count ?? 0;
+  result.bytes = byPhase.load?.bytes ?? 0;
+  result.imageBytes = [...requests.values()]
+    .filter((r) => r.status && r.phase === 'load' && typeOf(r.type, r.mime, r.url) === 'image')
+    .reduce((a, r) => a + r.bytes, 0);
+  result.totalRequests = count;
+  result.totalBytes = total;
   result.byType = byType;
   result.byPhase = byPhase;
   result.prefetches = prefetches;
@@ -322,7 +330,7 @@ try {
       if (r.ok) {
         const rsc = r.prefetches.filter((p) => p.phase === 'load').reduce((a, p) => a + p.bytes, 0);
         console.log(
-          `${s.padEnd(7)} #${i} ${r.cache ?? '-'} ttfb ${Math.round(r.ttfb)} fcp ${Math.round(r.fcp)} lcp ${Math.round(r.lcp ?? NaN)} load ${Math.round(r.load)} cls ${r.cls.toFixed(3)} tbt ${Math.round(r.tbt)} | ${r.requests} req ${kib(r.bytes)} (img ${kib(r.byType.image?.bytes ?? 0)}, rsc ${kib(rsc)})` +
+          `${s.padEnd(7)} #${i} ${r.cache ?? '-'} ttfb ${Math.round(r.ttfb)} fcp ${Math.round(r.fcp)} lcp ${Math.round(r.lcp ?? NaN)} load ${Math.round(r.load)} cls ${r.cls.toFixed(3)} tbt ${Math.round(r.tbt)} | ${r.requests} req ${kib(r.bytes)} (img ${kib(r.imageBytes)}, rsc ${kib(rsc)})` +
             (r.byPhase.scroll ? ` | scroll +${r.byPhase.scroll.count} req ${kib(r.byPhase.scroll.bytes)}` : '') +
             (r.byPhase.hover ? ` | hover +${r.byPhase.hover.count} req ${kib(r.byPhase.hover.bytes)}` : '') +
             ` | LCP ${r.lcpElement ?? '?'}`,
@@ -359,13 +367,20 @@ for (const s of scenarios) {
     tbt: median(ok.map((r) => r.tbt)),
     requests: median(ok.map((r) => r.requests)),
     bytes: median(ok.map((r) => r.bytes)),
-    imageBytes: median(ok.map((r) => r.byType.image?.bytes ?? 0)),
+    imageBytes: median(ok.map((r) => r.imageBytes)),
+    scrollRequests: median(ok.map((r) => r.byPhase.scroll?.count ?? 0)),
+    scrollBytes: median(ok.map((r) => r.byPhase.scroll?.bytes ?? 0)),
+    hoverRequests: median(ok.map((r) => r.byPhase.hover?.count ?? 0)),
+    hoverBytes: median(ok.map((r) => r.byPhase.hover?.bytes ?? 0)),
     rscLoadBytes: median(ok.map((r) => r.prefetches.filter((p) => p.phase === 'load').reduce((a, p) => a + p.bytes, 0))),
     lcpElement: ok[0].lcpElement,
   };
   summary[s] = m;
   console.log(
-    `${s}: TTFB ${Math.round(m.ttfb)} ms | FCP ${Math.round(m.fcp)} ms | LCP ${Math.round(m.lcp)} ms | load ${Math.round(m.load)} ms | CLS ${m.cls.toFixed(3)} | TBT ${Math.round(m.tbt)} ms | ${m.requests} req | ${Math.round(m.bytes / 1024)} KiB (images ${Math.round(m.imageBytes / 1024)} KiB, RSC prefetch on load ${Math.round(m.rscLoadBytes / 1024)} KiB) | LCP el: ${m.lcpElement}`,
+    `${s}: TTFB ${Math.round(m.ttfb)} ms | FCP ${Math.round(m.fcp)} ms | LCP ${Math.round(m.lcp)} ms | load ${Math.round(m.load)} ms | CLS ${m.cls.toFixed(3)} | TBT ${Math.round(m.tbt)} ms | ${m.requests} req | ${Math.round(m.bytes / 1024)} KiB (images ${Math.round(m.imageBytes / 1024)} KiB, RSC prefetch on load ${Math.round(m.rscLoadBytes / 1024)} KiB)` +
+      (doScroll ? ` | scroll +${m.scrollRequests} req ${Math.round(m.scrollBytes / 1024)} KiB` : '') +
+      (hoverSelector ? ` | hover +${m.hoverRequests} req ${Math.round(m.hoverBytes / 1024)} KiB` : '') +
+      ` | LCP el: ${m.lcpElement}`,
   );
   // Prefetch list from the first successful run (they are deterministic per build).
   const first = ok[0];
