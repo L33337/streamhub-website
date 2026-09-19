@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lighthouse": "node scripts/lighthouse-baseline.mjs",
-    "lighthouse:ci": "lhci autorun --config=lighthouserc.json"
+    "lighthouse:ci": "lhci autorun --config=lighthouserc.json",
+    "perf": "node scripts/perf/wiki-perf.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.1",
@@ -35,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "lighthouse": "^12.8.2",
+    "puppeteer-core": "^24.43.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
