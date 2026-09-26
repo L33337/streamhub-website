@@ -42,7 +42,7 @@ function renderAll(L: SlotLex): Array<[string, string]> {
     ['watchOnYouTube', L.watchOnYouTube],
     ['opensInNewTab', L.opensInNewTab],
     ['whyThisPrediction', L.whyThisPrediction],
-    ['autoSummary', L.autoSummary],
+    ['viewersWatching', L.viewersWatching('3.1K')],
     ['nextStreamPrefix', L.nextStreamPrefix],
     ['showMoreStreams', L.showMoreStreams(6)],
     ['showFewerStreams', L.showFewerStreams],
@@ -107,6 +107,8 @@ describe('SLOT_STRINGS lexica', () => {
     expect(L.watchOnTwitch).toBe('Watch on Twitch');
     expect(L.watchOnYouTube).toBe('Watch on YouTube');
     expect(L.opensInNewTab).toBe(' (opens in new tab)');
+    // Byte-identical to SlotCard's former inline live overlay.
+    expect(L.viewersWatching('3.1K')).toBe('3.1K watching');
     // M22 S4.1 — byte-identical to GameCard's former inline strings.
     expect(L.gameLiveBadge(3)).toBe('3 live');
     expect(L.gameStreamerCount(1)).toBe('1 streamer');

@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
-import { localNextLabel, localizedNextLabel } from '@/lib/format/time';
+import { firstCurrentSlotIndex, localNextLabel, localizedNextLabel } from '@/lib/format/time';
 import { slotLexFor } from '@/lib/i18n-slot';
 
 function subscribe(): () => void {
@@ -19,6 +19,13 @@ export type HeroNextSlot = Pick<
 interface Props {
   /** Earliest real upcoming slot that has a rendered day section, else null. */
   nextSlot: HeroNextSlot | null;
+  /**
+   * The next few real slots after `nextSlot`, in order. When the snapshot is
+   * stale and `nextSlot` started more than NEXT_SLOT_GRACE_MS ago, the browser
+   * moves on to the first of these that is still current (or hides the pill).
+   * Optional: without it a stale pill simply disappears.
+   */
+  laterSlots?: readonly HeroNextSlot[];
   language?: string;
   /** Link target. Default: the slot's day section on the current page; the
    *  wiki page points it at the profile-page schedule instead. */
@@ -51,44 +58,57 @@ interface Props {
  */
 export function HeroNextStream({
   nextSlot,
+  laterSlots,
   language = 'en',
   href,
   hideUncertainCategory = false,
 }: Props) {
   const L = slotLexFor(language);
-  const target = nextSlot?.start_time ?? '';
+  const candidates: HeroNextSlot[] = nextSlot ? [nextSlot, ...(laterSlots ?? [])] : [];
+  // Stale-snapshot guard (streamer-page UX round, 2026-09-26): the server
+  // renders `nextSlot`; the browser skips slots whose start is more than two
+  // hours past. A number, so the snapshot is stable between calls.
+  const index = useSyncExternalStore(
+    subscribe,
+    () => firstCurrentSlotIndex(candidates, Date.now()),
+    () => (candidates.length > 0 ? 0 : -1),
+  );
+  const slot = index >= 0 ? candidates[index] : null;
+  const target = slot?.start_time ?? '';
   const label = useSyncExternalStore(
     subscribe,
     () => (target ? localNextLabel(target, language) : ''),
     () => (target ? localizedNextLabel(target, language) : ''),
   );
 
-  if (!nextSlot) return null;
+  if (!slot) return null;
   const untrusted =
-    (nextSlot.is_predicted && nextSlot.confidence === 'low') ||
-    !nextSlot.platforms.includes('twitch');
-  const category = hideUncertainCategory && untrusted ? null : nextSlot.category;
+    (slot.is_predicted && slot.confidence === 'low') || !slot.platforms.includes('twitch');
+  const category = hideUncertainCategory && untrusted ? null : slot.category;
 
   return (
     <a
-      href={href ?? `#day-${nextSlot.start_time.slice(0, 10)}`}
+      href={href ?? `#day-${slot.start_time.slice(0, 10)}`}
       className="group inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent-cyan/40 bg-accent-cyan/5 px-3 py-1.5 text-sm transition-colors hover:border-accent-cyan/70 hover:bg-accent-cyan/10"
     >
       <span className="shrink-0 text-text-muted">{L.nextStreamPrefix}</span>
       <time
-        dateTime={nextSlot.start_time}
+        dateTime={slot.start_time}
         suppressHydrationWarning
         className="shrink-0 font-semibold text-accent-cyan"
       >
-        {nextSlot.is_predicted ? `~ ${label}` : label}
+        {slot.is_predicted ? `~ ${label}` : label}
       </time>
+      {/* Category from `sm` up only: on a 390px phone it was truncated to
+          "Leag…" (streamer-page UX round, 2026-09-26). The slot card the pill
+          links to names it in full. */}
       {category && (
         <>
-          <span aria-hidden="true" className="shrink-0 text-text-muted">
+          <span aria-hidden="true" className="hidden shrink-0 text-text-muted sm:inline">
             ·
           </span>
           {/* Only this part may shrink, so a long category never wraps the pill. */}
-          <span className="truncate text-text-secondary">{category}</span>
+          <span className="hidden truncate text-text-secondary sm:inline">{category}</span>
         </>
       )}
       <span

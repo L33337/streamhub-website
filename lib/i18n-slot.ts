@@ -61,8 +61,8 @@ export interface SlotLex {
   opensInNewTab: string;
   /** M22: heading of the prediction-reasoning box in StreamSlotDetail. */
   whyThisPrediction: string;
-  /** M22 P3: label shown when the always-English generic_reasoning replaces foreign-language copy. */
-  autoSummary: string;
+  /** Live-card overlay: "{3.1K} watching"; v arrives compact-formatted. */
+  viewersWatching(v: string): string;
   /** "Next stream:" — prefix of the forward pointer on a day with nothing scheduled. */
   nextStreamPrefix: string;
   /** "Show 6 more streams" — expands the truncated 7-day schedule. */
@@ -109,7 +109,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Watch on YouTube',
     opensInNewTab: ' (opens in new tab)',
     whyThisPrediction: 'Why this prediction?',
-    autoSummary: 'Auto summary',
+    viewersWatching: (v) => `${v} watching`,
     nextStreamPrefix: 'Next stream:',
     showMoreStreams: (n) => `Show ${n} more ${n === 1 ? 'stream' : 'streams'}`,
     showFewerStreams: 'Show fewer',
@@ -152,7 +152,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Auf YouTube ansehen',
     opensInNewTab: ' (öffnet in neuem Tab)',
     whyThisPrediction: 'Warum diese Vorhersage?',
-    autoSummary: 'Automatische Kurzfassung (englisch)',
+    viewersWatching: (v) => `${v} Zuschauer`,
     nextStreamPrefix: 'Nächster Stream:',
     showMoreStreams: (n) =>
       n === 1 ? '1 weiteren Stream anzeigen' : `${n} weitere Streams anzeigen`,
@@ -195,7 +195,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Ver en YouTube',
     opensInNewTab: ' (se abre en una pestaña nueva)',
     whyThisPrediction: '¿Por qué esta predicción?',
-    autoSummary: 'Resumen automático (en inglés)',
+    viewersWatching: (v) => `${v} viendo`,
     nextStreamPrefix: 'Próximo stream:',
     showMoreStreams: (n) => (n === 1 ? 'Ver 1 stream más' : `Ver ${n} streams más`),
     showFewerStreams: 'Ver menos',
@@ -237,7 +237,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Regarder sur YouTube',
     opensInNewTab: ` (s'ouvre dans un nouvel onglet)`,
     whyThisPrediction: 'Pourquoi cette prédiction ?',
-    autoSummary: 'Résumé automatique (en anglais)',
+    viewersWatching: (v) => `${v} spectateurs`,
     nextStreamPrefix: 'Prochain stream :',
     showMoreStreams: (n) =>
       n === 1 ? 'Voir 1 stream de plus' : `Voir ${n} streams de plus`,
@@ -279,7 +279,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Assistir no YouTube',
     opensInNewTab: ' (abre em nova aba)',
     whyThisPrediction: 'Por que esta previsão?',
-    autoSummary: 'Resumo automático (em inglês)',
+    viewersWatching: (v) => `${v} assistindo`,
     nextStreamPrefix: 'Próximo stream:',
     showMoreStreams: (n) => (n === 1 ? 'Ver mais 1 stream' : `Ver mais ${n} streams`),
     showFewerStreams: 'Ver menos',
@@ -322,7 +322,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Guarda su YouTube',
     opensInNewTab: ' (si apre in una nuova scheda)',
     whyThisPrediction: 'Perché questa previsione?',
-    autoSummary: 'Riepilogo automatico (in inglese)',
+    viewersWatching: (v) => `${v} spettatori`,
     nextStreamPrefix: 'Prossimo stream:',
     showMoreStreams: (n) =>
       n === 1 ? 'Mostra un altro stream' : `Mostra altri ${n} stream`,
@@ -371,7 +371,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Смотреть на YouTube',
     opensInNewTab: ' (откроется в новой вкладке)',
     whyThisPrediction: 'Почему такой прогноз?',
-    autoSummary: 'Автоматическое резюме (на английском)',
+    viewersWatching: (v) => `${v} зрителей`,
     nextStreamPrefix: 'Следующий стрим:',
     showMoreStreams: (n) =>
       pluralForms('ru', n, {
@@ -424,7 +424,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'YouTubeで視聴',
     opensInNewTab: '（新しいタブで開きます）',
     whyThisPrediction: 'この予測の理由',
-    autoSummary: '自動要約（英語）',
+    viewersWatching: (v) => `${v}人が視聴中`,
     nextStreamPrefix: '次の配信:',
     showMoreStreams: (n) => `他${n}件の配信を表示`,
     showFewerStreams: '表示を減らす',
@@ -472,7 +472,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Дивитися на YouTube',
     opensInNewTab: ' (відкриється в новій вкладці)',
     whyThisPrediction: 'Чому такий прогноз?',
-    autoSummary: 'Автоматичний підсумок (англійською)',
+    viewersWatching: (v) => `${v} глядачів`,
     nextStreamPrefix: 'Наступний стрім:',
     showMoreStreams: (n) =>
       pluralForms('uk', n, {
@@ -536,7 +536,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'شاهد على YouTube',
     opensInNewTab: ' (يفتح في تبويب جديد)',
     whyThisPrediction: 'لماذا هذا التوقع؟',
-    autoSummary: 'ملخص تلقائي (بالإنجليزية)',
+    viewersWatching: (v) => `${v} يشاهدون`,
     nextStreamPrefix: 'البث القادم:',
     showMoreStreams: (n) =>
       pluralForms('ar', n, {
@@ -595,7 +595,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Nézd a YouTube-on',
     opensInNewTab: ' (új lapon nyílik meg)',
     whyThisPrediction: 'Miért ez az előrejelzés?',
-    autoSummary: 'Automatikus összefoglaló (angolul)',
+    viewersWatching: (v) => `${v} néző`,
     nextStreamPrefix: 'Következő stream:',
     showMoreStreams: (n) => `Még ${n} stream megjelenítése`,
     showFewerStreams: 'Kevesebb megjelenítése',
@@ -645,7 +645,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     watchOnYouTube: 'Oglądaj na YouTube',
     opensInNewTab: ' (otwiera się w nowej karcie)',
     whyThisPrediction: 'Skąd ta prognoza?',
-    autoSummary: 'Automatyczne podsumowanie (po angielsku)',
+    viewersWatching: (v) => `${v} ogląda`,
     nextStreamPrefix: 'Następny stream:',
     showMoreStreams: (n) =>
       pluralForms('pl', n, {

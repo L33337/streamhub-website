@@ -388,11 +388,62 @@ export function sevenDayKeys(now: Date): string[] {
 export function pickNextRealSlot<
   T extends { start_time: string; slot_kind?: string | null },
 >(slots: readonly T[], dayKeys: readonly string[]): T | null {
-  return (
-    [...slots]
-      .sort((a, b) => a.start_time.localeCompare(b.start_time))
-      .find(
-        (s) => s.slot_kind !== 'cancelled' && dayKeys.includes(s.start_time.slice(0, 10)),
-      ) ?? null
-  );
+  return pickNextRealSlots(slots, dayKeys, 1)[0] ?? null;
+}
+
+/** The first `limit` slots `pickNextRealSlot` would walk through, in order. */
+export function pickNextRealSlots<
+  T extends { start_time: string; slot_kind?: string | null },
+>(slots: readonly T[], dayKeys: readonly string[], limit: number): T[] {
+  return [...slots]
+    .sort((a, b) => a.start_time.localeCompare(b.start_time))
+    .filter((s) => s.slot_kind !== 'cancelled' && dayKeys.includes(s.start_time.slice(0, 10)))
+    .slice(0, limit);
+}
+
+// --- Stale-snapshot guards (streamer-page UX round, 2026-09-26) ---------------
+//
+// Streamer and game pages are ISR snapshots (TTL 1800 s, purges on live/offline
+// and after prediction runs). A snapshot can still outlive its own "today": a
+// visitor was served a week starting with YESTERDAY, and a hero pill naming a
+// start time six hours in the past. Both guards run in the browser only
+// (useSyncExternalStore client snapshot); the server snapshot keeps rendering
+// everything, so the HTML stays deterministic.
+
+/** UTC calendar date of `now` (yyyy-mm-dd) — the bucket key of the day sections. */
+export function utcTodayKey(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+/**
+ * True once the UTC day `dateKey` is over. Deliberately UTC, not the viewer's
+ * date: the sections bucket slots by UTC date, so a Berlin viewer at 01:00 is
+ * already on the next LOCAL day while the previous UTC day still holds a slot
+ * starting at 23:30 UTC. Only the UTC rollover proves a bucket empty.
+ */
+export function isPastUtcDay(dateKey: string, todayUtcKey: string): boolean {
+  return dateKey < todayUtcKey;
+}
+
+/**
+ * How long after its start a "next stream" stays the next stream. Two hours is
+ * the prediction hit window (backend ACCURACY_THRESHOLD_MS): later than that a
+ * predicted start has missed, and an announced one would have made the
+ * streamer live — whereupon the page is purged anyway.
+ */
+export const NEXT_SLOT_GRACE_MS = 2 * 3_600_000;
+
+/**
+ * Index of the first slot whose start is not more than NEXT_SLOT_GRACE_MS in
+ * the past, or -1. Returns a number on purpose: it is a useSyncExternalStore
+ * snapshot, which must be stable between calls.
+ */
+export function firstCurrentSlotIndex(
+  slots: readonly { start_time: string }[],
+  nowMs: number,
+): number {
+  return slots.findIndex((s) => {
+    const start = Date.parse(s.start_time);
+    return !Number.isFinite(start) || nowMs <= start + NEXT_SLOT_GRACE_MS;
+  });
 }
