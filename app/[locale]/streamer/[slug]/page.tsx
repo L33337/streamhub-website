@@ -424,18 +424,24 @@ export default async function StreamerPage({ params }: Props) {
         })
       : null;
   const usualDays = stats ? activeWeekdayList(stats, locale) : null;
+  // The date is left out when the "Last stream" card sits right below the
+  // hero: last_stream_at also knows streams without an archived VOD, the card
+  // only VODs, and the two dates side by side contradicted each other
+  // ("Last stream: Sep 16" above "3 weeks ago", fanum 2026-09-26).
+  const cardBelowHero = !isLive && lastStream !== null;
   const activityText = !activity
     ? null
     : activity.kind === 'break'
       ? L.hero.breakUntil(formatUtcDateShort(activity.until, locale))
-      : activity.kind === 'quiet'
-        ? `${L.hero.lastStreamOn(formatUtcDateShort(activity.lastStreamAt, locale))} ${L.hero.quietLately}`
-        : [
-            L.hero.lastStreamOn(formatUtcDateShort(activity.lastStreamAt, locale)),
-            usualDays ? L.hero.usuallyOn(usualDays) : null,
-          ]
-            .filter(Boolean)
-            .join(' ');
+      : [
+          cardBelowHero
+            ? null
+            : L.hero.lastStreamOn(formatUtcDateShort(activity.lastStreamAt, locale)),
+          activity.kind === 'quiet' ? L.hero.quietLately : null,
+          usualDays ? L.hero.usuallyOn(usualDays) : null,
+        ]
+          .filter(Boolean)
+          .join(' ') || null;
 
   // Breadcrumb names must match the visible breadcrumb below (Google guidance).
   const breadcrumb = buildBreadcrumbJsonLd([

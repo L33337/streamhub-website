@@ -60,12 +60,18 @@ export function PlatformBadge({
         : 'px-1.5 py-0.5 text-[11px]';
   const base = `inline-flex shrink-0 items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`;
   if (href) {
+    // Linked badges are 19-21 px tall; the ::before adds 6 px above and below
+    // (streamer-page UX round, 2026-09-26: WCAG 2.5.8 wants 24) without moving
+    // anything. Every caller leaves at least 8 px around a badge row, so the
+    // enlarged areas never overlap a neighbour. `data-hit-expand` tells the
+    // layout audits (scripts/perf/*-audit.mjs) to count the extra 12 px.
     return (
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${base} transition-opacity hover:opacity-80`}
+        data-hit-expand="12"
+        className={`${base} relative transition-opacity before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] hover:opacity-80`}
       >
         {label}
         <span className="sr-only">{slotLexFor(language).opensInNewTab}</span>
@@ -118,10 +124,10 @@ export function AlwaysOnBadge() {
 // renders English chrome.
 
 /** Streamer announced they will NOT stream on this usually-regular day. */
-export function CancelledBadge() {
+export function CancelledBadge({ language = 'en' }: { language?: string } = {}) {
   return (
     <span className="inline-flex shrink-0 items-center rounded bg-confidence-low/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-confidence-low">
-      Cancelled
+      {slotLexFor(language).cancelledBadge}
     </span>
   );
 }

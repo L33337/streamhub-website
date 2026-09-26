@@ -108,11 +108,11 @@ export function StreamSlotDetail({
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {slot.platforms.map((p) => (
-          <PlatformBadge key={p} platform={p} />
+          <PlatformBadge key={p} platform={p} language={language} />
         ))}
         {isAlwaysOn && <AlwaysOnBadge />}
-        {isCancelled && <CancelledBadge />}
-        {!isLive && <ConfidenceBadge level={slot.confidence} />}
+        {isCancelled && <CancelledBadge language={language} />}
+        {!isLive && <ConfidenceBadge level={slot.confidence} language={language} />}
       </div>
 
       {isIcsExportable(slot) && (

@@ -42,7 +42,7 @@ export function NextStreamHint({
   return (
     <a
       href={`#day-${targetDateKey}`}
-      className="inline-flex items-center gap-1 text-sm text-accent-cyan transition-colors hover:text-accent-cyan/80"
+      className="inline-flex min-h-8 items-center gap-1 text-sm text-accent-cyan transition-colors hover:text-accent-cyan/80"
     >
       <span className="text-text-muted">{L.nextStreamPrefix}</span>
       <time dateTime={startTime} suppressHydrationWarning>

@@ -50,6 +50,7 @@ function renderAll(L: SlotLex): Array<[string, string]> {
     ['detailDuration', L.detailDuration],
     ['detailStreaming', L.detailStreaming],
     ['addToCalendar', L.addToCalendar],
+    ['cancelledBadge', L.cancelledBadge],
     ['cancelledReason.break', L.cancelledReason('break')],
     ['cancelledReason.vacation', L.cancelledReason('vacation')],
     ['cancelledReason.withdrawn', L.cancelledReason('withdrawn')],
@@ -128,6 +129,7 @@ describe('SLOT_STRINGS lexica', () => {
     expect(L.detailUsually).toBe('Usually streams:');
     expect(L.detailDuration).toBe('Duration:');
     expect(L.detailStreaming).toBe('Streaming:');
+    expect(L.cancelledBadge).toBe('Cancelled');
     // M22 S4.1 — byte-identical to GameCard's former inline strings.
     expect(L.gameLiveBadge(3)).toBe('3 live');
     expect(L.gameStreamerCount(1)).toBe('1 streamer');

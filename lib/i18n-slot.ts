@@ -74,6 +74,8 @@ export interface SlotLex {
   detailStreaming: string;
   /** Labelled .ics button on the slot detail page. */
   addToCalendar: string;
+  /** Badge on a cancelled slot (rendered uppercase). */
+  cancelledBadge: string;
   /** Why a cancelled slot expects no stream (DTO cancel_source); null = unknown. Never claims an announcement for 'cold' or unknown. */
   cancelledReason(source: 'break' | 'vacation' | 'withdrawn' | 'cold' | null): string;
   /** "Next stream:" — prefix of the forward pointer on a day with nothing scheduled. */
@@ -130,6 +132,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Duration:',
     detailStreaming: 'Streaming:',
     addToCalendar: 'Add to calendar',
+    cancelledBadge: 'Cancelled',
     cancelledReason: (source) =>
       source === 'break'
         ? 'No stream expected: the streamer announced a break.'
@@ -190,6 +193,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Dauer:',
     detailStreaming: 'Sendet:',
     addToCalendar: 'Zum Kalender hinzufügen',
+    cancelledBadge: 'Abgesagt',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Kein Stream erwartet: Der Streamer hat eine Pause angekündigt.'
@@ -250,6 +254,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Duración:',
     detailStreaming: 'Emite:',
     addToCalendar: 'Añadir al calendario',
+    cancelledBadge: 'Cancelado',
     cancelledReason: (source) =>
       source === 'break'
         ? 'No se espera stream: el streamer anunció un descanso.'
@@ -309,6 +314,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Durée :',
     detailStreaming: 'Diffusion :',
     addToCalendar: 'Ajouter au calendrier',
+    cancelledBadge: 'Annulé',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Aucun stream prévu : le streamer a annoncé une pause.'
@@ -368,6 +374,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Duração:',
     detailStreaming: 'Transmite:',
     addToCalendar: 'Adicionar ao calendário',
+    cancelledBadge: 'Cancelado',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Nenhum stream previsto: o streamer anunciou uma pausa.'
@@ -428,6 +435,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Durata:',
     detailStreaming: 'In onda:',
     addToCalendar: 'Aggiungi al calendario',
+    cancelledBadge: 'Annullato',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Nessuno stream previsto: lo streamer ha annunciato una pausa.'
@@ -494,6 +502,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Длительность:',
     detailStreaming: 'Вещание:',
     addToCalendar: 'Добавить в календарь',
+    cancelledBadge: 'Отменён',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Стрим не ожидается: стример объявил перерыв.'
@@ -564,6 +573,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: '長さ：',
     detailStreaming: '配信：',
     addToCalendar: 'カレンダーに追加',
+    cancelledBadge: '中止',
     cancelledReason: (source) =>
       source === 'break'
         ? '配信予定なし：配信者が休みを告知しました。'
@@ -629,6 +639,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Тривалість:',
     detailStreaming: 'Мовлення:',
     addToCalendar: 'Додати в календар',
+    cancelledBadge: 'Скасовано',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Стрім не очікується: стример оголосив перерву.'
@@ -710,6 +721,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'المدة:',
     detailStreaming: 'البث:',
     addToCalendar: 'أضف إلى التقويم',
+    cancelledBadge: 'ملغى',
     cancelledReason: (source) =>
       source === 'break'
         ? 'لا يُتوقع بث: أعلن صانع المحتوى عن استراحة.'
@@ -786,6 +798,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Időtartam:',
     detailStreaming: 'Adás:',
     addToCalendar: 'Hozzáadás a naptárhoz',
+    cancelledBadge: 'Elmarad',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Nem várható stream: a streamer szünetet jelentett be.'
@@ -853,6 +866,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     detailDuration: 'Czas trwania:',
     detailStreaming: 'Nadaje:',
     addToCalendar: 'Dodaj do kalendarza',
+    cancelledBadge: 'Odwołany',
     cancelledReason: (source) =>
       source === 'break'
         ? 'Nie oczekujemy streamu: streamer zapowiedział przerwę.'
