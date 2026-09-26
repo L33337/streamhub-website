@@ -6,6 +6,8 @@ import { chromeLexFor } from '@/lib/i18n-chrome';
 import { CONSENT_STRINGS } from '@/lib/i18n-consent';
 import { FooterLanguageSwitcher } from './FooterLanguageSwitcher';
 import { ConsentSettingsLink } from './ConsentSettingsLink';
+import { SOCIAL_LINKS } from '@/lib/social-links';
+import { SocialIcon } from './icons/SocialIcons';
 
 /**
  * Global site footer. Rendered on every page from the root layout so that the
@@ -114,6 +116,33 @@ export function SiteFooter({ locale = 'en' }: { locale?: UiLang }) {
                 Google Play
               </a>
             </div>
+            {/* Own social profiles (2026-09-26, M27): plain external links, no
+                embeds. Rendered only for accounts that exist — see
+                lib/social-links.ts. rel="me" marks them as the same entity;
+                the JSON-LD sameAs in the layout says the same to Google. */}
+            {SOCIAL_LINKS.length > 0 && (
+              <div className="mt-5">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                  {f.followUs}
+                </h2>
+                <ul className="mt-2 flex flex-wrap gap-2" aria-label={f.followUs}>
+                  {SOCIAL_LINKS.map((link) => (
+                    <li key={link.platform}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="me noopener noreferrer"
+                        aria-label={link.label}
+                        title={link.label}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border-default bg-background-elevated text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+                      >
+                        <SocialIcon platform={link.platform} />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Link columns */}

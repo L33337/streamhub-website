@@ -12,6 +12,7 @@ import { MobileHeaderMenu } from "@/components/web/MobileHeaderMenu";
 import { HeaderUserMenu } from "@/components/web/HeaderUserMenu";
 import { AUTH_ENABLED } from "@/lib/auth-flag";
 import { jsonLdHtml } from "@/lib/seo";
+import { socialSameAs } from "@/lib/social-links";
 import { Providers } from "@/components/web/Providers";
 import { FloatingGetAppButton } from "@/components/web/FloatingGetAppButton";
 import { SiteFooter } from "@/components/web/SiteFooter";
@@ -156,6 +157,9 @@ export default async function RootLayout({
               description:
                 "Your Livestream Guide for Twitch & YouTube with AI-powered predictions.",
               url: "https://streamertimes.tv",
+              // Own social profiles (2026-09-26): ties the app, the site and
+              // the accounts into one entity. Omitted while none is configured.
+              ...(socialSameAs().length > 0 ? { sameAs: socialSameAs() } : {}),
               screenshot: [
                 "https://streamertimes.tv/screenshots/live-feed.webp",
                 "https://streamertimes.tv/screenshots/epg-grid.webp",

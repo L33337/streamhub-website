@@ -97,6 +97,8 @@ export interface ChromeLex {
     copyrightTail: string;
     appStoreAria: string;
     playStoreAria: string;
+    /** Heading over the social-profile icon links in the brand column (2026-09-26). */
+    followUs: string;
   };
   notFound: {
     /** '404' everywhere — the number IS the message. */
@@ -160,6 +162,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — Your Livestream Guide.',
       appStoreAria: 'Download on the App Store',
       playStoreAria: 'Get it on Google Play',
+      followUs: 'Follow us',
     },
     notFound: {
       kicker: '404',
@@ -220,6 +223,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — Dein Livestream-Guide.',
       appStoreAria: 'Im App Store laden',
       playStoreAria: 'Jetzt bei Google Play',
+      followUs: 'Folge uns',
     },
     notFound: {
       kicker: '404',
@@ -280,6 +284,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — Tu guía de livestreams.',
       appStoreAria: 'Descargar en el App Store',
       playStoreAria: 'Disponible en Google Play',
+      followUs: 'Síguenos',
     },
     notFound: {
       kicker: '404',
@@ -340,6 +345,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — Ton guide des livestreams.',
       appStoreAria: `Télécharger dans l'App Store`,
       playStoreAria: 'Disponible sur Google Play',
+      followUs: 'Suivez-nous',
     },
     notFound: {
       kicker: '404',
@@ -400,6 +406,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — Seu guia de livestreams.',
       appStoreAria: 'Baixar na App Store',
       playStoreAria: 'Disponível no Google Play',
+      followUs: 'Siga-nos',
     },
     notFound: {
       kicker: '404',
@@ -460,6 +467,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — La tua guida ai livestream.',
       appStoreAria: `Scarica dall'App Store`,
       playStoreAria: 'Disponibile su Google Play',
+      followUs: 'Seguici',
     },
     notFound: {
       kicker: '404',
@@ -520,6 +528,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — ваш гид по стримам.',
       appStoreAria: 'Загрузить в App Store',
       playStoreAria: 'Доступно в Google Play',
+      followUs: 'Мы в соцсетях',
     },
     notFound: {
       kicker: '404',
@@ -580,6 +589,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — ライブ配信ガイド。',
       appStoreAria: 'App Storeでダウンロード',
       playStoreAria: 'Google Playで手に入れよう',
+      followUs: 'フォローする',
     },
     notFound: {
       kicker: '404',
@@ -640,6 +650,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — ваш гід по стрімах.',
       appStoreAria: 'Завантажити в App Store',
       playStoreAria: 'Доступно в Google Play',
+      followUs: 'Ми в соцмережах',
     },
     notFound: {
       kicker: '404',
@@ -700,6 +711,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — دليلك للبث المباشر.',
       appStoreAria: 'حمّل من App Store',
       playStoreAria: 'احصل عليه من Google Play',
+      followUs: 'تابعنا',
     },
     notFound: {
       kicker: '404',
@@ -760,6 +772,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — a livestream-kalauzod.',
       appStoreAria: 'Letöltés az App Store-ból',
       playStoreAria: 'Szerezd meg a Google Playen',
+      followUs: 'Kövess minket',
     },
     notFound: {
       kicker: '404',
@@ -820,6 +833,7 @@ export const CHROME_STRINGS: Record<UiLang, ChromeLex> = {
       copyrightTail: 'Streamer Times — Twój przewodnik po livestreamach.',
       appStoreAria: 'Pobierz w App Store',
       playStoreAria: 'Pobierz z Google Play',
+      followUs: 'Obserwuj nas',
     },
     notFound: {
       kicker: '404',
