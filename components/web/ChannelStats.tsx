@@ -75,11 +75,11 @@ export function ChannelStats({ streamer, stats, uiLanguage }: Props) {
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((tile) => (
           <div key={tile.label} className="rounded-xl bg-background-elevated p-3">
-            <dt className="text-xs uppercase tracking-wider text-text-muted">{tile.label}</dt>
+            <dt className="text-xs uppercase tracking-wider text-text-secondary">{tile.label}</dt>
             <dd className="mt-1 text-lg font-bold text-text-primary">
               {tile.value}
               {tile.detail ? (
-                <span className="block text-xs font-normal normal-case text-text-muted">
+                <span className="block text-xs font-normal normal-case text-text-secondary">
                   {tile.detail}
                 </span>
               ) : null}

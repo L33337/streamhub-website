@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useGetAppTarget } from '@/lib/use-get-app-target';
 import { localeHref, stripLocaleFromPath, type UiLang } from '@/lib/i18n-core';
 
-// Once the reader scrolls past this the button collapses to icon-only — the
-// full pill floats over data-dense content (heatmaps, chart toggles) on
-// phones, and after the first viewport its label has served its purpose.
-const COLLAPSE_SCROLL_Y = 160;
+// The button appears once the reader scrolls past this, icon-only. Before the
+// streamer-page UX round (2026-09-26) it floated as a full labelled pill over
+// the first viewport and covered the day pills and slot text there (measured on
+// /streamer/* at 390 px); after the first viewport it used to collapse to this
+// icon anyway. The first viewport keeps the page's own content unobstructed.
+const SHOW_SCROLL_Y = 160;
 
 export function FloatingGetAppButton({
   locale = 'en',
@@ -20,10 +22,10 @@ export function FloatingGetAppButton({
 } = {}) {
   const pathname = usePathname();
   const target = useGetAppTarget();
-  const [collapsed, setCollapsed] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setCollapsed(window.scrollY > COLLAPSE_SCROLL_Y);
+    const onScroll = () => setVisible(window.scrollY > SHOW_SCROLL_Y);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -32,7 +34,7 @@ export function FloatingGetAppButton({
   // Strip the locale first: the old `startsWith('/auth')` check only matched
   // the English tree, so the button still floated over /de/auth/login and the
   // ten other localized sign-in pages.
-  if (stripLocaleFromPath(pathname ?? '').startsWith('/auth')) {
+  if (!visible || stripLocaleFromPath(pathname ?? '').startsWith('/auth')) {
     return null;
   }
 
@@ -51,9 +53,7 @@ export function FloatingGetAppButton({
           ? { target: '_blank', rel: 'noopener noreferrer' }
           : {})}
         aria-label={label}
-        className={`inline-flex items-center gap-2 rounded-full border border-border-default bg-background-elevated py-3 text-sm font-semibold text-text-primary shadow-lg transition-all hover:border-accent-cyan/60 hover:bg-background-highlight active:scale-95 ${
-          collapsed ? 'px-3' : 'px-4'
-        }`}
+        className="inline-flex items-center gap-2 rounded-full border border-border-default bg-background-elevated px-3 py-3 text-sm font-semibold text-text-primary shadow-lg transition-all hover:border-accent-cyan/60 hover:bg-background-highlight active:scale-95"
       >
         <svg
           viewBox="0 0 24 24"
@@ -62,7 +62,6 @@ export function FloatingGetAppButton({
         >
           <path d="M12 3a1 1 0 0 1 1 1v9.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z" />
         </svg>
-        {!collapsed && label}
       </a>
     </div>
   );

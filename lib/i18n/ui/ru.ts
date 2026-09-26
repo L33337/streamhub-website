@@ -23,6 +23,11 @@ export const ru: UiLex = {
     avatarAlt: (name) => `Аватар ${name}`,
     showMore: 'Показать больше',
     showLess: 'Показать меньше',
+    lastStreamOn: (date) => `Последний стрим: ${date}.`,
+    usuallyOn: (days) => `Обычно стримит: ${days}.`,
+    quietLately: 'В последнее время тише обычного.',
+    breakUntil: (date) => `Перерыв до ${date}.`,
+    typicalTimesLink: 'Обычное время',
   },
   promo: {
     valueProps: [
@@ -75,6 +80,7 @@ export const ru: UiLex = {
     trendDown: (p) => `опустился на ${p} за неделю`,
     byCategory: 'По категориям',
     summary: (name, parts) => `${name} занимает ${parts.join(' и ')} на Streamer Times.`,
+    allRankings: (n) => `Все места в рейтингах (${n})`,
   },
   stats: {
     heading: (name) => `Когда стримит ${name}?`,
@@ -120,6 +126,9 @@ export const ru: UiLex = {
         ? `${base}, как правило с ${times.start} до ${times.end} (${times.tzLabel}).`
         : `${base}.`;
     },
+    insightsTitle: 'Статистика стримов',
+    insightsBiggestDay: (day, median) => `Больше всего зрителей: ${day}, около ${median}`,
+    insightsBlurb: 'Аудитория, категории и сравнения',
   },
   faq: {
     heading: 'Частые вопросы',

@@ -1,26 +1,34 @@
 // M24: compact teaser for the (noindex) streamer insights page — the only
 // entry point besides direct links, so it renders whenever insights data
-// exists. Server component; numbers are nightly aggregates (UTC weekdays).
+// exists. Server component; numbers are nightly aggregates.
+//
+// Localized since the streamer-page UX round (2026-09-26): title and lines
+// come pre-built from the viewer-locale lexicon (lib/i18n-ui.ts `stats`), and
+// the link keeps the locale prefix (it used to drop every non-English viewer
+// on the English insights page).
 
 import Link from 'next/link';
 import { BarChart3 } from 'lucide-react';
-import { formatStatValue } from '@/lib/format/number';
 
 export function InsightsTeaserCard({
-  slug,
+  href,
   name,
-  bestDay,
-  median,
+  title,
+  highlight,
+  blurb,
 }: {
-  slug: string;
+  /** Locale-prefixed path of the insights page. */
+  href: string;
   name: string;
-  bestDay: string;
-  median: number;
+  title: string;
+  /** "Biggest audience on Saturday: about 51K viewers"; null = no agreeing day. */
+  highlight: string | null;
+  blurb: string;
 }) {
   return (
-    <section aria-label={`${name} streaming insights teaser`} className="mt-8">
+    <section aria-label={`${name}: ${title}`} className="mt-8">
       <Link
-        href={`/streamer/${encodeURIComponent(slug)}/insights`}
+        href={href}
         className="group flex items-center gap-4 rounded-xl border border-border-default bg-background-elevated p-4 transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-default bg-background text-accent-cyan">
@@ -28,15 +36,12 @@ export function InsightsTeaserCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-text-primary group-hover:text-accent-cyan">
-            Streaming insights
+            {title}
           </span>
-          <span className="mt-0.5 block truncate text-xs text-text-secondary">
-            {/* Interpolated strings — adjacent JSX text nodes drop spaces
-                (the documented "VALORANTstreamers" bug). */}
-            {'Best day: '}
-            <span className="font-semibold text-text-primary">{bestDay}</span>
-            {` · ~${formatStatValue(median)} median viewers — viewer patterns, category performance & benchmarks`}
-          </span>
+          {highlight && (
+            <span className="mt-0.5 block text-xs text-text-primary">{highlight}</span>
+          )}
+          <span className="mt-0.5 block text-xs text-text-secondary">{blurb}</span>
         </span>
         <span aria-hidden="true" className="shrink-0 text-accent-cyan">
           →

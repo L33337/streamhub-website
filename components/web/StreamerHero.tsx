@@ -30,6 +30,14 @@ interface Props {
   liveSlot: PublicStreamSlot | null;
   /** Earliest real upcoming slot — drives the above-the-fold "next stream" answer. */
   nextSlot?: PublicStreamSlot | null;
+  /** The next few real slots after it: the pill moves on when the snapshot is stale. */
+  laterSlots?: readonly PublicStreamSlot[];
+  /**
+   * Offline with nothing scheduled: what we know instead (last stream, an
+   * announced break, unusual silence). Pre-built copy; `timesHref` links the
+   * typical-times table when the page has one. Streamer-page UX round 2026-09-26.
+   */
+  activity?: { text: string; timesHref: string | null; timesLabel: string } | null;
   /** Placements for the hero's teaser chips; the full block renders lower down. */
   rankings?: PublicStreamerRankings | null;
   // M22 (D6 keying rule): UI strings follow the VIEWER's locale; the bio and
@@ -42,6 +50,8 @@ export function StreamerHero({
   streamer,
   liveSlot,
   nextSlot = null,
+  laterSlots,
+  activity = null,
   rankings = null,
   uiLanguage,
 }: Props) {
@@ -85,8 +95,13 @@ export function StreamerHero({
 
   // The next-stream answer counts too: on an offline streamer with no bio it is
   // the only thing in the second row, and the most important one.
+  const showActivity = !isLive && nextSlot === null && activity !== null;
   const hasSecondRow =
-    isLive || nextSlot !== null || bioParagraphs.length > 0 || rankChips.length > 0;
+    isLive ||
+    nextSlot !== null ||
+    showActivity ||
+    bioParagraphs.length > 0 ||
+    rankChips.length > 0;
 
   return (
     <header className="relative gradient-border p-4 sm:p-6 md:p-8">
@@ -182,34 +197,56 @@ export function StreamerHero({
             {/* Offline: the headline answer, above the chips and the bio. */}
             {!isLive && nextSlot && (
               <div className="mt-3">
-                <HeroNextStream nextSlot={nextSlot} language={resolveUiLang(ui)} />
+                <HeroNextStream
+                  nextSlot={nextSlot}
+                  laterSlots={laterSlots}
+                  language={resolveUiLang(ui)}
+                />
               </div>
+            )}
+            {showActivity && activity && (
+              <p className="mt-3 text-sm text-text-secondary">
+                {activity.text}
+                {activity.timesHref && (
+                  <>
+                    {' '}
+                    <a
+                      href={activity.timesHref}
+                      className="inline-flex min-h-6 items-center font-semibold text-accent-cyan hover:text-text-primary"
+                    >
+                      {activity.timesLabel} ↓
+                    </a>
+                  </>
+                )}
+              </p>
             )}
 
             {rankChips.length > 0 && (
               <ul className="mt-2 flex flex-wrap gap-2">
                 {rankChips.map((row) => {
+                  // No aria-label: the accessible name is the visible text plus
+                  // an sr-only "of N" (an override that starts with "Rank 1 of
+                  // 81" failed WCAG 2.5.3 against the visible "#1 …").
                   const body = (
                     <>
                       <span className="font-bold tabular-nums text-accent-cyan">
                         #{row.rank}
                       </span>{' '}
                       <span className="text-text-secondary">{row.label}</span>
+                      <span className="sr-only">
+                        {' '}
+                        {L.streamerRankings.ofTotal(String(row.total))}
+                      </span>
                     </>
                   );
                   const chip =
-                    'inline-flex items-center gap-1 rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-xs';
+                    'inline-flex min-h-8 items-center gap-1 rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-xs';
                   return (
                     <li key={row.key}>
                       {row.href ? (
                         <Link
                           href={localeHref(resolveUiLang(ui), row.href)}
                           className={`${chip} transition-colors hover:border-accent-cyan/60`}
-                          aria-label={L.streamerRankings.rowAria(
-                            row.rank,
-                            String(row.total),
-                            row.label,
-                          )}
                         >
                           {body}
                         </Link>

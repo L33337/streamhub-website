@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo } from '@/lib/format/time';
-import { historyPlatforms, historyVodLinks, usableThumbnail } from '@/lib/history';
+import { historyCategory, historyPlatforms, historyVodLinks, usableThumbnail } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
@@ -97,8 +97,8 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
           >
             {title}
           </h3>
-          {stream.category ? (
-            <p className="truncate text-xs text-text-secondary">{stream.category}</p>
+          {historyCategory(stream) ? (
+            <p className="truncate text-xs text-text-secondary">{historyCategory(stream)}</p>
           ) : null}
         </div>
 

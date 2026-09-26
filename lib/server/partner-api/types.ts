@@ -100,6 +100,11 @@ export interface PublicStreamSlot {
   // Optional in this mirror for deploy skew (old API, new site) — treat
   // undefined like 'regular'.
   slot_kind?: 'regular' | 'new' | 'cancelled';
+  // Why a cancelled slot expects no stream (API 2026-09-26): 'break' /
+  // 'vacation' / 'withdrawn' were announced, 'cold' was NOT (unusual silence).
+  // null on non-cancelled slots; undefined on an older API. Only say
+  // "announced" for the first three.
+  cancel_source?: 'break' | 'vacation' | 'withdrawn' | 'cold' | null;
   is_always_on: boolean;
   // External channel identifiers — populated only when the corresponding
   // platform is in `platforms`. Build watch URLs:
@@ -328,6 +333,9 @@ export interface PublicStreamHistory {
   platforms?: Platform[];
   title: string | null;
   category: string | null;
+  // Which platform named `category` (API 2026-09-26): 'youtube' means a video
+  // bucket ("People & Blogs"), never a game. Optional for deploy skew.
+  category_source?: 'twitch' | 'youtube' | null;
   thumbnail_url: string | null;
   // Span of the session across its platforms (earliest start, latest end).
   started_at: string;
@@ -388,6 +396,9 @@ export interface PublicStreamerStats {
   peak_viewer_count: number | null;
   weekdays: PublicStreamerStatsWeekday[];
   top_categories: PublicStreamerStatsCategory[];
+  // Which platform named top_categories (API 2026-09-26): 'youtube' = video
+  // buckets, never games. Optional for deploy skew.
+  category_source?: 'twitch' | 'youtube' | null;
 }
 
 // ============================================

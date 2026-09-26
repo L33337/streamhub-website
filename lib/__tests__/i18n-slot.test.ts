@@ -43,6 +43,18 @@ function renderAll(L: SlotLex): Array<[string, string]> {
     ['opensInNewTab', L.opensInNewTab],
     ['whyThisPrediction', L.whyThisPrediction],
     ['viewersWatching', L.viewersWatching('3.1K')],
+    ['detailCategory', L.detailCategory],
+    ['detailScheduled', L.detailScheduled],
+    ['detailStarted', L.detailStarted],
+    ['detailUsually', L.detailUsually],
+    ['detailDuration', L.detailDuration],
+    ['detailStreaming', L.detailStreaming],
+    ['addToCalendar', L.addToCalendar],
+    ['cancelledReason.break', L.cancelledReason('break')],
+    ['cancelledReason.vacation', L.cancelledReason('vacation')],
+    ['cancelledReason.withdrawn', L.cancelledReason('withdrawn')],
+    ['cancelledReason.cold', L.cancelledReason('cold')],
+    ['cancelledReason.null', L.cancelledReason(null)],
     ['nextStreamPrefix', L.nextStreamPrefix],
     ['showMoreStreams', L.showMoreStreams(6)],
     ['showFewerStreams', L.showFewerStreams],
@@ -109,6 +121,13 @@ describe('SLOT_STRINGS lexica', () => {
     expect(L.opensInNewTab).toBe(' (opens in new tab)');
     // Byte-identical to SlotCard's former inline live overlay.
     expect(L.viewersWatching('3.1K')).toBe('3.1K watching');
+    // Byte-identical to StreamSlotDetail's former inline labels.
+    expect(L.detailCategory).toBe('Category:');
+    expect(L.detailScheduled).toBe('Scheduled:');
+    expect(L.detailStarted).toBe('Started:');
+    expect(L.detailUsually).toBe('Usually streams:');
+    expect(L.detailDuration).toBe('Duration:');
+    expect(L.detailStreaming).toBe('Streaming:');
     // M22 S4.1 — byte-identical to GameCard's former inline strings.
     expect(L.gameLiveBadge(3)).toBe('3 live');
     expect(L.gameStreamerCount(1)).toBe('1 streamer');
@@ -128,5 +147,20 @@ describe('SLOT_STRINGS lexica', () => {
     expect(SLOT_STRINGS.pl.nStreams(2)).toBe('2 streamy');
     expect(SLOT_STRINGS.pl.nStreams(5)).toBe('5 streamów');
     expect(SLOT_STRINGS.pl.nStreams(21)).toBe('21 streamów');
+  });
+});
+
+describe('cancelledReason (2026-09-26)', () => {
+  it.each([...UI_LANGS])('%s: distinct, dash-free, and never "announced" for cold/unknown in English', (lang) => {
+    const L = SLOT_STRINGS[lang];
+    const all = (['break', 'vacation', 'withdrawn', 'cold', null] as const).map((s) => L.cancelledReason(s));
+    expect(new Set(all).size).toBe(5);
+    for (const v of all) expect(v).not.toMatch(/[—–]/);
+  });
+  it('English cold/unknown copy claims no announcement', () => {
+    const L = SLOT_STRINGS.en;
+    expect(L.cancelledReason('cold')).not.toMatch(/announc/i);
+    expect(L.cancelledReason(null)).not.toMatch(/announc/i);
+    expect(L.cancelledReason('break')).toMatch(/announced/);
   });
 });

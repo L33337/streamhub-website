@@ -13,6 +13,11 @@ export const ja: UiLex = {
     avatarAlt: (name) => `${name}のアバター`,
     showMore: 'もっと見る',
     showLess: '閉じる',
+    lastStreamOn: (date) => `前回の配信：${date}`,
+    usuallyOn: (days) => `主な配信日：${days}`,
+    quietLately: '最近はいつもより配信が少なめです。',
+    breakUntil: (date) => `${date}まで休止中です。`,
+    typicalTimesLink: 'いつもの時間帯',
   },
   promo: {
     valueProps: [
@@ -59,6 +64,7 @@ export const ja: UiLex = {
     trendDown: (p) => `先週より ${p} 位下降`,
     byCategory: 'カテゴリー別',
     summary: (name, parts) => `Streamer Times での ${name} の順位: ${parts.join('、')}。`,
+    allRankings: (n) => `すべての順位（${n}）`,
   },
   stats: {
     heading: (name) => `${name}の配信はいつ？`,
@@ -81,6 +87,9 @@ export const ja: UiLex = {
         ? `${base}（多くは${times.start}〜${times.end}、${times.tzLabel}）。`
         : `${base}。`;
     },
+    insightsTitle: '配信インサイト',
+    insightsBiggestDay: (day, median) => `視聴者が最も多い曜日：${day}（約${median}人）`,
+    insightsBlurb: '視聴者の傾向、カテゴリ別の成績、比較',
   },
   faq: {
     heading: 'よくある質問',
