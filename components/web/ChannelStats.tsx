@@ -9,6 +9,8 @@ interface Props {
   // M22 (D6): UI strings follow the viewer's locale; defaults to the
   // streamer's language for pre-M22 call sites.
   uiLanguage?: string | null;
+  /** Rendered in the desktop sidebar (streamer-page UX round, 2026-09-26): from lg on, two tile columns and a smaller heading. */
+  inSidebar?: boolean;
 }
 
 interface Tile {
@@ -26,7 +28,7 @@ interface Tile {
  * the whole section disappears when nothing is known. Tile styling matches
  * StreamerStatsBlock's existing stat tiles.
  */
-export function ChannelStats({ streamer, stats, uiLanguage }: Props) {
+export function ChannelStats({ streamer, stats, uiLanguage, inSidebar = false }: Props) {
   const ui = uiLanguage ?? streamer.language;
   const lang = resolveUiLang(ui);
   const L = uiLexFor(ui).channelStats;
@@ -68,11 +70,17 @@ export function ChannelStats({ streamer, stats, uiLanguage }: Props) {
   if (tiles.length === 0) return null;
 
   return (
-    <section aria-labelledby="channel-stats-heading" className="mt-16 border-t border-divider pt-8">
-      <h2 id="channel-stats-heading" className="text-2xl font-bold text-white">
+    <section
+      aria-labelledby="channel-stats-heading"
+      className={`border-t border-divider ${inSidebar ? 'mt-10 pt-8 lg:mt-6 lg:pt-6' : 'mt-16 pt-8'}`}
+    >
+      <h2
+        id="channel-stats-heading"
+        className={`text-2xl font-bold text-white ${inSidebar ? 'lg:text-lg' : ''}`}
+      >
         {L.heading}
       </h2>
-      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className={`mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 ${inSidebar ? 'lg:grid-cols-2' : ''}`}>
         {tiles.map((tile) => (
           <div key={tile.label} className="rounded-xl bg-background-elevated p-3">
             <dt className="text-xs uppercase tracking-wider text-text-secondary">{tile.label}</dt>
