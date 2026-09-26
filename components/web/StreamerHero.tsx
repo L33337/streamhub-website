@@ -104,7 +104,10 @@ export function StreamerHero({
     rankChips.length > 0;
 
   return (
-    <header className="relative gradient-border p-4 sm:p-6 md:p-8">
+    // Vertical padding tighter than horizontal (2026-09-26, user feedback):
+    // the name sat 32 px + line-height below the frame on desktop and the
+    // "Show more" toggle floated ~48 px above the bottom edge.
+    <header className="relative gradient-border px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-5">
       {/*
         Two-column grid instead of the old stacked flex column. Below md the
         avatar and the name share row 1 (they used to eat two full rows above
@@ -143,12 +146,14 @@ export function StreamerHero({
 
         <div className="min-w-0">
           <div className="flex items-start gap-3">
-            <h1 className="text-2xl font-bold text-white md:text-3xl">{streamer.name}</h1>
+            <h1 className="text-2xl font-bold leading-tight text-white md:text-3xl md:leading-tight">
+              {streamer.name}
+            </h1>
             <FavoriteButton
               streamerId={streamer.id}
               streamerName={streamer.name}
               size="md"
-              className="mt-1 shrink-0"
+              className="shrink-0"
               language={ui ?? undefined}
             />
           </div>
