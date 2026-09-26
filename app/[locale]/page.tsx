@@ -32,6 +32,7 @@ import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { hubLexFor } from '@/lib/i18n-hub';
 import { siteMetaFor } from '@/lib/i18n-sitemeta';
 import { applyLocaleSeo, INDEXABLE_HUB_LOCALES, jsonLdHtml } from '@/lib/seo';
+import { socialSameAs } from '@/lib/social-links';
 import { HomeMasthead } from '@/components/web/home/HomeMasthead';
 import {
   HomeSectionNav,
@@ -132,6 +133,7 @@ function buildWebSiteJsonLd(): object {
     '@type': 'WebSite',
     url: SITE_URL,
     name: 'Streamer Times',
+    ...(socialSameAs().length > 0 ? { sameAs: socialSameAs() } : {}),
     description:
       'Stream schedules, highlights and stats for Twitch and YouTube, with real-time live status and AI-powered predictions.',
     potentialAction: {
