@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { listConjunction } from '@/lib/i18n-core';
+import { isExactlyOne, plusCount } from './count';
 import type { HubLex } from './types';
 
 export const it: HubLex = {
@@ -430,6 +431,7 @@ export const it: HubLex = {
   gameChips: {
     aria: (category) => `Statistiche di ${category}`,
     streamersLabel: () => 'streamer',
+    streamersLabel28d: () => 'streamer · 28 giorni',
     liveNowLabel: 'in diretta ora',
     watchingLabel: 'spettatori',
     streamedLabel: 'di stream · 28 giorni',
@@ -464,18 +466,14 @@ export const it: HubLex = {
       const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'it')} —` : ':';
       return `Gli streamer di ${category} con più follower${ogNames} stato live e orari degli stream su Twitch e YouTube.`;
     },
-    h1: (category) => `Streamer di ${category} — in diretta e orari`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) =>
-      `${shown} streamer ${shown === 1 ? 'ha' : 'hanno'} stream di ${category} in diretta o in programma questa settimana su Twitch e YouTube. ` +
-      (liveCount > 0
-        ? `${liveCount} ${liveCount === 1 ? 'è' : 'sono'} in diretta in questo momento`
-        : 'Nessuno è in diretta in questo momento') +
-      (upcomingCount > 0
-        ? `, con ${upcomingCount} stream in arrivo nei prossimi 7 giorni.`
-        : '.') +
-      superlative,
-    superlative: (category, name, value, isTwitch) =>
-      ` Lo streamer di ${category} con più ${isTwitch ? 'follower' : 'iscritti'} qui è ${name}, con ${value}.`,
+    h1: (category) => `Streamer di ${category}: in diretta e orari`,
+    intro: (shown, category, live, upcoming) =>
+      `${plusCount(shown)} streamer ${isExactlyOne(shown) ? 'ha' : 'hanno'} stream di ${category} in diretta o in programma questa settimana su Twitch e YouTube: ` +
+      (live.n > 0 ? `${plusCount(live)} in diretta ora` : 'nessuno in diretta ora') +
+      (upcoming.n > 0
+        ? ` e ${plusCount(upcoming)} stream in arrivo nei prossimi 7 giorni.`
+        : ' e nient’altro in programma nei prossimi 7 giorni.'),
+    nextUpLabel: 'A seguire',
     onPageAria: 'In questa pagina',
     navLiveNow: 'In diretta',
     navTopStreamers: 'Top streamer',
@@ -500,14 +498,14 @@ export const it: HubLex = {
     thStreamer: 'Streamer',
     thNextStream: 'Prossimo stream',
     thFollowers: 'Follower',
-    thHours: 'Ore / 28 giorni',
+    thHours: 'Ore · 28 giorni',
     liveNowCell: 'In diretta',
     seeFullRanking: (category) =>
       `Vedi la classifica completa di ${category} (top 50) →`,
     whoStreams: (category) => `Streamer che streammano ${category}`,
     whenStreamed: (category) => `Quando viene streammato ${category}?`,
     heatmapSummary: (category) =>
-      `La maggior parte degli stream di ${category} va in onda {peak}{tz} — in base alle ultime 4 settimane di stream tracciati.`,
+      `La maggior parte degli stream di ${category} va in onda {peak}{tz}, in base alle ultime 4 settimane di stream tracciati.`,
     heatmapSummaryEmpty: 'In base alle ultime 4 settimane di stream tracciati.',
     tzLocalSuffix: ' (la tua ora)',
     tzUtcSuffix: ' (UTC)',
@@ -526,8 +524,17 @@ export const it: HubLex = {
       'il sabato',
       'la domenica',
     ],
-    bestTimeToStream: (category) => `Il momento migliore per streammare ${category}`,
+    barsByDay: 'Per giorno della settimana',
+    barsByHour: 'Per ora del giorno',
+    statsLead: 'Ultimi 28 giorni:',
+    statHours: (h) => `${h} ore di stream`,
+    // "stream" is an invariable loanword in Italian: 1 stream, 3 stream.
+    statStreams: (_n, display) => `${display} stream`,
+    statPeak: (v) => `picco di ${v} spettatori`,
+    busiestTimesHeading: 'Orari più affollati',
+    leastCompetitionHeading: 'Meno concorrenza',
     trendingBadge: '▲ In tendenza',
+    trendingTitle: 'In tendenza su Twitch questa settimana',
     bestTimeIntro: (category) =>
       `Per gli streamer: le fasce in cui ${category} ha più spettatori per canale in diretta.`,
     fullHeatmapLink: 'Heatmap delle opportunità e analisi completa →',
@@ -537,7 +544,7 @@ export const it: HubLex = {
     timesUtcNote: 'Orari in UTC.',
     quietTitle: (category) => `Nessuno stream di ${category} al momento`,
     quietBody: (category) =>
-      `Nessuno degli streamer di ${category} che seguiamo è in diretta o atteso nei prossimi 7 giorni. Programmi e previsioni IA si aggiornano più volte al giorno — ripassa presto.`,
+      `Nessuno degli streamer di ${category} che seguiamo è in diretta o atteso nei prossimi 7 giorni. Programmi e previsioni IA si aggiornano più volte al giorno, quindi ripassa presto.`,
     quietMeanwhile: 'Nel frattempo',
     seeWhosLive: 'Guarda chi è in diretta ora →',
     browseAllGames: 'Sfoglia tutti i giochi',
@@ -554,10 +561,11 @@ export const it: HubLex = {
         ? `Un'altra previsione con probabilità bassa`
         : `Altre ${n} previsioni con probabilità bassa`,
     lowConfAria: (label) => `Previsioni con probabilità bassa: ${label}`,
-    hiddenNotShown: (n) =>
-      n === 1
-        ? `Un'altra previsione di questo giorno non è mostrata. Apri la pagina dello streamer per il programma completo.`
-        : `Altre ${n} previsioni di questo giorno non sono mostrate. Apri la pagina dello streamer per il programma completo.`,
+    dayCountShown: (shown, total) => `${shown} di ${total} stream`,
+    showAllDays: (days) => `Mostra tutti i ${days} giorni`,
+    showFewerDays: 'Mostra meno giorni',
+    icsAria: (name) => `Aggiungi lo stream di ${name} al tuo calendario`,
+    icsTitle: 'Aggiungi al calendario (.ics)',
     relatedGames: 'Giochi correlati',
     relatedGamesAria: 'Giochi correlati',
     relatedNote:

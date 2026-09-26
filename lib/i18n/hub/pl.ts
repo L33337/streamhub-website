@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { listConjunction, pluralForms } from '@/lib/i18n-core';
+import { plusCount } from './count';
 import type { HubLex } from './types';
 
 /** "3 streamerów nadaje" — counted streamers with correct Polish forms. */
@@ -520,6 +521,13 @@ export const pl: HubLex = {
         many: 'streamerów',
         other: 'streamera',
       }),
+    streamersLabel28d: (n) =>
+      pluralForms('pl', n, {
+        one: 'streamer · 28 dni',
+        few: 'streamerów · 28 dni',
+        many: 'streamerów · 28 dni',
+        other: 'streamera · 28 dni',
+      }),
     liveNowLabel: 'teraz na żywo',
     watchingLabel: 'ogląda',
     streamedLabel: 'streamowania · 28 dni',
@@ -560,29 +568,29 @@ export const pl: HubLex = {
       const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'pl')} —` : ':';
       return `Streamerzy ${category} z największą liczbą obserwujących${ogNames} status na żywo i harmonogram streamów na Twitchu i YouTube.`;
     },
-    h1: (category) => `Streamerzy ${category} — na żywo i harmonogram`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) => {
-      const lead = pluralForms('pl', shown, {
-        one: `${shown} streamer ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube. `,
-        few: `${shown} streamerów ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube. `,
-        many: `${shown} streamerów ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube. `,
-        other: `${shown} streamera ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube. `,
+    h1: (category) => `Streamerzy ${category}: na żywo i harmonogram`,
+    intro: (shown, category, live, upcoming) => {
+      const s = plusCount(shown);
+      const lead = pluralForms('pl', shown.n, {
+        one: `${s} streamer ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube: `,
+        few: `${s} streamerów ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube: `,
+        many: `${s} streamerów ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube: `,
+        other: `${s} streamera ma w tym tygodniu streamy ${category} na żywo lub w planach na Twitchu i YouTube: `,
       });
-      const live =
-        liveCount > 0 ? `${liveCount} jest teraz na żywo` : 'Nikt nie jest teraz na żywo';
-      const upcoming =
-        upcomingCount > 0
-          ? pluralForms('pl', upcomingCount, {
-              one: `, a w ciągu 7 dni nadchodzi ${upcomingCount} stream.`,
-              few: `, a w ciągu 7 dni nadchodzą ${upcomingCount} streamy.`,
-              many: `, a w ciągu 7 dni nadchodzi ${upcomingCount} streamów.`,
-              other: `, a w ciągu 7 dni nadchodzi ${upcomingCount} streama.`,
+      const liveText = live.n > 0 ? `${plusCount(live)} teraz na żywo` : 'nikt nie nadaje teraz na żywo';
+      const u = plusCount(upcoming);
+      const upcomingText =
+        upcoming.n > 0
+          ? pluralForms('pl', upcoming.n, {
+              one: `, a w ciągu 7 dni nadchodzi ${u} stream.`,
+              few: `, a w ciągu 7 dni nadchodzą ${u} streamy.`,
+              many: `, a w ciągu 7 dni nadchodzi ${u} streamów.`,
+              other: `, a w ciągu 7 dni nadchodzi ${u} streama.`,
             })
-          : '.';
-      return lead + live + upcoming + superlative;
+          : ', a w ciągu 7 dni nic więcej nie jest zaplanowane.';
+      return lead + liveText + upcomingText;
     },
-    superlative: (category, name, value, isTwitch) =>
-      ` Najwięcej ${isTwitch ? 'obserwujących' : 'subskrybentów'} ma tu ${name} — ${value}.`,
+    nextUpLabel: 'Następnie',
     onPageAria: 'Na tej stronie',
     navLiveNow: 'Na żywo',
     navTopStreamers: 'Top streamerzy',
@@ -613,14 +621,14 @@ export const pl: HubLex = {
     thStreamer: 'Streamer',
     thNextStream: 'Następny stream',
     thFollowers: 'Obserwujący',
-    thHours: 'Godziny / 28 dni',
+    thHours: 'Godziny · 28 dni',
     liveNowCell: 'Na żywo',
     seeFullRanking: (category) =>
       `Zobacz pełny ranking ${category} (top 50) →`,
     whoStreams: (category) => `Streamerzy, którzy streamują ${category}`,
     whenStreamed: (category) => `Kiedy streamuje się ${category}?`,
     heatmapSummary: (category) =>
-      `Większość streamów ${category} leci {peak}{tz} — na podstawie ostatnich 4 tygodni śledzonych streamów.`,
+      `Większość streamów ${category} leci {peak}{tz}, na podstawie ostatnich 4 tygodni śledzonych streamów.`,
     heatmapSummaryEmpty: 'Na podstawie ostatnich 4 tygodni śledzonych streamów.',
     tzLocalSuffix: ' (twój czas)',
     tzUtcSuffix: ' (UTC)',
@@ -639,8 +647,22 @@ export const pl: HubLex = {
       'w soboty',
       'w niedziele',
     ],
-    bestTimeToStream: (category) => `Najlepsza pora na streamowanie ${category}`,
+    barsByDay: 'Według dnia tygodnia',
+    barsByHour: 'Według godziny',
+    statsLead: 'Ostatnie 28 dni:',
+    statHours: (h) => `${h} godz. streamowania`,
+    statStreams: (n, display) =>
+      pluralForms('pl', n, {
+        one: `${display} stream`,
+        few: `${display} streamy`,
+        many: `${display} streamów`,
+        other: `${display} streama`,
+      }),
+    statPeak: (v) => `szczyt ${v} widzów`,
+    busiestTimesHeading: 'Najbardziej ruchliwe pory',
+    leastCompetitionHeading: 'Mniejsza konkurencja',
     trendingBadge: '▲ Na topie',
+    trendingTitle: 'Na topie na Twitchu w tym tygodniu',
     bestTimeIntro: (category) =>
       `Dla streamerów: okna, w których ${category} ma najwięcej widzów na jeden kanał na żywo.`,
     fullHeatmapLink: 'Pełna mapa okazji i analiza →',
@@ -650,7 +672,7 @@ export const pl: HubLex = {
     timesUtcNote: 'Czasy w UTC.',
     quietTitle: (category) => `Teraz nie ma streamów ${category}`,
     quietBody: (category) =>
-      `Żaden ze śledzonych przez nas streamerów ${category} nie jest na żywo ani nie jest oczekiwany w ciągu 7 dni. Harmonogramy i prognozy AI aktualizują się kilka razy dziennie — wpadnij niedługo.`,
+      `Żaden ze śledzonych przez nas streamerów ${category} nie jest na żywo ani nie jest oczekiwany w ciągu 7 dni. Harmonogramy i prognozy AI aktualizują się kilka razy dziennie, więc wpadnij niedługo.`,
     quietMeanwhile: 'W międzyczasie',
     seeWhosLive: 'Zobacz, kto jest teraz na żywo →',
     browseAllGames: 'Przeglądaj wszystkie gry',
@@ -670,13 +692,18 @@ export const pl: HubLex = {
         other: `Jeszcze ${n} prognozy z niskim prawdopodobieństwem`,
       }),
     lowConfAria: (label) => `Prognozy z niskim prawdopodobieństwem: ${label}`,
-    hiddenNotShown: (n) =>
-      pluralForms('pl', n, {
-        one: `Jeszcze ${n} prognoza na ten dzień nie jest pokazana. Pełny harmonogram znajdziesz na stronie streamera.`,
-        few: `Jeszcze ${n} prognozy na ten dzień nie są pokazane. Pełny harmonogram znajdziesz na stronie streamera.`,
-        many: `Jeszcze ${n} prognoz na ten dzień nie jest pokazanych. Pełny harmonogram znajdziesz na stronie streamera.`,
-        other: `Jeszcze ${n} prognozy na ten dzień nie jest pokazane. Pełny harmonogram znajdziesz na stronie streamera.`,
-      }),
+    // "z 22 streamów": genitive after "z" (1 → streama, 2+ → streamów).
+    dayCountShown: (shown, total) =>
+      `${shown} z ${total} ${pluralForms('pl', total, {
+        one: 'streama',
+        few: 'streamów',
+        many: 'streamów',
+        other: 'streamów',
+      })}`,
+    showAllDays: (days) => `Pokaż wszystkie ${days} dni`,
+    showFewerDays: 'Pokaż mniej dni',
+    icsAria: (name) => `Dodaj stream ${name} do kalendarza`,
+    icsTitle: 'Dodaj do kalendarza (.ics)',
     relatedGames: 'Podobne gry',
     relatedGamesAria: 'Podobne gry',
     relatedNote:

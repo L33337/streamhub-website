@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { listConjunction } from '@/lib/i18n-core';
+import { plusCount } from './count';
 import type { HubLex } from './types';
 
 export const hu: HubLex = {
@@ -425,6 +426,7 @@ export const hu: HubLex = {
   gameChips: {
     aria: (category) => `${category} statisztikák`,
     streamersLabel: () => 'streamer',
+    streamersLabel28d: () => 'streamer · 28 nap',
     liveNowLabel: 'most élőben',
     watchingLabel: 'néző',
     streamedLabel: 'stream · 28 nap',
@@ -459,18 +461,14 @@ export const hu: HubLex = {
       const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'hu')} —` : ':';
       return `A legtöbb követővel rendelkező ${category}-streamerek${ogNames} élő státusz és stream-menetrend Twitchen és YouTube-on.`;
     },
-    h1: (category) => `${category}-streamerek — élőben és menetrend`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) =>
-      `${shown} streamernek van élő vagy betervezett ${category}-streamje ezen a héten Twitchen és YouTube-on. ` +
-      (liveCount > 0
-        ? `${liveCount} most is élőben van`
-        : 'Most senki sincs élőben') +
-      (upcomingCount > 0
-        ? `, és ${upcomingCount} stream jön a következő 7 napban.`
-        : '.') +
-      superlative,
-    superlative: (category, name, value, isTwitch) =>
-      ` A legtöbb ${isTwitch ? 'követője' : 'feliratkozója'} itt ${name} csatornájának van: ${value}.`,
+    h1: (category) => `${category}-streamerek: élőben és menetrend`,
+    intro: (shown, category, live, upcoming) =>
+      `${plusCount(shown)} streamernek van élő vagy betervezett ${category}-streamje ezen a héten Twitchen és YouTube-on: ` +
+      (live.n > 0 ? `${plusCount(live)} most élőben` : 'most senki sincs élőben') +
+      (upcoming.n > 0
+        ? `, és ${plusCount(upcoming)} stream jön a következő 7 napban.`
+        : ', és a következő 7 napban nincs más betervezve.'),
+    nextUpLabel: 'Következik',
     onPageAria: 'Ezen az oldalon',
     navLiveNow: 'Most élőben',
     navTopStreamers: 'Top streamerek',
@@ -495,14 +493,14 @@ export const hu: HubLex = {
     thStreamer: 'Streamer',
     thNextStream: 'Következő stream',
     thFollowers: 'Követők',
-    thHours: 'Óra / 28 nap',
+    thHours: 'Óra · 28 nap',
     liveNowCell: 'Most élőben',
     seeFullRanking: (category) =>
       `A teljes ${category}-ranglista (top 50) →`,
     whoStreams: (category) => `Streamerek, akik ${category}-t streamelnek`,
     whenStreamed: (category) => `Mikor streamelik a ${category}-t?`,
     heatmapSummary: (category) =>
-      `A legtöbb ${category}-stream {peak}{tz} fut — az elmúlt 4 hét követett streamjei alapján.`,
+      `A legtöbb ${category}-stream {peak}{tz} fut, az elmúlt 4 hét követett streamjei alapján.`,
     heatmapSummaryEmpty: 'Az elmúlt 4 hét követett streamjei alapján.',
     tzLocalSuffix: ' (a te idődben)',
     tzUtcSuffix: ' (UTC)',
@@ -521,8 +519,16 @@ export const hu: HubLex = {
       'szombatonként',
       'vasárnaponként',
     ],
-    bestTimeToStream: (category) => `A legjobb idő ${category} streameléséhez`,
+    barsByDay: 'A hét napjai szerint',
+    barsByHour: 'Órák szerint',
+    statsLead: 'Elmúlt 28 nap:',
+    statHours: (h) => `${h} óra stream`,
+    statStreams: (_n, display) => `${display} stream`,
+    statPeak: (v) => `csúcs: ${v} néző`,
+    busiestTimesHeading: 'Legforgalmasabb idősávok',
+    leastCompetitionHeading: 'Kisebb verseny',
     trendingBadge: '▲ Felkapott',
+    trendingTitle: 'Ezen a héten felkapott a Twitchen',
     bestTimeIntro: (category) =>
       `Streamereknek: azok az idősávok, amikor a ${category}-ban a legtöbb néző jut egy élő csatornára.`,
     fullHeatmapLink: 'Teljes lehetőség-hőtérkép és elemzés →',
@@ -532,7 +538,7 @@ export const hu: HubLex = {
     timesUtcNote: 'Az idők UTC-ben.',
     quietTitle: (category) => `Most nincs ${category}-stream`,
     quietBody: (category) =>
-      `Az általunk követett ${category}-streamerek közül senki sincs élőben, és a következő 7 napban sem várható. A menetrendek és AI-előrejelzések naponta többször frissülnek — nézz vissza hamarosan.`,
+      `Az általunk követett ${category}-streamerek közül senki sincs élőben, és a következő 7 napban sem várható. A menetrendek és AI-előrejelzések naponta többször frissülnek, úgyhogy nézz vissza hamarosan.`,
     quietMeanwhile: 'Addig is',
     seeWhosLive: 'Nézd meg, ki van most élőben →',
     browseAllGames: 'Böngéssz az összes játék között',
@@ -547,8 +553,11 @@ export const hu: HubLex = {
     moreLowConfidence: (n) =>
       `Még ${n} előrejelzés alacsony valószínűséggel`,
     lowConfAria: (label) => `Alacsony valószínűségű előrejelzések: ${label}`,
-    hiddenNotShown: (n) =>
-      `Még ${n} előrejelzés nem látható ezen a napon. A teljes menetrendet a streamer oldalán találod.`,
+    dayCountShown: (shown, total) => `${total} streamből ${shown}`,
+    showAllDays: (days) => `Mind a ${days} nap megjelenítése`,
+    showFewerDays: 'Kevesebb nap megjelenítése',
+    icsAria: (name) => `${name} streamjének hozzáadása a naptáradhoz`,
+    icsTitle: 'Hozzáadás a naptárhoz (.ics)',
     relatedGames: 'Hasonló játékok',
     relatedGamesAria: 'Hasonló játékok',
     relatedNote:

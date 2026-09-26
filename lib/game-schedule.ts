@@ -76,6 +76,66 @@ export function splitCollapsibleSlots(slots: PublicStreamSlot[]): {
 }
 
 /**
+ * Full SlotCards per day on the game hub (UX round 2026-09-24). A full card is
+ * ~200px tall on a phone; at 12 per day a 7-day week was 14,000px of cards.
+ * The rest of the day's high/medium predictions render as compact rows.
+ */
+export const FULL_CARDS_PER_DAY = 4;
+
+/** Rendered days that stay open when the week collapses (normally today + tomorrow). */
+export const OPEN_SCHEDULE_DAYS = 2;
+
+/**
+ * Splits a day into what renders as a full card, a compact row, or a
+ * collapsed low-confidence row.
+ *
+ * - `full`: every cancelled slot (their greyed card carries meaning, and they
+ *   do not count against the cap) plus the first `fullCap` non-cancelled
+ *   high/medium predictions, in input order (chronological).
+ * - `compact`: the remaining high/medium predictions.
+ * - `low`: exactly `splitCollapsibleSlots`' low bucket.
+ *
+ * Every slot lands in exactly one bucket, and each bucket keeps input order.
+ */
+export function splitDayForRendering(
+  slots: PublicStreamSlot[],
+  fullCap: number = FULL_CARDS_PER_DAY,
+): { full: PublicStreamSlot[]; compact: PublicStreamSlot[]; low: PublicStreamSlot[] } {
+  const { full: candidates, low } = splitCollapsibleSlots(slots);
+  const full: PublicStreamSlot[] = [];
+  const compact: PublicStreamSlot[] = [];
+  let used = 0;
+  for (const slot of candidates) {
+    if (slot.slot_kind === 'cancelled') {
+      full.push(slot);
+    } else if (used < fullCap) {
+      full.push(slot);
+      used++;
+    } else {
+      compact.push(slot);
+    }
+  }
+  return { full, compact, low };
+}
+
+/**
+ * Day keys that render but sit past the first `openCount` RENDERED days, in
+ * `days` order. Those days start collapsed. Empty set = nothing to collapse
+ * (fewer than openCount + 1 rendered days), and the page skips the wrapper.
+ *
+ * Rendered days, not calendar days: a category whose next stream is on day 3
+ * would otherwise open on an empty schedule with nothing but a button.
+ */
+export function collapsedDayKeys(
+  days: readonly string[],
+  grouped: ReadonlyMap<string, readonly unknown[]>,
+  openCount: number = OPEN_SCHEDULE_DAYS,
+): Set<string> {
+  const rendered = days.filter((d) => (grouped.get(d)?.length ?? 0) > 0);
+  return new Set(rendered.slice(openCount));
+}
+
+/**
  * .ics export eligibility — mirrors the Program page's rule: only genuinely
  * upcoming slots, never cancelled ones (exporting "no stream expected" as a
  * calendar event would be nonsense).

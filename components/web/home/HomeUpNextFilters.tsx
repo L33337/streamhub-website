@@ -413,7 +413,9 @@ export function HomeUpNextFilters({
             data-home-deferred=""
             className="relative"
           >
-            <SlotCard slot={slot} language={locale} />
+            {/* reserveTopRight like the server-rendered cards in HomeUpNext:
+                the bell overlays the status line otherwise. */}
+            <SlotCard slot={slot} language={locale} reserveTopRight />
             <SlotBellButton
               ariaLabel={strings.bellAriaPattern.replace(
                 '{name}',

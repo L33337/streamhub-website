@@ -43,7 +43,7 @@ describe('getStatusText — English default (bleed guard, byte-identical legacy 
       start_time: '2026-07-11T10:00:00Z', // live for 2 hours
       duration_minutes: 240, // ends in 2 hours
     });
-    expect(getStatusText(slot, true)).toBe('Live since 2 hours · Ends in ~2h');
+    expect(getStatusText(slot, true)).toBe('Live for 2 hours · Ends in ~2h');
   });
 
   it('always-on live slot', () => {
@@ -52,7 +52,7 @@ describe('getStatusText — English default (bleed guard, byte-identical legacy 
       is_always_on: true,
       start_time: '2026-07-11T10:00:00Z',
     });
-    expect(getStatusText(slot, true)).toBe('Live since 2 hours');
+    expect(getStatusText(slot, true)).toBe('Live for 2 hours');
   });
 
   it('upcoming slot without streamer timezone (server snapshot)', () => {
@@ -166,7 +166,7 @@ describe('getStatusText — localized', () => {
     const text = getStatusText(slot, true, 'de');
     expect(text).toContain('2 Stunden');
     expect(text).toContain('~2h');
-    expect(text).not.toContain('Live since');
+    expect(text).not.toContain('Live for');
   });
 
   it('Japanese and Russian offline states are localized', () => {

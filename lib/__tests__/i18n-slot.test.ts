@@ -78,7 +78,8 @@ describe('SLOT_STRINGS lexica', () => {
 
   it('keeps the English strings byte-identical to the legacy hardcoded copy', () => {
     const L = SLOT_STRINGS.en;
-    expect(L.statusLiveSince('2 hours')).toBe('Live since 2 hours');
+    // Game-hub UX round 2026-09-24: "Live since 2 hours" was ungrammatical.
+    expect(L.statusLiveSince('2 hours')).toBe('Live for 2 hours');
     expect(L.statusEndsIn('~2h')).toBe('Ends in ~2h');
     expect(L.statusAround('10pm your time · 12am CEST')).toBe(
       'Around 10pm your time · 12am CEST',
@@ -110,7 +111,8 @@ describe('SLOT_STRINGS lexica', () => {
     expect(L.gameLiveBadge(3)).toBe('3 live');
     expect(L.gameStreamerCount(1)).toBe('1 streamer');
     expect(L.gameStreamerCount(12)).toBe('12 streamers');
-    expect(L.gameHoursShort('1.2K')).toBe('1.2Kh / 28d');
+    // Separator unified with the other 11 languages ("·"), 2026-09-24.
+    expect(L.gameHoursShort('1.2K')).toBe('1.2Kh · 28d');
     expect(L.gameWatchingNow('16.3K')).toBe('16.3K watching now');
     expect(L.gameTrendTitle).toBe('Week-over-week change in active streamers');
   });

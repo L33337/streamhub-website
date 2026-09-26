@@ -30,7 +30,8 @@ import { hubLexFor } from '@/lib/i18n-hub';
 import { dedupeGamesBySlug, gameSlug } from '@/lib/game-slug';
 import { resolveGameBySlug } from '@/lib/server/games';
 import { isVideoGameCategory } from '@/lib/game-categories';
-import { groupSlotsByUtcDate, utcDateLabel } from '@/lib/format/time';
+import { groupSlotsByUtcDate, pickNextRealSlot, utcDateLabel } from '@/lib/format/time';
+import { plusCount, type Count } from '@/lib/i18n/hub/count';
 import { formatCompactNumber } from '@/lib/format/number';
 import {
   buildGameRankingRows,
@@ -46,8 +47,9 @@ import { BestSlotChips } from '@/components/web/games/BestSlotChips';
 import { FollowGameButton } from '@/components/web/games/FollowGameButton';
 import { GameDaySection } from '@/components/web/games/GameDaySection';
 import { ScheduleFilters } from '@/components/web/games/ScheduleFilters';
-import { capDaySlots } from '@/lib/game-schedule';
+import { capDaySlots, collapsedDayKeys } from '@/lib/game-schedule';
 import { DayNavBar } from '@/components/web/DayNavBar';
+import { CollapsibleSchedule } from '@/components/web/CollapsibleSchedule';
 import { toDayCounts } from '@/lib/day-counts';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
 import { InitialsAvatar } from '@/components/web/InitialsAvatar';
@@ -95,6 +97,11 @@ interface GamePageData {
   game: PublicGame | null;
   liveSlots: PublicStreamSlot[];
   upcomingSlots: PublicStreamSlot[];
+  // UX round 2026-09-24: the schedule calls are capped (live 100, upcoming
+  // 200) and the API says `has_more` when the cap was hit. Counts printed from
+  // a capped list get a "+" (lib/i18n/hub/count.ts) instead of posing as totals.
+  liveHasMore: boolean;
+  upcomingHasMore: boolean;
   // Category's streamers ordered by follower_count (from the Partner API's
   // per-category ranking). Feeds the "Most followed" table; empty on API error.
   rankedStreamers: PublicStreamer[];
@@ -125,6 +132,8 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     game: null,
     liveSlots: [],
     upcomingSlots: [],
+    liveHasMore: false,
+    upcomingHasMore: false,
     rankedStreamers: [],
     related: [],
     hourHistogram: null,
@@ -214,6 +223,10 @@ const loadGamePage = cache(async (slug: string): Promise<GamePageData> => {
     game,
     liveSlots: liveCall.status === 'fulfilled' ? liveCall.value.data : [],
     upcomingSlots: upcomingCall.status === 'fulfilled' ? upcomingCall.value.data : [],
+    liveHasMore:
+      liveCall.status === 'fulfilled' && liveCall.value.pagination?.has_more === true,
+    upcomingHasMore:
+      upcomingCall.status === 'fulfilled' && upcomingCall.value.pagination?.has_more === true,
     rankedStreamers: rankedCall.status === 'fulfilled' ? rankedCall.value.data : [],
     related,
     hourHistogram,
@@ -317,6 +330,8 @@ export default async function GamePage({ params }: Props) {
     game,
     liveSlots,
     upcomingSlots,
+    liveHasMore,
+    upcomingHasMore,
     rankedStreamers,
     related,
     hourHistogram,
@@ -364,7 +379,6 @@ export default async function GamePage({ params }: Props) {
   const ranked = rankGameStreamers(rankedStreamers, RANK_DISPLAY_LIMIT);
   const rankedIds = new Set(ranked.map((r) => r.streamer.id));
   const moreStreamers = streamers.filter((s) => !rankedIds.has(s.id));
-  const topStreamer = ranked[0]?.streamer ?? null;
 
   // UX round 2026-07-23: the ranking table reuses the /rankings/game/[slug]
   // view model — live status, earliest next stream and 28d hours per row all
@@ -426,6 +440,22 @@ export default async function GamePage({ params }: Props) {
   const renderedDayKeys = new Set(
     sevenDays.filter((d) => (grouped.get(d)?.length ?? 0) > 0),
   );
+  // UX round 2026-09-24: the first two RENDERED days stay open, the rest of
+  // the week collapses behind one toggle (CollapsibleSchedule, the streamer
+  // page's pattern). Empty set = short week, no wrapper at all.
+  const collapsedDays = collapsedDayKeys(sevenDays, grouped);
+
+  // Hero "Next up": earliest real (non-cancelled) slot of the rendered week,
+  // preferring high/medium. The earliest non-LOW slot of a day is always one of
+  // its full cards (capDaySlots drops LOW first), so the named stream is
+  // guaranteed to be on the page; LOW is only the fallback for a week of LOW.
+  // Its day is the first rendered day, which never collapses.
+  const nextUp =
+    pickNextRealSlot(
+      upcomingSlots.filter((s) => s.confidence !== 'low'),
+      sevenDays,
+    ) ?? pickNextRealSlot(upcomingSlots, sevenDays);
+  const nextUpDay = nextUp ? nextUp.start_time.slice(0, 10) : null;
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: Lex.crumbs.home, url: SITE_URL },
@@ -464,20 +494,28 @@ export default async function GamePage({ params }: Props) {
   // Headline numbers are derived from exactly what's rendered below (the live +
   // upcoming streamers/slots), so they always match the list. We deliberately do
   // NOT use the games-endpoint streamer_count here: that counts a 28-day catalog
-  // window, which would overstate how many streamers are actually shown.
-  const shown = streamers.length;
-  // Honest superlative line — derived ONLY from the rendered ranking (its #1),
-  // never fabricated. Omitted entirely when the ranking is empty.
-  const superlative =
-    topStreamer && topStreamer.follower_count != null
-      ? G.superlative(
-          category,
-          topStreamer.name,
-          formatCompactNumber(topStreamer.follower_count, locale),
-          topStreamer.platforms.includes('twitch'),
-        )
-      : '';
-  const intro = G.intro(shown, category, liveCount, upcomingSlots.length, superlative);
+  // window, which the stats chip shows WITH its window label instead.
+  // UX round 2026-09-24: one sentence, and a count from a capped fetch reads
+  // "200+" (the "200 upcoming streams" of every busy category was the limit).
+  const shownCount: Count = { n: streamers.length, more: liveHasMore || upcomingHasMore };
+  const liveCountC: Count = { n: liveCount, more: liveHasMore };
+  const upcomingCountC: Count = { n: upcomingSlots.length, more: upcomingHasMore };
+  const intro = G.intro(shownCount, category, liveCountC, upcomingCountC);
+
+  // 28-day activity line of the "When is X streamed?" section. Each item is
+  // conditional on its nullable field; the line disappears when all are empty.
+  const statItems = [
+    game.hours_28d != null && game.hours_28d > 0
+      ? G.statHours(formatCompactNumber(Math.round(game.hours_28d), locale))
+      : null,
+    game.streams_28d != null && game.streams_28d > 0
+      ? G.statStreams(game.streams_28d, formatCompactNumber(game.streams_28d, locale))
+      : null,
+    game.peak_viewer_28d != null && game.peak_viewer_28d > 0
+      ? G.statPeak(formatCompactNumber(game.peak_viewer_28d, locale))
+      : null,
+  ].filter((s): s is string => s !== null);
+  const hasTimingSection = hourHistogram !== null || bestSlots.length > 0;
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8">
@@ -503,13 +541,13 @@ export default async function GamePage({ params }: Props) {
         / {category}
       </p>
 
-      <div className="mt-3 flex items-start gap-4 sm:gap-6">
+      <div className="mt-3 flex items-start gap-3 sm:gap-6">
         {game.box_art_url && (
-          <div className="w-24 flex-shrink-0 sm:w-32">
+          <div className="w-20 flex-shrink-0 sm:w-32">
             <GameBoxArt
               boxArtUrl={game.box_art_url}
               name={category}
-              sizes="(min-width: 640px) 128px, 96px"
+              sizes="(min-width: 640px) 128px, 80px"
               priority
             />
           </div>
@@ -518,54 +556,45 @@ export default async function GamePage({ params }: Props) {
           {/* One complete lexicon string, never `{category} text` fragments:
               adjacent JSX children render as separate text nodes and the
               leading space of the second one is lost, which shipped
-              "VALORANTstreamers". */}
-          <h1 className="text-pretty text-3xl font-bold text-white md:text-4xl">
+              "VALORANTstreamers".
+              text-2xl + hyphens below sm: next to the box art a 320px phone
+              leaves ~180px, and long words ("harmonogram" in pl) ran out of
+              the column and widened the whole document (2026-09-24). */}
+          <h1 className="text-pretty break-words text-2xl font-bold text-white hyphens-auto sm:text-3xl md:text-4xl">
             {G.h1(category)}
           </h1>
-          <p className="mt-3 max-w-2xl text-text-secondary">{intro}</p>
-          {/* Stats chips — every chip conditional on its (nullable) field. */}
+          {!isQuiet && (
+            <p className="mt-2 max-w-2xl text-sm text-text-secondary sm:mt-3 sm:text-base">
+              {intro}
+            </p>
+          )}
+          {/* Three chips (UX round 2026-09-24): live now, the 28-day catalog
+              size WITH its window, and the trend. Hours / streams / peak moved
+              to the stats line of the "When is X streamed?" section. */}
           <ul className="mt-3 flex flex-wrap gap-2 text-xs" aria-label={C.aria(category)}>
+            {liveCount > 0 && (
+              <li>
+                <a
+                  href="#watching-now"
+                  className="inline-block rounded-full border border-live/40 bg-background-elevated px-2.5 py-1 text-live transition-colors hover:border-live"
+                >
+                  <span className="font-semibold">{plusCount(liveCountC)}</span> {C.liveNowLabel}
+                  {game.live_viewer_total != null && (
+                    <>
+                      {' '}
+                      · <span className="font-semibold">
+                        {formatCompactNumber(game.live_viewer_total, locale)}
+                      </span>{' '}
+                      {C.watchingLabel}
+                    </>
+                  )}
+                </a>
+              </li>
+            )}
             <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
               <span className="font-semibold text-text-primary">{game.streamer_count}</span>{' '}
-              {C.streamersLabel(game.streamer_count)}
+              {C.streamersLabel28d(game.streamer_count)}
             </li>
-            {liveCount > 0 && (
-              <li className="rounded-full border border-live/40 bg-background-elevated px-2.5 py-1 text-live">
-                <span className="font-semibold">{liveCount}</span> {C.liveNowLabel}
-                {game.live_viewer_total != null && (
-                  <>
-                    {' '}
-                    · <span className="font-semibold">
-                      {formatCompactNumber(game.live_viewer_total, locale)}
-                    </span>{' '}
-                    {C.watchingLabel}
-                  </>
-                )}
-              </li>
-            )}
-            {game.hours_28d != null && game.hours_28d > 0 && (
-              <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
-                <span className="font-semibold text-text-primary">
-                  {formatCompactNumber(Math.round(game.hours_28d), locale)}h
-                </span>{' '}
-                {C.streamedLabel}
-              </li>
-            )}
-            {game.streams_28d != null && game.streams_28d > 0 && (
-              <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
-                <span className="font-semibold text-text-primary">{game.streams_28d}</span>{' '}
-                {C.streamsLabel(game.streams_28d)}
-              </li>
-            )}
-            {game.peak_viewer_28d != null && game.peak_viewer_28d > 0 && (
-              <li className="rounded-full border border-border-default bg-background-elevated px-2.5 py-1 text-text-secondary">
-                {C.peakLead}
-                <span className="font-semibold text-text-primary">
-                  {formatCompactNumber(game.peak_viewer_28d, locale)}
-                </span>
-                {C.peakTail}
-              </li>
-            )}
             {game.trend_delta_percent != null && (
               <li
                 className={`rounded-full border border-border-default bg-background-elevated px-2.5 py-1 font-semibold ${
@@ -586,6 +615,47 @@ export default async function GamePage({ params }: Props) {
         </div>
       </div>
 
+      {/* "Next up" (UX round 2026-09-24): the only above-the-fold pointer into
+          the schedule. Rendered whenever the week has a real slot, also while
+          streams are live ("now" is the live chip's job, "next" is this one).
+          Never carries data-game-live-id: the live filter island owns those
+          nodes. The target day is the first rendered one, which is never
+          collapsed; CollapsibleSchedule's document-level handler covers it
+          anyway. */}
+      {nextUp && nextUpDay && (
+        <a
+          href={renderedDayKeys.has(nextUpDay) ? `#day-${nextUpDay}` : '#schedule'}
+          data-next-up
+          className="mt-4 flex min-w-0 items-center gap-2.5 rounded-xl border border-border-default bg-background-elevated px-3 py-2 text-sm transition-colors hover:border-accent-cyan/60 sm:inline-flex sm:max-w-full"
+        >
+          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+            {G.nextUpLabel}
+          </span>
+          {nextUp.avatar_url ? (
+            <Image
+              src={sizedAvatarUrl(nextUp.avatar_url, 24)}
+              alt=""
+              width={24}
+              height={24}
+              unoptimized
+              className="shrink-0 rounded-full border border-border-default"
+            />
+          ) : (
+            <InitialsAvatar name={nextUp.streamer_name} size={24} className="shrink-0" />
+          )}
+          <span className="min-w-0 truncate font-semibold text-text-primary">
+            {nextUp.streamer_name}
+          </span>
+          <span className="ms-auto shrink-0 whitespace-nowrap text-xs tabular-nums text-text-secondary sm:ms-0">
+            <NextStreamTime
+              startTime={nextUp.start_time}
+              isPredicted={nextUp.is_predicted}
+              language={locale}
+            />
+          </span>
+        </a>
+      )}
+
       {(liveSlots.length > 0 ||
         ranked.length > 0 ||
         hasSchedule ||
@@ -601,7 +671,7 @@ export default async function GamePage({ params }: Props) {
               {G.navTopStreamers}
             </a>
           )}
-          {hourHistogram && (
+          {hasTimingSection && (
             <a href="#stream-times" className="rounded-full border border-border-default bg-background-elevated px-3 py-1 text-text-secondary transition-colors hover:border-accent-cyan/60 hover:text-accent-cyan">
               {G.navBestTimes}
             </a>
@@ -694,25 +764,29 @@ export default async function GamePage({ params }: Props) {
               absolute ::before scrolls with the content when it sits on the
               overflow element, cutting its right edge through the table
               mid-scroll (see RankingRowsTable). */}
+          {/* Responsive (UX round 2026-09-24): below sm the "Next stream"
+              column folds into a second line of the streamer cell, so the
+              Followers column (the point of the table) fits a 320px phone.
+              One row map, no duplicate list markup, JSON-LD untouched. */}
           <div className="mt-4 rounded-xl bg-background-elevated p-1 gradient-border">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <caption className="sr-only">{G.tableCaption(category)}</caption>
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wider text-text-muted">
-                    <th scope="col" className="px-3 py-2 font-semibold">
+                    <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
                       {G.thRank}
                     </th>
-                    <th scope="col" className="px-3 py-2 font-semibold">
+                    <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
                       {G.thStreamer}
                     </th>
-                    <th scope="col" className="px-3 py-2 font-semibold">
+                    <th scope="col" className="hidden whitespace-nowrap px-3 py-2 font-semibold sm:table-cell">
                       {G.thNextStream}
                     </th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">
+                    <th scope="col" className="whitespace-nowrap px-2 py-2 text-right font-semibold sm:px-3">
                       {G.thFollowers}
                     </th>
-                    <th scope="col" className="hidden px-3 py-2 text-right font-semibold sm:table-cell">
+                    <th scope="col" className="hidden whitespace-nowrap px-3 py-2 text-right font-semibold sm:table-cell">
                       {G.thHours}
                     </th>
                   </tr>
@@ -737,15 +811,31 @@ export default async function GamePage({ params }: Props) {
                         )}
                       </span>
                     ) : null;
+                    // Built once, rendered twice: as its own column from sm
+                    // up, as the streamer cell's second line below sm.
+                    const nextCell = row.isLive ? (
+                      <a href="#watching-now" className="font-semibold text-live hover:underline">
+                        {G.liveNowCell}
+                      </a>
+                    ) : nextDay && renderedDayKeys.has(nextDay) ? (
+                      <a href={`#day-${nextDay}`} className="hover:text-accent-cyan">
+                        {nextLabel}
+                      </a>
+                    ) : (
+                      nextLabel ?? '—'
+                    );
                     return (
                       <tr key={row.id} className="border-t border-divider">
-                        <td className="px-3 py-2 font-bold tabular-nums text-text-muted">
+                        <td className="px-2 py-2 align-top font-bold tabular-nums text-text-muted sm:px-3 sm:align-middle">
                           {row.rank}
                         </td>
-                        <th scope="row" className="px-3 py-2 text-left font-medium">
+                        {/* Phones only: w-full + max-w-0 lets the cell take the
+                            free width and truncate the name instead of widening
+                            the table. From sm up the columns size as before. */}
+                        <th scope="row" className="px-2 py-2 text-left font-medium max-sm:w-full max-sm:max-w-0 sm:px-3">
                           <Link
                             href={localeHref(locale, `/streamer/${encodeURIComponent(row.id)}`)}
-                            className="group flex items-center gap-3"
+                            className="group flex min-w-0 items-center gap-3"
                           >
                             {row.avatarUrl ? (
                               <Image
@@ -777,29 +867,23 @@ export default async function GamePage({ params }: Props) {
                               </span>
                             </span>
                           </Link>
+                          {/* Sibling of the link, not inside it: nextCell can
+                              itself be a link, and nested anchors are invalid.
+                              ps-12 = 36px avatar + 12px gap. */}
+                          <div className="mt-1.5 ps-12 text-xs font-normal text-text-secondary sm:hidden">
+                            {nextCell}
+                          </div>
                         </th>
-                        <td className="whitespace-nowrap px-3 py-2 text-xs text-text-secondary">
-                          {row.isLive ? (
-                            <a
-                              href="#watching-now"
-                              className="font-semibold text-live hover:underline"
-                            >
-                              {G.liveNowCell}
-                            </a>
-                          ) : nextDay && renderedDayKeys.has(nextDay) ? (
-                            <a href={`#day-${nextDay}`} className="hover:text-accent-cyan">
-                              {nextLabel}
-                            </a>
-                          ) : (
-                            nextLabel ?? '—'
-                          )}
+                        <td className="hidden whitespace-nowrap px-3 py-2 text-xs text-text-secondary sm:table-cell">
+                          {nextCell}
                         </td>
-                        <td className="px-3 py-2 text-right font-semibold tabular-nums text-accent-cyan">
+                        <td className="px-2 py-2 text-right align-top font-semibold tabular-nums text-accent-cyan sm:px-3 sm:align-middle">
                           {formatCompactNumber(row.followerCount, locale)}
                         </td>
+                        {/* Bare number: the header "Hours · 28d" carries the unit. */}
                         <td className="hidden px-3 py-2 text-right tabular-nums text-text-secondary sm:table-cell">
                           {row.hours28d != null && row.hours28d > 0
-                            ? `${formatCompactNumber(Math.round(row.hours28d), locale)}h`
+                            ? formatCompactNumber(Math.round(row.hours28d), locale)
                             : '—'}
                         </td>
                       </tr>
@@ -867,7 +951,13 @@ export default async function GamePage({ params }: Props) {
         </section>
       )}
 
-      {hourHistogram && (
+      {/* One section since the UX round of 2026-09-24. "When is it streamed"
+          (supply, for viewers) and "best time to stream" (opportunity, for
+          streamers) used to be two neighbouring sections that seemed to answer
+          the same question twice with different days. Now they are two
+          labelled parts of one answer. #best-time is gone; the nav chip
+          points here. */}
+      {hasTimingSection && (
         <section
           aria-labelledby="stream-times-heading"
           id="stream-times"
@@ -876,65 +966,76 @@ export default async function GamePage({ params }: Props) {
           <h2 id="stream-times-heading" className="text-xl font-bold text-white">
             {G.whenStreamed(category)}
           </h2>
-          <StreamTimesHeatmap
-            category={category}
-            histogram={hourHistogram}
-            labels={{
-              summary: G.heatmapSummary(category),
-              summaryEmpty: G.heatmapSummaryEmpty,
-              tzLocal: G.tzLocalSuffix,
-              tzUtc: G.tzUtcSuffix,
-              aria: G.heatmapAria(category),
-              ariaWithPeak: G.heatmapAriaWithPeak(category),
-              tooltip: G.heatmapTooltip,
-              legendLess: G.legendLess,
-              legendMore: G.legendMore,
-              dayShort,
-              dayNames: G.heatmapDayNames,
-            }}
-          />
-        </section>
-      )}
-
-      {bestSlots.length > 0 && (
-        <section
-          aria-labelledby="best-time-heading"
-          id="best-time"
-          className="mt-8 scroll-mt-[calc(var(--header-height)+1.5rem)]"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 id="best-time-heading" className="text-xl font-bold text-white">
-              {G.bestTimeToStream(category)}
-            </h2>
-            {timing?.is_trending === true && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-accent-pink/40 bg-background-elevated px-2.5 py-0.5 text-xs font-semibold text-accent-pink">
-                {G.trendingBadge}
-              </span>
-            )}
-          </div>
-          <p className="mt-1 max-w-2xl text-sm text-text-secondary">
-            {G.bestTimeIntro(category)}
-          </p>
-          <div className="mt-3">
-            <BestSlotChips
-              slots={bestSlots}
-              labels={{
-                aria: G.bestSlotsAria,
-                perChannel: G.viewersPerChannel,
-                localNote: G.timesLocalNote,
-                utcNote: G.timesUtcNote,
-                dayNames: dayLong,
-              }}
-            />
-          </div>
-          <p className="mt-3 text-sm">
-            <Link
-              href={localeHref(locale, `/game/${slug}/best-time`)}
-              className="text-accent-cyan hover:text-text-primary"
-            >
-              {G.fullHeatmapLink}
-            </Link>
-          </p>
+          {statItems.length > 0 && (
+            <p className="mt-1 text-sm text-text-secondary">
+              <span className="text-text-muted">{G.statsLead}</span> {statItems.join(' · ')}
+            </p>
+          )}
+          {hourHistogram && (
+            <div className="mt-5">
+              <h3 className="text-base font-semibold text-white">{G.busiestTimesHeading}</h3>
+              <StreamTimesHeatmap
+                category={category}
+                histogram={hourHistogram}
+                labels={{
+                  summary: G.heatmapSummary(category),
+                  summaryEmpty: G.heatmapSummaryEmpty,
+                  tzLocal: G.tzLocalSuffix,
+                  tzUtc: G.tzUtcSuffix,
+                  aria: G.heatmapAria(category),
+                  ariaWithPeak: G.heatmapAriaWithPeak(category),
+                  tooltip: G.heatmapTooltip,
+                  legendLess: G.legendLess,
+                  legendMore: G.legendMore,
+                  dayShort,
+                  dayNames: G.heatmapDayNames,
+                  barsByDay: G.barsByDay,
+                  barsByHour: G.barsByHour,
+                }}
+              />
+            </div>
+          )}
+          {bestSlots.length > 0 && (
+            <div id="best-time" className="mt-6 scroll-mt-[calc(var(--header-height)+1.5rem)]">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold text-white">
+                  {G.leastCompetitionHeading}
+                </h3>
+                {timing?.is_trending === true && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-accent-pink/40 bg-background-elevated px-2.5 py-0.5 text-xs font-semibold text-accent-pink"
+                    title={G.trendingTitle}
+                  >
+                    <span aria-hidden="true">{G.trendingBadge}</span>
+                    <span className="sr-only">{G.trendingTitle}</span>
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+                {G.bestTimeIntro(category)}
+              </p>
+              <div className="mt-3">
+                <BestSlotChips
+                  slots={bestSlots}
+                  labels={{
+                    aria: G.bestSlotsAria,
+                    perChannel: G.viewersPerChannel,
+                    localNote: G.timesLocalNote,
+                    utcNote: G.timesUtcNote,
+                    dayNames: dayLong,
+                  }}
+                />
+              </div>
+              <p className="mt-3 text-sm">
+                <Link
+                  href={localeHref(locale, `/game/${slug}/best-time`)}
+                  className="text-accent-cyan hover:text-text-primary"
+                >
+                  {G.fullHeatmapLink}
+                </Link>
+              </p>
+            </div>
+          )}
         </section>
       )}
 
@@ -1008,29 +1109,54 @@ export default async function GamePage({ params }: Props) {
               hideLowConfidence: G.hideLowConfidence,
             }}
           >
-            <DayNavBar
-              days={sevenDays}
-              counts={toDayCounts(sevenDays, grouped)}
-              todayUtc={todayUtc}
-              language={locale}
-            />
-            {sevenDays.map((dateKey) => {
-              const daySlots = grouped.get(dateKey) ?? [];
-              if (daySlots.length === 0) return null;
-              // Page-weight cap — see MAX_SLOTS_PER_DAY. Applied per day so a
-              // busy Monday cannot push Saturday and Sunday out of the page.
-              const { slots, hidden } = capDaySlots(daySlots);
-              return (
-                <GameDaySection
-                  key={dateKey}
-                  dateKey={dateKey}
-                  label={utcDateLabel(dateKey, todayUtc, locale)}
-                  slots={slots}
-                  hiddenCount={hidden}
-                  language={locale}
-                />
+            {(() => {
+              // Nesting order is load-bearing (UX round 2026-09-24):
+              // ScheduleFilters (outer, owns the `hidden` attributes) >
+              // CollapsibleSchedule (inner, owns data-schedule-collapsed) >
+              // day nav + day sections. Both regimes end in display:none and
+              // never cancel each other; an active filter reveals the collapsed
+              // days via globals.css. The whole tree stays server-rendered
+              // `children`: nothing of the schedule enters the flight payload.
+              const tree = (
+                <>
+                  <DayNavBar
+                    days={sevenDays}
+                    counts={toDayCounts(sevenDays, grouped)}
+                    todayUtc={todayUtc}
+                    language={locale}
+                    dense
+                  />
+                  {sevenDays.map((dateKey) => {
+                    const daySlots = grouped.get(dateKey) ?? [];
+                    if (daySlots.length === 0) return null;
+                    // Page-weight cap — see MAX_SLOTS_PER_DAY. Applied per day so a
+                    // busy Monday cannot push Saturday and Sunday out of the page.
+                    const { slots, hidden } = capDaySlots(daySlots);
+                    return (
+                      <GameDaySection
+                        key={dateKey}
+                        dateKey={dateKey}
+                        label={utcDateLabel(dateKey, todayUtc, locale)}
+                        slots={slots}
+                        hiddenCount={hidden}
+                        collapsed={collapsedDays.has(dateKey)}
+                        language={locale}
+                      />
+                    );
+                  })}
+                </>
               );
-            })}
+              return collapsedDays.size > 0 ? (
+                <CollapsibleSchedule
+                  moreLabel={G.showAllDays(renderedDayKeys.size)}
+                  lessLabel={G.showFewerDays}
+                >
+                  {tree}
+                </CollapsibleSchedule>
+              ) : (
+                tree
+              );
+            })()}
           </ScheduleFilters>
         </section>
       )}

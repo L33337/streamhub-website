@@ -1,4 +1,5 @@
 import { listConjunction, pluralForms } from '@/lib/i18n-core';
+import { plusCount } from './count';
 import type { HubLex } from './types';
 
 /** "3 ستريمرز يبثون" — counted streamers, Arabic plural categories. */
@@ -495,6 +496,15 @@ export const ar: HubLex = {
         many: 'ستريمر',
         other: 'ستريمر',
       }),
+    streamersLabel28d: (n) =>
+      pluralForms('ar', n, {
+        zero: 'ستريمر · 28 يومًا',
+        one: 'ستريمر · 28 يومًا',
+        two: 'ستريمر · 28 يومًا',
+        few: 'ستريمرز · 28 يومًا',
+        many: 'ستريمر · 28 يومًا',
+        other: 'ستريمر · 28 يومًا',
+      }),
     liveNowLabel: 'يبثون الآن',
     watchingLabel: 'يشاهدون',
     streamedLabel: 'من البث · 28 يومًا',
@@ -537,32 +547,33 @@ export const ar: HubLex = {
       const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'ar')} —` : ':';
       return `ستريمرز ${category} الأكثر متابعة${ogNames} حالة البث ومواعيد البثوث على Twitch وYouTube.`;
     },
-    h1: (category) => `ستريمرز ${category} — البث المباشر والمواعيد`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) => {
-      const lead = pluralForms('ar', shown, {
-        zero: `لا يوجد ستريمرز لديهم بثوث ${category} هذا الأسبوع على Twitch وYouTube. `,
-        one: `ستريمر واحد لديه بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
-        two: `ستريمران لديهما بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
-        few: `${shown} ستريمرز لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
-        many: `${shown} ستريمر لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
-        other: `${shown} ستريمر لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube. `,
+    h1: (category) => `ستريمرز ${category}: البث المباشر والمواعيد`,
+    intro: (shown, category, live, upcoming) => {
+      const s = plusCount(shown);
+      const lead = pluralForms('ar', shown.n, {
+        zero: `لا يوجد ستريمرز لديهم بثوث ${category} هذا الأسبوع على Twitch وYouTube: `,
+        one: `ستريمر واحد لديه بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube: `,
+        two: `ستريمران لديهما بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube: `,
+        few: `${s} ستريمرز لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube: `,
+        many: `${s} ستريمر لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube: `,
+        other: `${s} ستريمر لديهم بثوث ${category} مباشرة أو مجدولة هذا الأسبوع على Twitch وYouTube: `,
       });
-      const live = liveCount > 0 ? `${liveCount} يبثون الآن` : 'لا أحد يبث الآن';
-      const upcoming =
-        upcomingCount > 0
-          ? pluralForms('ar', upcomingCount, {
+      const liveText = live.n > 0 ? `${plusCount(live)} يبثون الآن` : 'لا أحد يبث الآن';
+      const u = plusCount(upcoming);
+      const upcomingText =
+        upcoming.n > 0
+          ? pluralForms('ar', upcoming.n, {
               zero: '.',
               one: `، مع بث قادم واحد خلال الأيام السبعة المقبلة.`,
               two: `، مع بثين قادمين خلال الأيام السبعة المقبلة.`,
-              few: `، مع ${upcomingCount} بثوث قادمة خلال الأيام السبعة المقبلة.`,
-              many: `، مع ${upcomingCount} بثًا قادمًا خلال الأيام السبعة المقبلة.`,
-              other: `، مع ${upcomingCount} بث قادم خلال الأيام السبعة المقبلة.`,
+              few: `، مع ${u} بثوث قادمة خلال الأيام السبعة المقبلة.`,
+              many: `، مع ${u} بثًا قادمًا خلال الأيام السبعة المقبلة.`,
+              other: `، مع ${u} بث قادم خلال الأيام السبعة المقبلة.`,
             })
-          : '.';
-      return lead + live + upcoming + superlative;
+          : '، ولا شيء آخر مجدول خلال الأيام السبعة المقبلة.';
+      return lead + liveText + upcomingText;
     },
-    superlative: (category, name, value, isTwitch) =>
-      ` صاحب أكبر عدد من ${isTwitch ? 'المتابعين' : 'المشتركين'} هنا هو ${name} بـ${value}.`,
+    nextUpLabel: 'التالي',
     onPageAria: 'في هذه الصفحة',
     navLiveNow: 'مباشر الآن',
     navTopStreamers: 'أفضل الستريمرز',
@@ -593,13 +604,13 @@ export const ar: HubLex = {
     thStreamer: 'الستريمر',
     thNextStream: 'البث التالي',
     thFollowers: 'المتابعون',
-    thHours: 'الساعات / 28 يومًا',
+    thHours: 'الساعات · 28 يومًا',
     liveNowCell: 'مباشر الآن',
     seeFullRanking: (category) => `عرض تصنيف ${category} الكامل (أفضل 50) ←`,
     whoStreams: (category) => `ستريمرز يبثون ${category}`,
     whenStreamed: (category) => `متى يُبث ${category}؟`,
     heatmapSummary: (category) =>
-      `معظم بثوث ${category} تجري {peak}{tz} — استنادًا إلى آخر 4 أسابيع من البثوث المتتبَّعة.`,
+      `معظم بثوث ${category} تجري {peak}{tz}، استنادًا إلى آخر 4 أسابيع من البثوث المتتبَّعة.`,
     heatmapSummaryEmpty: 'استنادًا إلى آخر 4 أسابيع من البثوث المتتبَّعة.',
     tzLocalSuffix: ' (بتوقيتك)',
     tzUtcSuffix: ' (UTC)',
@@ -618,8 +629,24 @@ export const ar: HubLex = {
       'أيام السبت',
       'أيام الأحد',
     ],
-    bestTimeToStream: (category) => `أفضل وقت لبث ${category}`,
+    barsByDay: 'حسب يوم الأسبوع',
+    barsByHour: 'حسب ساعة اليوم',
+    statsLead: 'آخر 28 يومًا:',
+    statHours: (h) => `${h} ساعة من البث`,
+    statStreams: (n, display) =>
+      pluralForms('ar', n, {
+        zero: `${display} بث`,
+        one: `${display} بث`,
+        two: `${display} بث`,
+        few: `${display} بثوث`,
+        many: `${display} بثًا`,
+        other: `${display} بث`,
+      }),
+    statPeak: (v) => `ذروة ${v} مشاهد`,
+    busiestTimesHeading: 'أوقات الذروة',
+    leastCompetitionHeading: 'منافسة أقل',
     trendingBadge: '▲ رائج',
+    trendingTitle: 'رائج على Twitch هذا الأسبوع',
     bestTimeIntro: (category) =>
       `للستريمرز: النوافذ التي يكون فيها عدد مشاهدي ${category} الأعلى لكل قناة مباشرة.`,
     fullHeatmapLink: 'الخريطة الحرارية الكاملة للفرص والتحليل ←',
@@ -629,7 +656,7 @@ export const ar: HubLex = {
     timesUtcNote: 'الأوقات بتوقيت UTC.',
     quietTitle: (category) => `لا بثوث ${category} حاليًا`,
     quietBody: (category) =>
-      `لا أحد من ستريمرز ${category} الذين نتتبعهم يبث الآن أو متوقع خلال الأيام السبعة المقبلة. تُحدَّث المواعيد وتوقعات الذكاء الاصطناعي عدة مرات يوميًا — عُد قريبًا.`,
+      `لا أحد من ستريمرز ${category} الذين نتتبعهم يبث الآن أو متوقع خلال الأيام السبعة المقبلة. تُحدَّث المواعيد وتوقعات الذكاء الاصطناعي عدة مرات يوميًا، لذا عُد قريبًا.`,
     quietMeanwhile: 'في هذه الأثناء',
     seeWhosLive: 'شاهد من يبث الآن ←',
     browseAllGames: 'تصفح كل الألعاب',
@@ -651,15 +678,19 @@ export const ar: HubLex = {
         other: `${n} توقع إضافي منخفض الاحتمالية`,
       }),
     lowConfAria: (label) => `توقعات منخفضة الاحتمالية: ${label}`,
-    hiddenNotShown: (n) =>
-      pluralForms('ar', n, {
-        zero: 'كل توقعات هذا اليوم معروضة.',
-        one: 'توقع إضافي واحد لهذا اليوم غير معروض. افتح صفحة الستريمر لمواعيده الكاملة.',
-        two: 'توقعان إضافيان لهذا اليوم غير معروضين. افتح صفحة الستريمر لمواعيده الكاملة.',
-        few: `${n} توقعات إضافية لهذا اليوم غير معروضة. افتح صفحة الستريمر لمواعيده الكاملة.`,
-        many: `${n} توقعًا إضافيًا لهذا اليوم غير معروض. افتح صفحة الستريمر لمواعيده الكاملة.`,
-        other: `${n} توقع إضافي لهذا اليوم غير معروض. افتح صفحة الستريمر لمواعيده الكاملة.`,
-      }),
+    dayCountShown: (shown, total) =>
+      `${shown} من ${total} ${pluralForms('ar', total, {
+        zero: 'بث',
+        one: 'بث',
+        two: 'بث',
+        few: 'بثوث',
+        many: 'بثًا',
+        other: 'بث',
+      })}`,
+    showAllDays: (days) => `عرض كل الأيام (${days})`,
+    showFewerDays: 'عرض أيام أقل',
+    icsAria: (name) => `أضف بث ${name} إلى تقويمك`,
+    icsTitle: 'أضف إلى التقويم (.ics)',
     relatedGames: 'ألعاب مشابهة',
     relatedGamesAria: 'ألعاب مشابهة',
     relatedNote: 'ألعاب تتقاطع قوائم ستريمرزها خلال آخر 28 يومًا.',

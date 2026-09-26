@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { PublicStreamSlot } from '@/lib/server/partner-api';
 import {
   capDaySlots,
+  collapsedDayKeys,
+  FULL_CARDS_PER_DAY,
   isIcsExportable,
   MAX_SLOTS_PER_DAY,
   publicSlotToIcsSlot,
   schedulePlatforms,
   splitCollapsibleSlots,
+  splitDayForRendering,
 } from '@/lib/game-schedule';
 
 function slot(overrides: Partial<PublicStreamSlot> = {}): PublicStreamSlot {
@@ -159,7 +162,7 @@ describe('capDaySlots', () => {
     expect(out.hidden).toBe(18);
   });
 
-  it('keeps kept + hidden equal to the input, so the heading stays honest', () => {
+  it('keeps kept + hidden equal to the input, so the heading stays honest (cap)', () => {
     for (const size of [0, 1, 11, 12, 13, 40, 200]) {
       const slots = Array.from({ length: size }, (_, i) =>
         slot({ id: `s${i}`, confidence: i % 3 === 0 ? 'high' : 'low' }),
@@ -168,5 +171,101 @@ describe('capDaySlots', () => {
       expect(out.slots.length + out.hidden).toBe(size);
       expect(out.slots.length).toBeLessThanOrEqual(MAX_SLOTS_PER_DAY);
     }
+  });
+});
+
+// Game-hub UX round (2026-09-24): full cards per day are capped, the rest of
+// the high/medium predictions become compact rows.
+describe('splitDayForRendering', () => {
+  const ids = (s: PublicStreamSlot[]) => s.map((x) => x.id);
+
+  it('keeps the first N high/medium as full cards, in order', () => {
+    const slots = Array.from({ length: 7 }, (_, i) =>
+      slot({ id: `h${i}`, confidence: i % 2 ? 'medium' : 'high' }),
+    );
+    const out = splitDayForRendering(slots, 4);
+    expect(ids(out.full)).toEqual(['h0', 'h1', 'h2', 'h3']);
+    expect(ids(out.compact)).toEqual(['h4', 'h5', 'h6']);
+    expect(out.low).toEqual([]);
+  });
+
+  it('never compacts a cancelled slot and does not count it against the cap', () => {
+    const slots = [
+      slot({ id: 'c1', confidence: 'high', slot_kind: 'cancelled' }),
+      slot({ id: 'a', confidence: 'high' }),
+      slot({ id: 'b', confidence: 'high' }),
+      slot({ id: 'c2', confidence: 'low', slot_kind: 'cancelled' }),
+      slot({ id: 'c', confidence: 'medium' }),
+    ];
+    const out = splitDayForRendering(slots, 2);
+    expect(ids(out.full)).toEqual(['c1', 'a', 'b', 'c2']);
+    expect(ids(out.compact)).toEqual(['c']);
+  });
+
+  it('routes low-confidence predictions to the low bucket only', () => {
+    const slots = [
+      slot({ id: 'l1', confidence: 'low' }),
+      slot({ id: 'h1', confidence: 'high' }),
+      slot({ id: 'l2', confidence: 'low' }),
+    ];
+    const out = splitDayForRendering(slots, 4);
+    expect(ids(out.full)).toEqual(['h1']);
+    expect(out.compact).toEqual([]);
+    expect(ids(out.low)).toEqual(['l1', 'l2']);
+  });
+
+  it('leaves a day of only LOW predictions without full or compact rows', () => {
+    const out = splitDayForRendering([slot({ id: 'l1' }), slot({ id: 'l2' })]);
+    expect(out.full).toEqual([]);
+    expect(out.compact).toEqual([]);
+    expect(out.low).toHaveLength(2);
+  });
+
+  it('puts every slot in exactly one bucket', () => {
+    for (const size of [0, 1, 4, 5, 12]) {
+      const slots = Array.from({ length: size }, (_, i) =>
+        slot({
+          id: `s${i}`,
+          confidence: (['high', 'medium', 'low'] as const)[i % 3],
+          slot_kind: i === 3 ? 'cancelled' : 'regular',
+        }),
+      );
+      const out = splitDayForRendering(slots);
+      const all = [...out.full, ...out.compact, ...out.low];
+      expect(all).toHaveLength(size);
+      expect(new Set(ids(all)).size).toBe(size);
+      expect(out.full.filter((s) => s.slot_kind !== 'cancelled').length).toBeLessThanOrEqual(
+        FULL_CARDS_PER_DAY,
+      );
+    }
+  });
+});
+
+describe('collapsedDayKeys', () => {
+  const days = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'];
+  const grouped = (withSlots: string[]) =>
+    new Map<string, unknown[]>(withSlots.map((d) => [d, [{}]]));
+
+  it('collapses every rendered day after the first two', () => {
+    expect([...collapsedDayKeys(days, grouped(days))]).toEqual(['d3', 'd4', 'd5', 'd6', 'd7']);
+  });
+
+  it('collapses nothing when at most two days render', () => {
+    expect(collapsedDayKeys(days, grouped(['d1', 'd4'])).size).toBe(0);
+    expect(collapsedDayKeys(days, grouped([])).size).toBe(0);
+  });
+
+  it('counts rendered days, not calendar days (empty today/tomorrow)', () => {
+    expect([...collapsedDayKeys(days, grouped(['d3', 'd5', 'd6']))]).toEqual(['d6']);
+  });
+
+  it('ignores days that are present in the map but empty', () => {
+    const map = new Map<string, unknown[]>([
+      ['d1', [{}]],
+      ['d2', []],
+      ['d3', [{}]],
+      ['d4', [{}]],
+    ]);
+    expect([...collapsedDayKeys(days, map)]).toEqual(['d4']);
   });
 });

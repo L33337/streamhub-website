@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { formatNameList } from '@/lib/game-ranking';
+import { isExactlyOne, plusCount } from './count';
 import type { HubLex } from './types';
 
 // Byte-identical to the strings previously hardcoded in the hub-page
@@ -438,12 +439,13 @@ export const en: HubLex = {
   gameChips: {
     aria: (category) => `${category} statistics`,
     streamersLabel: (n) => (n === 1 ? 'streamer' : 'streamers'),
+    streamersLabel28d: (n) => (n === 1 ? 'streamer · 28 days' : 'streamers · 28 days'),
     liveNowLabel: 'live now',
     watchingLabel: 'watching',
-    streamedLabel: 'streamed / 28d',
-    streamsLabel: () => 'streams / 28d',
+    streamedLabel: 'streamed · 28d',
+    streamsLabel: () => 'streams · 28d',
     peakLead: 'Peak ',
-    peakTail: ' viewers / 28d',
+    peakTail: ' viewers · 28d',
     trendTail: ' this week',
     trendTitle: 'Week-over-week change in active streamers',
   },
@@ -472,18 +474,14 @@ export const en: HubLex = {
       const ogNames = names.length > 0 ? ` — ${formatNameList(names)} —` : ',';
       return `The most followed ${category} streamers${ogNames} live status and stream schedule on Twitch and YouTube.`;
     },
-    h1: (category) => `${category} streamers — live now & schedule`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) =>
-      `${shown} streamer${shown === 1 ? '' : 's'} ${shown === 1 ? 'has' : 'have'} ${category} streams live or scheduled this week on Twitch and YouTube. ` +
-      (liveCount > 0
-        ? `${liveCount} ${liveCount === 1 ? 'is' : 'are'} live right now`
-        : 'None are live right now') +
-      (upcomingCount > 0
-        ? `, with ${upcomingCount} upcoming stream${upcomingCount === 1 ? '' : 's'} in the next 7 days.`
-        : '.') +
-      superlative,
-    superlative: (category, name, value, isTwitch) =>
-      ` The most-followed ${category} streamer here is ${name} with ${value} ${isTwitch ? 'followers' : 'subscribers'}.`,
+    h1: (category) => `${category} streamers: live now & schedule`,
+    intro: (shown, category, live, upcoming) =>
+      `${plusCount(shown)} ${isExactlyOne(shown) ? 'streamer has' : 'streamers have'} ${category} streams live or scheduled this week on Twitch and YouTube: ` +
+      (live.n > 0 ? `${plusCount(live)} live now` : 'none live right now') +
+      (upcoming.n > 0
+        ? ` and ${plusCount(upcoming)} upcoming in the next 7 days.`
+        : ' and nothing else scheduled for the next 7 days.'),
+    nextUpLabel: 'Next up',
     onPageAria: 'On this page',
     navLiveNow: 'Live now',
     navTopStreamers: 'Top streamers',
@@ -506,13 +504,13 @@ export const en: HubLex = {
     thStreamer: 'Streamer',
     thNextStream: 'Next stream',
     thFollowers: 'Followers',
-    thHours: 'Hours / 28d',
+    thHours: 'Hours · 28d',
     liveNowCell: 'Live now',
     seeFullRanking: (category) => `See the full ${category} ranking (top 50) →`,
     whoStreams: (category) => `Streamers who stream ${category}`,
     whenStreamed: (category) => `When is ${category} streamed?`,
     heatmapSummary: (category) =>
-      `Most ${category} streams run on {peak}{tz} — based on the last 4 weeks of tracked broadcasts.`,
+      `Most ${category} streams run on {peak}{tz}, based on the last 4 weeks of tracked broadcasts.`,
     heatmapSummaryEmpty: 'Based on the last 4 weeks of tracked broadcasts.',
     tzLocalSuffix: ' (your local time)',
     tzUtcSuffix: ' (UTC)',
@@ -531,8 +529,16 @@ export const en: HubLex = {
       'Saturdays',
       'Sundays',
     ],
-    bestTimeToStream: (category) => `Best time to stream ${category}`,
+    barsByDay: 'By weekday',
+    barsByHour: 'By hour of day',
+    statsLead: 'Last 28 days:',
+    statHours: (h) => `${h} hours streamed`,
+    statStreams: (n, display) => `${display} ${n === 1 ? 'stream' : 'streams'}`,
+    statPeak: (v) => `peak of ${v} viewers`,
+    busiestTimesHeading: 'Busiest times',
+    leastCompetitionHeading: 'Least competition',
     trendingBadge: '▲ Trending',
+    trendingTitle: 'Trending on Twitch this week',
     bestTimeIntro: (category) =>
       `For streamers: the windows where ${category} viewers outnumber live ${category} channels the most.`,
     fullHeatmapLink: 'Full opportunity heatmap & analysis →',
@@ -542,7 +548,7 @@ export const en: HubLex = {
     timesUtcNote: 'Times shown in UTC.',
     quietTitle: (category) => `No ${category} streams right now`,
     quietBody: (category) =>
-      `None of the ${category} streamers we track are live or expected in the next 7 days. Schedules and AI predictions refresh several times a day — check back soon.`,
+      `None of the ${category} streamers we track are live or expected in the next 7 days. Schedules and AI predictions refresh several times a day, so check back soon.`,
     quietMeanwhile: 'In the meantime',
     seeWhosLive: `See who's live now →`,
     browseAllGames: 'Browse all games',
@@ -556,8 +562,11 @@ export const en: HubLex = {
     moreLowConfidence: (n) =>
       `${n} more prediction${n === 1 ? '' : 's'} with low confidence`,
     lowConfAria: (label) => `Low-confidence predictions on ${label}`,
-    hiddenNotShown: (n) =>
-      `${n} more prediction${n === 1 ? '' : 's'} for this day ${n === 1 ? 'is' : 'are'} not shown. Open a streamer's page for their full schedule.`,
+    dayCountShown: (shown, total) => `${shown} of ${total} streams`,
+    showAllDays: (days) => `Show all ${days} days`,
+    showFewerDays: 'Show fewer days',
+    icsAria: (name) => `Add ${name}'s stream to your calendar`,
+    icsTitle: 'Add to calendar (.ics)',
     relatedGames: 'Related games',
     relatedGamesAria: 'Related games',
     relatedNote: 'Games with overlapping streamer rosters in the last 28 days.',
