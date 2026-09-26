@@ -24,7 +24,8 @@ import { pluralForms, resolveUiLang, type UiLang } from './i18n-core';
 //   AI pass 2026-07; no native-speaker review yet — accepted risk).
 
 export interface SlotLex {
-  /** "Live since {2 hours}" — duration comes from getRelativeTime(). */
+  /** "Live for {2 hours}" — duration comes from getRelativeTime(). ("Live since
+   *  2 hours" was ungrammatical English; fixed in the game-hub UX round.) */
   statusLiveSince(duration: string): string;
   /** "Ends in {~2h}" — approx stays the language-neutral "~2h" form. */
   statusEndsIn(approx: string): string;
@@ -82,7 +83,7 @@ export interface SlotLex {
 
 const SLOT_STRINGS: Record<UiLang, SlotLex> = {
   en: {
-    statusLiveSince: (d) => `Live since ${d}`,
+    statusLiveSince: (d) => `Live for ${d}`,
     statusEndsIn: (x) => `Ends in ${x}`,
     statusAround: (h) => `Around ${h}`,
     statusYourTime: (h) => `${h} your time`,
@@ -116,7 +117,7 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     nextTimeAnnouncedTitle: 'Announced schedule start',
     gameLiveBadge: (n) => `${n} live`,
     gameStreamerCount: (n) => `${n} streamer${n === 1 ? '' : 's'}`,
-    gameHoursShort: (h) => `${h}h / 28d`,
+    gameHoursShort: (h) => `${h}h · 28d`,
     gameWatchingNow: (v) => `${v} watching now`,
     gameTrendTitle: 'Week-over-week change in active streamers',
   },
