@@ -114,7 +114,9 @@ export function StreamerHero({
         the fold) while the live line and bio span the full width in row 2; at
         md the avatar spans both rows and the desktop layout is unchanged.
       */}
-      <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 md:items-start md:gap-x-6">
+      {/* items-start at every width (2026-09-26): centring the name block on
+          the 80 px phone avatar pushed the name below the frame edge. */}
+      <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-3 md:gap-x-6">
         {streamer.avatar_url ? (
           <Image
             src={streamer.avatar_url}
@@ -201,7 +203,7 @@ export function StreamerHero({
             )}
             {/* Offline: the headline answer, above the chips and the bio. */}
             {!isLive && nextSlot && (
-              <div className="mt-3">
+              <div className="mt-1">
                 <HeroNextStream
                   nextSlot={nextSlot}
                   laterSlots={laterSlots}
@@ -210,7 +212,7 @@ export function StreamerHero({
               </div>
             )}
             {showActivity && activity && (
-              <p className="mt-3 text-sm text-text-secondary">
+              <p className="mt-1 text-sm text-text-secondary">
                 {activity.text}
                 {activity.timesHref && (
                   <>
