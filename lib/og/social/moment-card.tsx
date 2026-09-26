@@ -208,7 +208,8 @@ export function MomentCard({ spec, avatar, initials }: MomentCardProps): ReactEl
           }}
         >
           <div style={{ display: 'flex', fontSize: 20, letterSpacing: '0.14em', color: accent, fontWeight: 700 }}>{spec.fun_fact.eyebrow}</div>
-          <div style={{ display: 'flex', fontSize: 34, lineHeight: 1.3, marginTop: 14, color: TEXT }}>{spec.fun_fact.text}</div>
+          {/* Up to ~150 characters fit three lines at 34 px; longer story lines step down so four lines still fit the block. */}
+          <div style={{ display: 'flex', fontSize: spec.fun_fact.text.length > 150 ? 29 : 34, lineHeight: 1.3, marginTop: 14, color: TEXT }}>{spec.fun_fact.text}</div>
           {spec.fun_fact.date_label && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 22, color: DIM, marginTop: 12 }}>{spec.fun_fact.date_label}</div>
           )}
