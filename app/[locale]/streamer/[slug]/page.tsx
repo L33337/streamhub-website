@@ -317,9 +317,9 @@ export default async function StreamerPage({ params }: Props) {
   const lastStream = history[0] ?? null;
   const recentStreams = history.slice(1);
 
-  // Last-stream card placement is live-aware: offline streamers get it right
-  // under the hero (their most relevant content); live streamers keep it lower,
-  // below Channel Stats, so the hero's live callout stays the top focus.
+  // Last-stream card: directly below the weekly schedule, live or offline
+  // (user decision 2026-09-26; it used to sit under the hero for offline
+  // streamers and below the rankings for live ones).
   const lastStreamCard = lastStream ? (
     <LastStreamCard
       stream={lastStream}
@@ -424,17 +424,17 @@ export default async function StreamerPage({ params }: Props) {
         })
       : null;
   const usualDays = stats ? activeWeekdayList(stats, locale) : null;
-  // The date is left out when the "Last stream" card sits right below the
-  // hero: last_stream_at also knows streams without an archived VOD, the card
-  // only VODs, and the two dates side by side contradicted each other
-  // ("Last stream: Sep 16" above "3 weeks ago", fanum 2026-09-26).
-  const cardBelowHero = !isLive && lastStream !== null;
+  // The date is left out whenever the page has a "Last stream" card:
+  // last_stream_at also knows streams without an archived VOD, the card only
+  // VODs, and the two dates contradicted each other ("Last stream: Sep 16" vs
+  // "3 weeks ago", fanum 2026-09-26).
+  const hasLastStreamCard = lastStream !== null;
   const activityText = !activity
     ? null
     : activity.kind === 'break'
       ? L.hero.breakUntil(formatUtcDateShort(activity.until, locale))
       : [
-          cardBelowHero
+          hasLastStreamCard
             ? null
             : L.hero.lastStreamOn(formatUtcDateShort(activity.lastStreamAt, locale)),
           activity.kind === 'quiet' ? L.hero.quietLately : null,
@@ -510,8 +510,6 @@ export default async function StreamerPage({ params }: Props) {
         rankings={rankings}
         uiLanguage={locale}
       />
-
-      {!isLive && lastStreamCard}
 
       {showEmpty ? (
         <EmptyScheduleState
@@ -601,6 +599,8 @@ export default async function StreamerPage({ params }: Props) {
         })()
       )}
 
+      {lastStreamCard && <div className="mt-10">{lastStreamCard}</div>}
+
       {/* Typical times + channel stats + rankings + recent streams + FAQ
           render outside the has-schedule branch on purpose: their SEO value is
           highest exactly when nothing is scheduled and the page would
@@ -611,8 +611,6 @@ export default async function StreamerPage({ params }: Props) {
       {stats && <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />}
       <ChannelStats streamer={streamer} stats={stats} uiLanguage={locale} />
       <StreamerRankings streamer={streamer} rankings={rankings} uiLanguage={locale} />
-
-      {isLive && lastStreamCard}
 
       {/* M26: wiki teaser — the main internal entry to the wiki subpage,
           rendered whenever a published profile exists. */}
