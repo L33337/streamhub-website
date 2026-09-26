@@ -60,7 +60,10 @@ export function CollapsibleBio({ paragraphs, lang, dir, moreLabel, lessLabel }: 
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-controls={id}
-          className="mt-1 inline-flex min-h-8 items-center text-xs font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80"
+          // 32 px hit area, but the negative margins let it overlap the gap to
+          // the text above and the frame padding below instead of adding its
+          // own 8 px above and below the label (2026-09-26).
+          className="-mb-2 -mt-1 inline-flex min-h-8 items-center text-xs font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80"
         >
           {expanded ? lessLabel : moreLabel}
         </button>
