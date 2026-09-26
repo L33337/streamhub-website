@@ -14,14 +14,23 @@
 // only exists after the client-side timezone shift. The English defaults keep
 // any label-less caller byte-identical.
 
+//
+// UX round 2026-09-24: cell colour is stretched between the quietest and the
+// busiest hour (lib/game-heatmap.ts heatmapIntensity), and below `sm` the grid
+// gives way to two bar rows (weekday + hour of day) from the same shifted
+// histogram, because the grid needs ~560px and scrolled sideways on phones.
+// Both layouts are in the DOM; CSS picks one, so SSR stays deterministic.
+
 import { useMemo, useSyncExternalStore } from 'react';
 import {
   HEATMAP_DAY_LABELS,
   buildHeatmapView,
   heatmapIntensity,
+  histogramTotals,
   localUtcOffsetHours,
   peakBandLabel,
 } from '@/lib/game-heatmap';
+import { HistogramBars } from './HistogramBars';
 
 export interface HeatmapLabels {
   /** Template with {peak} (rendered bold) and {tz}. */
@@ -41,11 +50,14 @@ export interface HeatmapLabels {
   dayShort: readonly string[];
   /** Peak-band day names ("Mondays" / "montags"), ISO order Mon..Sun. */
   dayNames: readonly string[];
+  /** Captions of the phone bar rows. */
+  barsByDay: string;
+  barsByHour: string;
 }
 
 const EN_LABELS: HeatmapLabels = {
   summary:
-    'Most {category} streams run on {peak}{tz} — based on the last 4 weeks of tracked broadcasts.',
+    'Most {category} streams run on {peak}{tz}, based on the last 4 weeks of tracked broadcasts.',
   summaryEmpty: 'Based on the last 4 weeks of tracked broadcasts.',
   tzLocal: ' (your local time)',
   tzUtc: ' (UTC)',
@@ -64,7 +76,11 @@ const EN_LABELS: HeatmapLabels = {
     'Saturdays',
     'Sundays',
   ],
+  barsByDay: 'By weekday',
+  barsByHour: 'By hour of day',
 };
+
+const HOUR_LABELS = Array.from({ length: 24 }, (_, h) => String(h));
 
 function subscribe(): () => void {
   return () => {};
@@ -103,6 +119,7 @@ export function StreamTimesHeatmap({
     () => false,
   );
   const view = useMemo(() => buildHeatmapView(histogram, shift), [histogram, shift]);
+  const totals = useMemo(() => histogramTotals(view.grid), [view]);
   const peak = peakBandLabel(view, labels.dayNames);
 
   // Split the summary template at {peak} so the peak renders in its own bold
@@ -128,7 +145,21 @@ export function StreamTimesHeatmap({
           <>{labels.summaryEmpty}</>
         )}
       </p>
-      <div className="mt-4 overflow-x-auto">
+      {/* Phone: two bar rows instead of the grid (no sideways scrolling). */}
+      <div className="sm:hidden">
+        <HistogramBars
+          values={totals.byDay}
+          labels={labels.dayShort}
+          caption={labels.barsByDay}
+        />
+        <HistogramBars
+          values={totals.byHour}
+          labels={HOUR_LABELS}
+          labelEvery={3}
+          caption={labels.barsByHour}
+        />
+      </div>
+      <div className="mt-4 hidden overflow-x-auto sm:block">
         <div
           className="min-w-[560px]"
           role="img"
@@ -162,7 +193,7 @@ export function StreamTimesHeatmap({
                 {labels.dayShort[day]}
               </div>
               {row.map((minutes, hour) => {
-                const t = heatmapIntensity(minutes, view.max);
+                const t = heatmapIntensity(minutes, view.max, view.min);
                 return (
                   <div
                     key={hour}

@@ -47,6 +47,8 @@ export interface HeatmapView {
   /** 7 rows (Mon..Sun) × 24 hour columns of minutes, in the shifted frame. */
   grid: number[][];
   max: number;
+  /** Smallest NON-zero cell (0 when the grid is empty). */
+  min: number;
   peak: { day: number; hour: number; minutes: number } | null;
 }
 
@@ -54,12 +56,14 @@ export function buildHeatmapView(histogram: number[], shiftHours: number): Heatm
   const shifted = shiftHistogram(histogram, shiftHours);
   const grid: number[][] = [];
   let max = 0;
+  let min = Infinity;
   let peak: HeatmapView['peak'] = null;
   for (let day = 0; day < 7; day++) {
     const row: number[] = [];
     for (let hour = 0; hour < 24; hour++) {
       const v = shifted[day * 24 + hour];
       row.push(v);
+      if (v > 0 && v < min) min = v;
       if (v > max) {
         max = v;
         peak = { day, hour, minutes: v };
@@ -67,17 +71,44 @@ export function buildHeatmapView(histogram: number[], shiftHours: number): Heatm
     }
     grid.push(row);
   }
-  return { grid, max, peak };
+  return { grid, max, min: Number.isFinite(min) ? min : 0, peak };
 }
 
 /**
- * 0..1 color intensity for a cell. Square-root scale on purpose: streaming
- * histograms are long-tailed (one prime-time cell dominates), and a linear
- * scale would wash every off-peak cell into near-invisibility.
+ * Intensity of the quietest non-empty cell. Keeps it visibly tinted, so "a
+ * little streaming" never reads as "no streaming" (empty cells stay neutral).
  */
-export function heatmapIntensity(minutes: number, max: number): number {
+export const HEATMAP_MIN_VISIBLE = 0.06;
+
+/**
+ * 0..1 color intensity for a cell: LINEAR between the quietest non-empty
+ * cell (`min`) and the peak (`max`), lifted by HEATMAP_MIN_VISIBLE.
+ *
+ * Game-hub UX round (2026-09-24): this used to be sqrt(minutes / max) from 0.
+ * Big categories are streamed around the clock, so every cell sat between
+ * 40 % and 100 % of the peak and the grid rendered as one flat cyan block
+ * (measured on /game/valorant: 151 of 168 cells above alpha 0.5). Stretching
+ * from the quietest hour instead of from zero spends the colour range on the
+ * differences that actually exist.
+ */
+export function heatmapIntensity(minutes: number, max: number, min = 0): number {
   if (minutes <= 0 || max <= 0) return 0;
-  return Math.sqrt(Math.min(minutes, max) / max);
+  if (max <= min) return 1;
+  const linear = (Math.min(Math.max(minutes, min), max) - min) / (max - min);
+  return HEATMAP_MIN_VISIBLE + (1 - HEATMAP_MIN_VISIBLE) * linear;
+}
+
+/**
+ * Minutes per weekday (7, Mon..Sun) and per hour of day (24) of a view's
+ * grid — the phone layout's two bar charts. Built from the SHIFTED grid, so
+ * both are in the viewer's timezone like the grid itself.
+ */
+export function histogramTotals(grid: number[][]): { byDay: number[]; byHour: number[] } {
+  const byDay = grid.map((row) => row.reduce((a, v) => a + v, 0));
+  const byHour = Array.from({ length: 24 }, (_, h) =>
+    grid.reduce((a, row) => a + (row[h] ?? 0), 0),
+  );
+  return { byDay, byHour };
 }
 
 /**

@@ -33,7 +33,8 @@ export function GameLiveCard({
       data-game-live-deferred={deferred ? '' : undefined}
       hidden={hidden || undefined}
     >
-      <SlotCard slot={slot} language={locale} />
+      {/* plainTitle: game-hub-only test of original-case titles (2026-09-24). */}
+      <SlotCard slot={slot} language={locale} plainTitle />
     </li>
   );
 }

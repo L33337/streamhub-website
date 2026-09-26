@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { listConjunction } from '@/lib/i18n-core';
+import { plusCount } from './count';
 import type { HubLex } from './types';
 
 export const ja: HubLex = {
@@ -423,6 +424,7 @@ export const ja: HubLex = {
   gameChips: {
     aria: (category) => `${category} の統計`,
     streamersLabel: () => 'ストリーマー',
+    streamersLabel28d: () => 'ストリーマー · 28日間',
     liveNowLabel: '配信中',
     watchingLabel: '人が視聴中',
     streamedLabel: '配信 · 28日間',
@@ -457,16 +459,14 @@ export const ja: HubLex = {
       const ogNames = names.length > 0 ? `（${listConjunction(names, 'ja')}）` : '';
       return `フォロワー数トップの ${category} ストリーマー${ogNames}の配信状況と Twitch・YouTube の配信スケジュール。`;
     },
-    h1: (category) => `${category} のストリーマー — 配信中 & スケジュール`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) =>
-      `今週 Twitch・YouTube で ${category} を配信中または配信予定のストリーマーは${shown}人。` +
-      (liveCount > 0 ? `${liveCount}人が今まさに配信中` : '今は誰も配信していません') +
-      (upcomingCount > 0
-        ? `、今後7日間に${upcomingCount}件の配信が控えています。`
-        : '。') +
-      superlative,
-    superlative: (category, name, value, isTwitch) =>
-      `ここで最も${isTwitch ? 'フォロワー' : '登録者'}が多い ${category} ストリーマーは ${name}（${value}）です。`,
+    h1: (category) => `${category} のストリーマー：配信中 & スケジュール`,
+    intro: (shown, category, live, upcoming) =>
+      `今週 Twitch・YouTube で ${category} を配信中または配信予定のストリーマーは${plusCount(shown)}人で、` +
+      (live.n > 0 ? `現在${plusCount(live)}人が配信中` : '現在は誰も配信しておらず') +
+      (upcoming.n > 0
+        ? `、今後7日間に${plusCount(upcoming)}件の配信が控えています。`
+        : '、今後7日間の配信予定はありません。'),
+    nextUpLabel: '次の配信',
     onPageAria: 'このページの内容',
     navLiveNow: '配信中',
     navTopStreamers: 'トップストリーマー',
@@ -489,13 +489,13 @@ export const ja: HubLex = {
     thStreamer: 'ストリーマー',
     thNextStream: '次の配信',
     thFollowers: 'フォロワー',
-    thHours: '時間 / 28日',
+    thHours: '時間 · 28日',
     liveNowCell: '配信中',
     seeFullRanking: (category) => `${category} ランキング全体を見る（トップ50）→`,
     whoStreams: (category) => `${category} を配信するストリーマー`,
     whenStreamed: (category) => `${category} はいつ配信されている?`,
     heatmapSummary: (category) =>
-      `${category} の配信は{peak}{tz}に集中しています — 直近4週間の記録に基づきます。`,
+      `${category} の配信は{peak}{tz}に集中しています（直近4週間の記録に基づく）。`,
     heatmapSummaryEmpty: '直近4週間の記録に基づきます。',
     tzLocalSuffix: '（あなたの時間）',
     tzUtcSuffix: '（UTC）',
@@ -514,8 +514,16 @@ export const ja: HubLex = {
       '土曜日',
       '日曜日',
     ],
-    bestTimeToStream: (category) => `${category} を配信するベストな時間`,
+    barsByDay: '曜日別',
+    barsByHour: '時間帯別',
+    statsLead: '直近28日間:',
+    statHours: (h) => `配信${h}時間`,
+    statStreams: (_n, display) => `${display}件の配信`,
+    statPeak: (v) => `ピーク${v}人`,
+    busiestTimesHeading: '配信が多い時間帯',
+    leastCompetitionHeading: '競争が少ない時間帯',
     trendingBadge: '▲ トレンド',
+    trendingTitle: '今週 Twitch でトレンド',
     bestTimeIntro: (category) =>
       `ストリーマー向け: ${category} で配信1チャンネルあたりの視聴者が最も多くなる時間帯です。`,
     fullHeatmapLink: 'チャンスヒートマップと分析の全体を見る →',
@@ -525,7 +533,7 @@ export const ja: HubLex = {
     timesUtcNote: '時刻は UTC で表示。',
     quietTitle: (category) => `現在 ${category} の配信はありません`,
     quietBody: (category) =>
-      `追跡中の ${category} ストリーマーは誰も配信しておらず、今後7日間の予定もありません。スケジュールと AI 予測は1日に何度も更新されます — また見に来てください。`,
+      `追跡中の ${category} ストリーマーは誰も配信しておらず、今後7日間の予定もありません。スケジュールと AI 予測は1日に何度も更新されます。また見に来てください。`,
     quietMeanwhile: 'それまでの間に',
     seeWhosLive: '今配信中のストリーマーを見る →',
     browseAllGames: 'すべてのゲームを見る',
@@ -539,8 +547,11 @@ export const ja: HubLex = {
     hideLowConfidence: '確度「低」を隠す',
     moreLowConfidence: (n) => `確度の低い予測があと${n}件`,
     lowConfAria: (label) => `${label}の確度の低い予測`,
-    hiddenNotShown: (n) =>
-      `この日はあと${n}件の予測が非表示です。全スケジュールはストリーマーのページでご覧ください。`,
+    dayCountShown: (shown, total) => `${total}件中${shown}件を表示`,
+    showAllDays: (days) => `${days}日間すべて表示`,
+    showFewerDays: '表示する日数を減らす',
+    icsAria: (name) => `${name} の配信をカレンダーに追加`,
+    icsTitle: 'カレンダーに追加（.ics）',
     relatedGames: '関連ゲーム',
     relatedGamesAria: '関連ゲーム',
     relatedNote: '直近28日間でストリーマーの顔ぶれが重なるゲームです。',

@@ -13,6 +13,13 @@ interface Props {
   todayUtc: string;
   /** Localizes day labels/counts/aria; default 'en' keeps the game-page caller byte-identical. */
   language?: string;
+  /**
+   * Game-hub UX round (2026-09-24): one-line pills below `sm` ("Today · 22"),
+   * the two-line pill from `sm` up. The sticky zone on a phone shrank from
+   * 139px (header + two-line nav) towards ~115px. Default false keeps the
+   * streamer page's markup byte-identical.
+   */
+  dense?: boolean;
 }
 
 // Client component since the game-hub UX round (2026-07-23): a scroll-spy
@@ -25,7 +32,7 @@ function subscribeToNothing(): () => void {
   return () => {};
 }
 
-export function DayNavBar({ days, counts, todayUtc, language = 'en' }: Props) {
+export function DayNavBar({ days, counts, todayUtc, language = 'en', dense = false }: Props) {
   const L = slotLexFor(language);
   const lang = resolveUiLang(language);
   const [activeDay, setActiveDay] = useState<string | null>(null);
@@ -64,6 +71,71 @@ export function DayNavBar({ days, counts, todayUtc, language = 'en' }: Props) {
     sections.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
   }, [days]);
+
+  if (dense) {
+    return (
+      <nav
+        aria-label={L.jumpToDayAria}
+        className="sticky top-[var(--header-height)] z-10 -mx-4 mt-6 mb-2 border-b border-divider bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:py-3"
+      >
+        <ul
+          className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="list"
+        >
+          {days.map((dateKey) => {
+            const day = counts[dateKey] ?? { total: 0, active: 0 };
+            const count = day.active;
+            const label = utcDateShortLabel(dateKey, referenceToday, lang);
+            const pill =
+              'inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs sm:flex-col sm:justify-center sm:gap-0';
+            if (day.total === 0) {
+              return (
+                <li key={dateKey}>
+                  <span
+                    className={`${pill} border-border-default/40 bg-background-elevated/40 text-text-muted opacity-50`}
+                    aria-disabled="true"
+                    aria-label={`${label}: ${L.noStreamsExpected}`}
+                  >
+                    <span className="font-semibold">{label}</span>
+                    <span aria-hidden="true" className="sm:text-[10px]">
+                      –
+                    </span>
+                  </span>
+                </li>
+              );
+            }
+            const isActive = dateKey === activeDay;
+            return (
+              <li key={dateKey}>
+                <a
+                  href={`#day-${dateKey}`}
+                  aria-current={isActive ? 'true' : undefined}
+                  aria-label={`${label}: ${count === 0 ? L.noStreamsExpected : L.nStreams(count)}`}
+                  className={`${pill} transition-colors hover:border-accent-cyan/60 hover:bg-background-highlight ${
+                    isActive
+                      ? 'border-accent-cyan/70 bg-background-highlight'
+                      : 'border-border-default bg-background-elevated'
+                  }`}
+                >
+                  <span
+                    className={`font-semibold ${isActive ? 'text-accent-cyan' : 'text-text-primary'}`}
+                  >
+                    {label}
+                  </span>
+                  <span aria-hidden="true" className="tabular-nums text-accent-cyan sm:hidden">
+                    {count === 0 ? <span className="text-text-muted">–</span> : count}
+                  </span>
+                  <span aria-hidden="true" className="hidden text-[10px] text-accent-cyan sm:inline">
+                    {count === 0 ? <span className="text-text-muted">–</span> : L.nStreams(count)}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    );
+  }
 
   return (
     <nav

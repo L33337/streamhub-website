@@ -165,6 +165,18 @@ body {
   mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
 }
 
+/* Game hub (UX round 2026-09-24): the same collapse sits INSIDE the schedule
+   filters. An active filter shows the whole week (a filtered week is short),
+   and the collapse button goes away while it does. Days the filter itself
+   hid keep their `hidden` attribute, which still wins: `display: revert`
+   hands those back to the UA rule for [hidden]. */
+[data-schedule-filtered='true'] [data-schedule-collapsed='true'] [data-day-role='hidden'] {
+  display: revert;
+}
+[data-schedule-filtered='true'] [data-schedule-toggle] {
+  display: none;
+}
+
 /* ───────── Scan lines overlay ───────── */
 .scan-lines::after {
   content: '';
@@ -916,6 +928,16 @@ body {
   li[data-game-live-id][hidden] { display: block; }
   [data-game-live-footer][hidden] { display: block; }
   [data-game-live-controls] { display: none; }
+  /* Collapsed schedule days (streamer page + game hub): without JS the toggle
+     cannot open them, so show everything and drop the dead button. */
+  [data-schedule-collapsed='true'] [data-day-role='hidden'],
+  [data-schedule-collapsed='true'] [data-slot-role='hidden'] { display: revert; }
+  [data-schedule-collapsed='true'] [data-slot-role='peek'] {
+    max-height: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  [data-schedule-toggle] { display: none; }
 }
 
 /* Performance: promote animated elements to compositor layer */

@@ -78,9 +78,14 @@ export function ScheduleFilters({
 
   const showPlatformGroup = platforms.length > 1;
   const showFilters = showPlatformGroup || hasLow;
+  // UX round 2026-09-24: an active filter reveals the collapsed days (CSS in
+  // globals.css keyed on this attribute). A filtered week is short, and
+  // without it "hide low confidence" could leave only the collapse button
+  // visible when the open days held nothing but LOW predictions.
+  const filtered = platform !== 'all' || hideLow;
 
   return (
-    <div>
+    <div data-schedule-filtered={filtered ? 'true' : 'false'}>
       {showFilters && (
         <div
           className="mt-3 flex flex-wrap items-center gap-2"

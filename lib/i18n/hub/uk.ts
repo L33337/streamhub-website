@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { listConjunction, pluralForms } from '@/lib/i18n-core';
+import { plusCount } from './count';
 import type { HubLex } from './types';
 
 /** "3 стримери" / "5 стримерів" — nominative counted noun. */
@@ -512,6 +513,13 @@ export const uk: HubLex = {
         many: 'стримерів',
         other: 'стримера',
       }),
+    streamersLabel28d: (n) =>
+      pluralForms('uk', n, {
+        one: 'стример · 28 днів',
+        few: 'стримери · 28 днів',
+        many: 'стримерів · 28 днів',
+        other: 'стримера · 28 днів',
+      }),
     liveNowLabel: 'зараз в ефірі',
     watchingLabel: 'дивляться',
     streamedLabel: 'стрімів · 28 днів',
@@ -552,29 +560,29 @@ export const uk: HubLex = {
       const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'uk')} —` : ':';
       return `Стримери ${category} з найбільшою кількістю підписників${ogNames} статус ефіру та розклад стрімів на Twitch і YouTube.`;
     },
-    h1: (category) => `Стримери ${category} — зараз в ефірі та розклад`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) => {
-      const lead = pluralForms('uk', shown, {
-        one: `${shown} стример має стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube. `,
-        few: `${shown} стримери мають стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube. `,
-        many: `${shown} стримерів мають стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube. `,
-        other: `${shown} стримера мають стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube. `,
+    h1: (category) => `Стримери ${category}: зараз в ефірі та розклад`,
+    intro: (shown, category, live, upcoming) => {
+      const s = plusCount(shown);
+      const lead = pluralForms('uk', shown.n, {
+        one: `${s} стример має стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube: `,
+        few: `${s} стримери мають стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube: `,
+        many: `${s} стримерів мають стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube: `,
+        other: `${s} стримера мають стріми з ${category} в ефірі або в розкладі цього тижня на Twitch і YouTube: `,
       });
-      const live =
-        liveCount > 0 ? `${liveCount} зараз в ефірі` : 'Зараз ніхто не в ефірі';
-      const upcoming =
-        upcomingCount > 0
-          ? pluralForms('uk', upcomingCount, {
-              one: `, попереду ${upcomingCount} стрім у найближчі 7 днів.`,
-              few: `, попереду ${upcomingCount} стріми в найближчі 7 днів.`,
-              many: `, попереду ${upcomingCount} стрімів у найближчі 7 днів.`,
-              other: `, попереду ${upcomingCount} стріму в найближчі 7 днів.`,
+      const liveText = live.n > 0 ? `${plusCount(live)} зараз в ефірі` : 'зараз ніхто не в ефірі';
+      const u = plusCount(upcoming);
+      const upcomingText =
+        upcoming.n > 0
+          ? pluralForms('uk', upcoming.n, {
+              one: ` і попереду ${u} стрім у найближчі 7 днів.`,
+              few: ` і попереду ${u} стріми в найближчі 7 днів.`,
+              many: ` і попереду ${u} стрімів у найближчі 7 днів.`,
+              other: ` і попереду ${u} стріму в найближчі 7 днів.`,
             })
-          : '.';
-      return lead + live + upcoming + superlative;
+          : ' і більше нічого не заплановано на найближчі 7 днів.';
+      return lead + liveText + upcomingText;
     },
-    superlative: (category, name, value, isTwitch) =>
-      ` Найбільше ${isTwitch ? 'фоловерів' : 'підписників'} тут у ${name} — ${value}.`,
+    nextUpLabel: 'Далі',
     onPageAria: 'На цій сторінці',
     navLiveNow: 'Зараз в ефірі',
     navTopStreamers: 'Топ стримерів',
@@ -605,14 +613,14 @@ export const uk: HubLex = {
     thStreamer: 'Стример',
     thNextStream: 'Наступний стрім',
     thFollowers: 'Підписники',
-    thHours: 'Години / 28 днів',
+    thHours: 'Години · 28 днів',
     liveNowCell: 'Зараз в ефірі',
     seeFullRanking: (category) =>
       `Дивитися повний рейтинг ${category} (топ-50) →`,
     whoStreams: (category) => `Стримери, які стрімлять ${category}`,
     whenStreamed: (category) => `Коли стрімлять ${category}?`,
     heatmapSummary: (category) =>
-      `Більшість стрімів із ${category} йде {peak}{tz} — за даними останніх 4 тижнів.`,
+      `Більшість стрімів із ${category} йде {peak}{tz}, за даними останніх 4 тижнів.`,
     heatmapSummaryEmpty: 'За даними останніх 4 тижнів відстежених стрімів.',
     tzLocalSuffix: ' (ваш час)',
     tzUtcSuffix: ' (UTC)',
@@ -631,8 +639,22 @@ export const uk: HubLex = {
       'щосуботи',
       'щонеділі',
     ],
-    bestTimeToStream: (category) => `Найкращий час для стрімів із ${category}`,
+    barsByDay: 'За днями тижня',
+    barsByHour: 'За годинами',
+    statsLead: 'За 28 днів:',
+    statHours: (h) => `${h} год в ефірі`,
+    statStreams: (n, display) =>
+      pluralForms('uk', n, {
+        one: `${display} стрім`,
+        few: `${display} стріми`,
+        many: `${display} стрімів`,
+        other: `${display} стріму`,
+      }),
+    statPeak: (v) => `пік ${v} глядачів`,
+    busiestTimesHeading: 'Найактивніший час',
+    leastCompetitionHeading: 'Менше конкуренції',
     trendingBadge: '▲ У тренді',
+    trendingTitle: 'У тренді на Twitch цього тижня',
     bestTimeIntro: (category) =>
       `Для стримерів: вікна, коли в ${category} найбільше глядачів на один живий канал.`,
     fullHeatmapLink: 'Повна карта можливостей та аналіз →',
@@ -642,7 +664,7 @@ export const uk: HubLex = {
     timesUtcNote: 'Час в UTC.',
     quietTitle: (category) => `Зараз немає стрімів із ${category}`,
     quietBody: (category) =>
-      `Ніхто зі стримерів ${category}, за якими ми стежимо, не в ефірі й не очікується в найближчі 7 днів. Розклади та прогнози ШІ оновлюються кілька разів на день — зазирніть згодом.`,
+      `Ніхто зі стримерів ${category}, за якими ми стежимо, не в ефірі й не очікується в найближчі 7 днів. Розклади та прогнози ШІ оновлюються кілька разів на день, тож зазирніть згодом.`,
     quietMeanwhile: 'А поки що',
     seeWhosLive: 'Подивіться, хто зараз в ефірі →',
     browseAllGames: 'Усі ігри',
@@ -650,7 +672,7 @@ export const uk: HubLex = {
     scheduleAria: (category) => `Розклад стрімів ${category}`,
     upcomingStreams: (category) => `Найближчі стріми з ${category}`,
     scheduleNote:
-      'Час підлаштовується під ваш часовий пояс, поруч — час стримера. Дні йдуть за календарем UTC, тому пізній нічний стрім може опинитися під наступним днем.',
+      'Час підлаштовується під ваш часовий пояс, поруч указано час стримера. Дні йдуть за календарем UTC, тому пізній нічний стрім може опинитися під наступним днем.',
     filterAria: 'Фільтр розкладу',
     allPlatforms: 'Усі платформи',
     hideLowConfidence: 'Сховати низьку ймовірність',
@@ -662,13 +684,24 @@ export const uk: HubLex = {
         other: `Ще ${n} прогнозу з низькою ймовірністю`,
       }),
     lowConfAria: (label) => `Прогнози з низькою ймовірністю: ${label}`,
-    hiddenNotShown: (n) =>
-      pluralForms('uk', n, {
-        one: `Ще ${n} прогноз на цей день не показано. Повний розклад — на сторінці стримера.`,
-        few: `Ще ${n} прогнози на цей день не показано. Повний розклад — на сторінці стримера.`,
-        many: `Ще ${n} прогнозів на цей день не показано. Повний розклад — на сторінці стримера.`,
-        other: `Ще ${n} прогнозу на цей день не показано. Повний розклад — на сторінці стримера.`,
-      }),
+    // "з 22 стрімів": genitive after "з" (1 → стріму, 2+ → стрімів).
+    dayCountShown: (shown, total) =>
+      `${shown} з ${total} ${pluralForms('uk', total, {
+        one: 'стріму',
+        few: 'стрімів',
+        many: 'стрімів',
+        other: 'стріму',
+      })}`,
+    showAllDays: (days) =>
+      `Показати всі ${days} ${pluralForms('uk', days, {
+        one: 'день',
+        few: 'дні',
+        many: 'днів',
+        other: 'дня',
+      })}`,
+    showFewerDays: 'Показати менше днів',
+    icsAria: (name) => `Додати стрім ${name} до календаря`,
+    icsTitle: 'Додати до календаря (.ics)',
     relatedGames: 'Схожі ігри',
     relatedGamesAria: 'Схожі ігри',
     relatedNote:

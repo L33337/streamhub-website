@@ -40,7 +40,11 @@ export function PlatformBadge({
   language = 'en',
 }: {
   platform: Platform;
-  size?: 'sm' | 'md';
+  /**
+   * 'xs' (game-hub compact rows, 2026-09-24): same 10px font floor as 'sm',
+   * tighter padding, so two badges fit a 320px row next to a title.
+   */
+  size?: 'xs' | 'sm' | 'md';
   /** When set, the badge becomes an external link to the streamer's channel. */
   href?: string;
   /** Localizes the sr-only "opens in new tab" hint (link variant only). */
@@ -49,7 +53,11 @@ export function PlatformBadge({
   const bg = platform === 'twitch' ? 'bg-twitch' : 'bg-youtube';
   const label = platform === 'twitch' ? 'Twitch' : 'YouTube';
   const sizing =
-    size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[11px]';
+    size === 'xs'
+      ? 'px-1 py-px text-[10px] leading-3'
+      : size === 'sm'
+        ? 'px-1.5 py-0.5 text-[10px]'
+        : 'px-1.5 py-0.5 text-[11px]';
   const base = `inline-flex shrink-0 items-center rounded-[3px] font-semibold text-white ${bg} ${sizing}`;
   if (href) {
     return (

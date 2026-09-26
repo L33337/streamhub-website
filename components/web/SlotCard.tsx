@@ -62,6 +62,7 @@ export function SlotCard({
   topBadges,
   compact = false,
   reserveTopRight = false,
+  plainTitle = false,
 }: {
   slot: SlotCardSlot;
   language?: string;
@@ -79,6 +80,13 @@ export function SlotCard({
    * underneath it and read "… around 12am your ti".
    */
   reserveTopRight?: boolean;
+  /**
+   * Game-hub UX round (2026-09-24): render the title in its own casing
+   * instead of `uppercase tracking-wide`, which made Japanese, Portuguese and
+   * emoji-heavy titles hard to read. Opt-in, tested on /game first; every
+   * other caller keeps the uppercase title.
+   */
+  plainTitle?: boolean;
 }) {
   const isLive = slot.status === 'live';
   const thumbWidthClass = compact
@@ -170,7 +178,11 @@ export function SlotCard({
               {badges}
             </div>
             <h3
-              className="mt-1 text-sm font-bold uppercase tracking-wide text-text-primary line-clamp-2"
+              className={
+                plainTitle
+                  ? 'mt-1 text-sm font-bold text-text-primary line-clamp-2'
+                  : 'mt-1 text-sm font-bold uppercase tracking-wide text-text-primary line-clamp-2'
+              }
               title={slot.title}
             >
               {slot.title}

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   HEATMAP_CELLS,
+  HEATMAP_MIN_VISIBLE,
   buildHeatmapView,
   heatmapIntensity,
+  histogramTotals,
   isUsableHistogram,
   localUtcOffsetHours,
   peakBandLabel,
@@ -79,21 +81,77 @@ describe('buildHeatmapView', () => {
     const view = buildHeatmapView(emptyHistogram(), 0);
     expect(view.peak).toBeNull();
     expect(view.max).toBe(0);
+    expect(view.min).toBe(0);
+  });
+
+  it('reports the smallest non-zero cell as min', () => {
+    const h = emptyHistogram();
+    h[3] = 40;
+    h[50] = 15;
+    h[100] = 90;
+    expect(buildHeatmapView(h, 0).min).toBe(15);
   });
 });
 
 describe('heatmapIntensity', () => {
   it('is 0 for empty cells and 1 at the max', () => {
     expect(heatmapIntensity(0, 100)).toBe(0);
+    expect(heatmapIntensity(0, 100, 30)).toBe(0);
     expect(heatmapIntensity(100, 100)).toBe(1);
+    expect(heatmapIntensity(100, 100, 30)).toBe(1);
   });
 
-  it('uses a sqrt scale so off-peak cells stay visible', () => {
-    expect(heatmapIntensity(25, 100)).toBeCloseTo(0.5);
+  it('stretches linearly from the quietest non-empty cell', () => {
+    expect(heatmapIntensity(30, 100, 30)).toBe(HEATMAP_MIN_VISIBLE);
+    expect(heatmapIntensity(65, 100, 30)).toBeCloseTo(HEATMAP_MIN_VISIBLE + (1 - HEATMAP_MIN_VISIBLE) * 0.5);
+    // min = 0 keeps a plain linear share of the peak.
+    expect(heatmapIntensity(25, 100)).toBeCloseTo(HEATMAP_MIN_VISIBLE + (1 - HEATMAP_MIN_VISIBLE) * 0.25);
   });
 
-  it('never exceeds 1 even on inconsistent input', () => {
+  it('keeps every non-empty cell visibly above an empty one', () => {
+    expect(heatmapIntensity(1, 100, 1)).toBeGreaterThan(0);
+  });
+
+  it('spreads a flat, round-the-clock grid over the whole range', () => {
+    // The /game/valorant shape: every cell between 40 % and 100 % of the peak.
+    const cells = Array.from({ length: 11 }, (_, i) => 40 + i * 6); // 40..100
+    const t = cells.map((m) => heatmapIntensity(m, 100, 40));
+    expect(t[0]).toBe(HEATMAP_MIN_VISIBLE);
+    expect(t[10]).toBe(1);
+    expect(t[5]).toBeCloseTo(HEATMAP_MIN_VISIBLE + (1 - HEATMAP_MIN_VISIBLE) * 0.5);
+  });
+
+  it('never exceeds 1 or drops below the floor on inconsistent input', () => {
     expect(heatmapIntensity(200, 100)).toBe(1);
+    expect(heatmapIntensity(10, 100, 30)).toBe(HEATMAP_MIN_VISIBLE);
+    expect(heatmapIntensity(50, 50, 50)).toBe(1);
+  });
+});
+
+describe('histogramTotals', () => {
+  it('sums minutes per weekday and per hour of the shifted grid', () => {
+    const h = emptyHistogram();
+    h[0 * 24 + 20] = 60; // Mon 20:00
+    h[0 * 24 + 21] = 30; // Mon 21:00
+    h[6 * 24 + 20] = 15; // Sun 20:00
+    const { byDay, byHour } = histogramTotals(buildHeatmapView(h, 0).grid);
+    expect(byDay).toHaveLength(7);
+    expect(byHour).toHaveLength(24);
+    expect(byDay[0]).toBe(90);
+    expect(byDay[6]).toBe(15);
+    expect(byHour[20]).toBe(75);
+    expect(byHour[21]).toBe(30);
+    expect(byDay.reduce((a, v) => a + v, 0)).toBe(105);
+    expect(byHour.reduce((a, v) => a + v, 0)).toBe(105);
+  });
+
+  it('follows the viewer timezone (UTC Sun 23:00 at +2 is Mon 01:00)', () => {
+    const h = emptyHistogram();
+    h[167] = 60;
+    const { byDay, byHour } = histogramTotals(buildHeatmapView(h, 2).grid);
+    expect(byDay[0]).toBe(60);
+    expect(byHour[1]).toBe(60);
+    expect(byHour[23]).toBe(0);
   });
 });
 

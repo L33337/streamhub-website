@@ -1,5 +1,6 @@
 import { formatCompactNumber } from '@/lib/format/number';
 import { listConjunction, pluralForms } from '@/lib/i18n-core';
+import { plusCount } from './count';
 import type { HubLex } from './types';
 
 /** "3 стримера" / "5 стримеров" — nominative counted noun. */
@@ -509,6 +510,13 @@ export const ru: HubLex = {
         many: 'стримеров',
         other: 'стримера',
       }),
+    streamersLabel28d: (n) =>
+      pluralForms('ru', n, {
+        one: 'стример · 28 дней',
+        few: 'стримера · 28 дней',
+        many: 'стримеров · 28 дней',
+        other: 'стримера · 28 дней',
+      }),
     liveNowLabel: 'сейчас в эфире',
     watchingLabel: 'смотрят',
     streamedLabel: 'стримов · 28 дней',
@@ -549,36 +557,29 @@ export const ru: HubLex = {
       const ogNames = names.length > 0 ? ` — ${listConjunction(names, 'ru')} —` : ':';
       return `Стримеры ${category} с наибольшим числом подписчиков${ogNames} статус эфира и расписание стримов на Twitch и YouTube.`;
     },
-    h1: (category) => `Стримеры ${category} — сейчас в эфире и расписание`,
-    intro: (shown, category, liveCount, upcomingCount, superlative) => {
-      const lead = pluralForms('ru', shown, {
-        one: `${shown} стример ведёт или планирует стримы по ${category} на этой неделе на Twitch и YouTube. `,
-        few: `${shown} стримера ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube. `,
-        many: `${shown} стримеров ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube. `,
-        other: `${shown} стримера ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube. `,
+    h1: (category) => `Стримеры ${category}: сейчас в эфире и расписание`,
+    intro: (shown, category, live, upcoming) => {
+      const s = plusCount(shown);
+      const lead = pluralForms('ru', shown.n, {
+        one: `${s} стример ведёт или планирует стримы по ${category} на этой неделе на Twitch и YouTube: `,
+        few: `${s} стримера ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube: `,
+        many: `${s} стримеров ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube: `,
+        other: `${s} стримера ведут или планируют стримы по ${category} на этой неделе на Twitch и YouTube: `,
       });
-      const live =
-        liveCount > 0
-          ? pluralForms('ru', liveCount, {
-              one: `${liveCount} сейчас в эфире`,
-              few: `${liveCount} сейчас в эфире`,
-              many: `${liveCount} сейчас в эфире`,
-              other: `${liveCount} сейчас в эфире`,
+      const liveText = live.n > 0 ? `${plusCount(live)} сейчас в эфире` : 'сейчас никто не в эфире';
+      const u = plusCount(upcoming);
+      const upcomingText =
+        upcoming.n > 0
+          ? pluralForms('ru', upcoming.n, {
+              one: ` и впереди ${u} стрим в ближайшие 7 дней.`,
+              few: ` и впереди ${u} стрима в ближайшие 7 дней.`,
+              many: ` и впереди ${u} стримов в ближайшие 7 дней.`,
+              other: ` и впереди ${u} стрима в ближайшие 7 дней.`,
             })
-          : 'Сейчас никто не в эфире';
-      const upcoming =
-        upcomingCount > 0
-          ? pluralForms('ru', upcomingCount, {
-              one: `, впереди ${upcomingCount} стрим в ближайшие 7 дней.`,
-              few: `, впереди ${upcomingCount} стрима в ближайшие 7 дней.`,
-              many: `, впереди ${upcomingCount} стримов в ближайшие 7 дней.`,
-              other: `, впереди ${upcomingCount} стрима в ближайшие 7 дней.`,
-            })
-          : '.';
-      return lead + live + upcoming + superlative;
+          : ' и больше ничего не запланировано на ближайшие 7 дней.';
+      return lead + liveText + upcomingText;
     },
-    superlative: (category, name, value, isTwitch) =>
-      ` Больше всего ${isTwitch ? 'фолловеров' : 'подписчиков'} здесь у ${name} — ${value}.`,
+    nextUpLabel: 'Далее',
     onPageAria: 'На этой странице',
     navLiveNow: 'Сейчас в эфире',
     navTopStreamers: 'Топ стримеров',
@@ -609,14 +610,14 @@ export const ru: HubLex = {
     thStreamer: 'Стример',
     thNextStream: 'Следующий стрим',
     thFollowers: 'Подписчики',
-    thHours: 'Часы / 28 дней',
+    thHours: 'Часы · 28 дней',
     liveNowCell: 'Сейчас в эфире',
     seeFullRanking: (category) =>
       `Смотреть полный рейтинг ${category} (топ-50) →`,
     whoStreams: (category) => `Стримеры, которые стримят ${category}`,
     whenStreamed: (category) => `Когда стримят ${category}?`,
     heatmapSummary: (category) =>
-      `Большинство стримов по ${category} идёт {peak}{tz} — по данным за последние 4 недели.`,
+      `Большинство стримов по ${category} идёт {peak}{tz}, по данным за последние 4 недели.`,
     heatmapSummaryEmpty: 'По данным за последние 4 недели отслеженных стримов.',
     tzLocalSuffix: ' (ваше время)',
     tzUtcSuffix: ' (UTC)',
@@ -635,8 +636,22 @@ export const ru: HubLex = {
       'по субботам',
       'по воскресеньям',
     ],
-    bestTimeToStream: (category) => `Лучшее время для стримов по ${category}`,
+    barsByDay: 'По дням недели',
+    barsByHour: 'По часам',
+    statsLead: 'За 28 дней:',
+    statHours: (h) => `${h} ч в эфире`,
+    statStreams: (n, display) =>
+      pluralForms('ru', n, {
+        one: `${display} стрим`,
+        few: `${display} стрима`,
+        many: `${display} стримов`,
+        other: `${display} стрима`,
+      }),
+    statPeak: (v) => `пик ${v} зрителей`,
+    busiestTimesHeading: 'Самое активное время',
+    leastCompetitionHeading: 'Меньше конкуренции',
     trendingBadge: '▲ В тренде',
+    trendingTitle: 'В тренде на Twitch на этой неделе',
     bestTimeIntro: (category) =>
       `Для стримеров: окна, когда в ${category} больше всего зрителей на один живой канал.`,
     fullHeatmapLink: 'Полная карта возможностей и анализ →',
@@ -646,7 +661,7 @@ export const ru: HubLex = {
     timesUtcNote: 'Время в UTC.',
     quietTitle: (category) => `Сейчас нет стримов по ${category}`,
     quietBody: (category) =>
-      `Никто из стримеров ${category}, за которыми мы следим, не в эфире и не ожидается в ближайшие 7 дней. Расписания и прогнозы ИИ обновляются несколько раз в день — загляните позже.`,
+      `Никто из стримеров ${category}, за которыми мы следим, не в эфире и не ожидается в ближайшие 7 дней. Расписания и прогнозы ИИ обновляются несколько раз в день, так что загляните позже.`,
     quietMeanwhile: 'А пока',
     seeWhosLive: 'Посмотрите, кто сейчас в эфире →',
     browseAllGames: 'Все игры',
@@ -654,7 +669,7 @@ export const ru: HubLex = {
     scheduleAria: (category) => `Расписание стримов ${category}`,
     upcomingStreams: (category) => `Ближайшие стримы по ${category}`,
     scheduleNote:
-      'Время подстраивается под ваш часовой пояс, рядом — время стримера. Дни идут по календарю UTC, поэтому поздний ночной стрим может оказаться под следующим днём.',
+      'Время подстраивается под ваш часовой пояс, рядом указано время стримера. Дни идут по календарю UTC, поэтому поздний ночной стрим может оказаться под следующим днём.',
     filterAria: 'Фильтр расписания',
     allPlatforms: 'Все платформы',
     hideLowConfidence: 'Скрыть низкую вероятность',
@@ -666,13 +681,24 @@ export const ru: HubLex = {
         other: `Ещё ${n} прогноза с низкой вероятностью`,
       }),
     lowConfAria: (label) => `Прогнозы с низкой вероятностью: ${label}`,
-    hiddenNotShown: (n) =>
-      pluralForms('ru', n, {
-        one: `Ещё ${n} прогноз на этот день не показан. Полное расписание — на странице стримера.`,
-        few: `Ещё ${n} прогноза на этот день не показаны. Полное расписание — на странице стримера.`,
-        many: `Ещё ${n} прогнозов на этот день не показаны. Полное расписание — на странице стримера.`,
-        other: `Ещё ${n} прогноза на этот день не показаны. Полное расписание — на странице стримера.`,
-      }),
+    // "из 22 стримов": genitive after "из" (1 → стрима, 2+ → стримов).
+    dayCountShown: (shown, total) =>
+      `${shown} из ${total} ${pluralForms('ru', total, {
+        one: 'стрима',
+        few: 'стримов',
+        many: 'стримов',
+        other: 'стрима',
+      })}`,
+    showAllDays: (days) =>
+      `Показать все ${days} ${pluralForms('ru', days, {
+        one: 'день',
+        few: 'дня',
+        many: 'дней',
+        other: 'дня',
+      })}`,
+    showFewerDays: 'Показать меньше дней',
+    icsAria: (name) => `Добавить стрим ${name} в календарь`,
+    icsTitle: 'Добавить в календарь (.ics)',
     relatedGames: 'Похожие игры',
     relatedGamesAria: 'Похожие игры',
     relatedNote:

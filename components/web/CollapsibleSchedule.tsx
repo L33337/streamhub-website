@@ -105,8 +105,12 @@ export function CollapsibleSchedule({ moreLabel, lessLabel, children }: Props) {
       >
         {children}
       </div>
+      {/* data-schedule-toggle: globals.css hides the toggle while a game-hub
+          schedule filter is active (the filter reveals the whole week) and
+          when scripting is off (every day is shown then). */}
       <button
         type="button"
+        data-schedule-toggle
         onClick={expanded ? collapse : () => setUserExpanded(true)}
         aria-expanded={expanded}
         aria-controls={id}

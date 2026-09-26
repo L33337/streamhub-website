@@ -14,6 +14,11 @@
 // names and "UTC" untranslated; "A–Z" may be adapted where a language would
 // not use it. The 'en' entries are byte-identical to the previously
 // hardcoded strings — English pages must not change by a single character.
+// Exception: the game hub's visible copy was rewritten in the UX round of
+// 2026-09-24 (dash-free, one-sentence intro); its English is pinned anew in
+// lib/__tests__/i18n-hub.test.ts.
+
+import type { Count } from './count';
 
 /** Metric slugs of the /rankings leaderboards — mirrors RankingMetric. */
 export type HubRankingMetric =
@@ -741,15 +746,21 @@ export interface HubLex {
     aria(category: string): string;
     /** After the bold count: "streamer" / "streamers" (pluralized). */
     streamersLabel(n: number): string;
+    /**
+     * Game hub chip (UX round 2026-09-24): after the bold 28-day catalog count,
+     * with the window spelled out, "streamers · 28 days". The window is what
+     * keeps it from contradicting the intro's this-week count.
+     */
+    streamersLabel28d(n: number): string;
     /** After the bold live count: "live now". */
     liveNowLabel: string;
     /** After the bold viewer total: "watching". */
     watchingLabel: string;
-    /** After the bold "{X}h": "streamed / 28d". */
+    /** After the bold "{X}h": "streamed · 28d" (/rankings/game chips). */
     streamedLabel: string;
-    /** After the bold count: "streams / 28d" (pluralized). */
+    /** After the bold count: "streams · 28d" (pluralized). */
     streamsLabel(n: number): string;
-    /** Around the bold peak-viewer number: "Peak " … " viewers / 28d". */
+    /** Around the bold peak-viewer number: "Peak " … " viewers · 28d". */
     peakLead: string;
     peakTail: string;
     /** After "▲ {x}%": " this week" (leading space significant). */
@@ -779,25 +790,19 @@ export interface HubLex {
     /** OG/Twitter description; names joined em-dash style when present. */
     ogDescription(category: string, names: string[]): string;
     // --- hero ---
+    /** Visible H1. No em/en dashes (guarded by i18n-hub.test.ts). */
     h1(category: string): string;
     /**
-     * Full intro: "{shown} streamers have {cat} streams live or scheduled
-     * this week on Twitch and YouTube. {live} are live right now, with
-     * {upcoming} upcoming streams in the next 7 days." Clauses drop at 0
-     * (live clause becomes "None are live right now"); `superlative` is the
-     * pre-rendered sentence below or '' and is appended verbatim.
+     * ONE sentence, this-week numbers only (UX round 2026-09-24): "{shown}
+     * streamers have {cat} streams live or scheduled this week on Twitch and
+     * YouTube: {live} live now and {upcoming} upcoming in the next 7 days."
+     * Every count is a `Count` rendered through `plusCount` ("200+" when the
+     * fetch was capped). The 28-day catalog size lives in the chips, with its
+     * window, never here.
      */
-    intro(
-      shown: number,
-      category: string,
-      liveCount: number,
-      upcomingCount: number,
-      superlative: string,
-    ): string;
-    /** " The most-followed {cat} streamer here is {name} with {value} followers."
-     *  Leading space significant (appended to the intro). `value` is the
-     *  locale-formatted compact number; `isTwitch` picks followers/subscribers. */
-    superlative(category: string, name: string, value: string, isTwitch: boolean): string;
+    intro(shown: Count, category: string, live: Count, upcoming: Count): string;
+    /** Label of the hero's "Next up" row (earliest real slot of the week). */
+    nextUpLabel: string;
     // --- on-this-page nav ---
     onPageAria: string;
     navLiveNow: string;
@@ -822,7 +827,8 @@ export interface HubLex {
     thStreamer: string;
     thNextStream: string;
     thFollowers: string;
-    /** "Hours / 28d" — deliberately distinct from the explorer's "Hours (28d)". */
+    /** "Hours · 28d" — deliberately distinct from the explorer's "Hours (28d)".
+     *  The cells under it print the bare number, the unit lives here. */
     thHours: string;
     liveNowCell: string;
     seeFullRanking(category: string): string;
@@ -850,9 +856,25 @@ export interface HubLex {
      * an adverbial form ("montags") Intl cannot produce.
      */
     heatmapDayNames: [string, string, string, string, string, string, string];
-    // --- best-time section (M24 preview) ---
-    bestTimeToStream(category: string): string;
+    /** Mobile bar charts (the grid is desktop-only): row labels. */
+    barsByDay: string;
+    barsByHour: string;
+    /**
+     * 28-day activity line under the section heading: "Last 28 days:" then
+     * items joined by " · " in the page. `h`/`v` arrive compact-formatted;
+     * `n` drives the plural, `display` is what is printed.
+     */
+    statsLead: string;
+    statHours(h: string): string;
+    statStreams(n: number, display: string): string;
+    statPeak(v: string): string;
+    /** Sub-headings (h3) of the merged "When is X streamed?" section. */
+    busiestTimesHeading: string;
+    leastCompetitionHeading: string;
+    // --- best-time part (M24 preview) ---
     trendingBadge: string;
+    /** title + sr-only explanation of the trending badge. */
+    trendingTitle: string;
     bestTimeIntro(category: string): string;
     fullHeatmapLink: string;
     bestSlotsAria: string;
@@ -878,7 +900,14 @@ export interface HubLex {
     /** GameDaySection (server component — reads the lexicon directly). */
     moreLowConfidence(n: number): string;
     lowConfAria(label: string): string;
-    hiddenNotShown(n: number): string;
+    /** Day heading count when the page-weight cap dropped slots: "12 of 22 streams". */
+    dayCountShown(shown: number, total: number): string;
+    /** Collapsed-week toggle: "Show all 7 days" / "Show fewer days". */
+    showAllDays(days: number): string;
+    showFewerDays: string;
+    /** Per-slot .ics button (client component gets them as props). */
+    icsAria(name: string): string;
+    icsTitle: string;
     // --- related games ---
     relatedGames: string;
     relatedGamesAria: string;

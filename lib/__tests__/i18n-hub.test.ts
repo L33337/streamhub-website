@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { UI_LANGS } from '../i18n-core';
 import { buildRootGamesFaq, HUB_STRINGS, hubLexFor } from '../i18n-hub';
 import type { HubLex } from '../i18n/hub/types';
+import { isExactlyOne, plusCount, type Count } from '../i18n/hub/count';
 import { GAMES_HUB_VIEWS } from '../games-hub';
 import { formatRefreshedAt, RANKING_PAGES } from '../rankings';
 
 const GAME = 'Minecraft';
 const STAMP = '04:15 UTC';
 const DATE_LABEL = 'Jul 18, 2026';
+const c = (n: number, more = false): Count => ({ n, more });
 
 /**
  * Renders every lexicon entry with fixture arguments — [key, output]. Explicit
@@ -335,6 +337,9 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['gameChips.aria', L.gameChips.aria(GAME)],
     ['gameChips.streamersLabel', L.gameChips.streamersLabel(5)],
     ['gameChips.streamersLabel.one', L.gameChips.streamersLabel(1)],
+    ['gameChips.streamersLabel28d', L.gameChips.streamersLabel28d(88)],
+    ['gameChips.streamersLabel28d.one', L.gameChips.streamersLabel28d(1)],
+    ['gameChips.streamersLabel28d.few', L.gameChips.streamersLabel28d(3)],
     ['gameChips.liveNowLabel', L.gameChips.liveNowLabel],
     ['gameChips.watchingLabel', L.gameChips.watchingLabel],
     ['gameChips.streamedLabel', L.gameChips.streamedLabel],
@@ -352,10 +357,13 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['game.ogDescription', L.game.ogDescription(GAME, ['A', 'B'])],
     ['game.ogDescription.none', L.game.ogDescription(GAME, [])],
     ['game.h1', L.game.h1(GAME)],
-    ['game.intro', L.game.intro(12, GAME, 3, 9, ' X.')],
-    ['game.intro.quiet', L.game.intro(1, GAME, 0, 0, '')],
-    ['game.superlative', L.game.superlative(GAME, 'NachtFalke', '1.2M', true)],
-    ['game.superlative.yt', L.game.superlative(GAME, 'NachtFalke', '1.2M', false)],
+    ['game.intro', L.game.intro(c(12), GAME, c(3), c(9))],
+    ['game.intro.capped', L.game.intro(c(39, true), GAME, c(6), c(200, true))],
+    ['game.intro.noLive', L.game.intro(c(22), GAME, c(0), c(41))],
+    ['game.intro.noUpcoming', L.game.intro(c(2), GAME, c(2), c(0))],
+    ['game.intro.one', L.game.intro(c(1), GAME, c(1), c(1))],
+    ['game.intro.quiet', L.game.intro(c(1), GAME, c(0), c(0))],
+    ['game.nextUpLabel', L.game.nextUpLabel],
     ['game.onPageAria', L.game.onPageAria],
     ['game.navLiveNow', L.game.navLiveNow],
     ['game.navTopStreamers', L.game.navTopStreamers],
@@ -392,8 +400,18 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['game.legendLess', L.game.legendLess],
     ['game.legendMore', L.game.legendMore],
     ['game.heatmapDayNames', L.game.heatmapDayNames.join(', ')],
-    ['game.bestTimeToStream', L.game.bestTimeToStream(GAME)],
+    ['game.barsByDay', L.game.barsByDay],
+    ['game.barsByHour', L.game.barsByHour],
+    ['game.statsLead', L.game.statsLead],
+    ['game.statHours', L.game.statHours('3.1K')],
+    ['game.statStreams', L.game.statStreams(546, '546')],
+    ['game.statStreams.one', L.game.statStreams(1, '1')],
+    ['game.statStreams.few', L.game.statStreams(3, '3')],
+    ['game.statPeak', L.game.statPeak('73.1K')],
+    ['game.busiestTimesHeading', L.game.busiestTimesHeading],
+    ['game.leastCompetitionHeading', L.game.leastCompetitionHeading],
     ['game.trendingBadge', L.game.trendingBadge],
+    ['game.trendingTitle', L.game.trendingTitle],
     ['game.bestTimeIntro', L.game.bestTimeIntro(GAME)],
     ['game.fullHeatmapLink', L.game.fullHeatmapLink],
     ['game.bestSlotsAria', L.game.bestSlotsAria],
@@ -415,8 +433,13 @@ function renderAll(L: HubLex): Array<[string, string]> {
     ['game.moreLowConfidence', L.game.moreLowConfidence(4)],
     ['game.moreLowConfidence.one', L.game.moreLowConfidence(1)],
     ['game.lowConfAria', L.game.lowConfAria(DATE_LABEL)],
-    ['game.hiddenNotShown', L.game.hiddenNotShown(6)],
-    ['game.hiddenNotShown.one', L.game.hiddenNotShown(1)],
+    ['game.dayCountShown', L.game.dayCountShown(12, 22)],
+    ['game.dayCountShown.one', L.game.dayCountShown(12, 21)],
+    ['game.showAllDays', L.game.showAllDays(7)],
+    ['game.showAllDays.few', L.game.showAllDays(3)],
+    ['game.showFewerDays', L.game.showFewerDays],
+    ['game.icsAria', L.game.icsAria('NachtFalke')],
+    ['game.icsTitle', L.game.icsTitle],
     ['game.relatedGames', L.game.relatedGames],
     ['game.relatedGamesAria', L.game.relatedGamesAria],
     ['game.relatedNote', L.game.relatedNote],
@@ -851,7 +874,7 @@ describe('game-page lexicon (M22 P4)', () => {
       L.game.watchingNow(GAME),
       L.game.mostFollowed(GAME),
       L.game.whenStreamed(GAME),
-      L.game.bestTimeToStream(GAME),
+      L.game.intro(c(12), GAME, c(3), c(9)),
       L.game.upcomingStreams(GAME),
       L.gameRanking.metaTitle(GAME, 1),
       L.gameRanking.h1(GAME),
@@ -885,22 +908,31 @@ describe('English game-page lexicon regression guard (M22 P4)', () => {
     );
   });
 
-  it('pins the /game/[slug] intro assembly', () => {
-    expect(L.game.intro(12, 'Fortnite', 3, 9, '')).toBe(
-      '12 streamers have Fortnite streams live or scheduled this week on Twitch and YouTube. 3 are live right now, with 9 upcoming streams in the next 7 days.',
+  // UX round 2026-09-24: one sentence, this-week numbers only, "+" when the
+  // capped schedule fetch reported has_more.
+  it('pins the /game/[slug] visible hero copy', () => {
+    expect(L.game.h1('Fortnite')).toBe('Fortnite streamers: live now & schedule');
+    expect(L.game.intro(c(12), 'Fortnite', c(3), c(9))).toBe(
+      '12 streamers have Fortnite streams live or scheduled this week on Twitch and YouTube: 3 live now and 9 upcoming in the next 7 days.',
     );
-    expect(L.game.intro(1, 'Fortnite', 1, 1, '')).toBe(
-      '1 streamer has Fortnite streams live or scheduled this week on Twitch and YouTube. 1 is live right now, with 1 upcoming stream in the next 7 days.',
+    expect(L.game.intro(c(39, true), 'Fortnite', c(6), c(200, true))).toBe(
+      '39+ streamers have Fortnite streams live or scheduled this week on Twitch and YouTube: 6 live now and 200+ upcoming in the next 7 days.',
     );
-    expect(L.game.intro(2, 'Fortnite', 0, 0, '')).toBe(
-      '2 streamers have Fortnite streams live or scheduled this week on Twitch and YouTube. None are live right now.',
+    expect(L.game.intro(c(1), 'Fortnite', c(1), c(1))).toBe(
+      '1 streamer has Fortnite streams live or scheduled this week on Twitch and YouTube: 1 live now and 1 upcoming in the next 7 days.',
     );
-    expect(L.game.superlative('Fortnite', 'Ninja', '19.2M', true)).toBe(
-      ' The most-followed Fortnite streamer here is Ninja with 19.2M followers.',
+    expect(L.game.intro(c(2), 'Fortnite', c(0), c(0))).toBe(
+      '2 streamers have Fortnite streams live or scheduled this week on Twitch and YouTube: none live right now and nothing else scheduled for the next 7 days.',
     );
-    expect(L.game.superlative('Fortnite', 'Ninja', '19.2M', false)).toBe(
-      ' The most-followed Fortnite streamer here is Ninja with 19.2M subscribers.',
+    expect(L.gameChips.streamersLabel28d(88)).toBe('streamers · 28 days');
+    expect(L.game.dayCountShown(12, 22)).toBe('12 of 22 streams');
+    expect(L.game.showAllDays(7)).toBe('Show all 7 days');
+    expect(L.game.heatmapSummary('Fortnite')).toBe(
+      'Most Fortnite streams run on {peak}{tz}, based on the last 4 weeks of tracked broadcasts.',
     );
+    expect(
+      [L.game.statsLead, L.game.statHours('3.1K'), L.game.statStreams(546, '546'), L.game.statPeak('73.1K')].join(' '),
+    ).toBe('Last 28 days: 3.1K hours streamed 546 streams peak of 73.1K viewers');
   });
 
   it('pins the /rankings/game/[slug] metadata + intro byte shapes', () => {
@@ -990,6 +1022,45 @@ describe('English game-page lexicon regression guard (M22 P4)', () => {
       expect(buildGameRankingFaqLocalized(L.gameRanking, 'en', params)).toEqual(
         buildGameRankingFaq(params),
       );
+    }
+  });
+});
+
+// --- Game-hub UX round (2026-09-24) ---------------------------------------------
+
+describe('game hub counts (plusCount)', () => {
+  it('prints "+" only for capped counts and keeps singular for an exact 1', () => {
+    expect(plusCount(c(200, true))).toBe('200+');
+    expect(plusCount(c(198))).toBe('198');
+    expect(isExactlyOne(c(1))).toBe(true);
+    expect(isExactlyOne(c(1, true))).toBe(false);
+    expect(isExactlyOne(c(2))).toBe(false);
+  });
+
+  it.each([...UI_LANGS])('%s carries the "+" into the intro when capped', (lang) => {
+    const text = HUB_STRINGS[lang].game.intro(c(39, true), GAME, c(6), c(200, true));
+    expect(text).toContain('200+');
+    expect(text).toContain('39+');
+  });
+});
+
+// User rule (2026-08-27): em/en dashes read as machine-written. Every VISIBLE
+// game-hub string is guarded. Excluded on purpose: the metadata strings
+// (metaTitle / metaDescription / ogTitle / ogDescription / notFoundTitle stay
+// as they are, so SERP titles do not churn) and the heatmap cell tooltip,
+// whose "{from}–{to}" is a numeric range where the en dash is correct.
+const DASH_EXEMPT_GAME_KEYS = /^game\.(notFoundTitle|metaTitle|metaDescription|ogTitle|ogDescription|heatmapTooltip)/;
+
+describe('game hub visible copy is dash-free', () => {
+  it.each([...UI_LANGS])('%s', (lang) => {
+    const rows = renderAll(HUB_STRINGS[lang]).filter(
+      ([key]) =>
+        (key.startsWith('game.') || key.startsWith('gameChips.')) &&
+        !DASH_EXEMPT_GAME_KEYS.test(key),
+    );
+    expect(rows.length).toBeGreaterThan(60);
+    for (const [key, value] of rows) {
+      expect(value, `${lang}:${key}`).not.toMatch(/[—–]/);
     }
   });
 });
