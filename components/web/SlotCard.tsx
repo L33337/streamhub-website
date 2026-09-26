@@ -51,9 +51,9 @@ function PlaceholderThumbnail({ name }: { name: string }) {
   );
 }
 
-// `language` localizes the card chrome (status line, confidence) on the
-// streamer page; the default 'en' keeps every existing caller (home, /live,
-// /game, feed) byte-identical. `topBadges` is a Program-page extension
+// `language` localizes the card chrome (status line, confidence, live overlay);
+// the default 'en' keeps callers that pass none (feed rails) in English.
+// `topBadges` is a Program-page extension
 // (CANCELLED/NEW/UNCERTAIN badge row) — the default leaves all other callers
 // untouched.
 export function SlotCard({
@@ -62,7 +62,6 @@ export function SlotCard({
   topBadges,
   compact = false,
   reserveTopRight = false,
-  plainTitle = false,
 }: {
   slot: SlotCardSlot;
   language?: string;
@@ -80,13 +79,6 @@ export function SlotCard({
    * underneath it and read "… around 12am your ti".
    */
   reserveTopRight?: boolean;
-  /**
-   * Game-hub UX round (2026-09-24): render the title in its own casing
-   * instead of `uppercase tracking-wide`, which made Japanese, Portuguese and
-   * emoji-heavy titles hard to read. Opt-in, tested on /game first; every
-   * other caller keeps the uppercase title.
-   */
-  plainTitle?: boolean;
 }) {
   const isLive = slot.status === 'live';
   const thumbWidthClass = compact
@@ -110,7 +102,11 @@ export function SlotCard({
       href={localeHref(resolveUiLang(language), `/schedule/${encodeURIComponent(slot.id)}`)}
       prefetch={false}
       className="block transition-transform focus-visible:outline-none motion-safe:hover:scale-[1.01] motion-safe:focus-visible:scale-[1.01]"
-      aria-label={`${slot.streamer_name}: ${slot.title}`}
+      // No aria-label (streamer-page UX round, 2026-09-26): an override on a
+      // link that wraps the whole card can never contain the card's visible
+      // text (WCAG 2.5.3, Lighthouse label-content-name-mismatch), so the
+      // accessible name is the card content. The thumbnails carry alt="" for
+      // the same reason: their alt was the title, read twice.
     >
       <article
         className={`flex gap-3 rounded-xl bg-background-elevated p-3 ${
@@ -128,7 +124,7 @@ export function SlotCard({
             <Image
               // The widest bucket of thumbSizes (224px at lg, 144px compact).
               src={sizedCdnImageUrl(slot.thumbnail_url, compact ? 144 : 224)}
-              alt={slot.title?.trim() || slot.streamer_name}
+              alt=""
               fill
               unoptimized
               sizes={thumbSizes}
@@ -137,7 +133,7 @@ export function SlotCard({
           ) : slot.avatar_url ? (
             <Image
               src={sizedAvatarUrl(slot.avatar_url, compact ? 144 : 224)}
-              alt={slot.streamer_name}
+              alt=""
               fill
               unoptimized
               sizes={thumbSizes}
@@ -153,7 +149,7 @@ export function SlotCard({
                   non-null only on live slots with a fresh (<25 min) sample. */}
               {slot.viewer_count != null && (
                 <span className="rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">
-                  {formatCompactNumber(slot.viewer_count)} watching
+                  {slotLexFor(language).viewersWatching(formatCompactNumber(slot.viewer_count))}
                 </span>
               )}
             </div>
@@ -177,12 +173,12 @@ export function SlotCard({
               {isLive && slot.is_always_on && <AlwaysOnBadge />}
               {badges}
             </div>
+            {/* Original title casing everywhere since the streamer-page UX
+                round (2026-09-26); the game hub tested it first (former
+                `plainTitle` prop). `uppercase tracking-wide` doubled the
+                line count of long titles and garbled Japanese/emoji ones. */}
             <h3
-              className={
-                plainTitle
-                  ? 'mt-1 text-sm font-bold text-text-primary line-clamp-2'
-                  : 'mt-1 text-sm font-bold uppercase tracking-wide text-text-primary line-clamp-2'
-              }
+              className="mt-1 text-sm font-bold text-text-primary line-clamp-2"
               title={slot.title}
             >
               {slot.title}
@@ -195,8 +191,8 @@ export function SlotCard({
             ) : null}
             {/* AI prediction reasoning — full sentence in the HTML (crawlable,
                 unique copy per slot), clamped to two lines visually. M22 P3:
-                copy in a third language falls back to the labelled English
-                generic summary (pickReasoning). */}
+                copy in a third language falls back to the English generic
+                summary (pickReasoning), marked with lang="en". */}
             {(() => {
               const picked =
                 !isLive && slot.is_predicted ? pickReasoning(slot, language) : null;
@@ -207,11 +203,6 @@ export function SlotCard({
                   : undefined;
               return (
                 <p className="mt-1 text-xs text-text-muted line-clamp-2" lang={textLang}>
-                  {picked.isGeneric ? (
-                    <span className="text-text-muted/70">
-                      {slotLexFor(language).autoSummary}:{' '}
-                    </span>
-                  ) : null}
                   {picked.text}
                 </p>
               );

@@ -222,9 +222,9 @@ function ReasoningBox({
   slot: PublicStreamSlot;
   language: string;
 }) {
-  // M22 P3 (S3.6): reasoning in a third language falls back to the labelled
-  // always-English generic summary instead of showing e.g. Japanese text
-  // under German chrome.
+  // M22 P3 (S3.6): reasoning in a third language falls back to the
+  // always-English generic summary (lang="en") instead of showing e.g.
+  // Japanese text under German chrome.
   const picked = pickReasoning(slot, language);
   if (!picked) return null;
   const uiLang = resolveUiLang(language);
@@ -240,11 +240,6 @@ function ReasoningBox({
       >
         {slotLexFor(language).whyThisPrediction}
       </h3>
-      {picked.isGeneric && (
-        <p className="mb-2 text-xs text-text-muted">
-          {slotLexFor(language).autoSummary}
-        </p>
-      )}
       <div className="space-y-3 text-sm leading-relaxed text-text-secondary" lang={textLang}>
         {picked.text
           .split(/\n\s*\n/)

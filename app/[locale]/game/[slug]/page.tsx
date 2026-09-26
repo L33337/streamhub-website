@@ -49,6 +49,7 @@ import { GameDaySection } from '@/components/web/games/GameDaySection';
 import { ScheduleFilters } from '@/components/web/games/ScheduleFilters';
 import { capDaySlots, collapsedDayKeys } from '@/lib/game-schedule';
 import { DayNavBar } from '@/components/web/DayNavBar';
+import { PastDayGate } from '@/components/web/PastDayGate';
 import { CollapsibleSchedule } from '@/components/web/CollapsibleSchedule';
 import { toDayCounts } from '@/lib/day-counts';
 import { LiveBadge, PlatformBadge } from '@/components/web/Badges';
@@ -1132,16 +1133,19 @@ export default async function GamePage({ params }: Props) {
                     // Page-weight cap — see MAX_SLOTS_PER_DAY. Applied per day so a
                     // busy Monday cannot push Saturday and Sunday out of the page.
                     const { slots, hidden } = capDaySlots(daySlots);
+                    // PastDayGate: a stale snapshot must not open with a day
+                    // that is already over (streamer-page UX round 2026-09-26).
                     return (
-                      <GameDaySection
-                        key={dateKey}
-                        dateKey={dateKey}
-                        label={utcDateLabel(dateKey, todayUtc, locale)}
-                        slots={slots}
-                        hiddenCount={hidden}
-                        collapsed={collapsedDays.has(dateKey)}
-                        language={locale}
-                      />
+                      <PastDayGate key={dateKey} dateKey={dateKey} todayUtc={todayUtc}>
+                        <GameDaySection
+                          dateKey={dateKey}
+                          label={utcDateLabel(dateKey, todayUtc, locale)}
+                          slots={slots}
+                          hiddenCount={hidden}
+                          collapsed={collapsedDays.has(dateKey)}
+                          language={locale}
+                        />
+                      </PastDayGate>
                     );
                   })}
                 </>

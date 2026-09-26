@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { DayCount } from '@/lib/day-counts';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { slotLexFor } from '@/lib/i18n-slot';
-import { localDateKey, utcDateShortLabel } from '@/lib/format/time';
+import { isPastUtcDay, localDateKey, utcDateShortLabel, utcTodayKey } from '@/lib/format/time';
 
 interface Props {
   days: string[];
@@ -46,6 +46,13 @@ export function DayNavBar({ days, counts, todayUtc, language = 'en', dense = fal
     localDateKey,
     () => todayUtc,
   );
+  // A stale ISR snapshot can start with a UTC day that is already over — the
+  // pill row read "Wed 23 · Today 24 · …" (streamer-page UX round,
+  // 2026-09-26). Past UTC days drop out after hydration; the server snapshot
+  // renders all of them, so the HTML stays deterministic. The day sections
+  // themselves are gated the same way by <PastDayGate>.
+  const clientTodayUtc = useSyncExternalStore(subscribeToNothing, utcTodayKey, () => todayUtc);
+  const visibleDays = days.filter((d) => !isPastUtcDay(d, clientTodayUtc));
 
   useEffect(() => {
     const sections = days
@@ -72,6 +79,10 @@ export function DayNavBar({ days, counts, todayUtc, language = 'en', dense = fal
     return () => observer.disconnect();
   }, [days]);
 
+  // Every rendered day is over: the snapshot is at least a week old. Nothing
+  // to jump to; the sections are gated away as well.
+  if (visibleDays.length === 0) return null;
+
   if (dense) {
     return (
       <nav
@@ -82,7 +93,7 @@ export function DayNavBar({ days, counts, todayUtc, language = 'en', dense = fal
           className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="list"
         >
-          {days.map((dateKey) => {
+          {visibleDays.map((dateKey) => {
             const day = counts[dateKey] ?? { total: 0, active: 0 };
             const count = day.active;
             const label = utcDateShortLabel(dateKey, referenceToday, lang);
@@ -146,7 +157,7 @@ export function DayNavBar({ days, counts, todayUtc, language = 'en', dense = fal
         className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="list"
       >
-        {days.map((dateKey) => {
+        {visibleDays.map((dateKey) => {
           const day = counts[dateKey] ?? { total: 0, active: 0 };
           // A cancelled slot is a stream that is NOT happening — counting it as
           // "1 stream" made quiet days look busy.

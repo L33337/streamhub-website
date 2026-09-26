@@ -177,7 +177,7 @@ export function GameDaySection({
           {full.map((slot) => (
             <SlotRowItem key={slot.id} slot={slot}>
               <div className="relative">
-                <SlotCard slot={slot} language={language} reserveTopRight plainTitle />
+                <SlotCard slot={slot} language={language} reserveTopRight />
                 {isIcsExportable(slot) && (
                   <SlotIcsButton
                     slot={publicSlotToIcsSlot(slot)}

@@ -6,12 +6,17 @@ import {
   formatUtcDateShort,
   localDateKey,
   localizedNextLabel,
+  firstCurrentSlotIndex,
+  isPastUtcDay,
+  NEXT_SLOT_GRACE_MS,
   pickNextRealSlot,
+  pickNextRealSlots,
   safeTimeZone,
   sevenDayKeys,
   utcDateAbsoluteLabel,
   utcDateLabel,
   utcDateShortLabel,
+  utcTodayKey,
 } from '../time';
 
 const TODAY = '2026-07-11';
@@ -286,5 +291,44 @@ describe('pickNextRealSlot', () => {
   it('treats a missing slot_kind as a regular stream (API deploy skew)', () => {
     const s = slot('2026-07-29T18:00:00Z');
     expect(pickNextRealSlot([s], days)).toBe(s);
+  });
+});
+
+describe('pickNextRealSlots', () => {
+  const days = sevenDayKeys(new Date('2026-07-28T00:00:00Z'));
+  it('walks the same order pickNextRealSlot does, skipping cancellations', () => {
+    const a = { start_time: '2026-07-29T18:00:00Z' };
+    const x = { start_time: '2026-07-29T20:00:00Z', slot_kind: 'cancelled' };
+    const b = { start_time: '2026-07-30T18:00:00Z' };
+    const c = { start_time: '2026-07-31T18:00:00Z' };
+    expect(pickNextRealSlots([c, x, b, a], days, 2)).toEqual([a, b]);
+    expect(pickNextRealSlot([c, x, b, a], days)).toBe(a);
+  });
+});
+
+describe('stale-snapshot guards', () => {
+  it('utcTodayKey is the UTC date, not the local one', () => {
+    expect(utcTodayKey(new Date('2026-09-24T23:30:00Z'))).toBe('2026-09-24');
+    expect(utcTodayKey(new Date('2026-09-25T00:00:00Z'))).toBe('2026-09-25');
+  });
+
+  it('isPastUtcDay only flags days before the UTC date', () => {
+    expect(isPastUtcDay('2026-09-23', '2026-09-24')).toBe(true);
+    expect(isPastUtcDay('2026-09-24', '2026-09-24')).toBe(false);
+    expect(isPastUtcDay('2026-09-25', '2026-09-24')).toBe(false);
+  });
+
+  it('firstCurrentSlotIndex keeps a slot for two hours after its start', () => {
+    const start = Date.parse('2026-09-24T16:00:00Z');
+    const slots = [{ start_time: '2026-09-24T16:00:00Z' }, { start_time: '2026-09-25T16:00:00Z' }];
+    expect(firstCurrentSlotIndex(slots, start - 1)).toBe(0);
+    expect(firstCurrentSlotIndex(slots, start + NEXT_SLOT_GRACE_MS)).toBe(0);
+    expect(firstCurrentSlotIndex(slots, start + NEXT_SLOT_GRACE_MS + 1)).toBe(1);
+    expect(firstCurrentSlotIndex(slots, Date.parse('2026-09-26T00:00:00Z'))).toBe(-1);
+    expect(firstCurrentSlotIndex([], start)).toBe(-1);
+  });
+
+  it('never drops a slot whose start it cannot parse', () => {
+    expect(firstCurrentSlotIndex([{ start_time: 'garbage' }], Date.now())).toBe(0);
   });
 });
