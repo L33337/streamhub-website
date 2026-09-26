@@ -54,7 +54,7 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
               key={s.id}
               className="flex min-w-0 items-baseline gap-3 rounded-xl border border-border-default bg-background-elevated px-3 py-2"
             >
-              <div className="w-28 shrink-0 text-xs text-text-muted sm:w-36">
+              <div className="w-28 shrink-0 text-xs text-text-secondary sm:w-36">
                 <time dateTime={s.started_at} className="block text-text-secondary">
                   {formatUtcDateShort(s.started_at, lang)}
                 </time>
@@ -67,7 +67,7 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
                 >
                   {title}
                 </p>
-                <p className="truncate text-xs text-text-muted">
+                <p className="truncate text-xs text-text-secondary">
                   {[historyCategory(s), duration].filter(Boolean).join(' · ')}
                 </p>
               </div>

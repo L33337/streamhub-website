@@ -5,6 +5,7 @@ import { historyCategory, historyPlatforms, historyVodLinks, usableThumbnail } f
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
+import { slotLexFor } from '@/lib/i18n-slot';
 import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 
 function PlaceholderThumbnail({ name }: { name: string }) {
@@ -68,7 +69,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
           <Image
             // 224px is the widest this box gets (THUMB_SIZES' lg bucket).
             src={sizedCdnImageUrl(thumbnailUrl, 224)}
-            alt={title}
+            alt=""
             fill
             unoptimized
             sizes={THUMB_SIZES}
@@ -77,7 +78,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
         ) : avatarUrl ? (
           <Image
             src={sizedAvatarUrl(avatarUrl, 224)}
-            alt={streamerName}
+            alt=""
             fill
             unoptimized
             sizes={THUMB_SIZES}
@@ -135,9 +136,11 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
           target="_blank"
           rel="noopener noreferrer"
           className="block transition-transform hover:scale-[1.01] focus-visible:scale-[1.01] focus-visible:outline-none"
-          aria-label={L.watchAria(streamerName, title)}
+          // No aria-label (2026-09-26): the accessible name is the card text
+          // (WCAG 2.5.3); the images are alt="" so the title is read once.
         >
           {card}
+          <span className="sr-only">{slotLexFor(language ?? 'en').opensInNewTab}</span>
         </a>
       ) : (
         card
