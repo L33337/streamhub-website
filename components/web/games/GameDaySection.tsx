@@ -50,7 +50,8 @@ function CompactSlotRow({
 }) {
   const lang = resolveUiLang(language);
   return (
-    // Logical padding (ps/pe) so the row mirrors correctly in Arabic.
+    // Logical padding (ps/pe): ready for an RTL layout, identical in LTR. The
+    // site sets no dir="rtl" yet, so Arabic renders left-to-right today.
     <div className="flex items-center gap-2 rounded-lg border border-border-default/60 bg-background-elevated/60 py-1.5 pe-1.5 ps-2.5">
       <Link
         href={localeHref(lang, `/schedule/${encodeURIComponent(slot.id)}`)}
@@ -213,7 +214,7 @@ export function GameDaySection({
             <ChevronRight
               size={14}
               aria-hidden="true"
-              className="shrink-0 transition-transform group-open:rotate-90 rtl:rotate-180 rtl:group-open:rotate-90"
+              className="shrink-0 transition-transform group-open:rotate-90"
             />
             {G.moreLowConfidence(low.length)}
           </summary>

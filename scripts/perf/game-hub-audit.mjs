@@ -156,7 +156,8 @@ function measure() {
     heroBottom: document.querySelector('main h1')?.closest('div.flex')
       ? Math.round(document.querySelector('main h1').closest('div.flex').getBoundingClientRect().bottom + window.scrollY)
       : null,
-    chips: q('main ul[aria-label] > li').slice(0, 8).map((li) => li.textContent.trim()),
+    chips: q('li', document.querySelector('main h1')?.parentElement?.querySelector('ul[aria-label]') ?? document.createElement('ul')).map((li) => li.textContent.trim()),
+    nextUp: document.querySelector('[data-next-up]')?.textContent?.trim() ?? null,
     sections,
     firstLiveTop: topOf(firstLive),
     firstDayTop: topOf(daySections.find(visible)),
@@ -202,8 +203,11 @@ async function openPage(browser, url, viewport, consoleErrors) {
     throw new Error(`WAF challenge on ${url} (status ${status})`);
   }
   await sleep(1200);
-  // Dismiss the cookie + locale banners so they do not skew fold metrics.
+  // Dismiss the cookie + locale banners so they do not skew fold metrics, and
+  // drop the Vercel preview toolbar (preview deployments only, never in
+  // production), which otherwise swallows clicks in the lower right.
   await page.evaluate(() => {
+    document.querySelectorAll('vercel-live-feedback').forEach((n) => n.remove());
     for (const b of document.querySelectorAll('button')) {
       if (/^(Reject|Ablehnen)$/.test(b.textContent.trim())) b.click();
     }
@@ -219,6 +223,54 @@ async function htmlBytes(url) {
   const r = await fetch(url, { headers: bypass ? { 'x-vercel-protection-bypass': bypass } : {} });
   const text = await r.text();
   return { status: r.status, bytes: Buffer.byteLength(text, 'utf8'), cache: r.headers.get('x-vercel-cache') };
+}
+
+/**
+ * The site scrolls smoothly (html { scroll-behavior: smooth }), and a jump into
+ * day 5 travels ~7,000px — measuring after a fixed delay caught it mid-flight.
+ * Wait until scrollY has not moved for 300ms (max 5s).
+ */
+async function waitScrollSettled(page) {
+  let last = -1;
+  let stableSince = Date.now();
+  const start = Date.now();
+  while (Date.now() - start < 5000) {
+    const y = await page.evaluate(() => Math.round(window.scrollY));
+    if (y !== last) {
+      last = y;
+      stableSince = Date.now();
+    } else if (Date.now() - stableSince >= 300) {
+      return;
+    }
+    await sleep(50);
+  }
+}
+
+/** Real mouse click on the element (scrolled into view instantly first). */
+async function realClick(page, selector) {
+  // The preview toolbar is injected lazily, so remove it right before clicking.
+  await page.evaluate(() => document.querySelectorAll('vercel-live-feedback').forEach((n) => n.remove()));
+  const el = await page.$(selector);
+  if (!el) return false;
+  await el.evaluate((n) => n.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
+  await waitScrollSettled(page);
+  const box = await el.boundingBox();
+  if (!box) return false;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  // Something else on top of the target (sticky bar, banner, FAB) would eat
+  // the click; report it instead of silently clicking the wrong element.
+  const blocker = await el.evaluate((n, px, py) => {
+    const hit = document.elementFromPoint(px, py);
+    return hit && (hit === n || n.contains(hit))
+      ? null
+      : `${hit?.tagName ?? 'nothing'}.${String(hit?.className ?? '').slice(0, 50)}`;
+  }, x, y);
+  if (blocker) return `blocked by ${blocker} at ${Math.round(x)},${Math.round(y)}`;
+  await page.mouse.click(x, y);
+  await sleep(150);
+  await waitScrollSettled(page);
+  return true;
 }
 
 /** Is `#day-<key>` painted and scrolled near the top of the viewport? */
@@ -244,14 +296,19 @@ async function interactions(browser, url, consoleErrors) {
     const toggle = await page.$('[data-schedule-toggle]');
     out.hasToggle = !!toggle;
     if (collapsed.length > 0) {
-      // (a) day pill of a collapsed day expands + scrolls
+      // (a) day pill of a collapsed day expands + scrolls (real mouse click on
+      // the sticky pill, like a thumb would)
       const key = collapsed[collapsed.length - 1];
-      await page.evaluate((k) => document.querySelector(`#schedule nav a[href="#day-${k}"]`)?.click(), key);
-      await sleep(700);
-      out.pillExpands = await dayIsShownNearTop(page, key);
+      await page.evaluate(() => {
+        document.documentElement.style.scrollBehavior = 'auto';
+        document.querySelector('#schedule').scrollIntoView({ block: 'start' });
+        document.documentElement.style.scrollBehavior = '';
+      });
+      await waitScrollSettled(page);
+      const clicked = await realClick(page, `#schedule nav a[href="#day-${key}"]`);
+      out.pillExpands = { click: clicked, ...(await dayIsShownNearTop(page, key)) };
       // (g) "show fewer" collapses again and scrolls to the schedule
-      await page.evaluate(() => document.querySelector('[data-schedule-toggle]')?.click());
-      await sleep(700);
+      await realClick(page, '[data-schedule-toggle]');
       out.collapseAgain = await page.evaluate((k) => {
         const el = document.getElementById(`day-${k}`);
         return { hidden: !!el && el.getClientRects().length === 0 };
@@ -261,25 +318,40 @@ async function interactions(browser, url, consoleErrors) {
         const a = Array.from(document.querySelectorAll('#most-followed a[href^="#day-"]')).find(
           (x) => keys.includes(x.getAttribute('href').slice(5)) && x.getClientRects().length > 0,
         );
-        if (!a) return null;
-        a.click();
-        return a.getAttribute('href').slice(5);
+        return a ? a.getAttribute('href').slice(5) : null;
       }, collapsed);
       if (rankKey) {
-        await sleep(700);
+        // The visible copy of the link (mobile: inside the streamer cell).
+        const sel = `#most-followed a[href="#day-${rankKey}"]`;
+        const idx = await page.evaluate(
+          (s) => Array.from(document.querySelectorAll(s)).findIndex((x) => x.getClientRects().length > 0),
+          sel,
+        );
+        await page.evaluate(
+          (s, i) => Array.from(document.querySelectorAll(s))[i].setAttribute('data-audit-target', ''),
+          sel,
+          idx,
+        );
+        await realClick(page, '[data-audit-target]');
         out.rankingDeepLink = { key: rankKey, ...(await dayIsShownNearTop(page, rankKey)) };
       } else out.rankingDeepLink = 'no ranking link into a collapsed day';
-      // (h) the hero "next up" link
-      const nextHref = await page.evaluate(() => document.querySelector('[data-next-up]')?.getAttribute('href') ?? null);
-      out.nextUpHref = nextHref;
     }
     await ctx.close();
+
+    // (h) the hero "next up" row jumps to its (open) day
+    const nu = await openPage(browser, url, VIEWPORTS.m390, consoleErrors);
+    const nextHref = await nu.page.evaluate(() => document.querySelector('[data-next-up]')?.getAttribute('href') ?? null);
+    if (nextHref?.startsWith('#day-')) {
+      await realClick(nu.page, '[data-next-up]');
+      out.nextUp = { href: nextHref, ...(await dayIsShownNearTop(nu.page, nextHref.slice(5))) };
+    } else out.nextUp = nextHref ?? 'no next-up row';
+    await nu.ctx.close();
 
     if (collapsed.length > 0) {
       // (c) inbound hash to a collapsed day
       const key = collapsed[0];
       const hashRun = await openPage(browser, `${url}#day-${key}`, VIEWPORTS.m390, consoleErrors);
-      await sleep(800);
+      await waitScrollSettled(hashRun.page);
       out.inboundHash = { key, ...(await dayIsShownNearTop(hashRun.page, key)) };
       await hashRun.ctx.close();
     }
@@ -388,6 +460,7 @@ try {
     console.log(`  h1: ${m.h1}`);
     console.log(`  intro: ${m.intro}`);
     console.log(`  chips: ${m.chips.join(' | ')}`);
+    console.log(`  next up: ${m.nextUp}`);
     console.log(`  interactions: ${JSON.stringify(entry.interactions)}`);
     console.log(`  noScript: ${JSON.stringify(entry.noScript)} | console: ${consoleErrors.length}`);
 
@@ -404,6 +477,7 @@ try {
       check(s.docW <= s.vw, `320 document overflow ${s.docW}`);
       check(consoleErrors.length <= TARGETS.hydrationErrors, `console: ${consoleErrors.join(' / ')}`);
       const it = entry.interactions;
+      if (typeof it.nextUp === 'object') check(it.nextUp.nearTop === true, `next-up jump ${JSON.stringify(it.nextUp)}`);
       if (it.collapsedDays?.length) {
         check(it.pillExpands?.nearTop === true, `pill → collapsed day ${JSON.stringify(it.pillExpands)}`);
         check(it.collapseAgain?.hidden === true, 'show-fewer did not collapse');

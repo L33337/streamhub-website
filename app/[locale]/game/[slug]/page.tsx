@@ -780,13 +780,13 @@ export default async function GamePage({ params }: Props) {
                     <th scope="col" className="px-2 py-2 font-semibold sm:px-3">
                       {G.thStreamer}
                     </th>
-                    <th scope="col" className="hidden px-3 py-2 font-semibold sm:table-cell">
+                    <th scope="col" className="hidden whitespace-nowrap px-3 py-2 font-semibold sm:table-cell">
                       {G.thNextStream}
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right font-semibold sm:px-3">
+                    <th scope="col" className="whitespace-nowrap px-2 py-2 text-right font-semibold sm:px-3">
                       {G.thFollowers}
                     </th>
-                    <th scope="col" className="hidden px-3 py-2 text-right font-semibold sm:table-cell">
+                    <th scope="col" className="hidden whitespace-nowrap px-3 py-2 text-right font-semibold sm:table-cell">
                       {G.thHours}
                     </th>
                   </tr>
@@ -829,9 +829,10 @@ export default async function GamePage({ params }: Props) {
                         <td className="px-2 py-2 align-top font-bold tabular-nums text-text-muted sm:px-3 sm:align-middle">
                           {row.rank}
                         </td>
-                        {/* w-full + max-w-0: the cell takes the free width and
-                            the name truncates instead of widening the table. */}
-                        <th scope="row" className="w-full max-w-0 px-2 py-2 text-left font-medium sm:px-3">
+                        {/* Phones only: w-full + max-w-0 lets the cell take the
+                            free width and truncate the name instead of widening
+                            the table. From sm up the columns size as before. */}
+                        <th scope="row" className="px-2 py-2 text-left font-medium max-sm:w-full max-sm:max-w-0 sm:px-3">
                           <Link
                             href={localeHref(locale, `/streamer/${encodeURIComponent(row.id)}`)}
                             className="group flex min-w-0 items-center gap-3"
