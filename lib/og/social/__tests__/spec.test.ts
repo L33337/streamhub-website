@@ -44,7 +44,7 @@ describe('social card spec contract', () => {
     expect(r.motif.type).toBe('sparkline');
     expect(a.motif.type).toBe('arc');
     expect(m.fun_fact?.eyebrow).toBe('FROM THIS WEEK’S STREAMS');
-    expect(r.fun_fact?.eyebrow).toContain('TRANSLATED FROM GERMAN');
+    expect(r.fun_fact?.text).toContain('German-speaking'); // the language rides in the story, never as a "translated" note
     expect(a.fun_fact).toBeNull();
   });
 
