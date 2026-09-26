@@ -4,9 +4,15 @@ import { ACCENT_HEX, CANVAS, corners, DIM, eyebrowParts, FAINT, glow, MUTED, rgb
 
 // Single-moment card (Post B): avatar large in the upper third with a
 // type-coloured ring/glow, the headline template, the big number, one
-// motif (ring fill / sparkline / arc) and the fun-fact block in the lower
+// motif (ring fill / sparkline / arc) and the story block in the lower
 // third. Only the avatar identifies the streamer — no category art (user
 // decision 2026-09-26).
+//
+// Vertical budget (2026-09-27): every block has an explicit line height and
+// `flexShrink: 0`, and the avatar takes whatever height is left. Before, the
+// blocks shrank when the content was taller than the canvas, and Satori
+// painted the name over the title and the number over the subline on
+// record cards (sparkline + fun fact + two-line title + number).
 
 export interface MomentCardProps {
   spec: MomentCardSpec;
@@ -14,19 +20,80 @@ export interface MomentCardProps {
   initials: string;
 }
 
-const AVATAR = 400;
-
-/** The avatar shrinks when the card also carries a sparkline and a fun fact. */
-function avatarSize(spec: MomentCardSpec): number {
-  if (!spec.fun_fact) return 440;
-  return spec.motif.type === 'sparkline' ? 320 : 400;
-}
+/** Canvas height minus the padding of CANVAS (96 top, 88 bottom). */
+const INNER_HEIGHT = 1350 - 96 - 88;
+const SAFETY = 24;
 
 /** The headline number is shown unless the template title already states it. */
 function showHeadline(spec: MomentCardSpec): boolean {
   const titleText = spec.title.map((l) => l.map((s) => s.text).join('')).join(' ').toLowerCase();
   const firstToken = spec.headline.split(' ')[0]?.toLowerCase() ?? '';
   return firstToken.length === 0 || !titleText.includes(firstToken);
+}
+
+interface Layout {
+  dense: boolean;
+  headline: boolean;
+  avatar: number;
+  avatarTop: number;
+  nameSize: number;
+  titleSize: number;
+  headlineSize: number;
+  sublineSize: number;
+  sparkHeight: number;
+  factTop: number;
+  factFont: number;
+  footerTop: number;
+}
+
+/** Story font size by length: ~46 characters per line at 34 px, ~54 at 29 px, ~60 at 26 px. */
+export function storyFont(length: number): { size: number; lines: number } {
+  if (length > 200) return { size: 26, lines: 5 };
+  if (length > 130) return { size: 29, lines: 4 };
+  return { size: 34, lines: 3 };
+}
+
+export function layoutFor(spec: MomentCardSpec): Layout {
+  const dense = !!spec.fun_fact;
+  const headline = showHeadline(spec);
+  const nameSize = dense ? 54 : 62;
+  const titleSize = dense ? 58 : 68;
+  const headlineSize = dense ? 48 : 56;
+  const sublineSize = dense ? 28 : 34;
+  const sparkHeight = dense ? 96 : 170;
+  const fact = spec.fun_fact ? storyFont(spec.fun_fact.text.length) : null;
+
+  let fixed = 26 * 1.2; // eyebrow
+  fixed += 36; // avatar top margin (base)
+  fixed += 20 + nameSize * 1.15;
+  fixed += 12 + spec.title.length * titleSize * 1.04;
+  if (headline) fixed += 8 + headlineSize * 1.1;
+  fixed += 8 + sublineSize * 1.2;
+  if (spec.motif.type === 'sparkline') fixed += 24 + sparkHeight + 6 + 22 * 1.2;
+  if (fact) fixed += 24 + 26 * 2 + 20 * 1.2 + 12 + fact.lines * fact.size * 1.3;
+  fixed += 24 + 22 * 1.2; // footer
+  fixed += SAFETY;
+
+  const room = INNER_HEIGHT - fixed;
+  const avatar = Math.max(240, Math.min(dense ? 400 : 440, Math.floor(room)));
+  const extra = Math.max(0, room - avatar);
+  // Leftover space is split above the avatar, above the story block and above the footer
+  // (without a story block: half above the avatar, half above the footer).
+  const share = Math.floor(extra / (fact ? 3 : 2));
+  return {
+    dense,
+    headline,
+    avatar,
+    avatarTop: 36 + share,
+    nameSize,
+    titleSize,
+    headlineSize,
+    sublineSize,
+    sparkHeight,
+    factTop: 24 + (fact ? share : 0),
+    factFont: fact?.size ?? 34,
+    footerTop: 24,
+  };
 }
 
 /**
@@ -109,19 +176,19 @@ function Sparkline({ motif, accent, height }: { motif: Extract<MomentMotif, { ty
   );
 }
 
+const FIXED = { display: 'flex', flexShrink: 0 } as const;
+
 export function MomentCard({ spec, avatar, initials }: MomentCardProps): ReactElement {
   const accent = ACCENT_HEX[spec.accent];
-  const hasFact = !!spec.fun_fact;
-  const size = avatarSize(spec);
-  const headline = showHeadline(spec);
-  const compact = spec.motif.type === 'sparkline' && hasFact;
+  const l = layoutFor(spec);
+  const size = l.avatar;
   return (
     <div style={{ ...CANVAS, backgroundImage: glow(spec.accent, '30%'), alignItems: 'center' }}>
       {corners().map((style, i) => (
         <div key={i} style={style} />
       ))}
 
-      <div style={{ display: 'flex', fontSize: 26, letterSpacing: '0.14em', color: DIM, textTransform: 'uppercase' }}>
+      <div style={{ ...FIXED, fontSize: 26, lineHeight: 1.2, letterSpacing: '0.14em', color: DIM, textTransform: 'uppercase' }}>
         {eyebrowParts(spec.eyebrow, spec.eyebrow_accent).map((p, i) => (
           <span key={i} style={{ color: p.accent ? accent : DIM, fontWeight: p.accent ? 700 : 400, whiteSpace: 'pre' }}>
             {p.text}
@@ -129,7 +196,7 @@ export function MomentCard({ spec, avatar, initials }: MomentCardProps): ReactEl
         ))}
       </div>
 
-      <div style={{ display: 'flex', position: 'relative', width: size, height: size, marginTop: compact ? 36 : 44, alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ ...FIXED, position: 'relative', width: size, height: size, marginTop: l.avatarTop, alignItems: 'center', justifyContent: 'center' }}>
         {spec.motif.type === 'ring' && <Ring fill={spec.motif.fill} accent={accent} avatar={size} />}
         {spec.motif.type === 'arc' && <Arc hours={spec.motif.hours} accent={accent} avatar={size} />}
         {avatar ? (
@@ -163,13 +230,13 @@ export function MomentCard({ spec, avatar, initials }: MomentCardProps): ReactEl
         )}
       </div>
 
-      <div style={{ display: 'flex', fontSize: compact ? 54 : 62, fontWeight: 700, letterSpacing: '-0.02em', marginTop: compact ? 24 : 36, whiteSpace: 'nowrap' }}>
+      <div style={{ ...FIXED, fontSize: l.nameSize, lineHeight: 1.15, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 20, whiteSpace: 'nowrap' }}>
         {spec.name.length > 24 ? `${spec.name.slice(0, 23)}…` : spec.name}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: compact ? 14 : 22 }}>
+      <div style={{ ...FIXED, flexDirection: 'column', alignItems: 'center', marginTop: 12 }}>
         {spec.title.map((line, li) => (
-          <div key={li} style={{ display: 'flex', fontSize: compact ? 58 : 68, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.04 }}>
+          <div key={li} style={{ ...FIXED, fontSize: l.titleSize, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.04 }}>
             {line.map((seg, si) => (
               <span key={si} style={{ color: seg.accent ? accent : TEXT, whiteSpace: 'pre' }}>
                 {seg.text}
@@ -179,46 +246,42 @@ export function MomentCard({ spec, avatar, initials }: MomentCardProps): ReactEl
         ))}
       </div>
 
-      {headline && (
-        <div style={{ display: 'flex', fontSize: compact ? 48 : 56, fontWeight: 700, color: accent, letterSpacing: '-0.02em', marginTop: compact ? 10 : 16, fontVariantNumeric: 'tabular-nums' }}>
+      {l.headline && (
+        <div style={{ ...FIXED, fontSize: l.headlineSize, lineHeight: 1.1, fontWeight: 700, color: accent, letterSpacing: '-0.02em', marginTop: 8, fontVariantNumeric: 'tabular-nums' }}>
           {spec.headline}
         </div>
       )}
 
-      <div style={{ display: 'flex', fontSize: compact ? 28 : 34, color: MUTED, marginTop: compact ? 10 : 18, textAlign: 'center' }}>{spec.subline}</div>
+      <div style={{ ...FIXED, fontSize: l.sublineSize, lineHeight: 1.2, color: MUTED, marginTop: 8, textAlign: 'center' }}>{spec.subline}</div>
 
       {spec.motif.type === 'sparkline' && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: hasFact ? 30 : 60 }}>
-          <Sparkline motif={spec.motif} accent={accent} height={hasFact ? 120 : 170} />
-          <div style={{ display: 'flex', fontSize: 22, color: DIM, marginTop: 8 }}>{spec.motif.label}</div>
+        <div style={{ ...FIXED, flexDirection: 'column', alignItems: 'center', marginTop: 24 }}>
+          <Sparkline motif={spec.motif} accent={accent} height={l.sparkHeight} />
+          <div style={{ ...FIXED, fontSize: 22, lineHeight: 1.2, color: DIM, marginTop: 6 }}>{spec.motif.label}</div>
         </div>
       )}
 
       {spec.fun_fact && (
         <div
           style={{
-            display: 'flex',
+            ...FIXED,
             flexDirection: 'column',
             width: 904,
-            marginTop: spec.motif.type === 'sparkline' ? 26 : 52,
-            padding: '30px 36px',
+            marginTop: l.factTop,
+            padding: '26px 36px',
             borderRadius: 24,
             backgroundColor: 'rgba(255,255,255,0.04)',
             border: `1px solid ${rgba(accent, 0.25)}`,
           }}
         >
-          <div style={{ display: 'flex', fontSize: 20, letterSpacing: '0.14em', color: accent, fontWeight: 700 }}>{spec.fun_fact.eyebrow}</div>
-          {/* Up to ~150 characters fit three lines at 34 px; longer story lines step down so four lines still fit the block. */}
-          <div style={{ display: 'flex', fontSize: spec.fun_fact.text.length > 150 ? 29 : 34, lineHeight: 1.3, marginTop: 14, color: TEXT }}>{spec.fun_fact.text}</div>
-          {spec.fun_fact.date_label && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 22, color: DIM, marginTop: 12 }}>{spec.fun_fact.date_label}</div>
-          )}
+          <div style={{ ...FIXED, fontSize: 20, lineHeight: 1.2, letterSpacing: '0.14em', color: accent, fontWeight: 700 }}>{spec.fun_fact.eyebrow}</div>
+          <div style={{ ...FIXED, fontSize: l.factFont, lineHeight: 1.3, marginTop: 12, color: TEXT }}>{spec.fun_fact.text}</div>
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: 904, marginTop: 'auto', paddingTop: 24 }}>
-        <div style={{ display: 'flex', fontSize: 22, letterSpacing: '0.22em', color: DIM }}>STREAMERTIMES.TV</div>
-        <div style={{ display: 'flex', fontSize: 20, color: FAINT, whiteSpace: 'nowrap' }}>{spec.footnote}</div>
+      <div style={{ ...FIXED, justifyContent: 'space-between', alignItems: 'flex-end', width: 904, marginTop: 'auto', paddingTop: l.footerTop }}>
+        <div style={{ ...FIXED, fontSize: 22, lineHeight: 1.2, letterSpacing: '0.22em', color: DIM }}>STREAMERTIMES.TV</div>
+        <div style={{ ...FIXED, fontSize: 20, lineHeight: 1.2, color: FAINT, whiteSpace: 'nowrap' }}>{spec.footnote}</div>
       </div>
     </div>
   );

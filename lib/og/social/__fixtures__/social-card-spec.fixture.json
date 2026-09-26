@@ -294,8 +294,7 @@
     },
     "fun_fact": {
       "eyebrow": "FROM THIS WEEK’S STREAMS",
-      "text": "ironmouse earned the 2.5M followers the hard way. Nine hours on the final boss during Tuesday’s stream, then the win.",
-      "date_label": "Tuesday’s stream"
+      "text": "ironmouse earned the 2.5M followers the hard way. Nine hours on the final boss during Tuesday’s stream, then the win."
     },
     "footnote": "Among the streamers we track"
   },
@@ -343,8 +342,7 @@
     },
     "fun_fact": {
       "eyebrow": "FROM THIS WEEK’S STREAMS",
-      "text": "A 90-day best of 109,522 viewers for the German-speaking eliasn97, powered by nothing but water on Tuesday’s stream.",
-      "date_label": "Tuesday’s stream"
+      "text": "A 90-day best of 109,522 viewers for the German-speaking eliasn97, powered by nothing but water on Tuesday’s stream."
     },
     "footnote": "Among the streamers we track"
   },
@@ -421,8 +419,89 @@
     },
     "fun_fact": {
       "eyebrow": "FROM THIS WEEK’S STREAMS",
-      "text": "VerstappenSimRacingOfficialChannel got a new wheel, spun the first two laps and still pulled a 109,522 viewer record out of Tuesday’s stream.",
-      "date_label": "Tuesday’s stream"
+      "text": "VerstappenSimRacingOfficialChannel got a new wheel, spun the first two laps and still pulled a 109,522 viewer record out of Tuesday’s stream."
+    },
+    "footnote": "Among the streamers we track"
+  },
+  "moment_record_long_story": {
+    "version": 1,
+    "layout": "moment",
+    "moment": "record",
+    "accent": "cyan",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "Biggest stream",
+          "accent": false
+        }
+      ],
+      [
+        {
+          "text": "in ",
+          "accent": false
+        },
+        {
+          "text": "90 days",
+          "accent": true
+        }
+      ]
+    ],
+    "name": "eliasn97",
+    "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/eliasn97-profile_image-600x600.png",
+    "headline": "109,522 viewers",
+    "subline": "previous best 84,000 · +30%",
+    "motif": {
+      "type": "sparkline",
+      "points": [
+        20000,
+        60000,
+        95000,
+        109522,
+        80000
+      ],
+      "peak_index": 3,
+      "baseline": 84000,
+      "label": "Tuesday night · Just Chatting"
+    },
+    "fun_fact": {
+      "eyebrow": "FROM THIS WEEK’S STREAMS",
+      "text": "Six streams and 84 hours of EA Sports FC 27 in one week is already a ridiculous eliasn97 week. Two walkouts lit up the 13-hour Sunday finale, the German-speaking streamer played on nothing but water, and Tuesday still delivered 109,522 viewers, a personal record of the last 90 days."
+    },
+    "footnote": "Among the streamers we track"
+  },
+  "moment_milestone_long_story": {
+    "version": 1,
+    "layout": "moment",
+    "moment": "milestone",
+    "accent": "gold",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "Another ",
+          "accent": false
+        },
+        {
+          "text": "milestone",
+          "accent": true
+        }
+      ]
+    ],
+    "name": "ironmouse",
+    "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ironmouse-profile_image-600x600.png",
+    "headline": "2.5M followers",
+    "subline": "2,465,877 → 2,507,195 this week",
+    "motif": {
+      "type": "ring",
+      "fill": 0.9863508,
+      "label": "2.5M now"
+    },
+    "fun_fact": {
+      "eyebrow": "FROM THIS WEEK’S STREAMS",
+      "text": "Five streams, 33 hours, and ironmouse somehow found time for a nine-hour fight with the final boss that ended in a win nobody in chat expected any more. The reward came on Thursday: the 2.5M follower mark finally fell, and the whole week suddenly made sense. Legend behaviour."
     },
     "footnote": "Among the streamers we track"
   }

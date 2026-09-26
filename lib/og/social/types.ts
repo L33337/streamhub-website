@@ -60,7 +60,8 @@ export interface MomentCardSpec {
   headline: string;
   subline: string;
   motif: MomentMotif;
-  fun_fact: { eyebrow: string; text: string; date_label: string | null } | null;
+  /** The story block; no date line (the text is the whole week in review, 2026-09-27). */
+  fun_fact: { eyebrow: string; text: string } | null;
   footnote: string;
 }
 
@@ -187,8 +188,7 @@ export function parseSocialCardSpec(input: unknown): SocialCardSpec {
       if (!isObj(input.fun_fact)) throw new SocialCardSpecError('fun_fact must be an object or null');
       funFact = {
         eyebrow: str(input.fun_fact.eyebrow, 'fun_fact.eyebrow', 80),
-        text: str(input.fun_fact.text, 'fun_fact.text', 260),
-        date_label: strOrNull(input.fun_fact.date_label, 'fun_fact.date_label', 40),
+        text: str(input.fun_fact.text, 'fun_fact.text', 320), // writer cap 280 + headroom
       };
     }
     return {
