@@ -29,8 +29,6 @@ interface Props {
   avatarUrl: string | null;
   /** Streamer's broadcaster language — localizes the card copy (null → en). */
   language?: string | null;
-  /** Desktop sidebar variant: from lg on the 112 px thumbnail of phones, not 224 px. */
-  inSidebar?: boolean;
 }
 
 /**
@@ -48,13 +46,7 @@ interface Props {
  * big click target we want); with two, the card stays static and each platform
  * badge links to its own VOD.
  */
-export function LastStreamCard({
-  stream,
-  streamerName,
-  avatarUrl,
-  language = null,
-  inSidebar = false,
-}: Props) {
+export function LastStreamCard({ stream, streamerName, avatarUrl, language = null }: Props) {
   const L = uiLexFor(language).lastStream;
   const title = stream.title?.trim() || L.pastStream;
   const aired = formatTimeAgo(stream.started_at, resolveUiLang(language));
@@ -72,9 +64,7 @@ export function LastStreamCard({
 
   const card = (
     <article className="flex gap-3 rounded-xl bg-background-elevated p-3 gradient-border glow-cyan">
-      <div
-        className={`relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 ${inSidebar ? 'lg:w-28' : 'lg:w-56'}`}
-      >
+      <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
         {thumbnailUrl ? (
           <Image
             // 224px is the widest this box gets (THUMB_SIZES' lg bucket).
@@ -138,10 +128,8 @@ export function LastStreamCard({
   );
 
   return (
-    <section className={inSidebar ? 'mt-10 lg:mt-0' : 'mt-6'}>
-      <h2 className={`mb-4 text-2xl font-bold text-white ${inSidebar ? 'lg:text-lg' : ''}`}>
-        {L.heading}
-      </h2>
+    <section className="mt-6">
+      <h2 className="text-2xl font-bold text-white mb-4">{L.heading}</h2>
       {cardHref ? (
         <a
           href={cardHref}

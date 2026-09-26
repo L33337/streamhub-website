@@ -14,8 +14,6 @@ interface Props {
   // M22 (D6): UI strings follow the viewer's locale; defaults to the
   // streamer's language for pre-M22 call sites.
   uiLanguage?: string | null;
-  /** Desktop sidebar variant: from lg on a single card column and a smaller heading. */
-  inSidebar?: boolean;
 }
 
 /**
@@ -32,7 +30,7 @@ interface Props {
  * rank lookup failed — same "no data, no section" rule as ChannelStats. The
  * ordering and filtering live in lib/streamer-rankings.ts; this file is markup.
  */
-export function StreamerRankings({ streamer, rankings, uiLanguage, inSidebar = false }: Props) {
+export function StreamerRankings({ streamer, rankings, uiLanguage }: Props) {
   const ui = uiLanguage ?? streamer.language;
   const lang = resolveUiLang(ui);
   const L = uiLexFor(ui).streamerRankings;
@@ -46,12 +44,9 @@ export function StreamerRankings({ streamer, rankings, uiLanguage, inSidebar = f
   return (
     <section
       aria-labelledby="streamer-rankings-heading"
-      className={`border-t border-divider ${inSidebar ? 'mt-10 pt-8 lg:mt-6 lg:pt-6' : 'mt-10 pt-8'}`}
+      className="mt-10 border-t border-divider pt-8"
     >
-      <h2
-        id="streamer-rankings-heading"
-        className={`text-2xl font-bold text-white ${inSidebar ? 'lg:text-lg' : ''}`}
-      >
+      <h2 id="streamer-rankings-heading" className="text-2xl font-bold text-white">
         {L.heading}
       </h2>
       <p className="mt-1 text-sm text-text-muted">{L.intro(streamer.name)}</p>
@@ -72,7 +67,7 @@ export function StreamerRankings({ streamer, rankings, uiLanguage, inSidebar = f
           </span>
         </summary>
       {global.length > 0 && (
-        <ul className={`mt-4 grid gap-2 sm:grid-cols-2 ${inSidebar ? 'lg:grid-cols-1' : ''}`}>
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
           {global.map((row) => (
             <RankRow key={row.key} row={row} lang={lang} L={L} />
           ))}
@@ -84,7 +79,7 @@ export function StreamerRankings({ streamer, rankings, uiLanguage, inSidebar = f
           <h3 className="mt-6 text-xs uppercase tracking-wider text-text-muted">
             {L.byCategory}
           </h3>
-          <ul className={`mt-2 grid gap-2 sm:grid-cols-2 ${inSidebar ? 'lg:grid-cols-1' : ''}`}>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
             {games.map((row) => (
               <RankRow key={row.key} row={row} lang={lang} L={L} />
             ))}
