@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Social cards (M27): sharp converts the Satori PNG to JPEG in
+  // app/api/social/card; keep the native module out of the bundler and ship
+  // the Inter TTFs with that function.
+  serverExternalPackages: ["sharp"],
+  outputFileTracingIncludes: {
+    "/api/social/card": ["./lib/og/fonts/**/*"],
+  },
   // Frozen once at `next build` on the build machine, then inlined into the
   // bundle — gives the sitemap an honest, stable build timestamp for static
   // pages instead of a per-cold-start "now". See app/sitemap.ts.

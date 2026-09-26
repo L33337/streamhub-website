@@ -1,0 +1,429 @@
+{
+  "generated_from": "supabase/functions/_shared/social-fixture.ts (StreamHub) — regenerate with scripts/social/write-fixture.ts",
+  "list_peak": {
+    "version": 1,
+    "layout": "list",
+    "card": "peak",
+    "accent": "cyan",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "Packed",
+          "accent": true
+        },
+        {
+          "text": " streams",
+          "accent": false
+        }
+      ],
+      [
+        {
+          "text": "Week 38",
+          "accent": false
+        }
+      ]
+    ],
+    "subtitle": "Peak viewers on one stream, top 5",
+    "rows": [
+      {
+        "rank": 1,
+        "name": "ow_esports",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ow_esports-profile_image-600x600.png",
+        "value": "138,459",
+        "unit": "viewers",
+        "meta": "Sunday afternoon · Overwatch 2"
+      },
+      {
+        "rank": 2,
+        "name": "Jynxzi",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/jynxzi-profile_image-600x600.png",
+        "value": "137,426",
+        "unit": "viewers",
+        "meta": "Sunday evening · Rainbow Six Siege"
+      },
+      {
+        "rank": 3,
+        "name": "eliasn97",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/eliasn97-profile_image-600x600.png",
+        "value": "109,522",
+        "unit": "viewers",
+        "meta": "Tuesday night · Just Chatting"
+      },
+      {
+        "rank": 4,
+        "name": "Caedrel",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/caedrel-profile_image-600x600.png",
+        "value": "102,249",
+        "unit": "viewers",
+        "meta": "Sunday evening · League of Legends"
+      },
+      {
+        "rank": 5,
+        "name": "zackrawrr",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/zackrawrr-profile_image-600x600.png",
+        "value": "101,024",
+        "unit": "viewers",
+        "meta": "Thursday afternoon"
+      }
+    ],
+    "footnote": "Among the streamers we track · Twitch viewer samples"
+  },
+  "list_growth": {
+    "version": 1,
+    "layout": "list",
+    "card": "growth",
+    "accent": "green",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "New ",
+          "accent": false
+        },
+        {
+          "text": "followers",
+          "accent": true
+        },
+        {
+          "text": ",",
+          "accent": false
+        }
+      ],
+      [
+        {
+          "text": "new names",
+          "accent": false
+        }
+      ]
+    ],
+    "subtitle": "The week’s top 5 in follower growth",
+    "rows": [
+      {
+        "rank": 1,
+        "name": "Jynxzi",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/jynxzi-profile_image-600x600.png",
+        "value": "+92,390",
+        "unit": "followers",
+        "meta": "Rainbow Six Siege · 11.4M followers · +0.8%"
+      },
+      {
+        "rank": 2,
+        "name": "ironmouse",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ironmouse-profile_image-600x600.png",
+        "value": "+41,318",
+        "unit": "followers",
+        "meta": "Just Chatting · 2.5M followers · +1.7%"
+      },
+      {
+        "rank": 3,
+        "name": "Xaryu",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/xaryu-profile_image-600x600.png",
+        "value": "+40,954",
+        "unit": "followers",
+        "meta": "World of Warcraft · 841K followers · +5.1%"
+      },
+      {
+        "rank": 4,
+        "name": "Joe_Bartolozzi",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/joe_bartolozzi-profile_image-600x600.png",
+        "value": "+28,766",
+        "unit": "followers",
+        "meta": "Just Chatting · 3.7M followers · +0.8%"
+      },
+      {
+        "rank": 5,
+        "name": "Caedrel",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/caedrel-profile_image-600x600.png",
+        "value": "+20,500",
+        "unit": "followers",
+        "meta": "League of Legends · 2M followers · +1%"
+      }
+    ],
+    "footnote": "Among the streamers we track · daily follower snapshots"
+  },
+  "list_followers": {
+    "version": 1,
+    "layout": "list",
+    "card": "followers",
+    "accent": "gold",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "Who has the ",
+          "accent": false
+        },
+        {
+          "text": "largest",
+          "accent": true
+        }
+      ],
+      [
+        {
+          "text": "following?",
+          "accent": false
+        }
+      ]
+    ],
+    "subtitle": "Total followers, streamers live this week",
+    "rows": [
+      {
+        "rank": 1,
+        "name": "KaiCenat",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/kaicenat-profile_image-600x600.png",
+        "value": "21.8M",
+        "unit": "followers",
+        "meta": "Just Chatting · +12,000 this week"
+      },
+      {
+        "rank": 2,
+        "name": "Ninja",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ninja-profile_image-600x600.png",
+        "value": "19.2M",
+        "unit": "followers",
+        "meta": "Fortnite · +3,000 this week"
+      },
+      {
+        "rank": 3,
+        "name": "Jynxzi",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/jynxzi-profile_image-600x600.png",
+        "value": "11.4M",
+        "unit": "followers",
+        "meta": "Rainbow Six Siege · +92,390 this week"
+      },
+      {
+        "rank": 4,
+        "name": "auronplay",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/auronplay-profile_image-600x600.png",
+        "value": "16.5M",
+        "unit": "followers",
+        "meta": "Minecraft · +1,500 this week"
+      },
+      {
+        "rank": 5,
+        "name": "ibai",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ibai-profile_image-600x600.png",
+        "value": "15.9M",
+        "unit": "followers",
+        "meta": "Just Chatting · +2,200 this week"
+      }
+    ],
+    "footnote": "Among the streamers we track · daily follower snapshots"
+  },
+  "list_milestones": {
+    "version": 1,
+    "layout": "list",
+    "card": "milestones",
+    "accent": "gold",
+    "eyebrow": "Streamer Times · September 2026",
+    "eyebrow_accent": "September 2026",
+    "title": [
+      [
+        {
+          "text": "Welcome to the",
+          "accent": false
+        }
+      ],
+      [
+        {
+          "text": "club",
+          "accent": true
+        }
+      ]
+    ],
+    "subtitle": "Follower milestones reached this month",
+    "rows": [
+      {
+        "rank": 1,
+        "name": "ironmouse",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ironmouse-profile_image-600x600.png",
+        "value": "2.5M",
+        "unit": "followers",
+        "meta": "Just Chatting · 2.5M → 2.5M"
+      },
+      {
+        "rank": 2,
+        "name": "Caedrel",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/caedrel-profile_image-600x600.png",
+        "value": "2M",
+        "unit": "followers",
+        "meta": "League of Legends · 2M → 2M"
+      },
+      {
+        "rank": 3,
+        "name": "Xaryu",
+        "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/xaryu-profile_image-600x600.png",
+        "value": "1M",
+        "unit": "followers",
+        "meta": "World of Warcraft · 990K → 1M"
+      }
+    ],
+    "footnote": "Among the streamers we track · daily follower snapshots"
+  },
+  "moment_milestone": {
+    "version": 1,
+    "layout": "moment",
+    "moment": "milestone",
+    "accent": "gold",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "2.5M ",
+          "accent": false
+        },
+        {
+          "text": "followers",
+          "accent": true
+        }
+      ]
+    ],
+    "name": "ironmouse",
+    "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/ironmouse-profile_image-600x600.png",
+    "headline": "2.5M followers",
+    "subline": "2,465,877 → 2,507,195 this week",
+    "motif": {
+      "type": "ring",
+      "fill": 0.9863508,
+      "label": "2.5M now"
+    },
+    "fun_fact": {
+      "eyebrow": "FROM THIS WEEK’S STREAMS",
+      "text": "ironmouse finally beat the final boss after nine hours.",
+      "date_label": "Tuesday’s stream"
+    },
+    "footnote": "Among the streamers we track"
+  },
+  "moment_record": {
+    "version": 1,
+    "layout": "moment",
+    "moment": "record",
+    "accent": "cyan",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "Biggest stream",
+          "accent": false
+        }
+      ],
+      [
+        {
+          "text": "in ",
+          "accent": false
+        },
+        {
+          "text": "90 days",
+          "accent": true
+        }
+      ]
+    ],
+    "name": "eliasn97",
+    "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/eliasn97-profile_image-600x600.png",
+    "headline": "109,522 viewers",
+    "subline": "previous best 84,000 · +30%",
+    "motif": {
+      "type": "sparkline",
+      "points": [
+        20000,
+        60000,
+        95000,
+        109522,
+        80000
+      ],
+      "peak_index": 3,
+      "baseline": 84000,
+      "label": "Tuesday night · Just Chatting"
+    },
+    "fun_fact": {
+      "eyebrow": "FROM THIS WEEK’S STREAMS · TRANSLATED FROM GERMAN",
+      "text": "eliasn97 says he drank nothing but water the whole stream.",
+      "date_label": "Tuesday’s stream"
+    },
+    "footnote": "Among the streamers we track"
+  },
+  "moment_marathon": {
+    "version": 1,
+    "layout": "moment",
+    "moment": "marathon",
+    "accent": "magenta",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "Still ",
+          "accent": false
+        },
+        {
+          "text": "streaming",
+          "accent": true
+        }
+      ]
+    ],
+    "name": "zackrawrr",
+    "avatar_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/zackrawrr-profile_image-600x600.png",
+    "headline": "50 hours live",
+    "subline": "Wednesday Sep 16 → Friday Sep 18 · World of Warcraft",
+    "motif": {
+      "type": "arc",
+      "hours": 49.5,
+      "label": "50h"
+    },
+    "fun_fact": null,
+    "footnote": "Among the streamers we track"
+  },
+  "moment_record_long_name": {
+    "version": 1,
+    "layout": "moment",
+    "moment": "record",
+    "accent": "cyan",
+    "eyebrow": "Streamer Times · Week 38 · Sep 14 – 20, 2026",
+    "eyebrow_accent": "Week 38",
+    "title": [
+      [
+        {
+          "text": "A ",
+          "accent": false
+        },
+        {
+          "text": "peak",
+          "accent": true
+        },
+        {
+          "text": " week",
+          "accent": false
+        }
+      ]
+    ],
+    "name": "VerstappenSimRacingOfficialChannel",
+    "avatar_url": null,
+    "headline": "109,522 viewers",
+    "subline": "previous best 84,000 · +30%",
+    "motif": {
+      "type": "sparkline",
+      "points": [
+        20000,
+        60000,
+        95000,
+        109522,
+        80000
+      ],
+      "peak_index": 3,
+      "baseline": 84000,
+      "label": "Tuesday night · Just Chatting"
+    },
+    "fun_fact": {
+      "eyebrow": "FROM THIS WEEK’S STREAMS",
+      "text": "VerstappenSimRacingOfficialChannel says the new wheel arrived and the first lap was a spin, and the second one too, and then it finally clicked.",
+      "date_label": "Tuesday’s stream"
+    },
+    "footnote": "Among the streamers we track"
+  }
+}

@@ -47,3 +47,6 @@ next-env.d.ts
 # ad-hoc local self-test scripts (never commit)
 scripts/*.local.mjs
 prod-selftest-cookies*.txt
+
+# local render output (scripts/social-render-local.mjs, perf audits)
+tmp/
