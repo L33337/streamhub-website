@@ -13,13 +13,14 @@ interface Props {
 }
 
 /**
- * Streamer bio with a clamp that only exists below `md`.
+ * Streamer bio clamped to its first three lines until expanded.
  *
  * The full text is always in the DOM — the collapse is purely visual, so no
  * crawlable copy and nothing a screen reader needs sits behind the button.
- * The point is the mobile fold: the multi-paragraph AI bio used to push the
- * schedule (what a "when does X stream" searcher actually came for) about two
- * screens down. Desktop has the room, so it never clamps.
+ * The point is the fold: the multi-paragraph AI bio used to push the schedule
+ * (what a "when does X stream" searcher actually came for) about two screens
+ * down on phones, and below the fold on a 1366x768 laptop too — so since
+ * 2026-09-26 it clamps at every width (it used to stop at `md`).
  *
  * Short single-paragraph bios render untouched — a toggle for two lines of
  * text is worse than no toggle.
@@ -42,13 +43,10 @@ export function CollapsibleBio({ paragraphs, lang, dir, moreLabel, lessLabel }: 
       >
         {paragraphs.map((para, i) => {
           // First paragraph clamps to 3 lines; the rest collapse entirely.
-          // Both revert at md, whatever the toggle says.
+          // At every width since 2026-09-26 (desktop included): a two-paragraph
+          // bio pushed the schedule below the fold on a 1366x768 laptop.
           const collapsedClass =
-            clampable && !expanded
-              ? i === 0
-                ? 'line-clamp-3 md:line-clamp-none'
-                : 'hidden md:block'
-              : '';
+            clampable && !expanded ? (i === 0 ? 'line-clamp-3' : 'hidden') : '';
           return (
             <p key={i} className={collapsedClass}>
               {para}
@@ -62,7 +60,7 @@ export function CollapsibleBio({ paragraphs, lang, dir, moreLabel, lessLabel }: 
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-controls={id}
-          className="mt-2 text-xs font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80 md:hidden"
+          className="mt-1 inline-flex min-h-8 items-center text-xs font-semibold text-accent-cyan transition-colors hover:text-accent-cyan/80"
         >
           {expanded ? lessLabel : moreLabel}
         </button>

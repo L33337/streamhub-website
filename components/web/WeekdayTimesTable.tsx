@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import type { PublicStreamerStatsWeekday, StatsWeekday } from '@/lib/server/partner-api';
 import { formatDuration, safeTimeZone } from '@/lib/format/time';
-import { toViewerWeekdayTime } from '@/lib/format/zoned-time';
+import { toViewerWeekdayTime, zonesDifferInWeek } from '@/lib/format/zoned-time';
 import { resolveUiLang, weekdayLong, weekdayShort } from '@/lib/i18n-core';
 
 function subscribe(): () => void {
@@ -84,9 +84,11 @@ export function WeekdayTimesTable({
   const [override, setOverride] = useState<'streamer' | 'viewer' | null>(null);
 
   // Only worth converting (and only worth offering a switch) when the two zones
-  // actually differ — a Berlin viewer on a Berlin streamer gets neither.
+  // actually differ — a Berlin viewer on a Berlin streamer gets neither. Since
+  // 2026-09-26 by OFFSET, not by name: Berlin and Madrid are the same clock,
+  // and the switch then toggled between two identical tables.
   const canConvert =
-    streamerZone !== null && viewerZone !== null && viewerZone !== streamerZone;
+    streamerZone !== null && viewerZone !== null && zonesDifferInWeek(viewerZone, streamerZone);
   const mode: 'streamer' | 'viewer' = override ?? (canConvert ? 'viewer' : 'streamer');
   const converting = mode === 'viewer' && canConvert;
 
@@ -207,7 +209,7 @@ export function WeekdayTimesTable({
 }
 
 function chipClass(active: boolean): string {
-  return `rounded-lg border px-2.5 py-1 font-semibold transition-colors ${
+  return `inline-flex min-h-9 items-center rounded-lg border px-3 py-1 font-semibold transition-colors ${
     active
       ? 'border-accent-cyan/70 bg-background-highlight text-accent-cyan'
       : 'border-border-default bg-background-elevated text-text-secondary hover:border-accent-cyan/60 hover:text-text-primary'

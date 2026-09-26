@@ -30,6 +30,16 @@ export interface UiLex {
      */
     showMore: string;
     showLess: string;
+    /** Hero activity line (offline, nothing scheduled). `date` is pre-formatted. */
+    lastStreamOn(date: string): string;
+    /** `days` is a localized short weekday list, e.g. "Tue, Thu, Sat". */
+    usuallyOn(days: string): string;
+    /** Appended when the silence is well beyond the streamer's own rhythm. */
+    quietLately: string;
+    /** Announced break with a known end (insights vacation_until). */
+    breakUntil(date: string): string;
+    /** Anchor text pointing at the typical-times table. */
+    typicalTimesLink: string;
   };
   promo: {
     valueProps: [string, string, string];
@@ -81,6 +91,8 @@ export interface UiLex {
     byCategory: string;
     /** Meta-description sentence, parts like ["#3 Most followed", "#1 Minecraft"]. */
     summary(name: string, parts: string[]): string;
+    /** Disclosure for the placements below the top-100 chip row. */
+    allRankings(n: number): string;
   };
   stats: {
     heading(name: string): string;
@@ -112,6 +124,11 @@ export interface UiLex {
       days: number,
       times: { start: string; end: string; tzLabel: string } | null,
     ): string;
+    /** Insights teaser card (was hardcoded English until 2026-09-26). */
+    insightsTitle: string;
+    /** `day` is a localized weekday name, `median` pre-formatted. */
+    insightsBiggestDay(day: string, median: string): string;
+    insightsBlurb: string;
   };
   faq: {
     heading: string;

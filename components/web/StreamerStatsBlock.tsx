@@ -72,7 +72,7 @@ export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
       <div className="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">
         {stats.streams_per_week !== null && (
           <div className="rounded-xl bg-background-elevated p-3">
-            <div className="text-xs uppercase tracking-wider text-text-muted">
+            <div className="text-xs uppercase tracking-wider text-text-secondary">
               {L.streamsPerWeek}
             </div>
             <div className="mt-1 text-lg font-bold text-text-primary">
@@ -82,7 +82,7 @@ export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
         )}
         {stats.typical_duration_minutes !== null && (
           <div className="rounded-xl bg-background-elevated p-3">
-            <div className="text-xs uppercase tracking-wider text-text-muted">
+            <div className="text-xs uppercase tracking-wider text-text-secondary">
               {L.typicalLength}
             </div>
             <div className="mt-1 text-lg font-bold text-text-primary">
@@ -92,7 +92,9 @@ export function StreamerStatsBlock({ streamer, stats, uiLanguage }: Props) {
         )}
       </div>
 
-      {stats.top_categories.length > 0 && (
+      {/* YouTube video buckets ("Gaming", "People & Blogs") are not categories
+          a viewer can use; the API marks them since 2026-09-26. */}
+      {stats.top_categories.length > 0 && stats.category_source !== 'youtube' && (
         <div className="mt-5">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-text-muted">
             {L.topCategories}

@@ -13,6 +13,11 @@ export const hu: UiLex = {
     avatarAlt: (name) => `${name} avatárja`,
     showMore: 'Több megjelenítése',
     showLess: 'Kevesebb megjelenítése',
+    lastStreamOn: (date) => `Legutóbbi stream: ${date}.`,
+    usuallyOn: (days) => `Általában streamel: ${days}.`,
+    quietLately: 'Mostanában a szokásosnál csendesebb.',
+    breakUntil: (date) => `Szünet eddig: ${date}.`,
+    typicalTimesLink: 'Szokásos időpontok',
   },
   promo: {
     valueProps: [
@@ -59,6 +64,7 @@ export const hu: UiLex = {
     trendDown: (p) => `${p} hellyel lejjebb a múlt héthez képest`,
     byCategory: 'Kategória szerint',
     summary: (name, parts) => `${name} helyezései a Streamer Timeson: ${parts.join(', ')}.`,
+    allRankings: (n) => `Összes helyezés (${n})`,
   },
   stats: {
     heading: (name) => `Mikor streamel ${name}?`,
@@ -82,6 +88,9 @@ export const hu: UiLex = {
         ? `${base}, jellemzően ${times.start} és ${times.end} között (${times.tzLabel}).`
         : `${base}.`;
     },
+    insightsTitle: 'Stream-statisztikák',
+    insightsBiggestDay: (day, median) => `Legnagyobb közönség: ${day}, kb. ${median} néző`,
+    insightsBlurb: 'Nézői minták, kategóriák és összehasonlítások',
   },
   faq: {
     heading: 'Gyakori kérdések',

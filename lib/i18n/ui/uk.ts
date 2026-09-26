@@ -22,6 +22,11 @@ export const uk: UiLex = {
     avatarAlt: (name) => `Аватар ${name}`,
     showMore: 'Показати більше',
     showLess: 'Показати менше',
+    lastStreamOn: (date) => `Останній стрім: ${date}.`,
+    usuallyOn: (days) => `Зазвичай стримить: ${days}.`,
+    quietLately: 'Останнім часом тихіше, ніж зазвичай.',
+    breakUntil: (date) => `Перерва до ${date}.`,
+    typicalTimesLink: 'Звичний час',
   },
   promo: {
     valueProps: [
@@ -74,6 +79,7 @@ export const uk: UiLex = {
     trendDown: (p) => `опустився на ${p} за тиждень`,
     byCategory: 'За категоріями',
     summary: (name, parts) => `${name} посідає ${parts.join(' і ')} на Streamer Times.`,
+    allRankings: (n) => `Усі місця в рейтингах (${n})`,
   },
   stats: {
     heading: (name) => `Коли стрімить ${name}?`,
@@ -119,6 +125,9 @@ export const uk: UiLex = {
         ? `${base}, як правило з ${times.start} до ${times.end} (${times.tzLabel}).`
         : `${base}.`;
     },
+    insightsTitle: 'Статистика стрімів',
+    insightsBiggestDay: (day, median) => `Найбільше глядачів: ${day}, близько ${median}`,
+    insightsBlurb: 'Аудиторія, категорії та порівняння',
   },
   faq: {
     heading: 'Поширені запитання',

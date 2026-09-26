@@ -19,6 +19,15 @@ function renderAll(L: UiLex): Array<[string, string]> {
     ['hero.featured', L.hero.featured],
     ['hero.nowStreaming', L.hero.nowStreaming],
     ['hero.avatarAlt', L.hero.avatarAlt(NAME)],
+    ['hero.lastStreamOn', L.hero.lastStreamOn('Tue, Sep 15')],
+    ['hero.usuallyOn', L.hero.usuallyOn('Tue, Thu, Sat')],
+    ['hero.quietLately', L.hero.quietLately],
+    ['hero.breakUntil', L.hero.breakUntil('Mon, Oct 5')],
+    ['hero.typicalTimesLink', L.hero.typicalTimesLink],
+    ['stats.insightsTitle', L.stats.insightsTitle],
+    ['stats.insightsBiggestDay', L.stats.insightsBiggestDay('Saturday', '51K')],
+    ['stats.insightsBlurb', L.stats.insightsBlurb],
+    ['streamerRankings.allRankings', L.streamerRankings.allRankings(7)],
     ['promo.valueProps.0', L.promo.valueProps[0]],
     ['promo.valueProps.1', L.promo.valueProps[1]],
     ['promo.valueProps.2', L.promo.valueProps[2]],
@@ -225,6 +234,27 @@ describe('UI_STRINGS lexica', () => {
   // User rule (2026-08-27): em/en dashes read as machine-written. The wiki
   // section is the most-read prose lexicon on the site, so it is guarded
   // as a whole (the streamer name fixture carries none itself).
+  // Streamer-page UX round (2026-09-26): the new hero / insights / rankings
+  // copy follows the same rule.
+  it.each([...UI_LANGS])('%s streamer-page UX copy carries no em/en dashes', (lang) => {
+    const L = UI_STRINGS[lang];
+    for (const value of [
+      L.hero.lastStreamOn('Tue, Sep 15'),
+      L.hero.usuallyOn('Tue, Thu, Sat'),
+      L.hero.quietLately,
+      L.hero.breakUntil('Mon, Oct 5'),
+      L.hero.typicalTimesLink,
+      L.stats.insightsTitle,
+      L.stats.insightsBiggestDay('Saturday', '51K'),
+      L.stats.insightsBlurb,
+      L.streamerRankings.allRankings(7),
+    ]) {
+      expect(value, lang).not.toMatch(/[—–]/);
+    }
+    expect(L.stats.insightsBiggestDay('Saturday', '51K')).toContain('51K');
+    expect(L.hero.breakUntil('Mon, Oct 5')).toContain('Mon, Oct 5');
+  });
+
   it.each([...UI_LANGS])('%s wiki lexicon carries no em/en dashes', (lang) => {
     for (const [key, value] of renderWiki(UI_STRINGS[lang].wiki)) {
       expect(value, `${lang}:${key}`).not.toMatch(/[—–]/);

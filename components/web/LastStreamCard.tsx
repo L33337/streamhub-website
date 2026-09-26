@@ -1,10 +1,11 @@
 import Image from 'next/image';
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo } from '@/lib/format/time';
-import { historyPlatforms, historyVodLinks, usableThumbnail } from '@/lib/history';
+import { historyCategory, historyPlatforms, historyVodLinks, usableThumbnail } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
+import { slotLexFor } from '@/lib/i18n-slot';
 import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 
 function PlaceholderThumbnail({ name }: { name: string }) {
@@ -28,6 +29,8 @@ interface Props {
   avatarUrl: string | null;
   /** Streamer's broadcaster language — localizes the card copy (null → en). */
   language?: string | null;
+  /** Desktop sidebar variant: from lg on the 112 px thumbnail of phones, not 224 px. */
+  inSidebar?: boolean;
 }
 
 /**
@@ -45,7 +48,13 @@ interface Props {
  * big click target we want); with two, the card stays static and each platform
  * badge links to its own VOD.
  */
-export function LastStreamCard({ stream, streamerName, avatarUrl, language = null }: Props) {
+export function LastStreamCard({
+  stream,
+  streamerName,
+  avatarUrl,
+  language = null,
+  inSidebar = false,
+}: Props) {
   const L = uiLexFor(language).lastStream;
   const title = stream.title?.trim() || L.pastStream;
   const aired = formatTimeAgo(stream.started_at, resolveUiLang(language));
@@ -63,12 +72,14 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
 
   const card = (
     <article className="flex gap-3 rounded-xl bg-background-elevated p-3 gradient-border glow-cyan">
-      <div className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 lg:w-56">
+      <div
+        className={`relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-lg bg-background-highlight sm:w-36 md:w-44 ${inSidebar ? 'lg:w-28' : 'lg:w-56'}`}
+      >
         {thumbnailUrl ? (
           <Image
             // 224px is the widest this box gets (THUMB_SIZES' lg bucket).
             src={sizedCdnImageUrl(thumbnailUrl, 224)}
-            alt={title}
+            alt=""
             fill
             unoptimized
             sizes={THUMB_SIZES}
@@ -77,7 +88,7 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
         ) : avatarUrl ? (
           <Image
             src={sizedAvatarUrl(avatarUrl, 224)}
-            alt={streamerName}
+            alt=""
             fill
             unoptimized
             sizes={THUMB_SIZES}
@@ -97,8 +108,8 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
           >
             {title}
           </h3>
-          {stream.category ? (
-            <p className="truncate text-xs text-text-secondary">{stream.category}</p>
+          {historyCategory(stream) ? (
+            <p className="truncate text-xs text-text-secondary">{historyCategory(stream)}</p>
           ) : null}
         </div>
 
@@ -127,17 +138,21 @@ export function LastStreamCard({ stream, streamerName, avatarUrl, language = nul
   );
 
   return (
-    <section className="mt-6">
-      <h2 className="text-2xl font-bold text-white mb-4">{L.heading}</h2>
+    <section className={inSidebar ? 'mt-10 lg:mt-0' : 'mt-6'}>
+      <h2 className={`mb-4 text-2xl font-bold text-white ${inSidebar ? 'lg:text-lg' : ''}`}>
+        {L.heading}
+      </h2>
       {cardHref ? (
         <a
           href={cardHref}
           target="_blank"
           rel="noopener noreferrer"
           className="block transition-transform hover:scale-[1.01] focus-visible:scale-[1.01] focus-visible:outline-none"
-          aria-label={L.watchAria(streamerName, title)}
+          // No aria-label (2026-09-26): the accessible name is the card text
+          // (WCAG 2.5.3); the images are alt="" so the title is read once.
         >
           {card}
+          <span className="sr-only">{slotLexFor(language ?? 'en').opensInNewTab}</span>
         </a>
       ) : (
         card

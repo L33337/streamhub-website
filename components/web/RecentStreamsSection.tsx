@@ -1,6 +1,6 @@
 import type { PublicStreamHistory } from '@/lib/server/partner-api';
 import { formatDuration, formatTimeAgo, formatUtcDateShort } from '@/lib/format/time';
-import { historyPlatforms, historyVodLinks } from '@/lib/history';
+import { historyCategory, historyPlatforms, historyVodLinks } from '@/lib/history';
 import { resolveUiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { PlatformBadge } from './Badges';
@@ -54,7 +54,7 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
               key={s.id}
               className="flex min-w-0 items-baseline gap-3 rounded-xl border border-border-default bg-background-elevated px-3 py-2"
             >
-              <div className="w-28 shrink-0 text-xs text-text-muted sm:w-36">
+              <div className="w-28 shrink-0 text-xs text-text-secondary sm:w-36">
                 <time dateTime={s.started_at} className="block text-text-secondary">
                   {formatUtcDateShort(s.started_at, lang)}
                 </time>
@@ -67,8 +67,8 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
                 >
                   {title}
                 </p>
-                <p className="truncate text-xs text-text-muted">
-                  {[s.category, duration].filter(Boolean).join(' · ')}
+                <p className="truncate text-xs text-text-secondary">
+                  {[historyCategory(s), duration].filter(Boolean).join(' · ')}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2 self-center">
@@ -92,7 +92,9 @@ export function RecentStreamsSection({ streams, now, language = null }: Props) {
                     href={vodLinks[0].url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-semibold uppercase tracking-wider text-accent-cyan hover:text-text-primary"
+                    // Hit area 32px tall / padded wide (was 37×15 px, below the
+                    // WCAG 2.5.8 minimum); the negative margin keeps the row height.
+                    className="-my-1.5 inline-flex min-h-8 items-center px-2 text-[10px] font-semibold uppercase tracking-wider text-accent-cyan hover:text-text-primary"
                     aria-label={L.recent.vodAria(title)}
                   >
                     VOD →

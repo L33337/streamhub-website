@@ -13,6 +13,11 @@ export const pt: UiLex = {
     avatarAlt: (name) => `Avatar de ${name}`,
     showMore: 'Ver mais',
     showLess: 'Ver menos',
+    lastStreamOn: (date) => `Último stream: ${date}.`,
+    usuallyOn: (days) => `Costuma fazer stream: ${days}.`,
+    quietLately: 'Mais quieto que o normal ultimamente.',
+    breakUntil: (date) => `De pausa até ${date}.`,
+    typicalTimesLink: 'Horários habituais',
   },
   promo: {
     valueProps: [
@@ -59,6 +64,7 @@ export const pt: UiLex = {
     trendDown: (p) => `desceu ${p} ${p === 1 ? 'posição' : 'posições'} desde a semana passada`,
     byCategory: 'Por categoria',
     summary: (name, parts) => `${name} está em ${parts.join(' e ')} no Streamer Times.`,
+    allRankings: (n) => `Todas as posições (${n})`,
   },
   stats: {
     heading: (name) => `Quando ${name} faz live?`,
@@ -83,6 +89,9 @@ export const pt: UiLex = {
         ? `${base}, normalmente entre ${times.start} e ${times.end} (${times.tzLabel}).`
         : `${base}.`;
     },
+    insightsTitle: 'Estatísticas de stream',
+    insightsBiggestDay: (day, median) => `Maior público: ${day}, cerca de ${median} espectadores`,
+    insightsBlurb: 'Padrões de público, categorias e comparações',
   },
   faq: {
     heading: 'Perguntas frequentes',

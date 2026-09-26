@@ -63,6 +63,21 @@ export interface SlotLex {
   whyThisPrediction: string;
   /** Live-card overlay: "{3.1K} watching"; v arrives compact-formatted. */
   viewersWatching(v: string): string;
+  /** Slot detail page (/schedule/[id]) labels, visible with their colon. */
+  detailCategory: string;
+  detailScheduled: string;
+  detailStarted: string;
+  /** Start label of a cancelled slot ("Usually streams:"). */
+  detailUsually: string;
+  detailDuration: string;
+  /** Always-on channel, next to the 24/7 badge. */
+  detailStreaming: string;
+  /** Labelled .ics button on the slot detail page. */
+  addToCalendar: string;
+  /** Badge on a cancelled slot (rendered uppercase). */
+  cancelledBadge: string;
+  /** Why a cancelled slot expects no stream (DTO cancel_source); null = unknown. Never claims an announcement for 'cold' or unknown. */
+  cancelledReason(source: 'break' | 'vacation' | 'withdrawn' | 'cold' | null): string;
   /** "Next stream:" — prefix of the forward pointer on a day with nothing scheduled. */
   nextStreamPrefix: string;
   /** "Show 6 more streams" — expands the truncated 7-day schedule. */
@@ -110,6 +125,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (opens in new tab)',
     whyThisPrediction: 'Why this prediction?',
     viewersWatching: (v) => `${v} watching`,
+    detailCategory: 'Category:',
+    detailScheduled: 'Scheduled:',
+    detailStarted: 'Started:',
+    detailUsually: 'Usually streams:',
+    detailDuration: 'Duration:',
+    detailStreaming: 'Streaming:',
+    addToCalendar: 'Add to calendar',
+    cancelledBadge: 'Cancelled',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'No stream expected: the streamer announced a break.'
+        : source === 'vacation'
+          ? 'No stream expected: the streamer announced time off.'
+          : source === 'withdrawn'
+            ? 'No stream expected: the announced stream was removed from the schedule.'
+            : source === 'cold'
+              ? 'No stream expected: the streamer has been quieter than usual lately.'
+              : 'No stream expected at this usually regular time.',
     nextStreamPrefix: 'Next stream:',
     showMoreStreams: (n) => `Show ${n} more ${n === 1 ? 'stream' : 'streams'}`,
     showFewerStreams: 'Show fewer',
@@ -153,6 +186,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (öffnet in neuem Tab)',
     whyThisPrediction: 'Warum diese Vorhersage?',
     viewersWatching: (v) => `${v} Zuschauer`,
+    detailCategory: 'Kategorie:',
+    detailScheduled: 'Geplant:',
+    detailStarted: 'Gestartet:',
+    detailUsually: 'Sonst meist:',
+    detailDuration: 'Dauer:',
+    detailStreaming: 'Sendet:',
+    addToCalendar: 'Zum Kalender hinzufügen',
+    cancelledBadge: 'Abgesagt',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Kein Stream erwartet: Der Streamer hat eine Pause angekündigt.'
+        : source === 'vacation'
+          ? 'Kein Stream erwartet: Der Streamer hat eine Auszeit angekündigt.'
+          : source === 'withdrawn'
+            ? 'Kein Stream erwartet: Der angekündigte Stream wurde aus dem Plan genommen.'
+            : source === 'cold'
+              ? 'Kein Stream erwartet: Der Streamer war zuletzt ruhiger als sonst.'
+              : 'Zu dieser sonst üblichen Zeit wird kein Stream erwartet.',
     nextStreamPrefix: 'Nächster Stream:',
     showMoreStreams: (n) =>
       n === 1 ? '1 weiteren Stream anzeigen' : `${n} weitere Streams anzeigen`,
@@ -196,6 +247,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (se abre en una pestaña nueva)',
     whyThisPrediction: '¿Por qué esta predicción?',
     viewersWatching: (v) => `${v} viendo`,
+    detailCategory: 'Categoría:',
+    detailScheduled: 'Programado:',
+    detailStarted: 'Empezó:',
+    detailUsually: 'Suele hacer stream:',
+    detailDuration: 'Duración:',
+    detailStreaming: 'Emite:',
+    addToCalendar: 'Añadir al calendario',
+    cancelledBadge: 'Cancelado',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'No se espera stream: el streamer anunció un descanso.'
+        : source === 'vacation'
+          ? 'No se espera stream: el streamer anunció unos días libres.'
+          : source === 'withdrawn'
+            ? 'No se espera stream: el stream anunciado se retiró del horario.'
+            : source === 'cold'
+              ? 'No se espera stream: el streamer ha estado más tranquilo de lo habitual.'
+              : 'No se espera stream a esta hora habitual.',
     nextStreamPrefix: 'Próximo stream:',
     showMoreStreams: (n) => (n === 1 ? 'Ver 1 stream más' : `Ver ${n} streams más`),
     showFewerStreams: 'Ver menos',
@@ -238,6 +307,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ` (s'ouvre dans un nouvel onglet)`,
     whyThisPrediction: 'Pourquoi cette prédiction ?',
     viewersWatching: (v) => `${v} spectateurs`,
+    detailCategory: 'Catégorie :',
+    detailScheduled: 'Prévu :',
+    detailStarted: 'Commencé :',
+    detailUsually: 'Habituellement :',
+    detailDuration: 'Durée :',
+    detailStreaming: 'Diffusion :',
+    addToCalendar: 'Ajouter au calendrier',
+    cancelledBadge: 'Annulé',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Aucun stream prévu : le streamer a annoncé une pause.'
+        : source === 'vacation'
+          ? 'Aucun stream prévu : le streamer a annoncé des congés.'
+          : source === 'withdrawn'
+            ? 'Aucun stream prévu : le stream annoncé a été retiré du planning.'
+            : source === 'cold'
+              ? 'Aucun stream prévu : le streamer est plus calme que d’habitude.'
+              : 'Aucun stream prévu à cette heure habituelle.',
     nextStreamPrefix: 'Prochain stream :',
     showMoreStreams: (n) =>
       n === 1 ? 'Voir 1 stream de plus' : `Voir ${n} streams de plus`,
@@ -280,6 +367,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (abre em nova aba)',
     whyThisPrediction: 'Por que esta previsão?',
     viewersWatching: (v) => `${v} assistindo`,
+    detailCategory: 'Categoria:',
+    detailScheduled: 'Agendado:',
+    detailStarted: 'Começou:',
+    detailUsually: 'Costuma fazer stream:',
+    detailDuration: 'Duração:',
+    detailStreaming: 'Transmite:',
+    addToCalendar: 'Adicionar ao calendário',
+    cancelledBadge: 'Cancelado',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Nenhum stream previsto: o streamer anunciou uma pausa.'
+        : source === 'vacation'
+          ? 'Nenhum stream previsto: o streamer anunciou uma folga.'
+          : source === 'withdrawn'
+            ? 'Nenhum stream previsto: o stream anunciado foi retirado da agenda.'
+            : source === 'cold'
+              ? 'Nenhum stream previsto: o streamer anda mais quieto que o normal.'
+              : 'Nenhum stream previsto neste horário habitual.',
     nextStreamPrefix: 'Próximo stream:',
     showMoreStreams: (n) => (n === 1 ? 'Ver mais 1 stream' : `Ver mais ${n} streams`),
     showFewerStreams: 'Ver menos',
@@ -323,6 +428,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (si apre in una nuova scheda)',
     whyThisPrediction: 'Perché questa previsione?',
     viewersWatching: (v) => `${v} spettatori`,
+    detailCategory: 'Categoria:',
+    detailScheduled: 'Previsto:',
+    detailStarted: 'Iniziato:',
+    detailUsually: 'Di solito:',
+    detailDuration: 'Durata:',
+    detailStreaming: 'In onda:',
+    addToCalendar: 'Aggiungi al calendario',
+    cancelledBadge: 'Annullato',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Nessuno stream previsto: lo streamer ha annunciato una pausa.'
+        : source === 'vacation'
+          ? 'Nessuno stream previsto: lo streamer ha annunciato un periodo di ferie.'
+          : source === 'withdrawn'
+            ? 'Nessuno stream previsto: lo stream annunciato è stato tolto dal programma.'
+            : source === 'cold'
+              ? 'Nessuno stream previsto: lo streamer è più tranquillo del solito.'
+              : 'Nessuno stream previsto a quest’ora abituale.',
     nextStreamPrefix: 'Prossimo stream:',
     showMoreStreams: (n) =>
       n === 1 ? 'Mostra un altro stream' : `Mostra altri ${n} stream`,
@@ -372,6 +495,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (откроется в новой вкладке)',
     whyThisPrediction: 'Почему такой прогноз?',
     viewersWatching: (v) => `${v} зрителей`,
+    detailCategory: 'Категория:',
+    detailScheduled: 'Запланировано:',
+    detailStarted: 'Начался:',
+    detailUsually: 'Обычно:',
+    detailDuration: 'Длительность:',
+    detailStreaming: 'Вещание:',
+    addToCalendar: 'Добавить в календарь',
+    cancelledBadge: 'Отменён',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Стрим не ожидается: стример объявил перерыв.'
+        : source === 'vacation'
+          ? 'Стрим не ожидается: стример объявил отпуск.'
+          : source === 'withdrawn'
+            ? 'Стрим не ожидается: объявленный стрим убран из расписания.'
+            : source === 'cold'
+              ? 'Стрим не ожидается: в последнее время стример тише обычного.'
+              : 'В это обычное время стрим не ожидается.',
     nextStreamPrefix: 'Следующий стрим:',
     showMoreStreams: (n) =>
       pluralForms('ru', n, {
@@ -425,6 +566,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: '（新しいタブで開きます）',
     whyThisPrediction: 'この予測の理由',
     viewersWatching: (v) => `${v}人が視聴中`,
+    detailCategory: 'カテゴリ：',
+    detailScheduled: '予定：',
+    detailStarted: '開始：',
+    detailUsually: 'いつもは：',
+    detailDuration: '長さ：',
+    detailStreaming: '配信：',
+    addToCalendar: 'カレンダーに追加',
+    cancelledBadge: '中止',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? '配信予定なし：配信者が休みを告知しました。'
+        : source === 'vacation'
+          ? '配信予定なし：配信者が休暇を告知しました。'
+          : source === 'withdrawn'
+            ? '配信予定なし：告知された配信がスケジュールから削除されました。'
+            : source === 'cold'
+              ? '配信予定なし：最近はいつもより配信が少なめです。'
+              : 'いつもの時間ですが、配信予定はありません。',
     nextStreamPrefix: '次の配信:',
     showMoreStreams: (n) => `他${n}件の配信を表示`,
     showFewerStreams: '表示を減らす',
@@ -473,6 +632,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (відкриється в новій вкладці)',
     whyThisPrediction: 'Чому такий прогноз?',
     viewersWatching: (v) => `${v} глядачів`,
+    detailCategory: 'Категорія:',
+    detailScheduled: 'Заплановано:',
+    detailStarted: 'Почався:',
+    detailUsually: 'Зазвичай:',
+    detailDuration: 'Тривалість:',
+    detailStreaming: 'Мовлення:',
+    addToCalendar: 'Додати в календар',
+    cancelledBadge: 'Скасовано',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Стрім не очікується: стример оголосив перерву.'
+        : source === 'vacation'
+          ? 'Стрім не очікується: стример оголосив відпустку.'
+          : source === 'withdrawn'
+            ? 'Стрім не очікується: оголошений стрім прибрано з розкладу.'
+            : source === 'cold'
+              ? 'Стрім не очікується: останнім часом стример тихіший, ніж зазвичай.'
+              : 'У цей звичний час стрім не очікується.',
     nextStreamPrefix: 'Наступний стрім:',
     showMoreStreams: (n) =>
       pluralForms('uk', n, {
@@ -537,6 +714,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (يفتح في تبويب جديد)',
     whyThisPrediction: 'لماذا هذا التوقع؟',
     viewersWatching: (v) => `${v} يشاهدون`,
+    detailCategory: 'الفئة:',
+    detailScheduled: 'موعد البث:',
+    detailStarted: 'بدأ:',
+    detailUsually: 'عادةً:',
+    detailDuration: 'المدة:',
+    detailStreaming: 'البث:',
+    addToCalendar: 'أضف إلى التقويم',
+    cancelledBadge: 'ملغى',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'لا يُتوقع بث: أعلن صانع المحتوى عن استراحة.'
+        : source === 'vacation'
+          ? 'لا يُتوقع بث: أعلن صانع المحتوى عن إجازة.'
+          : source === 'withdrawn'
+            ? 'لا يُتوقع بث: أُزيل البث المعلن من الجدول.'
+            : source === 'cold'
+              ? 'لا يُتوقع بث: صانع المحتوى أهدأ من المعتاد مؤخرًا.'
+              : 'لا يُتوقع بث في هذا الوقت المعتاد.',
     nextStreamPrefix: 'البث القادم:',
     showMoreStreams: (n) =>
       pluralForms('ar', n, {
@@ -596,6 +791,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (új lapon nyílik meg)',
     whyThisPrediction: 'Miért ez az előrejelzés?',
     viewersWatching: (v) => `${v} néző`,
+    detailCategory: 'Kategória:',
+    detailScheduled: 'Tervezett:',
+    detailStarted: 'Kezdés:',
+    detailUsually: 'Általában:',
+    detailDuration: 'Időtartam:',
+    detailStreaming: 'Adás:',
+    addToCalendar: 'Hozzáadás a naptárhoz',
+    cancelledBadge: 'Elmarad',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Nem várható stream: a streamer szünetet jelentett be.'
+        : source === 'vacation'
+          ? 'Nem várható stream: a streamer szabadságot jelentett be.'
+          : source === 'withdrawn'
+            ? 'Nem várható stream: a bejelentett streamet levették a menetrendből.'
+            : source === 'cold'
+              ? 'Nem várható stream: a streamer mostanában csendesebb a szokásosnál.'
+              : 'Ebben a szokásos időpontban nem várható stream.',
     nextStreamPrefix: 'Következő stream:',
     showMoreStreams: (n) => `Még ${n} stream megjelenítése`,
     showFewerStreams: 'Kevesebb megjelenítése',
@@ -646,6 +859,24 @@ const SLOT_STRINGS: Record<UiLang, SlotLex> = {
     opensInNewTab: ' (otwiera się w nowej karcie)',
     whyThisPrediction: 'Skąd ta prognoza?',
     viewersWatching: (v) => `${v} ogląda`,
+    detailCategory: 'Kategoria:',
+    detailScheduled: 'Zaplanowano:',
+    detailStarted: 'Rozpoczęto:',
+    detailUsually: 'Zwykle:',
+    detailDuration: 'Czas trwania:',
+    detailStreaming: 'Nadaje:',
+    addToCalendar: 'Dodaj do kalendarza',
+    cancelledBadge: 'Odwołany',
+    cancelledReason: (source) =>
+      source === 'break'
+        ? 'Nie oczekujemy streamu: streamer zapowiedział przerwę.'
+        : source === 'vacation'
+          ? 'Nie oczekujemy streamu: streamer zapowiedział urlop.'
+          : source === 'withdrawn'
+            ? 'Nie oczekujemy streamu: zapowiedziany stream usunięto z planu.'
+            : source === 'cold'
+              ? 'Nie oczekujemy streamu: streamer ostatnio jest spokojniejszy niż zwykle.'
+              : 'W tym zwykłym terminie nie oczekujemy streamu.',
     nextStreamPrefix: 'Następny stream:',
     showMoreStreams: (n) =>
       pluralForms('pl', n, {

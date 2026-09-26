@@ -95,7 +95,7 @@ export function SlotCard({
   // Auto-badge for API-driven cancelled slots; callers passing topBadges
   // (Program page) own the badge row themselves.
   const badges =
-    topBadges ?? (isCancelled ? <CancelledBadge /> : undefined);
+    topBadges ?? (isCancelled ? <CancelledBadge language={language} /> : undefined);
 
   return (
     <Link

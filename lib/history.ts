@@ -21,6 +21,41 @@ export function historyPlatforms(stream: PublicStreamHistory): Platform[] {
 }
 
 /**
+ * YouTube's video buckets — the complete set the backend has ever stored
+ * (StreamHub CLAUDE.md "Game categories come from Twitch only"). Only used as
+ * a fallback for API responses without `category_source`, and only on items
+ * that did not go out on Twitch (Twitch has real categories named "Music" and
+ * "Sports"; a name alone never decides).
+ */
+const YOUTUBE_BUCKETS = new Set([
+  'Gaming',
+  'Entertainment',
+  'News & Politics',
+  'People & Blogs',
+  'Sports',
+  'Music',
+  'Travel & Events',
+  'Science & Technology',
+  'Film & Animation',
+]);
+
+/**
+ * The category worth showing for a history item, or null (streamer-page UX
+ * round, 2026-09-26). A YouTube video bucket is not a category a viewer can
+ * use: the "Last stream" card read "Wolverine Marathon · People & Blogs". The
+ * API marks the source (`category_source`); older responses fall back to the
+ * bucket list, guarded by platform.
+ */
+export function historyCategory(stream: PublicStreamHistory): string | null {
+  const category = stream.category?.trim() || null;
+  if (!category) return null;
+  if (stream.category_source === 'youtube') return null;
+  if (stream.category_source === 'twitch') return category;
+  const onTwitch = historyPlatforms(stream).includes('twitch');
+  return !onTwitch && YOUTUBE_BUCKETS.has(category) ? null : category;
+}
+
+/**
  * Thumbnail URL safe to render, or null.
  *
  * Twitch returns a "/_404/404_processing" placeholder while a freshly-ended

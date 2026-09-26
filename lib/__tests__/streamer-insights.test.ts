@@ -72,7 +72,21 @@ describe('bestWeekday + teaser', () => {
       sample_count: COLLECTING_THRESHOLD,
       weekday_viewers: weekday,
     } as StreamerInsights;
-    expect(buildInsightsTeaser(insights)).toEqual({ bestDay: 'Wednesday', median: 620 });
+    expect(buildInsightsTeaser(insights)).toEqual({ dayIndex: 2, median: 620 });
+  });
+  it('teaser only names a day the typical-times table streams on', () => {
+    const insights = {
+      streamer_id: 'x',
+      sample_count: COLLECTING_THRESHOLD,
+      weekday_viewers: weekday,
+    } as StreamerInsights;
+    // Wednesday (ISO 3) is best, but the table only has Saturday (ISO 6):
+    // the next-best agreeing day wins.
+    expect(buildInsightsTeaser(insights, [6])).toEqual({ dayIndex: 5, median: 500 });
+    // No agreeing day with enough samples → card without a day.
+    expect(buildInsightsTeaser(insights, [4])).toEqual({ dayIndex: null, median: null });
+    // Table agrees with the best day → unchanged.
+    expect(buildInsightsTeaser(insights, [3, 6])).toEqual({ dayIndex: 2, median: 620 });
   });
   it('teaser null while collecting or without cells', () => {
     expect(

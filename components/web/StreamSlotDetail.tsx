@@ -10,6 +10,8 @@ import {
 } from './Badges';
 import { sizedAvatarUrl, sizedCdnImageUrl } from '@/lib/format/image-size';
 import { InitialsAvatar } from './InitialsAvatar';
+import { AddToCalendarButton } from './AddToCalendarButton';
+import { isIcsExportable, publicSlotToIcsSlot } from '@/lib/game-schedule';
 import { LocalTime } from './LocalTime';
 import { WatchButtons } from './WatchButtons';
 import { slotLexFor } from '@/lib/i18n-slot';
@@ -36,18 +38,22 @@ export function StreamSlotDetail({
 }) {
   const isLive = slot.status === 'live';
   const isAlwaysOn = slot.is_always_on;
-  // M15 cancelled prediction: the streamer announced they will NOT stream at
-  // this usually-regular time — no watch buttons, "Usually streams" label.
+  // M15 cancelled prediction: no stream is expected at this usually-regular
+  // time — no watch buttons, "Usually streams" label. WHY comes from
+  // cancel_source (2026-09-26): only break/vacation/withdrawn were announced;
+  // 'cold' is unusual silence, and the old fixed sentence claimed an
+  // announcement for all of them (124 of 185 cancelled slots were 'cold').
   const isCancelled = slot.slot_kind === 'cancelled';
+  const S = slotLexFor(language);
   const durationLabel = isAlwaysOn ? null : formatDuration(slot.duration_minutes);
-  const startLabel = isCancelled ? 'Usually streams:' : isLive ? 'Started:' : 'Scheduled:';
+  const startLabel = isCancelled ? S.detailUsually : isLive ? S.detailStarted : S.detailScheduled;
   const durationPrefix = isLive ? '' : '~';
 
   return (
     <article className="p-4 sm:p-6 md:p-8">
       <HeroThumbnail slot={slot} />
 
-      <StreamerRow slot={slot} className="mt-4 sm:mt-5" />
+      <StreamerRow slot={slot} language={language} className="mt-4 sm:mt-5" />
 
       <h1
         id="slot-detail-title"
@@ -57,37 +63,36 @@ export function StreamSlotDetail({
         {slot.title}
       </h1>
 
+      {/* Visible term + value pairs (the term used to be an English sr-only
+          <dt> repeating the visible label, so screen readers read it twice). */}
       <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-secondary">
         {slot.category && (
           <div className="flex items-center gap-1.5">
-            <dt className="sr-only">Category</dt>
-            <dd>
-              <span className="text-text-muted">Category:</span> {slot.category}
-            </dd>
+            <dt className="text-text-muted">{S.detailCategory}</dt>
+            <dd>{slot.category}</dd>
           </div>
         )}
         {isAlwaysOn ? (
           <div className="flex items-center gap-1.5">
-            <dt className="sr-only">Schedule</dt>
+            <dt className="text-text-muted">{S.detailStreaming}</dt>
             <dd className="flex items-center gap-1.5">
-              <span className="text-text-muted">Streaming:</span>
               <AlwaysOnBadge />
             </dd>
           </div>
         ) : (
           <>
-            <div>
-              <dt className="sr-only">Start time</dt>
+            <div className="flex items-center gap-1.5">
+              <dt className="text-text-muted">{startLabel}</dt>
               <dd>
-                <span className="text-text-muted">{startLabel}</span>{' '}
                 <LocalTime utcIso={slot.start_time} language={language} />
               </dd>
             </div>
             {durationLabel && (
-              <div>
-                <dt className="sr-only">Duration</dt>
+              <div className="flex items-center gap-1.5">
+                <dt className="text-text-muted">{S.detailDuration}</dt>
                 <dd>
-                  <span className="text-text-muted">Duration:</span> {durationPrefix}{durationLabel}
+                  {durationPrefix}
+                  {durationLabel}
                 </dd>
               </div>
             )}
@@ -97,19 +102,24 @@ export function StreamSlotDetail({
 
       {isCancelled && (
         <p className="mt-3 text-sm text-text-secondary">
-          No stream expected — the streamer announced they will not stream at
-          this usually-regular time.
+          {S.cancelledReason(slot.cancel_source ?? null)}
         </p>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {slot.platforms.map((p) => (
-          <PlatformBadge key={p} platform={p} />
+          <PlatformBadge key={p} platform={p} language={language} />
         ))}
         {isAlwaysOn && <AlwaysOnBadge />}
-        {isCancelled && <CancelledBadge />}
-        {!isLive && <ConfidenceBadge level={slot.confidence} />}
+        {isCancelled && <CancelledBadge language={language} />}
+        {!isLive && <ConfidenceBadge level={slot.confidence} language={language} />}
       </div>
+
+      {isIcsExportable(slot) && (
+        <div className="mt-4">
+          <AddToCalendarButton slot={publicSlotToIcsSlot(slot)} label={S.addToCalendar} />
+        </div>
+      )}
 
       {!isLive && <ReasoningBox slot={slot} language={language} />}
 
@@ -117,6 +127,7 @@ export function StreamSlotDetail({
         <WatchButtons
           twitchLogin={slot.twitch_login}
           youtubeChannelId={slot.youtube_channel_id}
+          language={resolveUiLang(language)}
         />
       )}
     </article>
@@ -155,51 +166,34 @@ function HeroThumbnail({ slot }: { slot: PublicStreamSlot }) {
       </div>
     );
   }
-  if (slot.avatar_url) {
-    return (
-      <div className="gradient-border relative flex aspect-video w-full items-center justify-center overflow-hidden bg-background-highlight">
-        <Image
-          src={sizedAvatarUrl(slot.avatar_url, 160)}
-          alt={`${slot.streamer_name} avatar`}
-          width={160}
-          height={160}
-          unoptimized
-          className="rounded-full border-2 border-accent-cyan/40 glow-cyan"
-        />
-        {(showLive || showAlwaysOn) && (
-          <div className="absolute right-3 top-3">
-            {showLive ? <LiveBadge /> : <AlwaysOnBadge />}
-          </div>
-        )}
-      </div>
-    );
-  }
-  return (
-    <div className="gradient-border relative flex aspect-video w-full items-center justify-center overflow-hidden bg-background-highlight">
-      <InitialsAvatar name={slot.streamer_name} size={160} />
-      {(showLive || showAlwaysOn) && (
-        <div className="absolute right-3 top-3">
-          {showLive ? <LiveBadge /> : <AlwaysOnBadge />}
-        </div>
-      )}
-    </div>
-  );
+  // No thumbnail (every prediction): no hero at all since 2026-09-26. The old
+  // fallback put the streamer's avatar into a 16:9 box — 340 px of phone screen
+  // for a picture the streamer row directly below repeats.
+  return null;
 }
 
-function StreamerRow({ slot, className = '' }: { slot: PublicStreamSlot; className?: string }) {
+function StreamerRow({
+  slot,
+  language,
+  className = '',
+}: {
+  slot: PublicStreamSlot;
+  language: string;
+  className?: string;
+}) {
+  // Locale-prefixed since 2026-09-26 (it sent every viewer to the English
+  // page); no aria-label: the visible name is the accessible name.
   return (
     <Link
-      href={`/streamer/${encodeURIComponent(slot.streamer_id)}`}
+      href={localeHref(resolveUiLang(language), `/streamer/${encodeURIComponent(slot.streamer_id)}`)}
       prefetch={false}
-      aria-label={`Open ${slot.streamer_name}'s page`}
       className={`group inline-flex items-center gap-3 rounded-lg transition-colors hover:bg-background-highlight focus-visible:bg-background-highlight focus-visible:outline-none ${className}`}
     >
       {slot.avatar_url ? (
         <Image
           src={sizedAvatarUrl(slot.avatar_url, 48)}
-          // The Link's aria-label already names the target, so this costs
-          // screen readers nothing and gains the crawler image context.
-          alt={slot.streamer_name}
+          // Decorative next to the visible name (read once, not twice).
+          alt=""
           width={48}
           height={48}
           unoptimized

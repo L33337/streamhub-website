@@ -20,15 +20,22 @@ import {
   streamerIndexableLocales,
   jsonLdHtml,
 } from '@/lib/seo';
-import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
+import { isUiLang, localeHref, weekdayLong, type UiLang } from '@/lib/i18n-core';
 import { uiLexFor } from '@/lib/i18n-ui';
 import { slotLexFor } from '@/lib/i18n-slot';
 import {
+  formatUtcDateShort,
   groupSlotsByUtcDate,
   pickNextRealSlot,
+  pickNextRealSlots,
   sevenDayKeys,
   utcDateLabel,
+  utcDateShortLabel,
 } from '@/lib/format/time';
+import { formatStatValue } from '@/lib/format/number';
+import { heroActivity } from '@/lib/hero-activity';
+import { activeWeekdayList } from '@/lib/streamer-stats';
+import { PastDayGate } from '@/components/web/PastDayGate';
 import { ChannelStats } from '@/components/web/ChannelStats';
 import { StreamerRankings } from '@/components/web/StreamerRankings';
 import { StreamerHero } from '@/components/web/StreamerHero';
@@ -37,7 +44,7 @@ import { DaySection } from '@/components/web/DaySection';
 import { DayNavBar } from '@/components/web/DayNavBar';
 import { toDayCounts } from '@/lib/day-counts';
 import { CollapsibleSchedule } from '@/components/web/CollapsibleSchedule';
-import { EmptyDayRow } from '@/components/web/EmptyDayRow';
+import { EmptyDayRow, type EmptyDay } from '@/components/web/EmptyDayRow';
 import { EmptyScheduleState } from '@/components/web/EmptyScheduleState';
 import { RecentStreamsSection } from '@/components/web/RecentStreamsSection';
 import { StreamerFaqBlock } from '@/components/web/StreamerFaqBlock';
@@ -92,7 +99,9 @@ interface StreamerPageData {
   stats: PublicStreamerStats | null;
   rankings: PublicStreamerRankings | null;
   /** M24: teaser payload for the insights subpage; null = don't render the card. */
-  insightsTeaser: { bestDay: string; median: number } | null;
+  insightsTeaser: { dayIndex: number | null; median: number | null } | null;
+  /** Insights vacation_until: an announced break with an end date (hero activity line). */
+  vacationUntil: string | null;
   /** M26: a published wiki profile exists → render the wiki teaser card. */
   hasWiki: boolean;
   /** Fact keys of that profile: the teaser names only what the wiki holds. */
@@ -212,6 +221,7 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
       stats: null,
       rankings: null,
       insightsTeaser: null,
+      vacationUntil: null,
       hasWiki: false,
       wikiFactKeys: [],
       now,
@@ -245,7 +255,10 @@ const loadStreamerPage = cache(async (slug: string): Promise<StreamerPageData> =
     history,
     stats,
     rankings,
-    insightsTeaser: buildInsightsTeaser(insights),
+    // The teaser may only name a day the typical-times table streams on
+    // (2026-09-26); no stats → no table to contradict.
+    insightsTeaser: buildInsightsTeaser(insights, stats ? stats.weekdays.map((d) => d.iso_dow) : null),
+    vacationUntil: insights?.vacation_until ?? null,
     hasWiki: wiki !== null,
     wikiFactKeys: (wiki?.facts ?? []).map((f) => f.key),
     now,
@@ -294,6 +307,7 @@ export default async function StreamerPage({ params }: Props) {
     stats,
     rankings,
     insightsTeaser,
+    vacationUntil,
     hasWiki,
     wikiFactKeys,
     now,
@@ -303,15 +317,17 @@ export default async function StreamerPage({ params }: Props) {
   const lastStream = history[0] ?? null;
   const recentStreams = history.slice(1);
 
-  // Last-stream card placement is live-aware: offline streamers get it right
-  // under the hero (their most relevant content); live streamers keep it lower,
-  // below Channel Stats, so the hero's live callout stays the top focus.
+  // Last-stream card: first item of the side column (streamer-page UX round,
+  // 2026-09-26). It used to sit right under the hero for offline streamers;
+  // the schedule and typical times now come first on phones, and from lg on
+  // the card sits beside them.
   const lastStreamCard = lastStream ? (
     <LastStreamCard
       stream={lastStream}
       streamerName={streamer.name}
       avatarUrl={streamer.avatar_url}
       language={locale}
+      inSidebar
     />
   ) : null;
 
@@ -349,8 +365,9 @@ export default async function StreamerPage({ params }: Props) {
   const showEmpty = liveSlots.length === 0 && upcomingSlots.length === 0;
 
   // Forward pointer for an empty "Today" row — and the same slot generateMetadata
-  // announces, so the snippet and the page can never disagree about it.
-  const nextRealSlot = pickNextRealSlot(upcomingSlots, sevenDays);
+  // announces, so the snippet and the page can never disagree about it. The
+  // three after it let the hero pill move on when this snapshot is stale.
+  const [nextRealSlot = null, ...laterRealSlots] = pickNextRealSlots(upcomingSlots, sevenDays, 4);
   // Per-day slices with their offset into the flattened 7-day slot list, so the
   // truncation below can be expressed as one global slot index. Quadratic, over
   // seven days — the running-total version reassigned a captured accumulator
@@ -395,6 +412,39 @@ export default async function StreamerPage({ params }: Props) {
   const uiLang = locale;
   const L = uiLexFor(locale);
 
+  // Offline with nothing scheduled (streamer-page UX round, 2026-09-26): say
+  // what we do know — the last stream, an announced break, unusual silence —
+  // instead of leaving the hero without an answer.
+  const hasTypicalTimes = stats !== null && stats.weekdays.length > 0;
+  const activity =
+    !isLive && nextRealSlot === null && !streamer.is_always_on
+      ? heroActivity({
+          lastStreamAt: streamer.last_stream_at ?? history[0]?.started_at ?? null,
+          vacationUntil,
+          streamsPerWeek: stats?.streams_per_week,
+          now,
+        })
+      : null;
+  const usualDays = stats ? activeWeekdayList(stats, locale) : null;
+  // The date is left out whenever the page has a "Last stream" card:
+  // last_stream_at also knows streams without an archived VOD, the card only
+  // VODs, and the two dates contradicted each other ("Last stream: Sep 16" vs
+  // "3 weeks ago", fanum 2026-09-26). The quiet check keeps last_stream_at.
+  const cardBelowHero = lastStream !== null;
+  const activityText = !activity
+    ? null
+    : activity.kind === 'break'
+      ? L.hero.breakUntil(formatUtcDateShort(activity.until, locale))
+      : [
+          cardBelowHero
+            ? null
+            : L.hero.lastStreamOn(formatUtcDateShort(activity.lastStreamAt, locale)),
+          activity.kind === 'quiet' ? L.hero.quietLately : null,
+          usualDays ? L.hero.usuallyOn(usualDays) : null,
+        ]
+          .filter(Boolean)
+          .join(' ') || null;
+
   // Breadcrumb names must match the visible breadcrumb below (Google guidance).
   const breadcrumb = buildBreadcrumbJsonLd([
     {
@@ -409,7 +459,7 @@ export default async function StreamerPage({ params }: Props) {
   ]);
 
   return (
-    <main className="container mx-auto max-w-5xl px-4 py-8">
+    <main className="container mx-auto max-w-6xl px-4 py-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumb) }}
@@ -449,151 +499,217 @@ export default async function StreamerPage({ params }: Props) {
         streamer={streamer}
         liveSlot={heroLiveSlot}
         nextSlot={nextRealSlot}
+        laterSlots={laterRealSlots}
+        activity={
+          activityText
+            ? {
+                text: activityText,
+                timesHref: hasTypicalTimes ? '#typical-stream-times' : null,
+                timesLabel: L.hero.typicalTimesLink,
+              }
+            : null
+        }
         rankings={rankings}
         uiLanguage={locale}
       />
 
-      {!isLive && lastStreamCard}
-
-      {showEmpty ? (
-        <>
-          <EmptyScheduleState
-            streamer={streamer}
-            uiLanguage={locale}
-            hasTypicalTimes={stats !== null}
-          />
-          {/* Pulled up out of its usual slot below: with nothing scheduled, the
-              typical-times table is the page's actual answer to "when does X
-              stream?" and must not sit behind Channel stats + Rankings. */}
-          {stats && (
-            <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />
-          )}
-        </>
-      ) : (
-        (() => {
-          const schedule = (
-            <>
-              <DayNavBar
-                days={sevenDays}
-                counts={toDayCounts(sevenDays, grouped)}
-                todayUtc={todayUtc}
-                language={locale}
-              />
-              {scheduleDays.map(({ dateKey, slots, startIndex }) => {
-                const label = utcDateLabel(dateKey, todayUtc, uiLang);
-                if (slots.length === 0) {
-                  return (
-                    <EmptyDayRow
-                      key={dateKey}
-                      dateKey={dateKey}
-                      label={label}
-                      language={locale}
-                      nextSlot={dateKey === todayUtc ? nextRealSlot : null}
-                      collapsed={truncateAt !== null && startIndex > truncateAt}
-                    />
-                  );
+      {/*
+        Two columns from lg on (streamer-page UX round, 2026-09-26): schedule +
+        typical times + the long tail on the left, the channel summary on the
+        right. ONE DOM for every width and DOM order = phone order (reading and
+        focus order): [schedule, typical times] → side column → [recent, FAQ,
+        games, related]. The side column spans both left rows; grid track
+        sizing only grows rows when a spanning item does not fit, so the left
+        column never opens a gap. Not sticky on purpose: the side column is
+        ~800 px, a 1366x768 laptop shows ~700 px below the header, and a sticky
+        column would need its own scroll area.
+      */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-x-10">
+        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+          {showEmpty ? (
+            <EmptyScheduleState
+              streamer={streamer}
+              uiLanguage={locale}
+              hasTypicalTimes={stats !== null}
+            />
+          ) : (
+            (() => {
+              const dayCounts = toDayCounts(sevenDays, grouped);
+              // No real stream all week (only cancellations): seven pills of which
+              // six are greyed out point at nothing — the nav goes.
+              const hasRealStream = Object.values(dayCounts).some((c) => c.active > 0);
+              // Consecutive empty days fold into one row (2026-09-26): a streamer
+              // on a break rendered seven "No streams expected" rows.
+              const blocks: Array<
+                | { kind: 'empty'; days: EmptyDay[]; startIndex: number }
+                | { kind: 'day'; dateKey: string; slots: PublicStreamSlot[]; startIndex: number }
+              > = [];
+              for (const { dateKey, slots, startIndex } of scheduleDays) {
+                if (slots.length > 0) {
+                  blocks.push({ kind: 'day', dateKey, slots, startIndex });
+                  continue;
                 }
-                return (
-                  <DaySection
-                    key={dateKey}
-                    dateKey={dateKey}
-                    label={label}
-                    slots={slots}
-                    language={locale}
-                    startIndex={startIndex}
-                    truncateAt={truncateAt}
-                  />
-                );
-              })}
-            </>
-          );
-          if (truncateAt === null) return schedule;
-          return (
-            <CollapsibleSchedule
-              moreLabel={slotLexFor(locale).showMoreStreams(collapsedSlotCount)}
-              lessLabel={slotLexFor(locale).showFewerStreams}
-            >
-              {schedule}
-            </CollapsibleSchedule>
-          );
-        })()
-      )}
-
-      {/* Channel stats + stats + recent streams + FAQ render outside the
-          has-schedule branch on purpose: their SEO value is highest exactly
-          when nothing is scheduled and the page would otherwise be empty
-          ("when does X usually stream?" stays answered on quiet pages). */}
-      <ChannelStats streamer={streamer} stats={stats} uiLanguage={locale} />
-      <StreamerRankings streamer={streamer} rankings={rankings} uiLanguage={locale} />
-
-      {isLive && lastStreamCard}
-
-      {stats && !showEmpty && (
-        <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />
-      )}
-
-      {/* M26: wiki teaser — the main internal entry to the wiki subpage,
-          rendered whenever a published profile exists. */}
-      {hasWiki && (
-        <WikiTeaserCard
-          locale={locale}
-          slug={streamer.id}
-          name={streamer.name}
-          title={L.wiki.teaserTitle}
-          subtitle={L.wiki.teaserSub(
-            streamer.name,
-            wikiTeaserParts(
-              wikiFactKeys.map((key) => ({ key })),
-              L.wiki.titlePart,
-              L.wiki.titleSep,
-              L.wiki.titleAnd,
-              locale,
-            ),
+                const day: EmptyDay = {
+                  dateKey,
+                  label: utcDateLabel(dateKey, todayUtc, uiLang),
+                  shortLabel: utcDateShortLabel(dateKey, todayUtc, uiLang),
+                };
+                const prev = blocks[blocks.length - 1];
+                if (prev?.kind === 'empty') prev.days.push(day);
+                else blocks.push({ kind: 'empty', days: [day], startIndex });
+              }
+              const schedule = (
+                <>
+                  {hasRealStream && (
+                    <DayNavBar
+                      days={sevenDays}
+                      counts={dayCounts}
+                      todayUtc={todayUtc}
+                      language={locale}
+                    />
+                  )}
+                  {blocks.map((block) => {
+                    // PastDayGate: a stale snapshot drops days that are over. A
+                    // folded run goes only once its LAST day is over.
+                    if (block.kind === 'empty') {
+                      const last = block.days[block.days.length - 1].dateKey;
+                      return (
+                        <PastDayGate key={block.days[0].dateKey} dateKey={last} todayUtc={todayUtc}>
+                          <EmptyDayRow
+                            days={block.days}
+                            todayUtc={todayUtc}
+                            language={locale}
+                            nextSlot={
+                              block.days.some((d) => d.dateKey === todayUtc) ? nextRealSlot : null
+                            }
+                            collapsed={truncateAt !== null && block.startIndex > truncateAt}
+                          />
+                        </PastDayGate>
+                      );
+                    }
+                    return (
+                      <PastDayGate key={block.dateKey} dateKey={block.dateKey} todayUtc={todayUtc}>
+                        <DaySection
+                          dateKey={block.dateKey}
+                          label={utcDateLabel(block.dateKey, todayUtc, uiLang)}
+                          slots={block.slots}
+                          language={locale}
+                          startIndex={block.startIndex}
+                          truncateAt={truncateAt}
+                        />
+                      </PastDayGate>
+                    );
+                  })}
+                </>
+              );
+              if (truncateAt === null) return schedule;
+              return (
+                <CollapsibleSchedule
+                  moreLabel={slotLexFor(locale).showMoreStreams(collapsedSlotCount)}
+                  lessLabel={slotLexFor(locale).showFewerStreams}
+                >
+                  {schedule}
+                </CollapsibleSchedule>
+              );
+            })()
           )}
-        />
-      )}
 
-      {/* M24: insights teaser — the ONLY internal entry to the (noindex)
-          insights subpage, so it renders whenever the data exists. */}
-      {insightsTeaser && (
-        <InsightsTeaserCard
-          slug={streamer.id}
-          name={streamer.name}
-          bestDay={insightsTeaser.bestDay}
-          median={insightsTeaser.median}
-        />
-      )}
+          {/* Typical times + channel stats + rankings + recent streams + FAQ
+              render outside the has-schedule branch on purpose: their SEO value is
+              highest exactly when nothing is scheduled and the page would
+              otherwise be empty ("when does X usually stream?" stays answered on
+              quiet pages). Typical times come FIRST since the streamer-page UX
+              round (2026-09-26): they answer the question the page is found for;
+              channel stats and rankings used to push them ~900 px down. */}
+          {stats && <StreamerStatsBlock streamer={streamer} stats={stats} uiLanguage={locale} />}
+        </div>
 
-      {recentStreams.length > 0 && (
-        <RecentStreamsSection
-          streams={recentStreams}
-          now={now}
-          language={locale}
-        />
-      )}
+        <aside
+          aria-label={streamer.name}
+          className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-8"
+        >
+          {lastStreamCard}
+          <ChannelStats streamer={streamer} stats={stats} uiLanguage={locale} inSidebar />
+          <StreamerRankings streamer={streamer} rankings={rankings} uiLanguage={locale} inSidebar />
 
-      <StreamerFaqBlock
-        streamer={streamer}
-        liveSlots={liveSlots}
-        upcomingSlots={upcomingSlots}
-        stats={stats}
-        uiLanguage={locale}
-      />
+          {/* M26: wiki teaser — the main internal entry to the wiki subpage,
+              rendered whenever a published profile exists. */}
+          {hasWiki && (
+            <WikiTeaserCard
+              locale={locale}
+              slug={streamer.id}
+              name={streamer.name}
+              title={L.wiki.teaserTitle}
+              subtitle={L.wiki.teaserSub(
+                streamer.name,
+                wikiTeaserParts(
+                  wikiFactKeys.map((key) => ({ key })),
+                  L.wiki.titlePart,
+                  L.wiki.titleSep,
+                  L.wiki.titleAnd,
+                  locale,
+                ),
+              )}
+            />
+          )}
 
-      {/* Deliberately NO Suspense around these two async sections (and no
-          loading.tsx on the route): with streaming, the cached ISR HTML keeps
-          the fallback skeleton + <template>-swap markup, making the
-          SEO-critical internal links render JS-dependent on every hit — and a
-          route-level loading shell turns notFound() into a cached soft-404
-          (HTTP 200). Verified empirically 2026-07-06. Their fetches are
-          parallelized inside RelatedStreamers instead. */}
-      <StreamerGames slots={allSlots} language={locale} />
-      <RelatedStreamers
-        currentId={streamer.id}
-        language={streamer.language}
-        category={stats?.top_categories[0]?.category ?? null}
-        uiLanguage={locale}
-      />
+          {/* M24: insights teaser — the ONLY internal entry to the (noindex)
+              insights subpage, so it renders whenever the data exists. */}
+          {insightsTeaser && (
+            <InsightsTeaserCard
+              href={localeHref(locale, `/streamer/${encodeURIComponent(streamer.id)}/insights`)}
+              name={streamer.name}
+              title={L.stats.insightsTitle}
+              highlight={
+                insightsTeaser.dayIndex !== null && insightsTeaser.median !== null
+                  ? L.stats.insightsBiggestDay(
+                      weekdayLong(insightsTeaser.dayIndex, locale),
+                      formatStatValue(insightsTeaser.median, locale),
+                    )
+                  : null
+              }
+              blurb={L.stats.insightsBlurb}
+            />
+          )}
+
+        </aside>
+
+        <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+          {recentStreams.length > 0 && (
+            <RecentStreamsSection
+              streams={recentStreams}
+              now={now}
+              language={locale}
+            />
+          )}
+
+          <StreamerFaqBlock
+            streamer={streamer}
+            liveSlots={liveSlots}
+            upcomingSlots={upcomingSlots}
+            stats={stats}
+            uiLanguage={locale}
+          />
+
+          {/* Deliberately NO Suspense around these two async sections (and no
+              loading.tsx on the route): with streaming, the cached ISR HTML keeps
+              the fallback skeleton + <template>-swap markup, making the
+              SEO-critical internal links render JS-dependent on every hit — and a
+              route-level loading shell turns notFound() into a cached soft-404
+              (HTTP 200). Verified empirically 2026-07-06. Their fetches are
+              parallelized inside RelatedStreamers instead. */}
+          <StreamerGames slots={allSlots} language={locale} />
+          <RelatedStreamers
+            currentId={streamer.id}
+            language={streamer.language}
+            // A YouTube video bucket ("Gaming") is not a category to relate by.
+            category={
+              stats?.category_source === 'youtube' ? null : (stats?.top_categories[0]?.category ?? null)
+            }
+            uiLanguage={locale}
+          />
+        </div>
+      </div>
     </main>
   );
 }

@@ -109,15 +109,36 @@ export function bestWeekday(
   return best;
 }
 
-/** Teaser card payload for the streamer page; null = don't render the card. */
+/**
+ * Teaser card payload for the streamer page; null = don't render the card.
+ *
+ * `activeIsoDays` (1 = Monday … 7 = Sunday) are the weekdays the page's
+ * typical-times table shows as streaming days. The insights cells bucket by
+ * UTC weekday over 56 days while the table buckets streamer-local over 28, so
+ * the plain "best day" could name a day the table calls "usually no stream"
+ * (kaicenat: "Best day: Monday" above a table with only Saturday; the Monday
+ * cell was Sunday-evening New York streams). Since 2026-09-26 the teaser names
+ * the best day the table agrees with, or no day at all (`dayIndex: null`, the
+ * card still links the insights page). Pass null when the page has no table.
+ */
 export function buildInsightsTeaser(
   insights: StreamerInsights | null,
-): { bestDay: string; median: number } | null {
+  activeIsoDays: readonly number[] | null = null,
+): { dayIndex: number | null; median: number | null } | null {
   if (!insights || insights.sample_count < COLLECTING_THRESHOLD) return null;
   const cells = usableCells(insights.weekday_viewers ?? null, 7);
-  const best = bestWeekday(cells);
-  if (!best) return null;
-  return { bestDay: WEEKDAY_NAMES[best.index], median: Math.round(best.median) };
+  if (!bestWeekday(cells)) return null;
+  const allowed = activeIsoDays === null ? null : new Set(activeIsoDays);
+  const ranked = (cells ?? [])
+    .map((c, index) => ({ index, median: c.median, samples: c.samples }))
+    .filter((c): c is { index: number; median: number; samples: number } =>
+      c.median !== null && c.samples >= 5,
+    )
+    .sort((a, b) => b.median - a.median);
+  const pick = ranked.find((c) => allowed === null || allowed.has(c.index + 1)) ?? null;
+  return pick
+    ? { dayIndex: pick.index, median: Math.round(pick.median) }
+    : { dayIndex: null, median: null };
 }
 
 /** '1k-10k' → "1k–10k followers"; null-safe. */

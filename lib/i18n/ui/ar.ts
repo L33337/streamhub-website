@@ -26,6 +26,11 @@ export const ar: UiLex = {
     avatarAlt: (name) => `الصورة الرمزية لـ ${name}`,
     showMore: 'عرض المزيد',
     showLess: 'عرض أقل',
+    lastStreamOn: (date) => `آخر بث: ${date}.`,
+    usuallyOn: (days) => `يبث عادةً: ${days}.`,
+    quietLately: 'أهدأ من المعتاد مؤخرًا.',
+    breakUntil: (date) => `في استراحة حتى ${date}.`,
+    typicalTimesLink: 'الأوقات المعتادة',
   },
   promo: {
     valueProps: [
@@ -72,6 +77,7 @@ export const ar: UiLex = {
     trendDown: (p) => `انخفض ${p} مراكز منذ الأسبوع الماضي`,
     byCategory: 'حسب الفئة',
     summary: (name, parts) => `${name} في ${parts.join(' و ')} على Streamer Times.`,
+    allRankings: (n) => `كل المراكز (${n})`,
   },
   stats: {
     heading: (name) => `متى يبث ${name}؟`,
@@ -104,6 +110,9 @@ export const ar: UiLex = {
         ? `${base}، غالبًا بين ${times.start} و${times.end} (${times.tzLabel}).`
         : `${base}.`;
     },
+    insightsTitle: 'إحصاءات البث',
+    insightsBiggestDay: (day, median) => `أكبر جمهور: ${day}، نحو ${median} مشاهد`,
+    insightsBlurb: 'أنماط المشاهدين والفئات والمقارنات',
   },
   faq: {
     heading: 'الأسئلة الشائعة',

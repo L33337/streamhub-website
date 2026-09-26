@@ -42,6 +42,35 @@ function partsInZone(date: Date, timeZone: string): ZoneParts {
   };
 }
 
+/** UTC offset of `timeZone` at `date`, in minutes (Berlin summer = 120). */
+export function zoneOffsetMinutes(date: Date, timeZone: string): number {
+  const p = partsInZone(date, timeZone);
+  const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+  const truncated = Math.floor(date.getTime() / 60_000) * 60_000;
+  return Math.round((asUtc - truncated) / 60_000);
+}
+
+/**
+ * Whether converting times from zone `a` to zone `b` changes anything in the
+ * coming week (streamer-page UX round, 2026-09-26). The weekday table offered
+ * "Your time / Madrid time" to a Berlin viewer although both read the same:
+ * zone NAMES differ, offsets do not. Compared now and in 7 days, so a pair that
+ * shares an offset today but not after one of them switches DST (New York vs.
+ * Berlin in late October) still gets the switch. Invalid zones → false.
+ */
+export function zonesDifferInWeek(a: string, b: string, now: Date = new Date()): boolean {
+  if (a === b) return false;
+  try {
+    const later = new Date(now.getTime() + 7 * 86_400_000);
+    return (
+      zoneOffsetMinutes(now, a) !== zoneOffsetMinutes(now, b) ||
+      zoneOffsetMinutes(later, a) !== zoneOffsetMinutes(later, b)
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** ISO weekday index (0 = Monday … 6 = Sunday); runtime zone when tz is null. */
 export function isoWeekdayInZone(date: Date, timeZone: string | null): number {
   if (!timeZone) return (date.getDay() + 6) % 7;
@@ -146,6 +175,12 @@ export function toViewerWeekdayTime(
     const time = instant.toLocaleTimeString(locale, {
       hour: 'numeric',
       minute: '2-digit',
+      // 24 h in every language (streamer-page UX round, 2026-09-26). The raw
+      // streamer-local strings, the lead sentence above the table, the FAQ and
+      // the meta description are all "HH:MM"; only this client-side
+      // conversion said "5:06 PM", so one table toggle switched formats and
+      // kaicenat's lead read "17:06" above a row reading "2:35 AM".
+      hourCycle: 'h23',
       ...(viewerZone ? { timeZone: viewerZone } : {}),
     });
     const viewerIso = isoWeekdayInZone(instant, viewerZone ?? null);
