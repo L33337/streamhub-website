@@ -167,7 +167,7 @@ describe('leaderboardOgProps', () => {
     const props = leaderboardOgProps(spec, []);
     expect(props.pills).toEqual([]);
     expect(props.subtitle).toBe(
-      'The most followed livestreamers on Twitch and YouTube, ranked by followers and subscribers',
+      'The most followed Twitch streamers, ranked by channel followers',
     );
   });
 

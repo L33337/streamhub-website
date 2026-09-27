@@ -949,13 +949,13 @@ describe('English game-page lexicon regression guard (M22 P4)', () => {
       'X. The top Fortnite streamers on Twitch and YouTube ranked by followers, with live status and next streams. Updated daily.',
     );
     expect(L.gameRanking.introPage1(43, 'Fortnite')).toBe(
-      'The top 43 Fortnite streamers we track, ranked by channel followers and subscribers.',
+      'The top 43 Fortnite streamers we track, ranked by Twitch channel followers.',
     );
     expect(L.gameRanking.topsTheList('Ninja', '19.2M', true)).toBe(
       ' Ninja tops the list with 19.2M followers.',
     );
     expect(L.gameRanking.introPageN(51, 98, 98, 'Fortnite')).toBe(
-      'Ranks 51–98 of 98 Fortnite streamers we track, ranked by channel followers and subscribers.',
+      'Ranks 51–98 of 98 Fortnite streamers we track, ranked by Twitch channel followers.',
     );
     expect(L.gameRanking.methodology('Fortnite')).toBe(
       'Streamers active in Fortnite over the last 28 days, ranked by followers. Counts refresh regularly and can lag live platform numbers.',

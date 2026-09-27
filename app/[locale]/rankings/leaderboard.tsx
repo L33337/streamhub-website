@@ -341,9 +341,9 @@ export async function LeaderboardPage({ slug, page = 1 }: { slug: string; page?:
 // ============================================
 
 /**
- * "Platform: All · Twitch only · YouTube only" chip row shared by the metric
- * page (active=null) and its platform variants. Wraps on narrow screens like
- * the metric nav above it.
+ * "Platform: Twitch · YouTube" chip row shared by the metric page (active=null,
+ * which IS the Twitch ranking since 2026-09-27) and its YouTube variant. Wraps
+ * on narrow screens like the metric nav above it.
  */
 function PlatformChips({ slug, active }: { slug: string; active: RankingPlatform | null }) {
   const chipBase =
@@ -356,21 +356,21 @@ function PlatformChips({ slug, active }: { slug: string; active: RankingPlatform
       <span className="text-sm text-text-muted">Platform:</span>
       {active === null ? (
         <span aria-current="page" className={current}>
-          All
+          Twitch
         </span>
       ) : (
         <Link href={`/rankings/${slug}`} className={idle}>
-          All
+          Twitch
         </Link>
       )}
       {RANKING_PLATFORMS.map((p) =>
         active === p ? (
           <span key={p} aria-current="page" className={current}>
-            {p === 'twitch' ? 'Twitch only' : 'YouTube only'}
+            YouTube
           </span>
         ) : (
           <Link key={p} href={`/rankings/${slug}/${p}`} className={idle}>
-            {p === 'twitch' ? 'Twitch only' : 'YouTube only'}
+            YouTube
           </Link>
         ),
       )}
@@ -386,16 +386,18 @@ interface LoadedPlatformRanking {
 }
 
 /**
- * Platform slice of a whole ranking pool. Reuses the hub's pool walker, so the
- * pages it touches are the same hour-cached ones the hub already warmed —
- * failure degrades to an empty page that renders the warming-up state and
- * noindexes (never throws during prerender, build-abort rule).
+ * The variant's own pool (?platform=youtube — a separate API leaderboard since
+ * 2026-09-27, the main pool no longer contains these channels). Walked with
+ * the hub's pool walker, so pages stay hour-cached; `filterPlatformEntries` is
+ * the defensive second check and re-ranks densely. Failure degrades to an
+ * empty page that renders the warming-up state and noindexes (never throws
+ * during prerender, build-abort rule).
  */
 async function loadPlatformEntries(
   variant: PlatformRankingVariant,
 ): Promise<LoadedPlatformRanking> {
   try {
-    const pool = await loadRankingPool(variant.spec);
+    const pool = await loadRankingPool(variant.spec, variant.platform);
     const all = pool.entries.filter((e) => variant.matches(e));
     return {
       entries: filterPlatformEntries(variant, pool.entries),

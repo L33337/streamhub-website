@@ -363,9 +363,9 @@ export const fr: HubLex = {
     },
     metricNote: {
       'most-followed':
-        `Mis à jour chaque jour. Les nombres de followers et d'abonnés sont rafraîchis régulièrement et peuvent être en retard sur les chiffres en direct des plateformes.`,
+        `Mis à jour chaque jour. Chaînes Twitch uniquement, y compris les streamers qui diffusent aussi en simultané sur YouTube. Les nombres de followers sont rafraîchis régulièrement et peuvent être en retard sur les chiffres en direct des plateformes.`,
       'fastest-growing':
-        `Gain de followers (Twitch) ou d'abonnés (YouTube) sur les 7 derniers jours, à partir d'instantanés quotidiens de chaque chaîne suivie. Seules les chaînes en croissance positive sont classées. Mis à jour chaque jour.`,
+        `Gain de followers de la chaîne Twitch sur les 7 derniers jours, à partir d'instantanés quotidiens de chaque chaîne suivie. Seules les chaînes en croissance positive sont classées. Mis à jour chaque jour.`,
       'most-watched':
         'Médiane des spectateurs simultanés en direct sur les 28 derniers jours (échantillonnage horaire). Mis à jour chaque jour.',
       'most-active':
@@ -398,13 +398,13 @@ export const fr: HubLex = {
     faqHeading: 'À propos de ces classements',
     faqCalculatedQ: 'Comment ces classements de streamers sont-ils calculés ?',
     faqCalculatedA:
-      "Chaque classement est calculé à partir de vraies données de diffusion que nous collectons nous-mêmes : nombre de followers et d'abonnés, échantillonnage horaire des spectateurs en direct et historique des streams de chaque chaîne Twitch et YouTube suivie. Aucun chiffre autodéclaré.",
+      "Chaque classement est calculé à partir de vraies données de diffusion que nous collectons nous-mêmes : nombre de followers Twitch, échantillonnage horaire des spectateurs en direct et historique des streams de chaque chaîne suivie. Aucun chiffre autodéclaré.",
     faqUpdatedQ: 'À quelle fréquence les stats sont-elles mises à jour ?',
     faqUpdatedA:
       "Les classements sont recalculés chaque nuit — les stats de followers, de spectateurs et d'activité sont rafraîchies quotidiennement, tandis que les badges live et les prochains streams se mettent à jour au fil de la journée.",
     faqPlatformsQ: 'Quelles plateformes sont couvertes ?',
     faqPlatformsA:
-      'Twitch et YouTube. La plupart des classements mélangent les deux plateformes — les followers Twitch correspondent aux abonnés YouTube. Le classement de ponctualité est réservé à Twitch, car il mesure les horaires annoncés sur Twitch.',
+      "Les classements couvrent tous les streamers qui ont une chaîne Twitch, y compris ceux qui diffusent en simultané sur YouTube : les nombres de followers sont donc toujours des followers Twitch. Les chaînes centrées sur YouTube ont leurs propres classements, car les nombres d'abonnés YouTube arrondis ne sont pas comparables aux followers Twitch.",
   },
   recaps: {
     metaTitleSuffix: 'Stats des streamers Twitch',
@@ -592,11 +592,11 @@ export const fr: HubLex = {
     ogTitle: (category) => `Top streamers ${category} — classés par followers`,
     h1: (category) => `Top streamers ${category} par followers`,
     introPage1: (count, category) =>
-      `Les ${count} meilleurs streamers ${category} que nous suivons, classés par followers et abonnés de la chaîne.`,
+      `Les ${count} meilleurs streamers ${category} que nous suivons, classés par followers de la chaîne Twitch.`,
     topsTheList: (name, value, isTwitch) =>
       ` ${name} est en tête avec ${value} ${isTwitch ? 'followers' : 'abonnés'}.`,
     introPageN: (from, to, total, category) =>
-      `Rangs ${from}–${to} sur ${total} streamers ${category} que nous suivons, classés par followers et abonnés de la chaîne.`,
+      `Rangs ${from}–${to} sur ${total} streamers ${category} que nous suivons, classés par followers de la chaîne Twitch.`,
     methodology: (category) =>
       `Streamers actifs dans ${category} sur les 28 derniers jours, classés par followers. Les chiffres sont rafraîchis régulièrement et peuvent être en retard sur les plateformes.`,
     followersRefreshed: (label) => ` Followers mis à jour : ${label}.`,
@@ -644,7 +644,7 @@ export const fr: HubLex = {
     },
     faqMeasuredQ: 'Comment ce classement est-il mesuré ?',
     faqMeasuredA: (category) =>
-      `Streamers actifs dans ${category} sur les 28 derniers jours, classés par les followers de leur chaîne principale — followers de la chaîne sur Twitch ou abonnés sur YouTube. Les colonnes heures et part viennent d'un agrégat nocturne des streams ${category} terminés.`,
+      `Streamers ayant une chaîne Twitch et actifs dans ${category} sur les 28 derniers jours, classés par leur nombre de followers Twitch. Les colonnes heures et part viennent d'un agrégat nocturne des streams ${category} terminés.`,
     faqShareQ: 'Que signifie « Part du jeu » ?',
     faqShareA: (category) =>
       `La part des derniers streams d'un streamer consacrés à ${category}. 100 % signifie que c'est actuellement son seul jeu ; une part faible marque un visiteur occasionnel de la catégorie.`,

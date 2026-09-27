@@ -366,9 +366,9 @@ export const en: HubLex = {
     },
     metricNote: {
       'most-followed':
-        'Updated daily. Follower and subscriber counts are refreshed regularly and can lag live platform numbers.',
+        'Updated daily. Twitch channels only, including streamers who simulcast on YouTube. Follower counts are refreshed regularly and can lag live platform numbers.',
       'fastest-growing':
-        'Gain in channel followers (Twitch) or subscribers (YouTube) over the last 7 days, from daily snapshots of every tracked channel. Only channels with positive growth rank. Updated daily.',
+        'Gain in Twitch channel followers over the last 7 days, from daily snapshots of every tracked channel. Only channels with positive growth rank. Updated daily.',
       'most-watched':
         'Median concurrent live viewers over the last 28 days (hourly sampling). Updated daily.',
       'most-active':
@@ -400,13 +400,13 @@ export const en: HubLex = {
     faqHeading: 'About these rankings',
     faqCalculatedQ: 'How are these streamer rankings calculated?',
     faqCalculatedA:
-      'Every ranking is computed from real broadcast data we collect ourselves: follower and subscriber counts, hourly live viewer sampling and the stream history of every tracked Twitch and YouTube channel. No self-reported numbers.',
+      'Every ranking is computed from real broadcast data we collect ourselves: Twitch follower counts, hourly live viewer sampling and the stream history of every tracked channel. No self-reported numbers.',
     faqUpdatedQ: 'How often are the stats updated?',
     faqUpdatedA:
       'The leaderboards are rebuilt every night — follower, viewer and activity stats refresh daily, while live badges and next-stream times update throughout the day.',
     faqPlatformsQ: 'Which platforms are covered?',
     faqPlatformsA:
-      'Twitch and YouTube. Most rankings mix both platforms — follower counts on Twitch correspond to subscribers on YouTube. The most punctual ranking is Twitch-only, because it measures announced Twitch schedules.',
+      'The rankings cover every streamer with a Twitch channel, including streamers who simulcast on YouTube, so follower numbers are always Twitch followers. YouTube-first channels have their own leaderboards, because rounded YouTube subscriber counts are not comparable to Twitch followers.',
   },
   recaps: {
     metaTitleSuffix: 'Twitch Streamer Stats',
@@ -587,11 +587,11 @@ export const en: HubLex = {
     ogTitle: (category) => `Top ${category} streamers — ranked by followers`,
     h1: (category) => `Top ${category} streamers by followers`,
     introPage1: (count, category) =>
-      `The top ${count} ${category} streamer${count === 1 ? '' : 's'} we track, ranked by channel followers and subscribers.`,
+      `The top ${count} ${category} streamer${count === 1 ? '' : 's'} we track, ranked by Twitch channel followers.`,
     topsTheList: (name, value, isTwitch) =>
       ` ${name} tops the list with ${value} ${isTwitch ? 'followers' : 'subscribers'}.`,
     introPageN: (from, to, total, category) =>
-      `Ranks ${from}–${to} of ${total} ${category} streamers we track, ranked by channel followers and subscribers.`,
+      `Ranks ${from}–${to} of ${total} ${category} streamers we track, ranked by Twitch channel followers.`,
     methodology: (category) =>
       `Streamers active in ${category} over the last 28 days, ranked by followers. Counts refresh regularly and can lag live platform numbers.`,
     followersRefreshed: (label) => ` Follower counts refreshed ${label}.`,
@@ -636,7 +636,7 @@ export const en: HubLex = {
     },
     faqMeasuredQ: 'How is this ranking measured?',
     faqMeasuredA: (category) =>
-      `Streamers active in ${category} over the last 28 days, ranked by the follower count of their primary channel — channel followers on Twitch or subscribers on YouTube. The hours and share columns come from a nightly aggregate of finished ${category} broadcasts.`,
+      `Streamers with a Twitch channel who were active in ${category} over the last 28 days, ranked by their Twitch follower count. The hours and share columns come from a nightly aggregate of finished ${category} broadcasts.`,
     faqShareQ: 'What does "Game share" mean?',
     faqShareA: (category) =>
       `The share of a streamer's recent broadcasts that were ${category}. 100% means it is currently their only game; a low share marks an occasional visitor to the category.`,

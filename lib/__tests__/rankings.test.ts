@@ -13,6 +13,7 @@ import {
   hasMissingValues,
   isGameHubIndexable,
   isRankingIndexable,
+  isTwitchVariantPath,
   MIN_INDEXABLE_GAME_STREAMERS,
   MIN_INDEXABLE_RANKING_ENTRIES,
   monthYearLabel,
@@ -159,8 +160,10 @@ describe('page registry', () => {
 
   it('descriptions embed the #1 entry when available and degrade without it', () => {
     const spec = getRankingPageSpec('most-followed')!;
-    const top = entry(1, { follower_count: 24_400_000 }, { name: 'Stray Kids', platforms: ['youtube'] });
-    expect(spec.buildDescription(top)).toContain('Stray Kids leads with 24.4M subscribers');
+    // The main pool is Twitch-only since 2026-09-27, so the leader is a Twitch
+    // streamer and the noun is always "followers".
+    const top = entry(1, { follower_count: 24_400_000 }, { name: 'Kai Cenat', platforms: ['twitch'] });
+    expect(spec.buildDescription(top)).toContain('Kai Cenat leads with 24.4M followers');
     expect(spec.buildDescription(undefined)).not.toContain('leads with');
 
     const watched = getRankingPageSpec('most-watched')!;
@@ -425,7 +428,7 @@ describe('fastest-growing spec', () => {
 
   it('description embeds the leader gain when available', () => {
     expect(spec.buildDescription(growthEntry('kai', 250000))).toContain('gained 250K');
-    expect(spec.buildDescription(undefined)).toContain('fastest growing livestreamers');
+    expect(spec.buildDescription(undefined)).toContain('fastest growing Twitch streamers');
   });
 });
 
@@ -464,26 +467,35 @@ describe('platform variants', () => {
     }
   });
 
-  it('rejects most-reliable, unknown metrics and unknown platforms', () => {
+  it('rejects twitch, most-reliable, unknown metrics and unknown platforms', () => {
+    // The main leaderboard IS the Twitch ranking since 2026-09-27 — no variant.
+    expect(getPlatformVariant('most-followed', 'twitch')).toBeNull();
     expect(getPlatformVariant('most-reliable', 'twitch')).toBeNull();
     expect(getPlatformVariant('most-reliable', 'youtube')).toBeNull();
-    expect(getPlatformVariant('bogus', 'twitch')).toBeNull();
+    expect(getPlatformVariant('bogus', 'youtube')).toBeNull();
     expect(getPlatformVariant('most-followed', 'kick')).toBeNull();
     expect(getPlatformVariant('most-followed', '2')).toBeNull();
   });
 
-  it('twitch membership includes simulcasters, youtube is YouTube-first only', () => {
-    const twitch = getPlatformVariant('most-followed', 'twitch')!;
+  it('isTwitchVariantPath marks exactly the old /twitch variant URLs for redirect', () => {
+    for (const slug of PLATFORM_VARIANT_SLUGS) {
+      expect(isTwitchVariantPath(slug, 'twitch'), slug).toBe(true);
+    }
+    expect(isTwitchVariantPath('most-reliable', 'twitch')).toBe(false);
+    expect(isTwitchVariantPath('bogus', 'twitch')).toBe(false);
+    expect(isTwitchVariantPath('most-followed', 'youtube')).toBe(false);
+    expect(isTwitchVariantPath('most-followed', '2')).toBe(false);
+  });
+
+  it('youtube membership is YouTube-first only (defensive second check)', () => {
     const youtube = getPlatformVariant('most-followed', 'youtube')!;
     const dual = entry(1, { follower_count: 10 }, { platforms: ['twitch', 'youtube'] });
     const twitchOnly = entry(2, { follower_count: 9 }, { platforms: ['twitch'] });
     const youtubeOnly = entry(3, { follower_count: 8 }, { platforms: ['youtube'] });
-    expect(twitch.matches(dual)).toBe(true);
-    expect(twitch.matches(twitchOnly)).toBe(true);
-    expect(twitch.matches(youtubeOnly)).toBe(false);
     // follower_count is the Twitch count for dual-platform streamers — they
     // must NOT appear under a "Subscribers" header.
     expect(youtube.matches(dual)).toBe(false);
+    expect(youtube.matches(twitchOnly)).toBe(false);
     expect(youtube.matches(youtubeOnly)).toBe(true);
   });
 
@@ -494,17 +506,28 @@ describe('platform variants', () => {
     expect(
       getPlatformVariant('fastest-growing', 'youtube')!.columns.map((c) => c.header),
     ).toEqual(['Gained (7d)', 'Growth', 'Subscribers now']);
-    // Twitch variants keep the registry columns untouched.
-    expect(getPlatformVariant('most-followed', 'twitch')!.columns).toBe(
-      getRankingPageSpec('most-followed')!.columns,
-    );
   });
 
   it('titles carry the platform and degrade honestly with entry count', () => {
-    const v = getPlatformVariant('most-followed', 'twitch')!;
-    expect(v.buildTitle(100)).toBe('Top 100 Most Followed Twitch Streamers');
-    expect(v.buildTitle(37)).toBe('Top 37 Most Followed Twitch Streamers');
-    expect(v.buildTitle(5)).toBe('Most Followed Twitch Streamers — Follower Stats');
+    const v = getPlatformVariant('most-followed', 'youtube')!;
+    expect(v.buildTitle(100)).toBe('Top 100 Most Subscribed YouTube Streamers');
+    expect(v.buildTitle(37)).toBe('Top 37 Most Subscribed YouTube Streamers');
+    expect(v.buildTitle(5)).toBe('Most Subscribed YouTube Streamers — Subscriber Stats');
+    // The main page took over the Twitch titles.
+    const main = getRankingPageSpec('most-followed')!;
+    expect(main.buildTitle(100)).toBe('Top 100 Most Followed Twitch Streamers');
+    expect(main.buildTitle(5)).toBe('Most Followed Twitch Streamers');
+  });
+
+  it('main leaderboards explain the Twitch-only pool', () => {
+    for (const slug of PLATFORM_VARIANT_SLUGS) {
+      const spec = getRankingPageSpec(slug)!;
+      expect(
+        spec.faq.some((f) => f.q === 'Why are YouTube-only channels not in this ranking?'),
+        slug,
+      ).toBe(true);
+      expect(spec.methodologyNote, slug).not.toMatch(/subscriber/i);
+    }
   });
 
   it('descriptions use the platform noun for the leader clause', () => {
@@ -519,7 +542,7 @@ describe('platform variants', () => {
     for (const slug of PLATFORM_VARIANT_SLUGS) {
       for (const platform of RANKING_PLATFORMS) {
         const v = getPlatformVariant(slug, platform)!;
-        expect(v.h1.toLowerCase()).toContain(platform === 'twitch' ? 'twitch' : 'youtube');
+        expect(v.h1.toLowerCase()).toContain(platform);
         expect(v.buildIntro(42).length).toBeGreaterThan(0);
         expect(v.methodologyNote.length).toBeGreaterThan(0);
         expect(v.faq.length).toBeGreaterThanOrEqual(2);
@@ -528,18 +551,19 @@ describe('platform variants', () => {
   });
 
   it('filterPlatformEntries re-ranks densely from 1 and caps at the limit', () => {
-    const v = getPlatformVariant('most-followed', 'twitch')!;
+    const v = getPlatformVariant('most-followed', 'youtube')!;
     const pool = [
-      entry(1, { follower_count: 100 }, { platforms: ['youtube'] }), // filtered out
-      entry(2, { follower_count: 90 }, { platforms: ['twitch'] }),
-      entry(3, { follower_count: 80 }, { platforms: ['twitch', 'youtube'] }),
-      entry(4, { follower_count: 70 }, { platforms: ['twitch'] }),
+      entry(1, { follower_count: 100 }, { platforms: ['twitch'] }), // filtered out
+      entry(2, { follower_count: 90 }, { platforms: ['youtube'] }),
+      entry(3, { follower_count: 80 }, { platforms: ['twitch', 'youtube'] }), // filtered out
+      entry(4, { follower_count: 70 }, { platforms: ['youtube'] }),
+      entry(5, { follower_count: 60 }, { platforms: ['youtube'] }),
     ];
     const out = filterPlatformEntries(v, pool);
     expect(out.map((e) => [e.rank, e.streamer.id])).toEqual([
       [1, 's2'],
-      [2, 's3'],
-      [3, 's4'],
+      [2, 's4'],
+      [3, 's5'],
     ]);
     expect(filterPlatformEntries(v, pool, 2)).toHaveLength(2);
   });

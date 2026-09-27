@@ -353,9 +353,9 @@ export const hu: HubLex = {
     },
     metricNote: {
       'most-followed':
-        'Naponta frissítve. A követő- és feliratkozószámokat rendszeresen frissítjük, ezért elmaradhatnak a platformok élő számaitól.',
+        'Naponta frissítve. Csak Twitch-csatornák, beleértve azokat a streamereket is, akik párhuzamosan a YouTube-on is közvetítenek. A követőszámokat rendszeresen frissítjük, ezért elmaradhatnak a platformok élő számaitól.',
       'fastest-growing':
-        'A csatornakövetők (Twitch) vagy feliratkozók (YouTube) gyarapodása az elmúlt 7 napban, minden követett csatorna napi pillanatképeiből. Csak a pozitívan növekvő csatornák kerülnek rangsorba. Naponta frissítve.',
+        'A Twitch-csatornakövetők gyarapodása az elmúlt 7 napban, minden követett csatorna napi pillanatképeiből. Csak a pozitívan növekvő csatornák kerülnek rangsorba. Naponta frissítve.',
       'most-watched':
         'Az egyidejű élő nézők mediánja az elmúlt 28 napban (óránkénti mintavétel). Naponta frissítve.',
       'most-active':
@@ -387,13 +387,13 @@ export const hu: HubLex = {
     faqHeading: 'Ezekről a ranglistákról',
     faqCalculatedQ: 'Hogyan készülnek ezek a streamer-ranglisták?',
     faqCalculatedA:
-      'Minden ranglista valódi adásadatokból készül, amelyeket magunk gyűjtünk: követő- és feliratkozószámok, óránkénti élő nézőszám-mintavétel és minden követett Twitch- és YouTube-csatorna adáselőzménye. Semmilyen önbevallott szám.',
+      'Minden ranglista valódi adásadatokból készül, amelyeket magunk gyűjtünk: Twitch-követőszámok, óránkénti élő nézőszám-mintavétel és minden követett csatorna adáselőzménye. Semmilyen önbevallott szám.',
     faqUpdatedQ: 'Milyen gyakran frissülnek a statisztikák?',
     faqUpdatedA:
       'A ranglisták minden éjjel újraszámolódnak — a követő-, néző- és aktivitási statisztikák naponta frissülnek, az élő jelvények és a következő adások időpontjai pedig napközben is.',
     faqPlatformsQ: 'Mely platformokat fedik le?',
     faqPlatformsA:
-      'A Twitchet és a YouTube-ot. A legtöbb ranglista a két platformot együtt kezeli — a Twitch-követők a YouTube-feliratkozóknak felelnek meg. A pontossági ranglista csak Twitch, mert a Twitchen bejelentett műsorrendet méri.',
+      'A ranglisták minden Twitch-csatornával rendelkező streamert lefednek, azokat is, akik párhuzamosan a YouTube-on is közvetítenek, így a követőszámok mindig Twitch-követők. A főként YouTube-on streamelő csatornáknak saját ranglistáik vannak, mert a kerekített YouTube-feliratkozószámok nem vethetők össze a Twitch-követőkkel.',
   },
   recaps: {
     metaTitleSuffix: 'Twitch-streamer-statisztikák',
@@ -579,11 +579,11 @@ export const hu: HubLex = {
     ogTitle: (category) => `Top ${category}-streamerek — követők szerint`,
     h1: (category) => `Top ${category}-streamerek követők szerint`,
     introPage1: (count, category) =>
-      `Az általunk követett top ${count} ${category}-streamer, a csatorna követői és feliratkozói szerint rendezve.`,
+      `Az általunk követett top ${count} ${category}-streamer, a Twitch-csatorna követői szerint rendezve.`,
     topsTheList: (name, value, isTwitch) =>
       ` A listát ${name} vezeti ${value} ${isTwitch ? 'követővel' : 'feliratkozóval'}.`,
     introPageN: (from, to, total, category) =>
-      `${from}–${to}. hely a ${total} általunk követett ${category}-streamer közül, a csatorna követői és feliratkozói szerint rendezve.`,
+      `${from}–${to}. hely a ${total} általunk követett ${category}-streamer közül, a Twitch-csatorna követői szerint rendezve.`,
     methodology: (category) =>
       `Az elmúlt 28 napban a ${category}-ban aktív streamerek, követők szerint rendezve. A számok rendszeresen frissülnek, és lemaradhatnak a platformok élő értékeitől.`,
     followersRefreshed: (label) => ` Követőszámok frissítve: ${label}`,
@@ -631,7 +631,7 @@ export const hu: HubLex = {
     },
     faqMeasuredQ: 'Hogyan mérjük ezt a ranglistát?',
     faqMeasuredA: (category) =>
-      `Az elmúlt 28 napban a ${category}-ban aktív streamerek, a fő csatornájuk követőszáma szerint rendezve — csatornakövetők a Twitchen vagy feliratkozók a YouTube-on. Az óra- és arányoszlopok a befejezett ${category}-streamek éjszakai összesítéséből származnak.`,
+      `Az elmúlt 28 napban a ${category}-ban aktív, Twitch-csatornával rendelkező streamerek, a Twitch-követőszámuk szerint rendezve. Az óra- és arányoszlopok a befejezett ${category}-streamek éjszakai összesítéséből származnak.`,
     faqShareQ: 'Mit jelent a „Játékarány”?',
     faqShareA: (category) =>
       `A streamer legutóbbi streamjeinek ${category}-ra eső része. A 100% azt jelenti, hogy jelenleg ez az egyetlen játéka; az alacsony arány a kategória alkalmi látogatóját jelzi.`,

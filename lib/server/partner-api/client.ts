@@ -23,6 +23,7 @@ import type {
   PublicStreamSlot,
   PublicStreamerWiki,
   RankingMetric,
+  RankingPoolName,
   RankingsResponse,
   RecapKind,
   RecapsListResponse,
@@ -393,11 +394,14 @@ class PartnerApiClient {
    */
   async getRankings(
     metric: RankingMetric,
-    opts: FetchOptions & { limit?: number; offset?: number } = {},
+    opts: FetchOptions & { limit?: number; offset?: number; platform?: RankingPoolName } = {},
   ): Promise<RankingsResponse> {
     const params = new URLSearchParams();
     if (opts.limit !== undefined) params.set('limit', String(opts.limit));
     if (opts.offset) params.set('offset', String(opts.offset));
+    // Twitch is the API default — never sent, so the default pool's URLs (and
+    // with them the shared data-cache keys) stay exactly what they were.
+    if (opts.platform === 'youtube') params.set('platform', 'youtube');
     const qs = params.toString();
     return this.request<RankingsResponse>(
       'GET',

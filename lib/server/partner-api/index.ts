@@ -31,6 +31,7 @@ export type {
   Paginated,
   PaginationInfo,
   RankingMetric,
+  RankingPoolName,
   RankingValues,
   PublicRankingEntry,
   RankingsResponse,

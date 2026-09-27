@@ -362,9 +362,9 @@ export const es: HubLex = {
     },
     metricNote: {
       'most-followed':
-        'Actualizado a diario. Los recuentos de seguidores y suscriptores se refrescan con regularidad y pueden ir por detrás de las cifras en vivo de las plataformas.',
+        'Actualizado a diario. Solo canales de Twitch, incluidos los streamers que también emiten a la vez en YouTube. Los recuentos de seguidores se refrescan con regularidad y pueden ir por detrás de las cifras en vivo de las plataformas.',
       'fastest-growing':
-        'Ganancia de seguidores del canal (Twitch) o suscriptores (YouTube) en los últimos 7 días, a partir de instantáneas diarias de cada canal seguido. Solo clasifican los canales con crecimiento positivo. Actualizado a diario.',
+        'Ganancia de seguidores del canal de Twitch en los últimos 7 días, a partir de instantáneas diarias de cada canal seguido. Solo clasifican los canales con crecimiento positivo. Actualizado a diario.',
       'most-watched':
         'Mediana de espectadores simultáneos en directo durante los últimos 28 días (muestreo cada hora). Actualizado a diario.',
       'most-active':
@@ -396,13 +396,13 @@ export const es: HubLex = {
     faqHeading: 'Sobre estos rankings',
     faqCalculatedQ: '¿Cómo se calculan estos rankings de streamers?',
     faqCalculatedA:
-      'Cada ranking se calcula con datos reales de emisión que recogemos nosotros mismos: número de seguidores y suscriptores, muestreo horario de espectadores en directo y el historial de streams de cada canal de Twitch y YouTube que seguimos. Sin cifras autodeclaradas.',
+      'Cada ranking se calcula con datos reales de emisión que recogemos nosotros mismos: número de seguidores de Twitch, muestreo horario de espectadores en directo y el historial de streams de cada canal que seguimos. Sin cifras autodeclaradas.',
     faqUpdatedQ: '¿Con qué frecuencia se actualizan las estadísticas?',
     faqUpdatedA:
       'Las clasificaciones se recalculan cada noche: las estadísticas de seguidores, espectadores y actividad se actualizan a diario, mientras que las insignias de directo y los próximos streams se actualizan durante el día.',
     faqPlatformsQ: '¿Qué plataformas se cubren?',
     faqPlatformsA:
-      'Twitch y YouTube. La mayoría de los rankings mezclan ambas plataformas — los seguidores de Twitch equivalen a los suscriptores de YouTube. El ranking de puntualidad es solo de Twitch, porque mide los horarios anunciados en Twitch.',
+      'Los rankings incluyen a todos los streamers con canal de Twitch, también a los que emiten a la vez en YouTube, así que las cifras de seguidores son siempre seguidores de Twitch. Los canales centrados en YouTube tienen sus propios rankings, porque los recuentos redondeados de suscriptores de YouTube no son comparables con los seguidores de Twitch.',
   },
   recaps: {
     metaTitleSuffix: 'Stats de streamers de Twitch',
@@ -589,11 +589,11 @@ export const es: HubLex = {
     ogTitle: (category) => `Top streamers de ${category} — por seguidores`,
     h1: (category) => `Top streamers de ${category} por seguidores`,
     introPage1: (count, category) =>
-      `Los ${count} mejores streamers de ${category} que seguimos, ordenados por seguidores y suscriptores del canal.`,
+      `Los ${count} mejores streamers de ${category} que seguimos, ordenados por seguidores del canal de Twitch.`,
     topsTheList: (name, value, isTwitch) =>
       ` ${name} encabeza la lista con ${value} ${isTwitch ? 'seguidores' : 'suscriptores'}.`,
     introPageN: (from, to, total, category) =>
-      `Puestos ${from}–${to} de ${total} streamers de ${category} que seguimos, ordenados por seguidores y suscriptores del canal.`,
+      `Puestos ${from}–${to} de ${total} streamers de ${category} que seguimos, ordenados por seguidores del canal de Twitch.`,
     methodology: (category) =>
       `Streamers activos en ${category} en los últimos 28 días, ordenados por seguidores. Las cifras se actualizan con regularidad y pueden ir por detrás de las de las plataformas.`,
     followersRefreshed: (label) => ` Seguidores actualizados: ${label}.`,
@@ -641,7 +641,7 @@ export const es: HubLex = {
     },
     faqMeasuredQ: '¿Cómo se mide este ranking?',
     faqMeasuredA: (category) =>
-      `Streamers activos en ${category} en los últimos 28 días, ordenados por los seguidores de su canal principal — seguidores del canal en Twitch o suscriptores en YouTube. Las columnas de horas y cuota salen de un agregado nocturno de streams de ${category} finalizados.`,
+      `Streamers con canal de Twitch activos en ${category} en los últimos 28 días, ordenados por su número de seguidores en Twitch. Las columnas de horas y cuota salen de un agregado nocturno de streams de ${category} finalizados.`,
     faqShareQ: '¿Qué significa «Cuota del juego»?',
     faqShareA: (category) =>
       `La parte de los últimos streams de un streamer que fueron de ${category}. 100 % significa que ahora mismo es su único juego; una cuota baja marca a un visitante ocasional de la categoría.`,

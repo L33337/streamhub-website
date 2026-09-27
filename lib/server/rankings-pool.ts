@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { getPartnerApi, type PublicRankingEntry } from './partner-api';
+import { getPartnerApi, type PublicRankingEntry, type RankingPoolName } from './partner-api';
 import { sanitizeRankingEntries, type RankingPageSpec } from '@/lib/rankings';
 
 /**
@@ -26,6 +26,10 @@ import { sanitizeRankingEntries, type RankingPageSpec } from '@/lib/rankings';
  * Every failure path degrades to the pages collected so far — a hub section
  * with no data is hidden, a half-loaded pool undercounts its options, and
  * neither ever throws during prerender (a throw aborts the whole build).
+ *
+ * Pools (2026-09-27): every walk defaults to the Twitch pool (the API default
+ * — streamers with a Twitch channel). The YouTube leaderboards pass
+ * `'youtube'` and walk their own, separately ranked pool.
  */
 
 /** Partner API max rows per rankings response. */
@@ -73,12 +77,17 @@ export interface RankingPool {
  * the fetch inside is data-cached for an hour and shared far wider.
  */
 const loadPoolPage = cache(
-  async (metric: RankingPageSpec['metric'], page: number): Promise<PoolPage> => {
+  async (
+    metric: RankingPageSpec['metric'],
+    page: number,
+    platform: RankingPoolName = 'twitch',
+  ): Promise<PoolPage> => {
     try {
       const resp = await getPartnerApi().getRankings(metric, {
         limit: PAGE_SIZE,
         offset: (page - 1) * PAGE_SIZE,
         revalidate: REVALIDATE_SECONDS,
+        platform,
       });
       return {
         entries: resp.data,
@@ -119,8 +128,11 @@ function pagesFor(total: number): number {
  * filtered fetch will then search, or the dropdown promises matches the rows
  * can't deliver.
  */
-export async function loadRankingPool(spec: RankingPageSpec): Promise<RankingPool> {
-  const first = await loadPoolPage(spec.metric, 1);
+export async function loadRankingPool(
+  spec: RankingPageSpec,
+  platform: RankingPoolName = 'twitch',
+): Promise<RankingPool> {
+  const first = await loadPoolPage(spec.metric, 1, platform);
   const entries = sanitizePage(spec, first, 1);
   const total = first.total;
   let refreshedAt = first.refreshedAt;
@@ -129,7 +141,7 @@ export async function loadRankingPool(spec: RankingPageSpec): Promise<RankingPoo
   for (let page = 2; page <= pages; page += PAGE_CONCURRENCY) {
     const batch = await Promise.all(
       Array.from({ length: Math.min(PAGE_CONCURRENCY, pages - page + 1) }, (_, i) =>
-        loadPoolPage(spec.metric, page + i).then((loaded) => ({
+        loadPoolPage(spec.metric, page + i, platform).then((loaded) => ({
           loaded,
           pageNumber: page + i,
         })),

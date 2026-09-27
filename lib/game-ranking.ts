@@ -18,6 +18,13 @@ export interface RankedGameStreamer {
  *   table never shows "0" followers, and a missing count can't be ranked
  *   honestly. Those streamers still appear elsewhere on the page (the "More …"
  *   grid), just not in the ranking.
+ * - Excludes streamers without a Twitch channel (2026-09-27): every ranking
+ *   is Twitch-only, because YouTube subscriber counts are rounded and many
+ *   YouTube channels are video channels, not streamers. Mirrors
+ *   `'twitch' = ANY(platforms)` in the backend's refresh_streamer_rank_cache()
+ *   + capture_ranking_snapshots(), so "#7 in Minecraft" on a streamer page
+ *   lands on row 7 here. Like the zero-follower rows, YouTube-only streamers
+ *   stay in the page's roster grid.
  * - Sorts by follower_count desc, tie-broken by avg_view_count desc (nulls
  *   last), then name asc. The Partner API already returns follower-desc order,
  *   but re-sorting keeps the helper correct independent of input order.
@@ -28,7 +35,9 @@ export function rankGameStreamers(
   limit: number,
 ): RankedGameStreamer[] {
   return streamers
-    .filter((s) => s.follower_count != null && s.follower_count > 0)
+    .filter(
+      (s) => s.follower_count != null && s.follower_count > 0 && s.platforms.includes('twitch'),
+    )
     .sort((a, b) => {
       const byFollowers = (b.follower_count ?? 0) - (a.follower_count ?? 0);
       if (byFollowers !== 0) return byFollowers;
@@ -292,7 +301,7 @@ export function buildGameRankingFaq(params: {
 
   faq.push({
     q: 'How is this ranking measured?',
-    a: `Streamers active in ${category} over the last 28 days, ranked by the follower count of their primary channel — channel followers on Twitch or subscribers on YouTube. The hours and share columns come from a nightly aggregate of finished ${category} broadcasts.`,
+    a: `Streamers with a Twitch channel who were active in ${category} over the last 28 days, ranked by their Twitch follower count. The hours and share columns come from a nightly aggregate of finished ${category} broadcasts.`,
   });
 
   if (rows.some((r) => r.sharePercent != null)) {
