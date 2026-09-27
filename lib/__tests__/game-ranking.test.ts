@@ -90,6 +90,22 @@ describe('rankGameStreamers', () => {
     expect(out.map((r) => r.streamer.id)).toEqual(['c', 'b']);
   });
 
+  it('ranks only streamers with a Twitch channel (simulcasters included)', () => {
+    const out = rankGameStreamers(
+      [
+        // A rounded YouTube subscriber count would otherwise top the table.
+        mk({ id: 'yt', name: 'YT', follower_count: 31_000_000, platforms: ['youtube'] }),
+        mk({ id: 'dual', name: 'Dual', follower_count: 2000, platforms: ['twitch', 'youtube'] }),
+        mk({ id: 'tw', name: 'Tw', follower_count: 1000 }),
+      ],
+      10,
+    );
+    expect(out.map((r) => [r.rank, r.streamer.id])).toEqual([
+      [1, 'dual'],
+      [2, 'tw'],
+    ]);
+  });
+
   it('returns [] for empty input or all-null followers', () => {
     expect(rankGameStreamers([], 10)).toEqual([]);
     expect(

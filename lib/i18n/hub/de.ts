@@ -360,9 +360,9 @@ export const de: HubLex = {
     },
     metricNote: {
       'most-followed':
-        'Täglich aktualisiert. Follower- und Abonnentenzahlen werden regelmäßig aufgefrischt und können den Live-Zahlen der Plattformen hinterherhinken.',
+        'Täglich aktualisiert. Nur Twitch-Kanäle, einschließlich Streamern, die parallel auf YouTube streamen. Followerzahlen werden regelmäßig aufgefrischt und können den Live-Zahlen der Plattformen hinterherhinken.',
       'fastest-growing':
-        'Zuwachs an Kanal-Followern (Twitch) bzw. Abonnenten (YouTube) in den letzten 7 Tagen, aus täglichen Snapshots aller erfassten Kanäle. Nur Kanäle mit positivem Wachstum werden gerankt. Täglich aktualisiert.',
+        'Zuwachs an Twitch-Kanal-Followern in den letzten 7 Tagen, aus täglichen Snapshots aller erfassten Kanäle. Nur Kanäle mit positivem Wachstum werden gerankt. Täglich aktualisiert.',
       'most-watched':
         'Median der gleichzeitigen Live-Zuschauer über die letzten 28 Tage (stündliche Stichproben). Täglich aktualisiert.',
       'most-active':
@@ -395,13 +395,13 @@ export const de: HubLex = {
     faqHeading: 'Über diese Rankings',
     faqCalculatedQ: 'Wie werden diese Streamer-Rankings berechnet?',
     faqCalculatedA:
-      'Jedes Ranking wird aus echten Broadcast-Daten berechnet, die wir selbst erheben: Follower- und Abonnentenzahlen, stündliche Live-Zuschauer-Stichproben und die Stream-Historie jedes erfassten Twitch- und YouTube-Kanals. Keine selbst gemeldeten Zahlen.',
+      'Jedes Ranking wird aus echten Broadcast-Daten berechnet, die wir selbst erheben: Twitch-Followerzahlen, stündliche Live-Zuschauer-Stichproben und die Stream-Historie jedes erfassten Kanals. Keine selbst gemeldeten Zahlen.',
     faqUpdatedQ: 'Wie oft werden die Statistiken aktualisiert?',
     faqUpdatedA:
       'Die Ranglisten werden jede Nacht neu berechnet — Follower-, Zuschauer- und Aktivitätsstatistiken täglich, Live-Badges und Nächster-Stream-Zeiten laufend über den Tag.',
     faqPlatformsQ: 'Welche Plattformen werden abgedeckt?',
     faqPlatformsA:
-      'Twitch und YouTube. Die meisten Rankings mischen beide Plattformen — Follower auf Twitch entsprechen Abonnenten auf YouTube. Das Pünktlichkeits-Ranking ist Twitch-only, weil es angekündigte Twitch-Sendepläne misst.',
+      'Die Rankings umfassen jeden Streamer mit einem Twitch-Kanal, auch Streamer, die parallel auf YouTube streamen. Die Followerzahlen sind deshalb immer Twitch-Follower. Kanäle, die hauptsächlich auf YouTube streamen, haben eigene Rankings, weil gerundete YouTube-Abonnentenzahlen nicht mit Twitch-Followern vergleichbar sind.',
   },
   recaps: {
     metaTitleSuffix: 'Twitch-Streamer-Stats',
@@ -589,11 +589,11 @@ export const de: HubLex = {
     ogTitle: (category) => `Top ${category}-Streamer — nach Followern gerankt`,
     h1: (category) => `Top ${category}-Streamer nach Followern`,
     introPage1: (count, category) =>
-      `Die Top ${count} ${category}-Streamer, die wir tracken, gerankt nach Kanal-Followern und Abonnenten.`,
+      `Die Top ${count} ${category}-Streamer, die wir tracken, gerankt nach Twitch-Kanal-Followern.`,
     topsTheList: (name, value, isTwitch) =>
       ` ${name} führt die Liste mit ${value} ${isTwitch ? 'Followern' : 'Abonnenten'} an.`,
     introPageN: (from, to, total, category) =>
-      `Plätze ${from}–${to} von ${total} ${category}-Streamern, die wir tracken, gerankt nach Kanal-Followern und Abonnenten.`,
+      `Plätze ${from}–${to} von ${total} ${category}-Streamern, die wir tracken, gerankt nach Twitch-Kanal-Followern.`,
     methodology: (category) =>
       `Streamer, die in den letzten 28 Tagen in ${category} aktiv waren, gerankt nach Followern. Die Zahlen werden regelmäßig aktualisiert und können den Live-Werten der Plattformen hinterherhinken.`,
     followersRefreshed: (label) => ` Follower-Zahlen aktualisiert: ${label}.`,
@@ -643,7 +643,7 @@ export const de: HubLex = {
     },
     faqMeasuredQ: 'Wie wird dieses Ranking gemessen?',
     faqMeasuredA: (category) =>
-      `Streamer, die in den letzten 28 Tagen in ${category} aktiv waren, gerankt nach der Follower-Zahl ihres Hauptkanals — Kanal-Follower auf Twitch bzw. Abonnenten auf YouTube. Die Stunden- und Anteil-Spalten stammen aus einer nächtlichen Auswertung abgeschlossener ${category}-Streams.`,
+      `Streamer mit einem Twitch-Kanal, die in den letzten 28 Tagen in ${category} aktiv waren, gerankt nach ihrer Twitch-Follower-Zahl. Die Stunden- und Anteil-Spalten stammen aus einer nächtlichen Auswertung abgeschlossener ${category}-Streams.`,
     faqShareQ: 'Was bedeutet „Spielanteil“?',
     faqShareA: (category) =>
       `Der Anteil der letzten Streams eines Streamers, die ${category} waren. 100 % heißt, es ist gerade das einzige Spiel; ein niedriger Anteil markiert einen Gelegenheitsbesuch in der Kategorie.`,

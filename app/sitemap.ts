@@ -155,6 +155,7 @@ const STATIC_URLS: MetadataRoute.Sitemap = [
   // Per-platform leaderboard variants (2026-08-11). Listed statically like the
   // metric pages above: a thin platform slice emits noindex itself, so the
   // residual mismatch self-corrects (same convention as /rankings/game/*).
+  // Only /youtube since 2026-09-27 — /twitch 308s to the main leaderboard.
   ...PLATFORM_VARIANT_SLUGS.flatMap((slug) =>
     RANKING_PLATFORMS.map((platform) => ({
       url: `${SITE_URL}/rankings/${slug}/${platform}`,

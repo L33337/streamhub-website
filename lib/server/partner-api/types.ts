@@ -412,6 +412,13 @@ export type RankingMetric =
   | 'most-reliable'
   | 'fastest-growing';
 
+// Leaderboard pool (?platform=, 2026-09-27). 'twitch' = the API default:
+// every streamer with a Twitch channel, simulcasters included. 'youtube' =
+// YouTube-first channels as a SEPARATE leaderboard with its own ranks from 1
+// (never carries previous_rank). YouTube subscriber counts are rounded and
+// not comparable to Twitch followers, which is why the pools never mix.
+export type RankingPoolName = 'twitch' | 'youtube';
+
 // Per-metric numbers of one leaderboard row. Superset shape — the key set
 // depends on the requested metric (see the endpoint description in the
 // Partner API OpenAPI spec); every field is optional so one type covers all
@@ -452,6 +459,8 @@ export interface PublicRankingEntry {
 // refresh of the underlying aggregate (null for the table-backed metrics).
 export interface RankingsResponse {
   metric: RankingMetric;
+  // Echo of the requested pool. Optional for deploy skew (older API).
+  platform?: RankingPoolName;
   window_days: number | null;
   refreshed_at: string | null;
   data: PublicRankingEntry[];

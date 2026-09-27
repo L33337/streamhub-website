@@ -442,9 +442,9 @@ export const pl: HubLex = {
     },
     metricNote: {
       'most-followed':
-        'Aktualizowane codziennie. Liczby obserwujących i subskrybentów są odświeżane regularnie i mogą być opóźnione względem liczb na platformach.',
+        'Aktualizowane codziennie. Tylko kanały na Twitchu, w tym streamerzy, którzy równolegle nadają na YouTube. Liczby obserwujących są odświeżane regularnie i mogą być opóźnione względem liczb na platformach.',
       'fastest-growing':
-        'Przyrost obserwujących kanał (Twitch) lub subskrybentów (YouTube) w ciągu ostatnich 7 dni, z codziennych migawek każdego śledzonego kanału. W rankingu są tylko kanały z dodatnim wzrostem. Aktualizowane codziennie.',
+        'Przyrost obserwujących kanał na Twitchu w ciągu ostatnich 7 dni, z codziennych migawek każdego śledzonego kanału. W rankingu są tylko kanały z dodatnim wzrostem. Aktualizowane codziennie.',
       'most-watched':
         'Mediana jednoczesnych widzów na żywo z ostatnich 28 dni (próbkowanie co godzinę). Aktualizowane codziennie.',
       'most-active':
@@ -476,13 +476,13 @@ export const pl: HubLex = {
     faqHeading: 'O tych rankingach',
     faqCalculatedQ: 'Jak obliczane są te rankingi streamerów?',
     faqCalculatedA:
-      'Każdy ranking obliczamy z prawdziwych danych transmisji, które sami zbieramy: liczby obserwujących i subskrybentów, cogodzinnego próbkowania widzów na żywo oraz historii streamów każdego śledzonego kanału Twitch i YouTube. Żadnych liczb deklarowanych samodzielnie.',
+      'Każdy ranking obliczamy z prawdziwych danych transmisji, które sami zbieramy: liczby obserwujących na Twitchu, cogodzinnego próbkowania widzów na żywo oraz historii streamów każdego śledzonego kanału. Żadnych liczb deklarowanych samodzielnie.',
     faqUpdatedQ: 'Jak często aktualizowane są statystyki?',
     faqUpdatedA:
       'Rankingi są przeliczane co noc — statystyki obserwujących, widzów i aktywności odświeżają się codziennie, a odznaki na żywo i godziny następnych streamów aktualizują się w ciągu dnia.',
     faqPlatformsQ: 'Jakie platformy są uwzględnione?',
     faqPlatformsA:
-      'Twitch i YouTube. Większość rankingów łączy obie platformy — obserwujący na Twitchu odpowiadają subskrybentom na YouTube. Ranking punktualności obejmuje tylko Twitcha, bo mierzy zapowiedziane harmonogramy Twitcha.',
+      'Rankingi obejmują każdego streamera z kanałem na Twitchu, także tych, którzy równolegle nadają na YouTube, więc liczby obserwujących to zawsze obserwujący na Twitchu. Kanały nastawione głównie na YouTube mają własne rankingi, bo zaokrąglone liczby subskrybentów YouTube nie są porównywalne z obserwującymi na Twitchu.',
   },
   recaps: {
     metaTitleSuffix: 'Statystyki streamerów Twitch',
@@ -725,11 +725,11 @@ export const pl: HubLex = {
     ogTitle: (category) => `Top streamerzy ${category} — według obserwujących`,
     h1: (category) => `Top streamerzy ${category} według obserwujących`,
     introPage1: (count, category) =>
-      `Top ${count} streamerów ${category}, których śledzimy, według obserwujących i subskrybentów kanału.`,
+      `Top ${count} streamerów ${category}, których śledzimy, według obserwujących kanału na Twitchu.`,
     topsTheList: (name, value, isTwitch) =>
       ` Listę otwiera ${name} z ${value} ${isTwitch ? 'obserwujących' : 'subskrybentów'}.`,
     introPageN: (from, to, total, category) =>
-      `Miejsca ${from}–${to} z ${total} streamerów ${category}, których śledzimy, według obserwujących i subskrybentów kanału.`,
+      `Miejsca ${from}–${to} z ${total} streamerów ${category}, których śledzimy, według obserwujących kanału na Twitchu.`,
     methodology: (category) =>
       `Streamerzy aktywni w ${category} w ostatnich 28 dniach, według obserwujących. Liczby są odświeżane regularnie i mogą być opóźnione względem platform.`,
     followersRefreshed: (label) => ` Obserwujący zaktualizowani: ${label}.`,
@@ -784,7 +784,7 @@ export const pl: HubLex = {
     },
     faqMeasuredQ: 'Jak mierzony jest ten ranking?',
     faqMeasuredA: (category) =>
-      `Streamerzy aktywni w ${category} w ostatnich 28 dniach, według liczby obserwujących głównego kanału — obserwujący na Twitchu lub subskrybenci na YouTube. Kolumny godzin i udziału pochodzą z nocnego agregatu zakończonych streamów ${category}.`,
+      `Streamerzy z kanałem na Twitchu aktywni w ${category} w ostatnich 28 dniach, według liczby obserwujących na Twitchu. Kolumny godzin i udziału pochodzą z nocnego agregatu zakończonych streamów ${category}.`,
     faqShareQ: 'Co oznacza „Udział gry”?',
     faqShareA: (category) =>
       `Udział ${category} w ostatnich streamach streamera. 100% oznacza, że to obecnie jego jedyna gra; niski udział to znak okazjonalnego gościa w kategorii.`,

@@ -1,6 +1,8 @@
 // Deep pages of the leaderboards: /rankings/<metric>/<n> for n >= 2 — and,
-// since 2026-08-11, the per-platform variants /rankings/<metric>/twitch|youtube
-// (indexable single-page leaderboards, resolved before the numeric parse).
+// since 2026-08-11, the per-platform variant /rankings/<metric>/youtube
+// (indexable single-page leaderboard, resolved before the numeric parse).
+// /rankings/<metric>/twitch 308s to /rankings/<metric> since 2026-09-27: the
+// main leaderboard is the Twitch ranking now.
 //
 // Page 1 stays on the flat /rankings/<metric> route (the five fixed wrappers
 // next to this folder) so the canonical URL of a ranking never gains a "/1"
@@ -13,15 +15,20 @@
 // so /rankings/most-followed and /rankings/game/<slug> are unaffected.
 
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import {
   buildLeaderboardMetadata,
   buildPlatformLeaderboardMetadata,
   LeaderboardPage,
   PlatformLeaderboardPage,
 } from '../../leaderboard';
-import { getPlatformVariant, getRankingPageSpec, type RankingPlatform } from '@/lib/rankings';
-import { isUiLang, type UiLang } from '@/lib/i18n-core';
+import {
+  getPlatformVariant,
+  getRankingPageSpec,
+  isTwitchVariantPath,
+  type RankingPlatform,
+} from '@/lib/rankings';
+import { isUiLang, localeHref, type UiLang } from '@/lib/i18n-core';
 import { applyLocaleSeo } from '@/lib/seo';
 
 // Matches the page-1 wrappers: LIVE badges need a fresh live set, while the
@@ -53,19 +60,31 @@ function parsePage(raw: string): number | null {
 }
 
 /**
- * 'twitch' / 'youtube' in the page slot selects the platform variant of the
- * metric (/rankings/most-followed/twitch) — single-page leaderboards that
- * share this dynamic segment with the numeric deep pages. null for every
- * other string, including variants that don't exist (most-reliable).
+ * 'youtube' in the page slot selects the platform variant of the metric
+ * (/rankings/most-followed/youtube) — a single-page leaderboard that shares
+ * this dynamic segment with the numeric deep pages. null for every other
+ * string, including variants that don't exist (most-reliable).
  */
 function parsePlatform(metric: string, raw: string): RankingPlatform | null {
-  if (raw !== 'twitch' && raw !== 'youtube') return null;
+  if (raw !== 'youtube') return null;
   return getPlatformVariant(metric, raw) ? raw : null;
+}
+
+/**
+ * /rankings/<metric>/twitch duplicated the main leaderboard once the main pool
+ * became Twitch-only (2026-09-27). 308 to the canonical page, keeping the
+ * locale, so the indexed variant URLs consolidate onto it.
+ */
+function redirectTwitchVariant(locale: UiLang, metric: string, page: string): void {
+  if (isTwitchVariantPath(metric, page)) {
+    permanentRedirect(localeHref(locale, `/rankings/${metric}`));
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale, metric, page } = await params;
   const locale: UiLang = isUiLang(rawLocale) ? rawLocale : 'en';
+  redirectTwitchVariant(locale, metric, page);
   const platform = parsePlatform(metric, page);
   if (platform) {
     // en-only indexability, like the mixed leaderboards (M22 P3 default).
@@ -86,7 +105,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RankingDeepPage({ params }: Props) {
-  const { metric, page } = await params;
+  const { locale: rawLocale, metric, page } = await params;
+  redirectTwitchVariant(isUiLang(rawLocale) ? rawLocale : 'en', metric, page);
   const platform = parsePlatform(metric, page);
   if (platform) return <PlatformLeaderboardPage slug={metric} platform={platform} />;
   const n = parsePage(page);
