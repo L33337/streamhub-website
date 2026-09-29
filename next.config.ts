@@ -5,9 +5,16 @@ const nextConfig: NextConfig = {
   // Social cards (M27): sharp converts the Satori PNG to JPEG in
   // app/api/social/card; keep the native module out of the bundler and ship
   // the Inter TTFs with that function.
+  //
+  // Social video (M27 Phase 3): app/api/social/video runs the ffmpeg binary
+  // that ffmpeg-static downloads at install time. Nothing imports that
+  // package (lib/og/social/video.ts ffmpegPath() resolves the path itself),
+  // so the tracer cannot find the binary: it is listed here, together with
+  // the fonts of the outro frame. Rename the route → move the key.
   serverExternalPackages: ["sharp"],
   outputFileTracingIncludes: {
     "/api/social/card": ["./lib/og/fonts/**/*"],
+    "/api/social/video": ["./lib/og/fonts/**/*", "./node_modules/ffmpeg-static/ffmpeg"],
   },
   // Frozen once at `next build` on the build machine, then inlined into the
   // bundle — gives the sitemap an honest, stable build timestamp for static
