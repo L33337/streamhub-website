@@ -27,6 +27,9 @@ export interface ApprovePost {
   card_text: string | null;
   instagram: string | null;
   x: string | null;
+  /** kind video_weekly (M27 Phase 3): the caption to paste in TikTok and the MP4. */
+  tiktok?: string | null;
+  video_url?: string | null;
 }
 
 /** What the social-approve edge function answers (preview and apply). */
@@ -65,8 +68,28 @@ const STATUS_LABELS: Record<string, string> = {
   skipped_disabled: 'not posted (publishing is off)',
 };
 
-export function statusLabel(s: string): string {
+/** The weekly video is never posted by us: it is delivered as a draft into the TikTok inbox. */
+const VIDEO_STATUS_LABELS: Record<string, string> = {
+  publishing: 'being delivered',
+  published: 'in the TikTok inbox',
+  failed: 'not delivered',
+  skipped_disabled: 'not delivered (publishing is off)',
+};
+
+export function statusLabel(s: string, kind?: string): string {
+  if (kind === 'video_weekly' && VIDEO_STATUS_LABELS[s]) return VIDEO_STATUS_LABELS[s];
   return STATUS_LABELS[s] ?? s;
+}
+
+/** Only a plain https URL becomes a link; anything else is dropped. */
+export function safeHttpsUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' && !u.username && !u.password ? u.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 const STYLE = `
@@ -95,7 +118,22 @@ function page(title: string, body: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>${escapeHtml(title)} · Streamer Times</title><style>${STYLE}</style></head><body><main><div class="eyebrow">Streamer Times · Social</div>${body}</main></body></html>`;
 }
 
+/** A page with one headline and one line: the TikTok connect callback, and anything else without a post. */
+export function renderNoticePage(title: string, message: string, ok: boolean): string {
+  return page(title, `<h1>${escapeHtml(title)}</h1><p class="${ok ? 'ok' : 'no'}">${escapeHtml(message)}</p>`);
+}
+
+function videoCard(post: ApprovePost): string {
+  const video = safeHttpsUrl(post.video_url);
+  const poster = post.image_urls[0] ? `<img src="${escapeHtml(post.image_urls[0])}" alt="First frame of the video" loading="lazy">` : '';
+  const watch = video ? `<p><a class="btn neutral" href="${escapeHtml(video)}" rel="noopener noreferrer">Watch the video</a></p>` : '';
+  const caption = post.tiktok ? `<div class="label">Caption to paste in TikTok</div><div class="text">${escapeHtml(post.tiktok)}</div>` : '';
+  return `<section class="card"><p><strong>Weekly video for TikTok</strong> · ${escapeHtml(post.period_label)}</p><p class="muted">Status: ${escapeHtml(statusLabel(post.status, post.kind))} · draft arrives ${escapeHtml(post.publish_label)}</p>${poster}${watch}${caption}</section>`;
+}
+
 function postCard(post: ApprovePost): string {
+  // The video row carries the streamer of its opening scene; it is still not a proposal.
+  if (post.kind === 'video_weekly') return videoCard(post);
   const who = post.streamer ? `#${post.slot + 1} ${post.streamer}` : post.kind === 'monthly' ? 'Monthly recap' : 'Weekly recap';
   const images = post.image_urls.map((u, i) => `<img src="${escapeHtml(u)}" alt="Card ${i + 1}" loading="lazy">`).join('');
   const texts = [
