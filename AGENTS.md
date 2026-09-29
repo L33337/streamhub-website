@@ -742,3 +742,22 @@ Indexability matrix (P3, implemented in `applyLocaleSeo(meta, locale, path, inde
 - No server-side locale redirects, ever (cloaking risk). `/en/*` → 308 unprefixed is the single exception (URL normalization, not negotiation).
 
 GSC monitoring after any locale/index change (first review ~2 weeks post-deploy): (1) Settings → International Targeting / hreflang errors must stay at zero ("no return tags" = a cluster listing a noindexed variant); (2) Coverage: the /de hub pair + own-language streamer URLs should move to "Indexed" without a matching drop of their en twins (duplicate-cluster = matrix bug); (3) soft-404/duplicate spikes on `/de/*` mean body localization is too thin — pull the locale from `INDEXABLE_HUB_LOCALES` rather than shipping half-translated indexable pages; (4) URL-inspect one en+de hub pair and one en+own-language streamer pair for "Google-selected canonical = user-declared".
+
+# Social routes under `/api/social/*` (StreamHub Epic M27)
+
+Four routes serve the social automation of the StreamHub backend. None of them is a page of the site: all are `force-dynamic`, `no-store`, outside the locale tree, and the website holds no TikTok, Instagram or X credential.
+
+| Route | Caller | Gate | What it does |
+|---|---|---|---|
+| `POST /api/social/card` | edge function | `x-social-secret` (`SOCIAL_RENDER_SECRET`) | Satori + sharp: one 1080×1350 JPEG from a card spec |
+| `POST /api/social/video` | edge function | same secret | ffmpeg: the weekly vertical video (1080×1920 MP4) from cards in the bucket, uploaded to a signed Supabase URL |
+| `GET/POST /api/social/approve` | a person, from the approval mail | HMAC link, verified by the edge function | confirm page + apply (veto, restore, choose, variant) |
+| `GET /api/social/tiktok/callback` | TikTok's OAuth redirect | one-time state, verified by the edge function | relays `code` + `state`, shows who is connected |
+
+- **The server-to-server routes need `x-vercel-protection-bypass`** (bot protection runs in challenge mode, see "Vercel WAF" above). The backend sends it; a manual `curl` takes the secret from `.env.development.local`.
+- **`/api/social/video` runs the binary of `ffmpeg-static`** (2026-09-29). Nothing imports the package: `lib/og/social/video.ts` `ffmpegPath()` resolves `node_modules/ffmpeg-static/ffmpeg` itself, and `next.config.ts` lists the binary in `outputFileTracingIncludes`. Rename the route → move that key, or the function ships without ffmpeg and answers `ffmpeg_missing`. `maxDuration = 120` needs Fluid Compute (the build would fail without it); measured in production: 23 s for a 16 s video, 32 s for the full 22.5 s video with five scenes.
+- **Both URL kinds of the video request are pinned** (`lib/og/social/video-request.ts`): card URLs to `<NEXT_PUBLIC_SUPABASE_URL>/storage/v1/object/public/social-cards/`, the upload to `…/object/upload/sign/social-videos/*.mp4`. The route fetches and uploads with the server's network identity; a free-form URL would make it a proxy for whoever holds the secret.
+- **Why the route uploads instead of answering with the file:** a function response is capped at 4.5 MB. The signed URL is valid for one object, so the website needs no storage key.
+- **Stills are converted to yuv420p once and held by the `loop` filter.** `-loop 1` on the input, or a format conversion after the loop, runs swscale on every one of the ~700 frames and doubles the render time.
+- **`/api/social/tiktok/callback` is the redirect URI registered in the TikTok app.** Renaming the route means changing it there in the same step. It is the only GET under `/api/social/` that changes state; the link is single-use, 15 minutes valid and bound to a connection the operator started.
+- **Tests mock the network but run the real ffmpeg binary.** `next/og` loads its wasm through `fetch`, so a `fetch` stub must pass every URL that is not the Supabase project on to the real implementation. Review a video by hand: `SOCIAL_VIDEO_CARDS=a.jpg,b.jpg SOCIAL_VIDEO_OUT=tmp/video.mp4 npx vitest run lib/og/social/__tests__/video.test.ts`.

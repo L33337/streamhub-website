@@ -128,7 +128,9 @@ function videoCard(post: ApprovePost): string {
   const poster = post.image_urls[0] ? `<img src="${escapeHtml(post.image_urls[0])}" alt="First frame of the video" loading="lazy">` : '';
   const watch = video ? `<p><a class="btn neutral" href="${escapeHtml(video)}" rel="noopener noreferrer">Watch the video</a></p>` : '';
   const caption = post.tiktok ? `<div class="label">Caption to paste in TikTok</div><div class="text">${escapeHtml(post.tiktok)}</div>` : '';
-  return `<section class="card"><p><strong>Weekly video for TikTok</strong> · ${escapeHtml(post.period_label)}</p><p class="muted">Status: ${escapeHtml(statusLabel(post.status, post.kind))} · draft arrives ${escapeHtml(post.publish_label)}</p>${poster}${watch}${caption}</section>`;
+  // "draft arrives" is a promise; a vetoed or failed video only has a slot.
+  const when = post.status === 'scheduled' || post.status === 'publishing' ? 'draft arrives' : post.status === 'published' ? 'delivered' : 'slot';
+  return `<section class="card"><p><strong>Weekly video for TikTok</strong> · ${escapeHtml(post.period_label)}</p><p class="muted">Status: ${escapeHtml(statusLabel(post.status, post.kind))} · ${when} ${escapeHtml(post.publish_label)}</p>${poster}${watch}${caption}</section>`;
 }
 
 function postCard(post: ApprovePost): string {

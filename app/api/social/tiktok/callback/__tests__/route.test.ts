@@ -165,7 +165,11 @@ describe('approval page: the weekly video', () => {
     expect(statusLabel('published')).toBe('posted');
     expect(statusLabel('published', 'weekly')).toBe('posted');
     const done = renderMessagePage({ ok: true, code: 'applied', message: 'Vetoed.', post: { ...post, status: 'published' } });
-    expect(done).toContain('Status: in the TikTok inbox');
+    expect(done).toContain('Status: in the TikTok inbox · delivered Thu 1 Oct 17:00 UTC');
+    // a vetoed video promises nothing
+    const vetoed = renderMessagePage({ ok: true, code: 'applied', message: 'Vetoed.', post: { ...post, status: 'vetoed' } });
+    expect(vetoed).toContain('Status: vetoed · slot Thu 1 Oct 17:00 UTC');
+    expect(vetoed).not.toContain('draft arrives');
   });
 
   it('links only a plain https video URL', () => {
